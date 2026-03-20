@@ -1,0 +1,38 @@
+{
+	"rooms": [
+		{
+			"id": "cozy_studio",
+			"name": "Cozy Studio",
+			"themes": [
+				{"id": "modern", "name": "Modern", "wall_color": "2a2535", "floor_color": "3d3347"},
+				{"id": "natural", "name": "Natural", "wall_color": "2d3025", "floor_color": "3a4230"}
+			]
+		},
+		{
+			"id": "moonlight_study",
+			"name": "Moonlight Study",
+			"themes": [
+				{"id": "magic", "name": "Magic", "wall_color": "1e2040", "floor_color": "2a2d50"},
+				{"id": "modern", "name": "Modern", "wall_color": "252530", "floor_color": "353545"},
+				{"id": "natural", "name": "Natural", "wall_color": "2a2820", "floor_color": "3a3830"}
+			]
+		},
+		{
+			"id": "nest_room",
+			"name": "Nest Room",
+			"themes": [
+				{"id": "modern", "name": "Modern", "wall_color": "282830", "floor_color": "383840"},
+				{"id": "natural", "name": "Natural", "wall_color": "2d2a20", "floor_color": "3d3a30"},
+				{"id": "pink", "name": "Pink", "wall_color": "352530", "floor_color": "453540"}
+			]
+		},
+		{
+			"id": "cozy_kitchen",
+			"name": "Cozy Kitchen",
+			"themes": [
+				{"id": "warm", "name": "Warm", "wall_color": "352a20", "floor_color": "4a3d2d"},
+				{"id": "modern", "name": "Modern", "wall_color": "2a2a30", "floor_color": "3a3a42"}
+			]
+		}
+	]
+}

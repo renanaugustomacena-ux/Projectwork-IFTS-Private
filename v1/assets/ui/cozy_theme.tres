@@ -1,0 +1,84 @@
+[gd_resource type="Theme" load_steps=13 format=3 uid="uid://c33lri4rnp82y"]
+
+[ext_resource type="Texture2D" uid="uid://cmkexh27ie8jf" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/brown.png" id="1_brown"]
+[ext_resource type="Texture2D" uid="uid://bvrf3shjf1ex5" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/brown_inlay.png" id="2_brown_inlay"]
+[ext_resource type="Texture2D" uid="uid://dt3unbd4rcrwc" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/tan.png" id="3_tan"]
+[ext_resource type="Texture2D" uid="uid://qy4ga2hm3rcn" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/tan_pressed.png" id="4_tan_pressed"]
+[ext_resource type="Texture2D" uid="uid://bbirlmwxg0yg0" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/grey.png" id="5_grey"]
+[ext_resource type="Texture2D" uid="uid://ditripwojra4q" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/grey_pressed.png" id="6_grey_pressed"]
+
+[sub_resource type="StyleBoxTexture" id="btn_normal"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+texture = ExtResource("3_tan")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="btn_pressed"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+texture = ExtResource("4_tan_pressed")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="slider_grabber"]
+texture = ExtResource("6_grey_pressed")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="slider_bg"]
+texture = ExtResource("5_grey")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="panel_bg"]
+texture = ExtResource("1_brown")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="scroll_bg"]
+texture = ExtResource("2_brown_inlay")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[resource]
+Button/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+Button/colors/font_hover_color = Color(1, 0.95, 0.85, 1)
+Button/colors/font_pressed_color = Color(0.85, 0.8, 0.7, 1)
+Button/styles/focus = SubResource("btn_normal")
+Button/styles/hover = SubResource("btn_normal")
+Button/styles/normal = SubResource("btn_normal")
+Button/styles/pressed = SubResource("btn_pressed")
+HSlider/styles/grabber_area = SubResource("slider_grabber")
+HSlider/styles/slider = SubResource("slider_bg")
+Label/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+PanelContainer/styles/panel = SubResource("panel_bg")
+ScrollContainer/styles/panel = SubResource("scroll_bg")

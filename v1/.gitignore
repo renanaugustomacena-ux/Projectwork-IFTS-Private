@@ -1,0 +1,46 @@
+# Godot 4+ cache and generated files
+.godot/
+.import/
+.fscache
+
+# Export output
+export/
+*.exe
+*.pck
+
+# Export credentials (contains sensitive data)
+export_credentials.cfg
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor swap/backup files
+*.swp
+*.swo
+*~
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment secrets (MAI committare)
+.env
+config.cfg
+
+# Supabase local development
+.supabase/
+
+# Test reports
+tests/reports/
+
+# Log files
+logs/
+
+# GdUnit4 temp
+.gdunit4/
+
+# Technical guide (developer-only, non versionare)
+TECHNICAL_GUIDE.md

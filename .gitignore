@@ -1,0 +1,57 @@
+# Godot 4+ specific ignores
+.godot/
+.nomedia
+
+# Godot-specific ignores
+.import/
+export.cfg
+export_credentials.cfg
+
+# Imported translations (automatically generated from CSV files)
+*.translation
+
+# Mono-specific ignores
+.mono/
+data_*/
+mono_crash.*.json
+
+# CI/CD build artifacts
+export/
+
+# Old project scaffold (non necessario)
+projectwork/
+
+# Reference assets (locali, non versionati)
+REFERENCES-IMPORTANT/
+
+# Claude Code workspace (locale)
+.claude/
+
+# Technical guide (developer-only, non versionare)
+TECHNICAL_GUIDE.md
+
+# SQLite databases (user data, not versioned)
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets and environment
+.env
+*.cfg.local
+
+# Playwright MCP (local testing tool)
+.playwright-mcp/
+
+# Asset collection guide (developer-only)
+ASSET_COLLECTION_GUIDE.md
+
+# VS Code workspace (local)
+*.code-workspace
+
+# macOS resource fork archives
+__MACOSX/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+desktop.ini

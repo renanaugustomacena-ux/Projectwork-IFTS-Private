@@ -1,0 +1,142 @@
+# Pipeline CI — Lint, Test, Security Scan
+#
+# Documentazione:
+# Eseguita su ogni push al branch proto e su ogni PR verso main/proto.
+# Tre job indipendenti: linting GDScript, test unitari GdUnit4, scansione sicurezza.
+# Il job test dipende da lint per evitare di sprecare risorse su codice non conforme.
+
+name: ci
+run-name: "${{ github.head_ref || github.ref_name }} — CI"
+
+on:
+  pull_request:
+    branches: [main, proto]
+    paths:
+      - "v1/**"
+  push:
+    branches: [proto]
+    paths:
+      - "v1/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: "GDScript Lint & Format"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install gdtoolkit
+        run: pip install "gdtoolkit>=4,<5"
+
+      - name: Run gdlint
+        run: gdlint v1/scripts/
+
+      - name: Check formatting
+        run: gdformat --check v1/scripts/
+
+  test:
+    name: "GdUnit4 Tests"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: lint
+    permissions:
+      actions: write
+      checks: write
+      contents: read
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Run GdUnit4 tests
+        uses: MikeSchulze/gdUnit4-action@v1
+        with:
+          godot-version: "4.5"
+          project_dir: './v1/'
+          paths: |
+            res://tests/
+          timeout: 5
+          report-name: test_report.xml
+        continue-on-error: false
+
+  security-scan:
+    name: "Security Scan"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for potential secrets in source code..."
+          FOUND=0
+
+          # Patterns that indicate hardcoded secrets
+          PATTERNS=(
+            'supabase_key\s*='
+            'service_role\s*='
+            'SUPABASE_URL\s*=\s*"https://'
+            'SUPABASE_ANON_KEY\s*=\s*"ey'
+            'password\s*=\s*"[^"]*[a-zA-Z]'
+            'api_key\s*=\s*"'
+            'secret\s*=\s*"'
+            'token\s*=\s*"ey'
+          )
+
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -rn "$pattern" \
+              --include="*.gd" --include="*.json" --include="*.tscn" --include="*.tres" \
+              v1/scripts/ v1/data/ v1/scenes/ 2>/dev/null | \
+              grep -v "\.env\.example" | \
+              grep -v "# placeholder" | \
+              grep -v "your-.*-here" | \
+              grep -v "test_"; then
+              echo "WARNING: Potential secret matching pattern: $pattern"
+              FOUND=1
+            fi
+          done
+
+          if [ "$FOUND" -eq 1 ]; then
+            echo "ERROR: Potential secrets found in source code. Review the matches above."
+            exit 1
+          fi
+
+          echo "No hardcoded secrets found."
+
+      - name: Verify .env not committed
+        run: |
+          if [ -f "v1/.env" ]; then
+            echo "ERROR: .env file must not be committed to version control"
+            exit 1
+          fi
+          if [ -f "v1/config.cfg" ]; then
+            echo "ERROR: config.cfg file must not be committed to version control"
+            exit 1
+          fi
+          echo ".env and config.cfg correctly excluded from repository."
+
+      - name: Check for synthetic data markers
+        run: |
+          echo "Scanning for synthetic/mock data in non-test files..."
+          if grep -rn "MOCK_DATA\|FAKE_DATA\|PLACEHOLDER_SECRET\|TODO_REPLACE" \
+            --include="*.gd" --include="*.json" \
+            v1/scripts/ v1/data/ 2>/dev/null | \
+            grep -v "test_" | \
+            grep -v "tests/"; then
+            echo "ERROR: Synthetic data markers found in production code"
+            exit 1
+          fi
+          echo "No synthetic data markers in production code."

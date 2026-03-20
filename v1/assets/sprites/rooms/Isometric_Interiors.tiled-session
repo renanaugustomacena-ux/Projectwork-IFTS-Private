@@ -1,0 +1,32 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "Floors.tsx": {
+            "scaleInEditor": 1
+        },
+        "Walls.tsx": {
+            "scaleInEditor": 1
+        }
+    },
+    "last.imagePath": "D:/PixelAssets/Isometric_Interiors",
+    "map.lastUsedFormat": "tmx",
+    "map.orientation": null,
+    "openFiles": [
+    ],
+    "project": "Isometric_Interiors.tiled-project",
+    "recentFiles": [
+        "Floors.tsx",
+        "Walls.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 64,
+        "width": 32
+    }
+}

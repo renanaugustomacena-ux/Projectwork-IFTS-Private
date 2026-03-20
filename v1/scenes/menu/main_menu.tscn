@@ -1,0 +1,82 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/menu/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/rooms/window_background.gd" id="2_forest"]
+[ext_resource type="Script" path="res://scripts/menu/menu_character.gd" id="3_char"]
+
+[node name="MainMenu" type="Node2D"]
+script = ExtResource("1_menu")
+
+[node name="ForestBackground" type="Node2D" parent="."]
+script = ExtResource("2_forest")
+
+[node name="DimOverlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.35)
+
+[node name="LoadingScreen" type="ColorRect" parent="."]
+z_index = 100
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.11, 0.18, 1)
+
+[node name="MenuCharacter" type="Node2D" parent="."]
+script = ExtResource("3_char")
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="ButtonContainer" type="VBoxContainer" parent="UILayer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -150.0
+offset_right = 120.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="UILayer/ButtonContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Mini Cozy Room"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="UILayer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 16)
+
+[node name="NuovaPartitaBtn" type="Button" parent="UILayer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 44)
+size_flags_horizontal = 4
+text = "Nuova Partita"
+
+[node name="CaricaPartitaBtn" type="Button" parent="UILayer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 44)
+size_flags_horizontal = 4
+text = "Carica Partita"
+
+[node name="OpzioniBtn" type="Button" parent="UILayer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 44)
+size_flags_horizontal = 4
+text = "Opzioni"
+
+[node name="EsciBtn" type="Button" parent="UILayer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 44)
+size_flags_horizontal = 4
+text = "Esci"
