@@ -9,7 +9,7 @@
 
 ## Team di Progetto
 
-### Renan Augusto Macena — Senior Architect & Project Supervisor
+### Renan Augusto Macena — System Architect & Project Supervisor
 
 **Ruolo**: Architettura generale del progetto, sviluppo delle parti piu' complesse del backend, integrazione del lavoro di tutti i membri del team, e responsabile del delivery finale del progetto.
 
@@ -86,6 +86,7 @@
 13. [Verifica e Testing](#13-verifica-e-testing)
 14. [Riferimenti e Risorse](#14-riferimenti-e-risorse)
 15. [Riepilogo Statistico](#15-riepilogo-statistico)
+16. [Guide Operative per il Team](#16-guide-operative-per-il-team)
 
 ---
 
@@ -2749,6 +2750,30 @@ Se siete nuovi a Godot e volete approfondire i concetti trattati in questo audit
 | Copertura test target | 50%+ |
 | Fasi di stabilizzazione | 5 |
 | Nuovi file test necessari | 6 |
+
+---
+
+---
+
+## 16. Guide Operative per il Team
+
+Per facilitare il lavoro di ogni membro del team, sono state create guide operative dettagliate e personalizzate. Ogni guida contiene istruzioni passo-passo, pensate per chi ha poca esperienza con Godot, Git o database.
+
+### Come Usare le Guide
+
+1. **Tutti**: Iniziate da [SETUP_AMBIENTE.md](guide/SETUP_AMBIENTE.md) per configurare il vostro ambiente di sviluppo
+2. **Poi**: Aprite la vostra guida personale e seguitela dall'inizio alla fine
+
+### Indice delle Guide
+
+| Guida | Per Chi | Contenuto |
+|-------|---------|-----------|
+| [Setup Ambiente](guide/SETUP_AMBIENTE.md) | Tutti | Installazione Godot, Git, VS Code, clonazione repo, workflow Git |
+| [Guida CI/CD](guide/GUIDA_CRISTIAN_CICD.md) | Cristian Marino | Linting test, Logger flush e session ID, PerformanceManager, configurazione test CI |
+| [Guida Game Dev](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | Mohamed & Giovanni | characters.json, `_exit_tree()` per 7 script, FileDialog fix, race condition, null check |
+| [Guida Database](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Schema characters e inventario, foreign keys, seed data, Supabase |
+
+Le guide si trovano nella cartella [`guide/`](guide/) e sono pensate come versione operativa (il "come fare") di questo audit report (il "cosa fare e perche'").
 
 ---
 

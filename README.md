@@ -57,9 +57,11 @@ git checkout Renan
 
 | Nome | Ruolo |
 |------|-------|
-| **Renan Augusto Macena** | Sviluppatore principale, architettura, implementazione |
-| **Mohammed** | Feature personaggio interattivo, movimento top-down, sprite pad |
-| **FlowLearn Contributor** | Integrazione asset e risorse |
+| **Renan Augusto Macena** | System Architect & Project Supervisor |
+| **Cristian Marino** | CI/CD & Documentation Lead |
+| **Mohamed** | Game Assets, Core Logic & Design Lead |
+| **Giovanni** | Game Assets, Core Logic & Design Lead |
+| **Elia Zoccatelli** | Database Support |
 
 ## Licenza
 
