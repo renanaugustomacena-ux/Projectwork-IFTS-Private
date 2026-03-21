@@ -46,6 +46,7 @@ var inventory_data: Dictionary = {
 
 var _auto_save_timer: Timer
 var _save_dirty: bool = false
+var _is_saving: bool = false
 
 
 func _ready() -> void:
@@ -63,11 +64,17 @@ func _mark_dirty() -> void:
 
 func _on_auto_save() -> void:
 	if _save_dirty:
-		save_game()
 		_save_dirty = false
+		save_game()
 
 
 func save_game() -> void:
+	if _is_saving:
+		AppLogger.warn("SaveManager", "Salvataggio gia' in corso, skip")
+		return
+
+	_is_saving = true
+
 	var save_data := {
 		"version": SAVE_VERSION,
 		"last_saved": Time.get_datetime_string_from_system(),
@@ -90,7 +97,11 @@ func save_game() -> void:
 
 	# Backup existing save before overwrite
 	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.copy_absolute(ProjectSettings.globalize_path(SAVE_PATH), ProjectSettings.globalize_path(BACKUP_PATH))
+		var src := ProjectSettings.globalize_path(SAVE_PATH)
+		var dst := ProjectSettings.globalize_path(BACKUP_PATH)
+		var err := DirAccess.copy_absolute(src, dst)
+		if err != OK:
+			AppLogger.error("SaveManager", "Backup fallito", {"errore": err, "src": src, "dst": dst})
 
 	# Primary: save to JSON file (always works offline)
 	var json_string := JSON.stringify(save_data, "\t")
@@ -104,6 +115,7 @@ func save_game() -> void:
 	# Secondary: persist character and inventory to SQLite
 	_save_to_sqlite()
 
+	_is_saving = false
 	SignalBus.save_completed.emit()
 
 
@@ -259,6 +271,23 @@ func _migrate_save_data(data: Dictionary) -> Dictionary:
 		data.erase("last_active_timestamp")
 		data.erase("updated_at")
 
+		# Validazione inventario esistente prima della migrazione
+		if "inventory" in data and data["inventory"] is Dictionary:
+			var inv: Dictionary = data["inventory"]
+			if not inv.has("coins") or not inv.has("items"):
+				AppLogger.warn(
+					"SaveManager",
+					"Inventario corrotto durante migrazione v3->v4, reset",
+					{"inventory_keys": inv.keys()}
+				)
+				data["inventory"] = {
+					"coins": inv.get("coins", old_coins),
+					"capacita": inv.get("capacita", 50),
+					"items": [],
+				}
+			elif inv["items"] is not Array:
+				data["inventory"]["items"] = []
+
 		# Add new sections
 		if "inventory" not in data:
 			data["inventory"] = {
@@ -277,8 +306,10 @@ func _compare_versions(a: String, b: String) -> int:
 	var parts_b := b.split(".")
 	var max_len := maxi(parts_a.size(), parts_b.size())
 	for i in range(max_len):
-		var num_a: int = int(parts_a[i]) if i < parts_a.size() else 0
-		var num_b: int = int(parts_b[i]) if i < parts_b.size() else 0
+		var raw_a: String = parts_a[i] if i < parts_a.size() else "0"
+		var raw_b: String = parts_b[i] if i < parts_b.size() else "0"
+		var num_a: int = int(raw_a) if raw_a.is_valid_int() else 0
+		var num_b: int = int(raw_b) if raw_b.is_valid_int() else 0
 		if num_a != num_b:
 			return 1 if num_a > num_b else -1
 	return 0
