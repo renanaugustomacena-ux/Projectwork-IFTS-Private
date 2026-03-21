@@ -9,12 +9,63 @@
 
 ## Team di Progetto
 
-| Membro | Ruolo | Responsabilita' |
-|--------|-------|-----------------|
-| **Renan Augusto Macena** | Senior Architect & Team Lead | Architettura generale del progetto, sviluppo delle parti piu' complesse del backend, integrazione del lavoro di tutti i membri del team, e responsabile del delivery finale del progetto. |
-| **Cristian Marino** | CI/CD & Documentation Lead | Gestione completa delle pipeline di Continuous Integration (lint, test, security scan, build), configurazione dei workflow GitHub Actions, e redazione di tutta la documentazione tecnica del progetto. |
-| **Mohamed & Giovanni** | Game Assets & Core Logic | Creazione e gestione di tutti gli asset grafici e sonori del gioco, e implementazione delle logiche interne del videogioco (decorazioni, personaggi, interazioni, gameplay). |
-| **Elia Zoccatelli** | Database Support | Assistenza sullo sviluppo e la manutenzione del layer database (SQLite locale, schema Supabase, migrazione dati, query e persistenza). |
+### Renan Augusto Macena — Senior Architect & Project Supervisor
+
+**Ruolo**: Architettura generale del progetto, sviluppo delle parti piu' complesse del backend, integrazione del lavoro di tutti i membri del team, e responsabile del delivery finale del progetto.
+
+**Capitoli di riferimento per il proprio lavoro**:
+
+- **Sezione 6.3** — SaveManager: correggere race condition auto-save, backup senza error checking, inventario non salvato su SQLite (problemi C1, C2, C3)
+- **Sezione 6.5** — AudioManager: bounds check tracce vuote, memory leak ambience, crossfade tween safety (problemi A4, A5)
+- **Sezione 6.6** — SupabaseClient: token auth plaintext, HTTP pool illimitato, timeout mancanti (problemi A10, A11)
+- **Sezione 11, Fase 4** — Allineamento architetturale: eliminare coupling diretto tra singleton, introdurre nuovi segnali `settings_updated`, `music_state_updated`, `save_to_database_requested` (violazioni AR1-AR11)
+- **Sezione 11, Fase 1** — Integrità dati: coordinare la correzione di tutti i problemi critici C1-C7
+- **Sezione 11, Fase 5** — Supervisione della copertura test e verifica finale pre-delivery
+
+---
+
+### Cristian Marino — CI/CD & Documentation Lead
+
+**Ruolo**: Gestione completa delle pipeline di Continuous Integration (lint, test, security scan, build), configurazione dei workflow GitHub Actions, e redazione di tutta la documentazione tecnica del progetto.
+
+**Capitoli di riferimento per il proprio lavoro**:
+
+- **Sezione 9.3** — CI/CD: aggiungere linting dei file test con gdformat, migliorare parsing regex nello schema database-ci.yml
+- **Sezione 6.7** — Logger: flush sincrono che blocca il game thread, log persi se file non disponibile, session ID con possibili collisioni (problemi A12, A13)
+- **Sezione 6.8** — PerformanceManager: posizione finestra non persistita prima dello shutdown (problema A14)
+- **Sezione 11, Fase 5** — Copertura test: configurare i nuovi test nel workflow CI, verificare che i 6 nuovi file test vengano eseguiti nella pipeline
+- **Sezione 14** — Mantenere aggiornati i riferimenti e la documentazione tecnica del progetto
+
+---
+
+### Mohamed & Giovanni — Game Assets, Core Logic & Design Lead
+
+**Ruolo**: Creazione e gestione di tutti gli asset grafici e sonori del gioco, implementazione delle logiche interne del videogioco (decorazioni, personaggi, interazioni, gameplay), e design delle meccaniche di gioco.
+
+**Capitoli di riferimento per il proprio lavoro**:
+
+- **Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx`, completare o rimuovere personaggio `male_black_shirt` incompleto (problemi C6, C7)
+- **Sezione 7.7** — room_base.gd: aggiungere `_exit_tree()`, correggere race condition swap personaggio (problema A3)
+- **Sezione 7.8** — decoration_system.gd: correggere rimozione duplicati item_id, aggiungere `_exit_tree()` (problema A15)
+- **Sezione 7.9** — character_controller.gd: aggiungere null check su `_anim`, validare nomi animazione prima di `play()`
+- **Sezione 7.11** — window_background.gd: correggere mismatch dimensione array layers/factors (problema C5)
+- **Sezione 7.1-7.5** — Tutti i pannelli UI: aggiungere `_exit_tree()` con disconnessione segnali, correggere memory leak drag preview e FileDialog (problemi A1, A2, A6, A7)
+- **Sezione 7.6** — drop_zone.gd: correggere cast Texture2D unsafe (problema A16)
+- **Sezione 8, tracks.json** — Espandere catalogo musicale con tracce lo-fi e ambience
+
+---
+
+### Elia Zoccatelli — Database Support
+
+**Ruolo**: Assistenza sullo sviluppo e la manutenzione del layer database (SQLite locale, schema Supabase, migrazione dati, query e persistenza).
+
+**Capitoli di riferimento per il proprio lavoro**:
+
+- **Sezione 6.4** — local_database.gd: ridisegnare tabella `characters` (rimuovere account_id come PK), ristrutturare tabella `inventario` (spostare coins/capacita in accounts), aggiungere foreign key item_id (problemi C3, C4)
+- **Sezione 6.4** — local_database.gd: propagare errori apertura database, aggiungere seed data per tabelle vuote, creare funzione `delete_inventory_item()` (problemi A17, A18)
+- **Sezione 8, supabase_migration.sql** — Allineare schema PostgreSQL con le modifiche SQLite
+- **Sezione 11, Fase 1.4** — Implementare le istruzioni dettagliate per la correzione dello schema (istruzioni C3 e C4 nella Sezione 12)
+- **Sezione 11, Fase 3** — Validazione struttura dati: aggiungere `_validate_save_data()` in SaveManager, safety su version comparison (problema A8)
 
 ---
 
