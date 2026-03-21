@@ -7,6 +7,17 @@
 
 ---
 
+## Team di Progetto
+
+| Membro | Ruolo | Responsabilita' |
+|--------|-------|-----------------|
+| **Renan Augusto Macena** | Senior Architect & Team Lead | Architettura generale del progetto, sviluppo delle parti piu' complesse del backend, integrazione del lavoro di tutti i membri del team, e responsabile del delivery finale del progetto. |
+| **Cristian Marino** | CI/CD & Documentation Lead | Gestione completa delle pipeline di Continuous Integration (lint, test, security scan, build), configurazione dei workflow GitHub Actions, e redazione di tutta la documentazione tecnica del progetto. |
+| **Mohamed & Giovanni** | Game Assets & Core Logic | Creazione e gestione di tutti gli asset grafici e sonori del gioco, e implementazione delle logiche interne del videogioco (decorazioni, personaggi, interazioni, gameplay). |
+| **Elia Zoccatelli** | Database Support | Assistenza sullo sviluppo e la manutenzione del layer database (SQLite locale, schema Supabase, migrazione dati, query e persistenza). |
+
+---
+
 ## Indice
 
 1. [Introduzione e Scopo del Documento](#1-introduzione-e-scopo-del-documento)
