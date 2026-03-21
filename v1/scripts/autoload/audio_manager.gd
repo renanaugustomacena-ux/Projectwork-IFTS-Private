@@ -9,6 +9,9 @@ var current_track_index: int = 0
 var is_playing: bool = false
 var playlist_mode: String = "shuffle":  # "sequential", "shuffle", "repeat_one"
 	set(value):
+		if value not in ["sequential", "shuffle", "repeat_one"]:
+			push_warning("AudioManager: playlist_mode invalido '%s', fallback 'shuffle'" % value)
+			value = "shuffle"
 		playlist_mode = value
 		_sync_music_state()
 
@@ -188,10 +191,14 @@ func _load_audio_stream(path: String) -> AudioStream:
 
 
 func _crossfade_to(stream: AudioStream) -> void:
-	# Kill any running crossfade
+	# Kill any running crossfade and stop the player that was fading out
 	if _crossfade_tween != null and _crossfade_tween.is_running():
 		_crossfade_tween.kill()
 		_crossfade_tween = null
+		if _active_player == _music_player_a and _music_player_b.playing:
+			_music_player_b.stop()
+		elif _active_player == _music_player_b and _music_player_a.playing:
+			_music_player_a.stop()
 
 	var next_player: AudioStreamPlayer
 	if _active_player == _music_player_a:
@@ -271,10 +278,11 @@ func _stop_ambience(ambience_id: String) -> void:
 	if ambience_id not in _ambience_players:
 		return
 	var player: AudioStreamPlayer = _ambience_players[ambience_id]
-	player.stop()
-	player.queue_free()
 	_ambience_players.erase(ambience_id)
 	active_ambience.erase(ambience_id)
+	if is_instance_valid(player):
+		player.stop()
+		player.queue_free()
 	_sync_music_state()
 
 
