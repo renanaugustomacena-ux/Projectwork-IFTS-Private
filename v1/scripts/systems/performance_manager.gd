@@ -50,5 +50,5 @@ func _is_position_on_screen(pos: Vector2i) -> bool:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		var pos := get_window().position
-		SaveManager.settings["window_pos_x"] = pos.x
-		SaveManager.settings["window_pos_y"] = pos.y
+		SignalBus.settings_updated.emit("window_pos_x", pos.x)
+		SignalBus.settings_updated.emit("window_pos_y", pos.y)

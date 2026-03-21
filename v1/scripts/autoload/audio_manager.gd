@@ -297,16 +297,16 @@ func _on_volume_changed(bus_name: String, volume: float) -> void:
 	match bus_name:
 		"master":
 			master_volume = volume
-			SaveManager.settings["master_volume"] = volume
 		"music":
 			music_volume = volume
-			SaveManager.settings["music_volume"] = volume
 		"ambience":
 			ambience_volume = volume
-			SaveManager.settings["ambience_volume"] = volume
+		_:
+			push_warning("AudioManager: bus_name sconosciuto '%s'" % bus_name)
+			return
+	SignalBus.settings_updated.emit("%s_volume" % bus_name, volume)
 	_apply_music_volume()
 	_apply_ambience_volume()
-	SignalBus.save_requested.emit()
 
 
 func _get_music_volume_db() -> float:
@@ -329,12 +329,11 @@ func _apply_ambience_volume() -> void:
 
 
 func _sync_music_state() -> void:
-	SaveManager.music_state = {
+	SignalBus.music_state_updated.emit({
 		"current_track_index": current_track_index,
 		"playlist_mode": playlist_mode,
 		"active_ambience": active_ambience.duplicate(),
-	}
-	SignalBus.save_requested.emit()
+	})
 
 
 func _input(event: InputEvent) -> void:

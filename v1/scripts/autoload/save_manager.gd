@@ -56,10 +56,22 @@ func _ready() -> void:
 	_auto_save_timer.timeout.connect(_on_auto_save)
 	add_child(_auto_save_timer)
 	SignalBus.save_requested.connect(_mark_dirty)
+	SignalBus.settings_updated.connect(_on_settings_updated)
+	SignalBus.music_state_updated.connect(_on_music_state_updated)
 
 
 func _mark_dirty() -> void:
 	_save_dirty = true
+
+
+func _on_settings_updated(key: String, value: Variant) -> void:
+	settings[key] = value
+	_mark_dirty()
+
+
+func _on_music_state_updated(state: Dictionary) -> void:
+	music_state = state
+	_mark_dirty()
 
 
 func _on_auto_save() -> void:
@@ -108,6 +120,7 @@ func save_game() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("SaveManager: cannot write save file (error: %s)" % FileAccess.get_open_error())
+		_is_saving = false
 		return
 	file.store_string(json_string)
 	file.close()
@@ -120,17 +133,10 @@ func save_game() -> void:
 
 
 func _save_to_sqlite() -> void:
-	if not LocalDatabase.is_open():
-		return
-	var account := LocalDatabase.get_account_by_auth_uid("local")
-	var account_id: int
-	if account.is_empty():
-		account_id = LocalDatabase.upsert_account("local", "offline@local", "")
-	else:
-		account_id = account.get("account_id", -1)
-	if account_id < 0:
-		return
-	LocalDatabase.upsert_character(account_id, character_data)
+	SignalBus.save_to_database_requested.emit({
+		"character": character_data,
+		"inventory": inventory_data,
+	})
 
 
 func load_game() -> void:

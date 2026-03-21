@@ -31,6 +31,15 @@ signal save_requested
 signal save_completed
 signal load_completed
 
+# Settings update signal (replaces direct writes to SaveManager.settings)
+signal settings_updated(key: String, value: Variant)
+
+# Music state signal (replaces direct write to SaveManager.music_state)
+signal music_state_updated(state: Dictionary)
+
+# Database persistence signal (replaces direct calls to LocalDatabase)
+signal save_to_database_requested(data: Dictionary)
+
 # Settings signals
 # TODO: Phase 5 — i18n system, connect language_changed to TranslationServer
 signal language_changed(lang_code: String)

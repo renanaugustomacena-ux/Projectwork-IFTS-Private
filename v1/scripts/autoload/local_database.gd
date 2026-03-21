@@ -14,6 +14,7 @@ func _ready() -> void:
 	if _is_open:
 		_create_tables()
 		AppLogger.info("LocalDatabase", "Database initialized", {"path": DB_PATH})
+	SignalBus.save_to_database_requested.connect(_on_save_requested)
 
 
 func _notification(what: int) -> void:
@@ -23,6 +24,21 @@ func _notification(what: int) -> void:
 
 func is_open() -> bool:
 	return _is_open
+
+
+func _on_save_requested(data: Dictionary) -> void:
+	if not _is_open:
+		return
+	var account := get_account_by_auth_uid("local")
+	var account_id: int
+	if account.is_empty():
+		account_id = upsert_account("local", "offline@local", "")
+	else:
+		account_id = account.get("account_id", -1)
+	if account_id < 0:
+		return
+	if data.has("character") and data["character"] is Dictionary:
+		upsert_character(account_id, data["character"])
 
 
 func close() -> void:
