@@ -12,6 +12,7 @@ const AUTH_TOKEN_PATH := "user://auth.cfg"
 const TOKEN_REFRESH_MARGIN := 60.0  # Refresh 60s before expiry
 const REQUEST_TIMEOUT := 10.0
 const POOL_SIZE := 4
+const MAX_POOL_SIZE := 8
 
 var _base_url: String = ""
 var _anon_key: String = ""
@@ -78,6 +79,10 @@ func sign_up(email: String, password: String) -> Dictionary:
 	if not is_configured():
 		return _offline_error()
 
+	if email.strip_edges().is_empty() or password.is_empty():
+		AppLogger.warn("SupabaseClient", "Sign up: email o password vuoti")
+		return {"error": "validation_failed", "message": "Email and password are required"}
+
 	AppLogger.info("SupabaseClient", "Signing up", {"email": email})
 	var url := _base_url + "/auth/v1/signup"
 	var body := JSON.stringify({"email": email, "password": password})
@@ -93,6 +98,10 @@ func sign_up(email: String, password: String) -> Dictionary:
 func sign_in_email(email: String, password: String) -> Dictionary:
 	if not is_configured():
 		return _offline_error()
+
+	if email.strip_edges().is_empty() or password.is_empty():
+		AppLogger.warn("SupabaseClient", "Sign in: email o password vuoti")
+		return {"error": "validation_failed", "message": "Email and password are required"}
 
 	AppLogger.info("SupabaseClient", "Signing in", {"email": email})
 	var url := _base_url + "/auth/v1/token?grant_type=password"
@@ -224,30 +233,42 @@ func _load_config() -> void:
 func _try_restore_session() -> void:
 	if not is_configured():
 		return
-
 	if not FileAccess.file_exists(AUTH_TOKEN_PATH):
 		return
 
+	var cfg := ConfigFile.new()
+	var err := cfg.load_encrypted_pass(AUTH_TOKEN_PATH, _get_encryption_key())
+	if err != OK:
+		_try_restore_legacy_session()
+		return
+
+	_refresh_token = cfg.get_value("auth", "refresh_token", "")
+	if not _refresh_token.is_empty():
+		AppLogger.debug("SupabaseClient", "Found saved session, attempting refresh")
+		call_deferred("_deferred_refresh")
+
+
+func _try_restore_legacy_session() -> void:
 	var file := FileAccess.open(AUTH_TOKEN_PATH, FileAccess.READ)
 	if file == null:
 		return
-
 	var json := JSON.new()
 	var text := file.get_as_text()
 	file.close()
-
 	if json.parse(text) != OK:
 		return
-
 	var data = json.data
 	if not data is Dictionary:
 		return
-
 	_refresh_token = data.get("refresh_token", "")
 	if not _refresh_token.is_empty():
-		AppLogger.debug("SupabaseClient", "Found saved session, attempting refresh")
-		# Defer refresh to avoid blocking _ready
+		AppLogger.info("SupabaseClient", "Migrating legacy auth tokens to encrypted format")
+		_save_auth_tokens()
 		call_deferred("_deferred_refresh")
+
+
+func _get_encryption_key() -> String:
+	return "MCR_%s_%s" % [OS.get_unique_id(), _anon_key.left(16)]
 
 
 func _deferred_refresh() -> void:
@@ -289,12 +310,11 @@ func _clear_auth() -> void:
 func _save_auth_tokens() -> void:
 	if _refresh_token.is_empty():
 		return
-
-	var data := {"refresh_token": _refresh_token}
-	var file := FileAccess.open(AUTH_TOKEN_PATH, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(data))
-		file.close()
+	var cfg := ConfigFile.new()
+	cfg.set_value("auth", "refresh_token", _refresh_token)
+	var err := cfg.save_encrypted_pass(AUTH_TOKEN_PATH, _get_encryption_key())
+	if err != OK:
+		AppLogger.error("SupabaseClient", "Salvataggio token fallito", {"errore": err})
 
 
 func _delete_auth_tokens() -> void:
@@ -339,13 +359,22 @@ func _get_available_http() -> HTTPRequest:
 		if http.get_http_client_status() == HTTPClient.STATUS_DISCONNECTED:
 			return http
 
-	# All busy — create a temporary one
-	var http := HTTPRequest.new()
-	http.timeout = REQUEST_TIMEOUT
-	add_child(http)
-	_http_pool.append(http)
-	AppLogger.debug("SupabaseClient", "HTTP pool expanded", {"size": _http_pool.size()})
-	return http
+	if _http_pool.size() < MAX_POOL_SIZE:
+		var http := HTTPRequest.new()
+		http.timeout = REQUEST_TIMEOUT
+		add_child(http)
+		_http_pool.append(http)
+		AppLogger.debug("SupabaseClient", "HTTP pool expanded", {"size": _http_pool.size()})
+		return http
+
+	AppLogger.warn("SupabaseClient", "HTTP pool al limite, attesa client libero", {"max": MAX_POOL_SIZE})
+	while true:
+		await get_tree().process_frame
+		for http in _http_pool:
+			if http.get_http_client_status() == HTTPClient.STATUS_DISCONNECTED:
+				return http
+
+	return _http_pool[0]
 
 
 # --- Internal: HTTP Methods ---
