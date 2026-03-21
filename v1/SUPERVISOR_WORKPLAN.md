@@ -1,29 +1,29 @@
 # Piano Operativo — Renan Augusto Macena (Supervisor)
 
 **Data**: 21 Marzo 2026
-**Stato**: IN CORSO
+**Stato**: COMPLETATO (tutte le operazioni autonome)
 **Basato su**: AUDIT_REPORT.md — Sezioni 6.3, 6.5, 6.6, 11 (Fasi 1-4)
 
 ---
 
 ## Indice Operazioni
 
-| # | Fase | File | Problema | Severita' | Dipendenze |
-|---|------|------|----------|-----------|------------|
-| OP-01 | A | save_manager.gd | Race condition auto-save (manca `_is_saving`) | CRITICO | Nessuna |
-| OP-02 | A | save_manager.gd | Backup copy senza error checking (C2) | CRITICO | Nessuna |
-| OP-03 | A | save_manager.gd | `_compare_versions()` non robusta per formati complessi (A8) | ALTO | Nessuna |
-| OP-04 | A | save_manager.gd | Migrazione v3->v4 non valida struttura inventario (A9) | ALTO | Nessuna |
-| OP-05 | B | audio_manager.gd | Crossfade tween kill non ferma vecchio player | ALTO | Nessuna |
-| OP-06 | B | audio_manager.gd | Memory leak ambience player (A4) | ALTO | Nessuna |
-| OP-07 | B | audio_manager.gd | playlist_mode non validato | MEDIO | Nessuna |
-| OP-08 | C | supabase_client.gd | Token auth salvati in plaintext (A10) | ALTO | Nessuna |
-| OP-09 | C | supabase_client.gd | HTTP pool crescita illimitata (A11) | ALTO | Nessuna |
-| OP-10 | C | supabase_client.gd | Validazione email/password mancante | MEDIO | Nessuna |
-| OP-11 | D | signal_bus.gd | Aggiungere 3 nuovi segnali architetturali | ARCHITETTURALE | Nessuna |
-| OP-12 | D | audio_manager.gd | Eliminare scrittura diretta in SaveManager (AR4, AR5) | ARCHITETTURALE | OP-11 |
-| OP-13 | D | performance_manager.gd | Eliminare scrittura diretta in SaveManager (AR6) | ARCHITETTURALE | OP-11 |
-| OP-14 | D | save_manager.gd | Ascoltare nuovi segnali + disaccoppiare da LocalDatabase (AR1, AR2, AR3) | ARCHITETTURALE | OP-11, OP-12, OP-13 |
+| # | Fase | File | Problema | Severita' | Stato |
+|---|------|------|----------|-----------|-------|
+| OP-01 | A | save_manager.gd | Race condition auto-save (manca `_is_saving`) | CRITICO | COMPLETATA |
+| OP-02 | A | save_manager.gd | Backup copy senza error checking (C2) | CRITICO | COMPLETATA |
+| OP-03 | A | save_manager.gd | `_compare_versions()` non robusta per formati complessi (A8) | ALTO | COMPLETATA |
+| OP-04 | A | save_manager.gd | Migrazione v3->v4 non valida struttura inventario (A9) | ALTO | COMPLETATA |
+| OP-05 | B | audio_manager.gd | Crossfade tween kill non ferma vecchio player | ALTO | COMPLETATA |
+| OP-06 | B | audio_manager.gd | Memory leak ambience player (A4) | ALTO | COMPLETATA |
+| OP-07 | B | audio_manager.gd | playlist_mode non validato | MEDIO | COMPLETATA |
+| OP-08 | C | supabase_client.gd | Token auth salvati in plaintext (A10) | ALTO | COMPLETATA |
+| OP-09 | C | supabase_client.gd | HTTP pool crescita illimitata (A11) | ALTO | COMPLETATA |
+| OP-10 | C | supabase_client.gd | Validazione email/password mancante | MEDIO | COMPLETATA |
+| OP-11 | D | signal_bus.gd | Aggiungere 3 nuovi segnali architetturali | ARCHITETTURALE | COMPLETATA |
+| OP-12 | D | audio_manager.gd | Eliminare scrittura diretta in SaveManager (AR4, AR5) | ARCHITETTURALE | COMPLETATA |
+| OP-13 | D | performance_manager.gd | Eliminare scrittura diretta in SaveManager (AR6) | ARCHITETTURALE | COMPLETATA |
+| OP-14 | D | save_manager.gd + local_database.gd | Ascoltare nuovi segnali + disaccoppiare da LocalDatabase (AR1, AR2, AR3) | ARCHITETTURALE | COMPLETATA |
 
 ---
 
