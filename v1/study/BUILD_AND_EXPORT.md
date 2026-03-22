@@ -1,0 +1,1053 @@
+# Building & Exporting Games — From Source to Player
+
+A comprehensive study of how games go from source code to playable executables: compilation, Godot's export system, platform-specific builds, CI/CD pipelines, distribution platforms, optimization, and how real companies ship games.
+
+---
+
+## 1. How Game "Compilation" Works
+
+### Compiled vs Interpreted vs Bytecode
+
+Games can be built in different ways depending on the engine and language:
+
+```
+COMPILED (C, C++, Rust):
+  Source Code → Compiler → Machine Code (.exe)
+  ✓ Maximum performance
+  ✗ Must compile for each platform separately
+  Examples: Unreal Engine (C++), custom engines
+
+INTERPRETED (Python, Lua):
+  Source Code → Interpreter reads line by line → Executes
+  ✓ Cross-platform (interpreter handles differences)
+  ✗ Slower than compiled
+  Examples: Some modding tools, prototyping
+
+BYTECODE (GDScript, C#, Java):
+  Source Code → Compiler → Bytecode → Virtual Machine → Executes
+  ✓ Faster than interpreted, cross-platform
+  ✓ GDScript compiles to bytecode at export time
+  Examples: Godot (GDScript), Unity (C# → IL)
+```
+
+### What Happens When Godot "Exports"
+
+```
+Your Godot Project:
+├── scripts/*.gd           (GDScript source)
+├── scenes/*.tscn           (Scene definitions)
+├── assets/sprites/*.png    (Textures)
+├── assets/audio/*.wav      (Audio files)
+├── data/*.json             (Game data)
+└── project.godot           (Configuration)
+
+    ↓ Export Process ↓
+
+Step 1: GDScript Compilation
+  .gd files → GDScript bytecode (.gdc)
+  (Faster execution, source code not exposed)
+
+Step 2: Resource Conversion
+  .png → Compressed textures (S3TC, ETC2, or ASTC depending on platform)
+  .wav → May stay as WAV or convert to OGG
+  .tscn → Binary scene format
+  .tres → Binary resource format
+
+Step 3: Packing
+  All converted resources → single .pck file (PCK = "pack")
+
+Step 4: Bundling
+  Export Template (platform binary) + .pck → Final executable
+
+Final output:
+  Windows: MiniCozyRoom.exe + MiniCozyRoom.pck (or embedded)
+  macOS:   MiniCozyRoom.app (contains both)
+  Linux:   MiniCozyRoom.x86_64 + MiniCozyRoom.pck
+  Web:     MiniCozyRoom.html + MiniCozyRoom.wasm + MiniCozyRoom.pck
+```
+
+---
+
+## 2. Godot Export System in Detail
+
+### Export Templates
+
+Export templates are **pre-compiled Godot engine binaries** for each platform. They contain the engine code but NOT your game — your game is the .pck file.
+
+```
+Export Template = Godot Engine compiled for a specific platform
+                  (without the editor, just the runtime)
+
+Types:
+  Debug template:   Includes debugging tools, larger file, slower
+                    Use for: testing, development builds
+
+  Release template: Optimized, smaller, faster, no debug tools
+                    Use for: final distribution
+
+Download:
+  Editor → Export → Manage Export Templates → Download
+  or: https://godotengine.org/download
+```
+
+### Export Presets
+
+Export presets configure how your game is exported for each platform:
+
+```
+In Godot Editor: Project → Export → Add...
+
+Preset configuration:
+┌─────────────────────────────────────────────┐
+│ Export Preset: "Windows Desktop"              │
+│                                               │
+│ Platform:    Windows Desktop                  │
+│ Template:    Release                          │
+│ Binary:      godot.windows.template_release   │
+│                                               │
+│ Application:                                  │
+│   Name:           Mini Cozy Room              │
+│   Icon:           res://icon.ico              │
+│   Version:        1.0.0                       │
+│                                               │
+│ Resources:                                    │
+│   Include:        *.gd, *.tscn, *.tres,       │
+│                   *.json, *.png, *.wav         │
+│   Exclude:        *.md, *.txt, tests/*        │
+│                                               │
+│ Features:                                     │
+│   Custom:         [gl_compatibility]           │
+└─────────────────────────────────────────────┘
+```
+
+### PCK Files
+
+The `.pck` file is a **packed resource file** containing all your game's assets:
+
+```
+MiniCozyRoom.pck contents:
+├── .godot/
+│   └── imported/           (processed resources)
+├── scripts/
+│   ├── autoload/
+│   │   ├── signal_bus.gdc  (compiled GDScript)
+│   │   ├── logger.gdc
+│   │   └── ...
+│   └── ...
+├── scenes/
+│   └── ... (.tscn converted to binary)
+├── data/
+│   ├── rooms.json
+│   ├── decorations.json
+│   └── ...
+├── assets/
+│   └── ... (compressed textures)
+└── project.binary           (compiled project.godot)
+```
+
+**Key points about PCK:**
+- Can be embedded inside the .exe (single-file distribution)
+- Can be encrypted (protects assets and scripts)
+- Can be updated independently of the executable (patching!)
+- Uses its own virtual filesystem (res:// maps to PCK contents)
+
+### Encrypted Exports
+
+To protect your game's assets and scripts:
+
+```
+In Export settings:
+  Encryption:
+    Encrypt PCK: ✓
+    Encryption Key: [256-bit hex key]
+
+This prevents:
+  - Casual extraction of sprites/music
+  - Reading GDScript source (it's bytecode + encrypted)
+
+This does NOT prevent:
+  - Determined reverse engineering (nothing does)
+  - Memory dumping at runtime
+  - Screenshot/recording of assets
+```
+
+### Feature Tags
+
+Feature tags let you run different code paths on different platforms:
+
+```gdscript
+# Built-in feature tags:
+if OS.has_feature("windows"):
+    # Windows-specific code
+elif OS.has_feature("web"):
+    # Web-specific code (e.g., disable file import)
+elif OS.has_feature("mobile"):
+    # Mobile-specific code
+
+# Custom feature tags (set in Export Preset):
+if OS.has_feature("demo"):
+    # Demo version — limit features
+if OS.has_feature("steam"):
+    # Steam version — enable achievements
+
+# Our project uses this in music_panel.gd:
+func _on_import_pressed() -> void:
+    if OS.has_feature("web"):
+        AppLogger.warn("MusicPanel", "File import not supported on web")
+        return
+    # ... open file dialog
+```
+
+---
+
+## 3. Platform-Specific Building
+
+### Windows
+
+```
+Output:  MiniCozyRoom.exe (+ MiniCozyRoom.pck or embedded)
+Size:    ~50-80 MB (engine + assets)
+
+Options:
+  - Console output: Disable for release (no black terminal window)
+  - Icon: .ico file (multiple sizes: 16, 32, 48, 256)
+  - Embed PCK: ✓ (single .exe file distribution)
+
+Code Signing:
+  Why:  Without signing, Windows shows "Unknown publisher" warning
+  How:  Purchase a code signing certificate ($200-400/year)
+        signtool sign /f cert.pfx /p password MiniCozyRoom.exe
+  Note: Optional for indie games distributed via itch.io/Steam
+
+Installer Creation:
+  NSIS (Nullsoft Scriptable Install System):
+    - Free and open source
+    - Creates .exe installer with wizard
+    - Handles Start Menu shortcuts, uninstaller
+
+  Inno Setup:
+    - Free, widely used
+    - Easy script-based configuration
+    - Professional-looking installer
+
+  Example Inno Setup script:
+    [Setup]
+    AppName=Mini Cozy Room
+    AppVersion=1.0.0
+    DefaultDirName={autopf}\MiniCozyRoom
+    OutputBaseFilename=MiniCozyRoom-Setup
+    Compression=lzma2
+    SolidCompression=yes
+
+    [Files]
+    Source: "build\MiniCozyRoom.exe"; DestDir: "{app}"
+    Source: "build\MiniCozyRoom.pck"; DestDir: "{app}"
+
+    [Icons]
+    Name: "{group}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"
+    Name: "{commondesktop}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"
+```
+
+### macOS
+
+```
+Output:  MiniCozyRoom.app (application bundle)
+
+Bundle structure:
+  MiniCozyRoom.app/
+  └── Contents/
+      ├── Info.plist        (metadata: name, version, icon)
+      ├── MacOS/
+      │   └── MiniCozyRoom  (executable binary)
+      ├── Resources/
+      │   ├── MiniCozyRoom.pck
+      │   └── icon.icns     (macOS icon format)
+      └── Frameworks/        (shared libraries if any)
+
+Code Signing & Notarization:
+  Required for: macOS Catalina and later (mandatory since 2020)
+  Without it:   "MiniCozyRoom.app is damaged and can't be opened"
+
+  Steps:
+  1. Get Apple Developer account ($99/year)
+  2. Create signing certificate in Xcode
+  3. Sign: codesign --deep -s "Developer ID" MiniCozyRoom.app
+  4. Notarize: xcrun notarytool submit MiniCozyRoom.zip --apple-id ...
+  5. Staple: xcrun stapler staple MiniCozyRoom.app
+
+DMG Creation:
+  hdiutil create -volname "Mini Cozy Room" -srcfolder MiniCozyRoom.app \
+    -ov -format UDZO MiniCozyRoom.dmg
+```
+
+### Linux
+
+```
+Output:  MiniCozyRoom.x86_64 (+ .pck or embedded)
+
+Distribution formats:
+
+  AppImage (recommended for indie games):
+    - Single file, runs on any Linux distro
+    - No installation needed
+    - Download → chmod +x → run
+    - Tool: appimagetool
+
+  Flatpak:
+    - Sandboxed distribution
+    - Available on Flathub (like an app store)
+    - More complex setup but wider reach
+
+  .deb / .rpm:
+    - Distro-specific packages
+    - Only worthwhile if targeting specific distro
+    - More work, less portable
+```
+
+### Web (HTML5)
+
+```
+Output:  MiniCozyRoom.html + .js + .wasm + .pck
+
+Requirements:
+  - HTTPS hosting (browsers require secure context for SharedArrayBuffer)
+  - Server must set these headers:
+    Cross-Origin-Opener-Policy: same-origin
+    Cross-Origin-Embedder-Policy: require-corp
+
+Limitations:
+  - No filesystem access (no file import dialog)
+  - No native file I/O (use IndexedDB via JavaScript bridge)
+  - Audio requires user interaction to start (browser policy)
+  - Larger download size (~20-40 MB)
+  - Performance: 60-80% of native
+  - Only GL Compatibility renderer works (our renderer! ✓)
+
+Our project consideration:
+  Mini Cozy Room COULD run as a web app because:
+  ✓ Uses GL Compatibility renderer
+  ✓ 2D only (no heavy GPU features)
+  ✗ File import feature won't work (already handled with OS.has_feature("web"))
+  ✗ SQLite plugin needs special web build
+```
+
+### Android
+
+```
+Output:  MiniCozyRoom.apk (direct install) or .aab (Google Play)
+
+Requirements:
+  - Android SDK + NDK
+  - Java JDK 17+
+  - Keystore for signing
+
+Export settings:
+  - Min SDK: 21 (Android 5.0) for maximum compatibility
+  - Target SDK: 34 (Android 14) for Google Play requirement
+  - Permissions: only what you need (INTERNET for Supabase)
+
+Google Play requirements:
+  - .aab format (not .apk) since August 2021
+  - Target SDK must be within 1 year of latest Android
+  - Privacy policy required
+  - App content rating
+  - $25 one-time developer fee
+```
+
+### iOS
+
+```
+Output:  MiniCozyRoom.ipa
+
+Requirements:
+  - macOS with Xcode (can't build iOS on Windows/Linux)
+  - Apple Developer account ($99/year)
+  - Provisioning profile
+  - Physical iOS device for testing (or simulator)
+
+App Store submission:
+  - App review process (1-7 days)
+  - Must follow Apple Human Interface Guidelines
+  - No other app stores allowed on iOS
+  - Apple takes 30% of revenue (15% for small businesses)
+```
+
+---
+
+## 4. How Real Companies Build Games
+
+### CI/CD Pipelines for Games
+
+```
+Developer commits code
+         │
+         ▼
+CI Pipeline triggers (GitHub Actions / GitLab CI / Jenkins)
+         │
+         ├── 1. Code Quality
+         │   ├── Lint GDScript (gdlint)
+         │   ├── Format check (gdformat)
+         │   └── Static analysis
+         │
+         ├── 2. Build
+         │   ├── Export for Windows
+         │   ├── Export for macOS
+         │   ├── Export for Linux
+         │   └── Export for Web
+         │
+         ├── 3. Test
+         │   ├── Unit tests (GdUnit4)
+         │   ├── Integration tests
+         │   └── Smoke test (does it launch?)
+         │
+         ├── 4. Security
+         │   ├── Secret scanning
+         │   ├── Dependency audit
+         │   └── License compliance
+         │
+         └── 5. Artifacts
+             ├── Upload builds as artifacts
+             ├── Generate changelog
+             └── Notify team (Slack/Discord)
+```
+
+### Our CI Pipeline
+
+```yaml
+# .github/workflows/ci.yml (simplified)
+name: CI
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install gdtoolkit==4.*
+      - run: gdlint v1/scripts/
+      - run: gdformat --check v1/scripts/
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with: { version: '4.5', include-templates: false }
+      - run: |
+          godot --headless --path v1 \
+            -s addons/gdUnit4/bin/GdUnitCmdTool.gd \
+            --add "res://tests/"
+```
+
+### Build Servers and Build Farms
+
+Large studios use dedicated build machines:
+
+```
+Build Farm:
+┌────────────┐  ┌────────────┐  ┌────────────┐
+│ Windows    │  │ macOS      │  │ Linux      │
+│ Build      │  │ Build      │  │ Build      │
+│ Server     │  │ Server     │  │ Server     │
+│            │  │ (Mac Mini) │  │            │
+│ Exports:   │  │ Exports:   │  │ Exports:   │
+│ .exe       │  │ .app       │  │ .x86_64    │
+│ .pck       │  │ .dmg       │  │ .AppImage  │
+└─────┬──────┘  └─────┬──────┘  └─────┬──────┘
+      │                │               │
+      └────────────────┼───────────────┘
+                       │
+                ┌──────▼──────┐
+                │  Artifact   │
+                │  Storage    │
+                │  (S3/GCS)   │
+                └──────┬──────┘
+                       │
+                ┌──────▼──────┐
+                │  QA Team    │
+                │  Downloads  │
+                │  and Tests  │
+                └─────────────┘
+```
+
+### Nightly Builds
+
+```
+Every night at 2 AM:
+  1. Fetch latest code from main branch
+  2. Build for all platforms
+  3. Run full test suite (including slow tests)
+  4. Generate build report
+  5. Email results to team
+
+Morning:
+  Team reads build report
+  Green ✓ = everything works
+  Red ✗ = someone broke the build yesterday → fix immediately
+```
+
+---
+
+## 5. Distribution Platforms
+
+### Steam
+
+The most popular PC distribution platform:
+
+```
+Steamworks Setup:
+  1. Register: partner.steamgames.com ($100 per game)
+  2. Create App: assign App ID
+  3. Configure: store page, screenshots, descriptions
+  4. Upload: using SteamCMD or Steam Build tools
+
+Build Upload:
+  # Using SteamCMD
+  steamcmd +login "username" +run_app_build "build_config.vdf" +quit
+
+  # build_config.vdf defines:
+  "AppBuild"
+  {
+    "AppID" "123456"
+    "Desc" "Version 1.0.0"
+    "ContentRoot" "./build/"
+    "BuildOutput" "./output/"
+    "Depots"
+    {
+      "123457"
+      {
+        "FileMapping"
+        {
+          "LocalPath" "windows/*"
+          "DepotPath" "."
+        }
+      }
+    }
+  }
+
+Steam Features for Developers:
+  - Achievements: Track player milestones
+  - Cloud Save: Sync saves across devices
+  - Workshop: User-generated content (room themes, decorations)
+  - Input: Gamepad remapping
+  - Beta branches: Test with subset of users
+  - Analytics: Play time, retention, concurrent players
+```
+
+### itch.io
+
+The indie-friendly distribution platform:
+
+```
+Distribution via Butler CLI:
+  # Install Butler
+  curl -L https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default \
+    | sudo tar xvz -C /usr/local/bin
+
+  # Push a build
+  butler push build/windows username/mini-cozy-room:windows
+  butler push build/linux username/mini-cozy-room:linux
+  butler push build/mac username/mini-cozy-room:mac
+
+  # Butler features:
+  - Delta patches (only uploads changed files)
+  - Versioning (automatic version tracking)
+  - Channels (windows, linux, mac, web)
+  - Instant rollback
+
+itch.io Benefits:
+  - No registration fee
+  - Developer sets revenue split (0-100%)
+  - Direct relationship with players
+  - No review process (publish instantly)
+  - Good for prototypes, demos, game jams
+```
+
+### GOG (Good Old Games)
+
+```
+- DRM-free (no online requirement)
+- Curation: GOG reviews and approves games
+- Galaxy SDK: Optional achievements, cloud saves
+- Revenue split: 70/30 (same as Steam)
+- Smaller audience but more dedicated
+```
+
+---
+
+## 6. Optimization for Release
+
+### Debug vs Release Builds
+
+```
+Debug Build:                    Release Build:
+├── Includes debugger symbols   ├── Stripped of debug info
+├── Assertions active           ├── Assertions disabled
+├── Verbose logging             ├── Minimal logging
+├── Unoptimized code            ├── Compiler optimizations (-O2)
+├── Larger file size (~80 MB)   ├── Smaller file size (~50 MB)
+├── Slower execution            ├── Faster execution
+└── Use for: development        └── Use for: distribution
+
+In Godot:
+  Debug: F5 in editor, or Export with Debug template
+  Release: Export with Release template + strip debug symbols
+```
+
+### Texture Compression
+
+Different platforms support different texture compression:
+
+```
+Platform       → Compression    → Quality → Size Reduction
+Windows/macOS  → S3TC (BC/DXT)  → Good    → 6:1
+Android        → ETC2           → Good    → 6:1
+iOS            → ASTC           → Best    → 4:1 to 36:1
+Web            → S3TC or ETC2   → Varies  → 6:1
+
+For pixel art:
+  IMPORTANT: Lossy compression can ruin pixel art!
+
+  Best approach for pixel art:
+  1. Keep textures as PNG (lossless)
+  2. Use NEAREST filtering (no interpolation)
+  3. Don't compress small textures (< 256x256)
+  4. For spritesheets: use ETC2/ASTC with highest quality
+
+In Godot Export Settings:
+  Textures → Compress Format → VRAM Compressed (for 3D/large textures)
+  or → Lossless (for pixel art)
+```
+
+### Audio Compression
+
+```
+Format   → Quality  → File Size → Use For
+WAV      → Perfect  → Large     → Short SFX (< 5 seconds)
+OGG      → Great    → Small     → Music, long audio, ambience
+MP3      → Good     → Small     → Music (Godot 4 supports import)
+
+Recommendation for our project:
+  SFX (click, notification): WAV (small files, instant playback)
+  Music tracks: OGG Vorbis at 128-192 kbps (good quality, small size)
+  Ambience loops: OGG Vorbis at 96-128 kbps (background, less critical)
+
+Conversion:
+  ffmpeg -i track.wav -c:a libvorbis -q:a 5 track.ogg   # Quality 5 (~160 kbps)
+  ffmpeg -i ambience.wav -c:a libvorbis -q:a 3 ambience.ogg  # Quality 3 (~112 kbps)
+```
+
+### File Size Reduction
+
+```
+Technique                  Savings    Effort
+Remove unused assets       10-50%     Low (just delete unused files)
+Compress textures          40-60%     Low (export setting)
+Compress audio to OGG      60-80%     Low (convert WAV → OGG)
+Use texture atlases        5-15%      Medium (combine sprites)
+Strip debug symbols        10-20%     None (export setting)
+Remove test files          1-5%       Low (exclude in export)
+Use .pck compression       5-15%      None (export setting)
+
+Our project estimate:
+  Development build: ~150 MB
+  Optimized release: ~40-60 MB
+```
+
+---
+
+## 7. Versioning and Updates
+
+### Semantic Versioning for Games
+
+```
+Version: MAJOR.MINOR.PATCH[-LABEL]
+
+Examples:
+  0.1.0-alpha    First playable prototype
+  0.5.0-beta     Feature-complete, needs testing
+  1.0.0          First public release
+  1.1.0          Added new room themes
+  1.1.1          Fixed crash bug
+  1.2.0          Added inventory system
+  2.0.0          Major redesign (save migration needed)
+
+Pre-release labels:
+  alpha:  Feature incomplete, bugs expected
+  beta:   Feature complete, bugs being fixed
+  rc.1:   Release candidate 1 (almost ready)
+  rc.2:   Release candidate 2 (fixed rc.1 bugs)
+```
+
+### Patch Delivery
+
+```
+Full Update:
+  Player downloads entire new build (50 MB)
+  Simple but wasteful
+
+Delta Update (patch):
+  Player downloads only what changed (2 MB)
+  Complex but efficient
+
+  Steam handles this automatically (depot diff)
+  itch.io Butler handles this automatically
+  Custom: use bsdiff/bspatch or xdelta3
+
+Save Compatibility:
+  Version 1.0 save → Version 1.1 game
+  MUST work! Use migration functions.
+
+  Version 1.0 save → Version 2.0 game
+  SHOULD work (with migration chain).
+  If impossible, display clear message to player.
+```
+
+---
+
+## 8. Legal and Business Requirements
+
+### Software Licenses
+
+```
+Your game uses third-party code and assets. Know the licenses!
+
+License          Can Sell?  Must Credit?  Must Open Source?
+MIT              ✓ Yes      ✓ Yes        ✗ No
+CC0              ✓ Yes      ✗ No         ✗ No
+CC-BY            ✓ Yes      ✓ Yes        ✗ No
+CC-BY-SA         ✓ Yes      ✓ Yes        ✓ Derivatives
+Apache 2.0       ✓ Yes      ✓ Yes        ✗ No
+GPL              ✓ Yes      ✓ Yes        ✓ All source code!
+Proprietary      Varies     Varies       N/A
+
+Our project:
+  Godot Engine: MIT (free, credit in About screen)
+  godot-sqlite: MIT (free, credit in About screen)
+  Kenney assets: CC0 (free, no credit needed)
+  Mixkit music: Free license (free, no credit needed)
+  Other assets: Check each one!
+
+IMPORTANT: GPL assets/code would require us to open-source
+our entire game. We specifically avoid GPL for this reason.
+```
+
+### Credits and Attribution
+
+```
+Create a CREDITS or LICENSES screen in your game:
+
+  Mini Cozy Room
+
+  Engine: Godot Engine (MIT License)
+          https://godotengine.org
+
+  Plugins:
+    godot-sqlite by 2shady4u (MIT License)
+
+  Art Assets:
+    Pixel UI Pack by Kenney (CC0)
+    Indoor Plants by Spring Chicken (CC0)
+    Tiny Town by Kenney (CC0)
+    Free Pixel Art Forest by Eder Muniz
+
+  Music:
+    Tracks from Mixkit (Free License)
+
+  Fonts:
+    [List fonts used]
+```
+
+### Privacy (GDPR)
+
+```
+If your game collects ANY user data (including Supabase cloud sync):
+
+Required:
+  1. Privacy Policy — What data you collect, why, and how
+  2. Consent — User must agree before data collection
+  3. Right to Delete — User can request data deletion
+  4. Data Minimization — Only collect what you need
+
+Our project:
+  - Supabase stores user account + save data → needs privacy policy
+  - Offline mode collects nothing → no privacy concern
+  - If publishing in EU: GDPR compliance mandatory
+```
+
+### Age Ratings
+
+```
+Platform    Rating System    Required?
+PC (Steam)  IARC             Free, self-assessment questionnaire
+Console     PEGI/ESRB        Paid, formal review ($$$)
+Mobile      IARC             Free via Google Play/App Store
+
+Our game: Likely rated PEGI 3 / ESRB E (Everyone)
+  - No violence
+  - No gambling
+  - No online chat
+  - No mature themes
+```
+
+---
+
+## 9. Real-World Build Pipeline Example
+
+### From Commit to Player Download
+
+Here's a complete example of a professional indie build pipeline:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  STEP 1: Developer pushes code to GitHub                 │
+│                                                          │
+│  $ git add scripts/autoload/audio_manager.gd             │
+│  $ git commit -m "feat: add crossfade to audio player"   │
+│  $ git push origin feature/audio-crossfade               │
+└────────────────────┬────────────────────────────────────┘
+                     │ GitHub webhook triggers CI
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  STEP 2: CI runs quality checks                          │
+│                                                          │
+│  ├── gdlint v1/scripts/ .............. ✓ No issues      │
+│  ├── gdformat --check v1/scripts/ .... ✓ Formatted      │
+│  ├── security scan ................... ✓ No secrets      │
+│  └── unit tests ...................... ✓ 24/24 passed    │
+└────────────────────┬────────────────────────────────────┘
+                     │ All checks pass
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  STEP 3: Pull Request reviewed and merged                │
+│                                                          │
+│  Reviewer checks:                                        │
+│  ├── Code quality ................... ✓ Approved         │
+│  ├── Test coverage .................. ✓ Tests added      │
+│  └── Documentation .................. ✓ Updated          │
+│                                                          │
+│  → Merged to main branch                                 │
+└────────────────────┬────────────────────────────────────┘
+                     │ Merge to main triggers build
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  STEP 4: Build pipeline exports for all platforms        │
+│                                                          │
+│  ┌──────────────────────────────────────────────┐        │
+│  │  GitHub Actions Runner (Ubuntu)               │        │
+│  │                                                │        │
+│  │  1. Install Godot 4.5 headless                 │        │
+│  │  2. Import project (generate .import files)    │        │
+│  │  3. Export:                                     │        │
+│  │     ├── Windows: godot --export-release         │        │
+│  │     │            "Windows Desktop"              │        │
+│  │     │            build/windows/MiniCozyRoom.exe │        │
+│  │     │                                           │        │
+│  │     ├── Linux: godot --export-release            │        │
+│  │     │          "Linux/X11"                       │        │
+│  │     │          build/linux/MiniCozyRoom.x86_64   │        │
+│  │     │                                            │        │
+│  │     └── Web: godot --export-release               │        │
+│  │              "Web"                                │        │
+│  │              build/web/MiniCozyRoom.html          │        │
+│  │                                                    │        │
+│  │  4. Upload artifacts to GitHub Releases            │        │
+│  └────────────────────────────────────────────────┘    │
+└────────────────────┬────────────────────────────────────┘
+                     │ Builds available
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  STEP 5: Distribution                                    │
+│                                                          │
+│  ├── itch.io: butler push build/windows user/game:win    │
+│  ├── Steam: steamcmd +run_app_build config.vdf           │
+│  └── Website: upload web build to hosting                │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  STEP 6: Player downloads and plays!                     │
+│                                                          │
+│  Player → itch.io/Steam/website → Downloads → Plays 🎮   │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Automated GitHub Actions Export
+
+```yaml
+# .github/workflows/export.yml
+name: Export Game
+on:
+  push:
+    tags: ['v*']  # Only on version tags (v1.0.0, v1.1.0, etc.)
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [windows, linux, web]
+        include:
+          - platform: windows
+            preset: "Windows Desktop"
+            extension: exe
+          - platform: linux
+            preset: "Linux/X11"
+            extension: x86_64
+          - platform: web
+            preset: "Web"
+            extension: html
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: '4.5'
+          include-templates: true
+
+      - name: Import project
+        run: godot --headless --path v1 --import
+
+      - name: Export
+        run: |
+          mkdir -p build/${{ matrix.platform }}
+          godot --headless --path v1 \
+            --export-release "${{ matrix.preset }}" \
+            ../build/${{ matrix.platform }}/MiniCozyRoom.${{ matrix.extension }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: build/${{ matrix.platform }}
+
+  release:
+    needs: export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            windows-build/*
+            linux-build/*
+            web-build/*
+```
+
+---
+
+## 10. Godot 4.5 Specific Export Notes
+
+### GL Compatibility Renderer
+
+```
+Our project uses GL Compatibility, which means:
+
+Pros:
+  ✓ Maximum hardware compatibility
+  ✓ Works on old integrated GPUs
+  ✓ Required for Web export (no Vulkan in browsers yet)
+  ✓ Lower VRAM usage
+
+Cons:
+  ✗ No advanced lighting (GI, SSR, SSAO)
+  ✗ No compute shaders
+  ✗ Limited post-processing
+
+For Mini Cozy Room: Perfect choice. We don't need 3D features.
+```
+
+### GDExtension Bundling (godot-sqlite)
+
+```
+Our project uses godot-sqlite, which is a GDExtension (native plugin).
+This requires special handling during export:
+
+The plugin provides platform-specific binaries:
+  addons/godot-sqlite/bin/
+  ├── libgdsqlite.windows.template_release.x86_64.dll
+  ├── libgdsqlite.linux.template_release.x86_64.so
+  ├── libgdsqlite.macos.template_release.framework/
+  └── libgdsqlite.web.template_release.wasm32.wasm  (if available)
+
+Export checklist:
+  ✓ All platform .dll/.so/.dylib files included in PCK
+  ✓ .gdextension file correctly references all platforms
+  ✓ Test export on each target platform
+  ✗ Web export may not support SQLite (check plugin status)
+
+If web doesn't support SQLite:
+  - Use feature tag: OS.has_feature("web")
+  - Fallback to JSON-only persistence on web
+  - Our project already has this fallback (JSON is primary)
+```
+
+### Export Troubleshooting
+
+```
+Common issues:
+
+1. "No export template found"
+   Fix: Editor → Export → Manage Templates → Download
+
+2. "Resource not found" at runtime
+   Fix: Check export filters — is the file included?
+   Check: .gdextension, .json, .wav files in export list
+
+3. Crash on launch (release build only)
+   Fix: Test with debug template first
+   Check: Are there debug-only code paths? (print statements in _process)
+
+4. "Cannot open database" (SQLite)
+   Fix: Ensure .dll/.so is included in export
+   Check: .gdextension platform entries
+
+5. Web build shows blank screen
+   Fix: Check browser console (F12) for errors
+   Check: CORS headers on hosting server
+   Check: SharedArrayBuffer support (requires HTTPS + headers)
+```
+
+---
+
+## 11. Summary: Our Project's Build Strategy
+
+```
+Current State:
+  - Development in Godot 4.5 on Windows
+  - CI runs on GitHub Actions (lint + test)
+  - No automated export yet
+
+Recommended Build Pipeline:
+
+Phase 1 (Now):
+  ✓ Local development with F5 in Godot
+  ✓ CI linting and testing on push
+  ✓ Manual export for testing
+
+Phase 2 (Before release):
+  □ Add automated export to CI (GitHub Actions)
+  □ Export for Windows + Linux + Web
+  □ Test godot-sqlite on all platforms
+  □ Set up itch.io page
+
+Phase 3 (Release):
+  □ Tag version v1.0.0
+  □ CI automatically builds all platforms
+  □ Upload to itch.io via Butler
+  □ Create installer for Windows (Inno Setup)
+  □ Write credits/licenses screen
+  □ Privacy policy (if Supabase is enabled)
+
+Phase 4 (Post-release):
+  □ Delta patches via itch.io Butler
+  □ Save file migration for updates
+  □ Consider Steam if there's demand
+```
+
+---
+
+*Study document for Mini Cozy Room — IFTS Projectwork 2026*
+*Author: Renan Augusto Macena (System Architect & Project Supervisor)*
