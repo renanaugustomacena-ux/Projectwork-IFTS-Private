@@ -30,10 +30,10 @@ func _animate() -> void:
 			$AnimatedSprite2D.play(idle_anim)
 		return
 
-	# Flip horizontally for left-facing directions
+
 	$AnimatedSprite2D.flip_h = direction.x < 0.0
 
-	# Determine animation based on angle (8 directions, 45° each)
+
 	var angle := direction.angle()
 	var sector := int(round(angle / (PI / 4.0))) % 8
 	if sector < 0:
@@ -41,16 +41,13 @@ func _animate() -> void:
 
 	var anim: StringName
 	match sector:
-		0:  anim = &"walk_side"       # right
-		1:  anim = &"walk_side_down"  # down-right
-		2:  anim = &"walk_down"       # down
-		3:  anim = &"walk_side_down"  # down-left  (flip_h)
-		4:  anim = &"walk_side"       # left        (flip_h)
-		5:  anim = &"walk_side_up"    # up-left     (flip_h)
-		6:  anim = &"walk_up"         # up
-		7:  anim = &"walk_side_up"    # up-right
+		0:  anim = &"walk_side"     
+		1:  anim = &"walk_side_down"  
+		2:  anim = &"walk_down"       
+		3:  anim = &"walk_side_down"  
+		4:  anim = &"walk_side"       
+		5:  anim = &"walk_side_up"   
+		6:  anim = &"walk_up"         
+		7:  anim = &"walk_side_up"    
 
 	$AnimatedSprite2D.play(anim)
-
-		
-	
