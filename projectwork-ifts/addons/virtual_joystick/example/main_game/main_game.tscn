@@ -1,7 +1,7 @@
 [gd_scene format=4 uid="uid://mt0anxmbxo5i"]
 
 [ext_resource type="Script" uid="uid://dwofp2brnrl3w" path="res://addons/virtual_joystick/example/main_game/main_game.gd" id="1_0trw8"]
-[ext_resource type="PackedScene" uid="uid://bolodsplnqnqu" path="res://addons/virtual_joystick/virtual_joystick.tscn" id="2_0trw8"]
+[ext_resource type="PackedScene" uid="uid://bolodsplnqnqu" path="res://scenes/virtual_joystick.tscn" id="2_0trw8"]
 [ext_resource type="PackedScene" uid="uid://witp0ek2at6a" path="res://addons/virtual_joystick/example/joystick_settings/joystick_settings.tscn" id="2_dodw8"]
 [ext_resource type="Texture2D" uid="uid://pat8fw4cyb4v" path="res://addons/virtual_joystick/example/main_game/tileset.png" id="3_0trw8"]
 [ext_resource type="PackedScene" uid="uid://c2yu8rdqmanb0" path="res://addons/virtual_joystick/example/player/player.tscn" id="4_xpb0r"]

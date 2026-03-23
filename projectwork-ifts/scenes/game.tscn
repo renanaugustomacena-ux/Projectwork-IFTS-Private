@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://uufc8r5qr7pa" path="res://scenes/room.tscn" id="1_yqjtg"]
 [ext_resource type="PackedScene" uid="uid://cboy4uryuyrwc" path="res://scenes/male-character.tscn" id="2_lnu2h"]
-[ext_resource type="PackedScene" uid="uid://bolodsplnqnqu" path="res://addons/virtual_joystick/virtual_joystick.tscn" id="3_lnu2h"]
+[ext_resource type="PackedScene" uid="uid://bolodsplnqnqu" path="res://scenes/virtual_joystick.tscn" id="3_lnu2h"]
 
 [node name="Game" type="Node2D" unique_id=1822793542]
 
