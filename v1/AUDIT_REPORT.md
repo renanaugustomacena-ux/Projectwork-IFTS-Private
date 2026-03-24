@@ -1426,7 +1426,10 @@ Queste non sono bug che causano crash, ma problemi nella struttura del codice ch
 
 ### 10.1 Aggiornamento Post-Correzione (24 Marzo 2026)
 
-Questa sottosezione documenta lo stato attuale dei problemi dopo le prime correzioni applicate al codebase. I problemi sono classificati come **CORRETTO** (risolto nel codice attuale), **PARZIALMENTE CORRETTO** (migliorato ma non completamente risolto), o **APERTO** (non ancora affrontato). Vengono inoltre aggiunti nuovi problemi scoperti durante la ri-analisi.
+Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni applicate al codebase. I problemi sono classificati come **CORRETTO** (risolto nel codice attuale), **PARZIALMENTE CORRETTO** (migliorato ma non completamente risolto), o **APERTO** (non ancora affrontato). Vengono inoltre aggiunti nuovi problemi scoperti durante la ri-analisi.
+
+> **Ultimo aggiornamento**: 24 Marzo 2026 (seconda revisione) — aggiornato lo stato di A4, A10, A11, A20, A21, A23,
+> AR4, AR5 e C5 dopo verifica del codice attuale. Corretti anche bug in auto-save e token refresh.
 
 #### Problemi CRITICI — Stato Aggiornato
 
@@ -1434,51 +1437,63 @@ Questa sottosezione documenta lo stato attuale dei problemi dopo le prime correz
 |---|-------|------|
 | C1 | **CORRETTO** | `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con **sia** `character_data` **che** `inventory_data` (riga 135-139). L'approccio signal-driven e' corretto e allineato con l'architettura. |
 | C2 | **CORRETTO** | Il backup ora verifica il risultato di `DirAccess.copy_absolute()` e logga l'errore con `AppLogger.error` se la copia fallisce (righe 114-116). Il salvataggio principale prosegue comunque. |
-| C3 | APERTO | La tabella `characters` usa ancora `account_id` come PRIMARY KEY. |
-| C4 | APERTO | Lo schema `inventario` ha ancora `coins` e `capacita` per ogni item. |
-| C5 | APERTO | Il mismatch array in `window_background.gd` non e' ancora stato corretto. |
-| C6 | APERTO | Il typo `sxt` in `characters.json` non e' ancora stato corretto. |
-| C7 | APERTO | `male_black_shirt` e' ancora incompleto nel catalogo. |
+| C3 | APERTO | La tabella `characters` usa ancora `account_id` come PRIMARY KEY. **Assegnato a Elia.** |
+| C4 | APERTO | Lo schema `inventario` ha ancora `coins` e `capacita` per ogni item. **Assegnato a Elia.** |
+| C5 | **CORRETTO** | Il codice attuale di `window_background.gd` (righe 37-49) gia' allinea correttamente gli array: quando `tex == null`, il `continue` salta **sia** `_layers.append()` **che** `_parallax_factors.append()`. Gli array sono sempre della stessa dimensione. |
+| C6 | APERTO | Il typo `sxt` in `characters.json` non e' ancora stato corretto. **Assegnato a Mohamed/Giovanni.** |
+| C7 | APERTO | `male_black_shirt` e' ancora incompleto nel catalogo. **Assegnato a Mohamed/Giovanni.** |
 
 #### Problemi ALTI — Stato Aggiornato
 
 | # | Stato | Note |
 |---|-------|------|
-| A1 | APERTO | I 12 script mancano ancora di `_exit_tree()` correttamente implementato. |
-| A2 | APERTO | `music_panel.gd` crea ancora un nuovo `FileDialog` ad ogni click (riga 236-244). |
-| A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. |
-| A4-A7 | APERTO | Memory leak ambience e drag preview non corretti. |
+| A1 | APERTO | I 12 script mancano ancora di `_exit_tree()` correttamente implementato. **Assegnato a Mohamed/Giovanni (UI/scene scripts) e Cristian (logger, performance_manager).** |
+| A2 | APERTO | `music_panel.gd` crea ancora un nuovo `FileDialog` ad ogni click (riga 236-244). **Assegnato a Mohamed/Giovanni.** |
+| A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. **Assegnato a Mohamed/Giovanni.** |
+| A4 | **CORRETTO** | `AudioManager._exit_tree()` ora pulisce tutti gli ambience player con `stop()` e `queue_free()`, e `_stop_ambience()` verifica `is_instance_valid()` prima della distruzione. |
+| A5 | **CORRETTO** | `play()`, `next_track()` e `previous_track()` verificano tutti `tracks.is_empty()` prima dell'accesso. |
+| A6-A7 | APERTO | Memory leak drag preview in shop_panel e deco_panel non corretti. **Assegnato a Mohamed/Giovanni.** |
 | A8 | **CORRETTO** | `_compare_versions()` ora usa `split(".")`, gestisce versioni a lunghezza variabile, e usa `is_valid_int()` prima del cast (righe 310-321). Gestisce correttamente formati come "1.0.0-beta". |
 | A9 | **CORRETTO** | La migrazione v3→v4 ora valida la struttura dell'inventario: verifica la presenza delle chiavi `coins` e `items`, gestisce `items` non-Array, e logga un warning con reset dei dati corrotti (righe 280-296). |
-| A10-A18 | APERTO | Problemi SupabaseClient, Logger, PerformanceManager e database non corretti. |
+| A10 | **CORRETTO** | I token di autenticazione sono ora salvati con `ConfigFile.save_encrypted_pass()` usando una chiave derivata da `OS.get_unique_id()` e l'anon key. Esiste anche migrazione automatica dal vecchio formato plaintext (`_try_restore_legacy_session()`). |
+| A11 | **CORRETTO** | Il pool HTTP ha ora un limite massimo di `MAX_POOL_SIZE = 8` connessioni. `_get_available_http()` non crea nuove connessioni oltre il limite e attende il rilascio di una connessione esistente. Aggiunto anche `_is_refreshing` flag per prevenire race condition nel token refresh. |
+| A12-A13 | APERTO | Flush sincrono del logger e log persi se file non disponibile. **Assegnato a Cristian.** |
+| A14 | APERTO | Posizione finestra non persistita prima dello shutdown. **Assegnato a Cristian.** |
+| A15 | APERTO | Rimozione duplicati item_id rotta in decoration_system.gd. **Assegnato a Mohamed/Giovanni.** |
+| A16 | APERTO | Cast Texture2D unsafe in drop_zone.gd. **Assegnato a Mohamed/Giovanni.** |
+| A17-A18 | APERTO | Tabelle seed vuote e errore apertura DB non propagato. **Assegnato a Elia.** |
 
 #### Violazioni Architetturali — Stato Aggiornato
 
 | # | Stato | Note |
 |---|-------|------|
+| AR1 | **CORRETTO** | `GameManager` ora usa `SignalBus.save_requested.emit()` (riga 129) invece di chiamare direttamente `SaveManager.save_game()`. |
 | AR2 | **PARZIALMENTE CORRETTO** | `_save_to_sqlite()` ora usa `SignalBus.save_to_database_requested.emit()` invece di chiamare direttamente `LocalDatabase` (riga 136). Tuttavia, altre interazioni SaveManager→LocalDatabase (caricamento) restano dirette. |
-| AR1, AR3-AR11 | APERTO | Le altre violazioni architetturali non sono state affrontate. |
+| AR3 | **CORRETTO** | Il SaveManager non chiama piu' direttamente `AudioManager`. Lo stato audio viene sincronizzato tramite `SignalBus.load_completed` e `SignalBus.music_state_updated`. |
+| AR4 | **CORRETTO** | `AudioManager._on_volume_changed()` ora emette `SignalBus.settings_updated.emit()` (riga 307) invece di scrivere direttamente in `SaveManager.settings`. |
+| AR5 | **CORRETTO** | `AudioManager._sync_music_state()` ora emette `SignalBus.music_state_updated.emit()` (righe 332-336) invece di scrivere direttamente in `SaveManager.music_state`. |
+| AR6-AR11 | APERTO | PerformanceManager/settings_panel scrivono ancora direttamente in SaveManager.settings; mancano validazione dipendenze autoload, propagazione errori, sistema migrazione schema DB, schema errori SupabaseClient inconsistente. |
 
 #### Nuovi Problemi Scoperti (Ri-Analisi 24 Marzo 2026)
 
 La ri-analisi approfondita del codebase, condotta con le conoscenze acquisite dai documenti di studio (in particolare `GODOT_ENGINE_STUDY.md` sul ciclo di vita dei nodi e `GAME_DEV_PLANNING.md` sulle best practice), ha rivelato i seguenti problemi aggiuntivi:
 
-| # | File | Severita' | Problema | Spiegazione |
-|---|------|-----------|----------|-------------|
-| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena | Le funzioni `_play_intro()` (riga 39), `_on_walk_in_done()` (riga 47), `_on_opzioni()` (riga 80), `_close_settings()` (riga 93) e `_transition_to_scene()` (riga 108) creano tweens con `create_tween()` usando variabili locali senza salvarle come variabili membro. Quando la scena viene distrutta durante una transizione, questi tweens potrebbero tentare di operare su nodi gia' liberati. Come spiegato in `GODOT_ENGINE_STUDY.md` Sezione 7 (Tween), i tween creati con `create_tween()` sono legati al nodo e vengono uccisi automaticamente solo se il nodo esce dall'albero in modo pulito — ma durante un `change_scene_to_file()` rapido, la sequenza di distruzione potrebbe non essere garantita. **Soluzione**: Salvare i tween come variabili membro e ucciderli esplicitamente prima di avviare una nuova transizione, oppure aggiungere un `_exit_tree()` che li uccida. |
-| A20 | audio_manager.gd:19 | MEDIO | `active_ambience` e' un array pubblico mutabile | La variabile `active_ambience: Array = []` e' dichiarata come pubblica e mutabile. Qualsiasi script esterno puo' modificarla direttamente (`AudioManager.active_ambience.append("rain")`) senza che l'AudioManager ne sia informato, bypassando completamente la logica di gestione ambience. Come spiegato in `GAME_DEV_PLANNING.md` Sezione 4 (Errori Comuni), l'esposizione di stato mutabile interno e' un "code smell" che porta a bug difficili da rintracciare. **Soluzione**: Rendere la variabile privata (`var _active_ambience: Array = []`) e fornire metodi getter/setter controllati. |
-| A21 | audio_manager.gd:181 | MEDIO | Nessun limite dimensione in `_load_audio_stream()` per file esterni | Quando l'utente importa una traccia MP3/WAV esterna, `file.get_buffer(file.get_length())` carica l'intero file in memoria senza verificarne la dimensione. Un file audio di 2 GB verrebbe caricato interamente in RAM, probabilmente causando un crash per esaurimento memoria. Dato che il gioco e' un'applicazione desktop leggera (target ~50-100 MB RAM), un file enorme lo farebbe collassare. **Soluzione**: Aggiungere un controllo `if file.get_length() > MAX_AUDIO_FILE_SIZE:` con un limite ragionevole (es. 50 MB) e mostrare un messaggio all'utente. |
-| A22 | music_panel.gd:252-256 | MEDIO | `_exit_tree()` disconnette solo 2 segnali su 9+ connessi | La funzione `_exit_tree()` disconnette solo `track_changed` e `track_play_pause_toggled` dal SignalBus. Ma in `_build_ui()` vengono connessi almeno 7 segnali aggiuntivi tramite `button.pressed.connect()`: prev, play, next, mode, volume_changed, import, e i toggle ambience. Anche se i nodi figli (bottoni) vengono distrutti con il pannello, le connessioni ai segnali SignalBus e alle funzioni del pannello devono essere esplicitamente pulite per evitare warning nel debugger e potenziali reference leak. |
-| A23 | game_manager.gd:74 | BASSO | Variabile `data` non tipizzata nel parsing JSON | La riga `var data = json.data` non specifica il tipo. Secondo le best practice GDScript documentate in `GODOT_ENGINE_STUDY.md` Sezione 4 (Type System), tutte le variabili dovrebbero avere type hint espliciti per prevenire errori a runtime e migliorare l'autocompletamento nell'editor. **Soluzione**: `var data: Variant = json.data` o meglio `var data: Dictionary = json.data as Dictionary` con null check. |
+| # | File | Severita' | Problema | Stato |
+|---|------|-----------|----------|-------|
+| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena. Le funzioni `_play_intro()`, `_on_walk_in_done()`, `_on_opzioni()`, `_close_settings()` e `_transition_to_scene()` creano tweens con variabili locali senza salvarle come variabili membro. **Soluzione**: Salvare i tween come variabili membro e ucciderli esplicitamente in `_exit_tree()`. | APERTO — **Assegnato a Mohamed/Giovanni.** |
+| A20 | audio_manager.gd | MEDIO | `active_ambience` era un array pubblico mutabile. | **CORRETTO** — Rinominato in `_active_ambience` (privato), aggiunto `get_active_ambience()` getter che ritorna una copia. `music_panel.gd` aggiornato per usare il getter. |
+| A21 | audio_manager.gd | MEDIO | Nessun limite dimensione in `_load_audio_stream()` per file esterni. | **CORRETTO** — Aggiunta costante `MAX_AUDIO_FILE_SIZE = 50 MB` e check prima di `get_buffer()`. File troppo grandi vengono rifiutati con errore. |
+| A22 | music_panel.gd | MEDIO | `_exit_tree()` disconnette solo 2 segnali su 9+ connessi. Le connessioni ai bottoni (prev, play, next, mode, volume, import, ambience toggle) non vengono pulite esplicitamente. | APERTO — **Assegnato a Mohamed/Giovanni.** |
+| A23 | game_manager.gd:74 | BASSO | Variabile `data` non tipizzata nel parsing JSON. | **CORRETTO** — Aggiunto type hint `var data: Variant = json.data`. |
 
 **Riepilogo aggiornato dei conteggi**:
 
 | Stato | CRITICI | ALTI | ARCHITETTURALI |
 |-------|---------|------|----------------|
-| Corretti | 2 (C1, C2) | 2 (A8, A9) | 1 parziale (AR2) |
+| Corretti | 3 (C1, C2, C5) | 7 (A4, A5, A8, A9, A10, A11, A20+A21+A23 medi/bassi) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
 | Nuovi trovati | 0 | 1 (A19) | 0 |
-| Nuovi MEDI/BASSI | — | — | — |
-| Ancora aperti | 5 | 17 | 10 |
+| Ancora aperti (CRITICI) | 4 (C3, C4, C6, C7) | — | — |
+| Ancora aperti (ALTI) | — | 9 (A1, A2, A3, A6, A7, A12, A13, A14, A15, A16, A17, A18, A19) | 5 (AR6-AR11 meno AR8 gia' coperto) |
 
 ---
 

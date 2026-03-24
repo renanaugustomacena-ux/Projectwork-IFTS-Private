@@ -24,6 +24,7 @@ var _token_expires_at: float = 0.0
 
 var _http_pool: Array[HTTPRequest] = []
 var _refresh_timer: Timer
+var _is_refreshing: bool = false
 
 
 func _ready() -> void:
@@ -138,7 +139,10 @@ func sign_out() -> void:
 func refresh_session() -> Dictionary:
 	if _refresh_token.is_empty() or not is_configured():
 		return _offline_error()
+	if _is_refreshing:
+		return {"error": "refresh_in_progress"}
 
+	_is_refreshing = true
 	AppLogger.debug("SupabaseClient", "Refreshing session")
 	var url := _base_url + "/auth/v1/token?grant_type=refresh_token"
 	var body := JSON.stringify({"refresh_token": _refresh_token})
@@ -151,6 +155,7 @@ func refresh_session() -> Dictionary:
 		AppLogger.warn("SupabaseClient", "Session refresh failed — clearing auth")
 		_clear_auth()
 
+	_is_refreshing = false
 	return result if result is Dictionary else {"error": "unexpected_response"}
 
 
@@ -163,7 +168,7 @@ func select(table: String, query_params: String = "") -> Array:
 	if not is_configured() or not _is_authenticated:
 		return []
 
-	var url := "%s/rest/v1/%s?%s" % [_base_url, table, query_params]
+	var url := "%s/rest/v1/%s?%s" % [_base_url, table.uri_encode(), query_params]
 	var result: Variant = await _http_get(url, _bearer_headers())
 
 	if result is Array:
@@ -176,7 +181,7 @@ func insert(table: String, data: Dictionary) -> Dictionary:
 	if not is_configured() or not _is_authenticated:
 		return _offline_error()
 
-	var url := "%s/rest/v1/%s" % [_base_url, table]
+	var url := "%s/rest/v1/%s" % [_base_url, table.uri_encode()]
 	var headers := _bearer_headers()
 	headers.append("Prefer: return=representation")
 	var result: Variant = await _post(url, JSON.stringify(data), headers)
@@ -188,7 +193,7 @@ func update(table: String, query_params: String, data: Dictionary) -> Dictionary
 	if not is_configured() or not _is_authenticated:
 		return _offline_error()
 
-	var url := "%s/rest/v1/%s?%s" % [_base_url, table, query_params]
+	var url := "%s/rest/v1/%s?%s" % [_base_url, table.uri_encode(), query_params]
 	var headers := _bearer_headers()
 	headers.append("Prefer: return=representation")
 	var result: Variant = await _patch(url, JSON.stringify(data), headers)
@@ -200,7 +205,7 @@ func delete(table: String, query_params: String) -> Dictionary:
 	if not is_configured() or not _is_authenticated:
 		return _offline_error()
 
-	var url := "%s/rest/v1/%s?%s" % [_base_url, table, query_params]
+	var url := "%s/rest/v1/%s?%s" % [_base_url, table.uri_encode(), query_params]
 	var result: Variant = await _delete_request(url, _bearer_headers())
 	return result if result is Dictionary else {}
 
@@ -210,7 +215,7 @@ func upsert(table: String, data: Dictionary) -> Dictionary:
 	if not is_configured() or not _is_authenticated:
 		return _offline_error()
 
-	var url := "%s/rest/v1/%s" % [_base_url, table]
+	var url := "%s/rest/v1/%s" % [_base_url, table.uri_encode()]
 	var headers := _bearer_headers()
 	headers.append("Prefer: return=representation,resolution=merge-duplicates")
 	var result: Variant = await _post(url, JSON.stringify(data), headers)

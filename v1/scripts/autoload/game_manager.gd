@@ -71,7 +71,7 @@ func _load_json(path: String) -> Dictionary:
 			)
 		)
 		return {}
-	var data = json.data
+	var data: Variant = json.data
 	if data is Dictionary:
 		return data
 	push_error("GameManager: expected Dictionary from %s, got %s" % [path, typeof(data)])

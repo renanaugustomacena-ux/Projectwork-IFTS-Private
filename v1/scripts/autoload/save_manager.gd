@@ -75,7 +75,7 @@ func _on_music_state_updated(state: Dictionary) -> void:
 
 
 func _on_auto_save() -> void:
-	if _save_dirty:
+	if _save_dirty and not _is_saving:
 		_save_dirty = false
 		save_game()
 

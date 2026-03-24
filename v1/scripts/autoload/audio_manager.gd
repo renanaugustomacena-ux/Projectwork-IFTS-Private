@@ -3,6 +3,7 @@
 extends Node
 
 const VOLUME_DB_FLOOR := -80.0
+const MAX_AUDIO_FILE_SIZE := 52_428_800  # 50 MB limit for external audio imports
 
 var tracks: Array = []
 var current_track_index: int = 0
@@ -15,8 +16,8 @@ var playlist_mode: String = "shuffle":  # "sequential", "shuffle", "repeat_one"
 		playlist_mode = value
 		_sync_music_state()
 
-# Active ambience sound IDs
-var active_ambience: Array = []
+# Active ambience sound IDs (private — use get_active_ambience() to read)
+var _active_ambience: Array = []
 
 # Volume levels (0.0 to 1.0, converted to dB for AudioStreamPlayer)
 var master_volume: float = 0.8
@@ -59,7 +60,7 @@ func _on_load_completed() -> void:
 	var state: Dictionary = SaveManager.music_state
 	current_track_index = state.get("current_track_index", 0)
 	playlist_mode = state.get("playlist_mode", "shuffle")
-	active_ambience = state.get("active_ambience", [])
+	_active_ambience = state.get("active_ambience", [])
 
 	if not tracks.is_empty():
 		current_track_index = clampi(current_track_index, 0, tracks.size() - 1)
@@ -70,7 +71,7 @@ func _on_load_completed() -> void:
 
 	_apply_music_volume()
 
-	for amb_id in active_ambience:
+	for amb_id in _active_ambience:
 		_start_ambience(amb_id)
 
 
@@ -178,6 +179,10 @@ func _load_audio_stream(path: String) -> AudioStream:
 			var file := FileAccess.open(path, FileAccess.READ)
 			if file == null:
 				return null
+			if file.get_length() > MAX_AUDIO_FILE_SIZE:
+				file.close()
+				push_error("AudioManager: file too large (%d bytes, max %d): %s" % [file.get_length(), MAX_AUDIO_FILE_SIZE, path])
+				return null
 			var buffer := file.get_buffer(file.get_length())
 			file.close()
 			var mp3_stream := AudioStreamMP3.new()
@@ -230,7 +235,10 @@ func _on_track_finished() -> void:
 	next_track()
 
 
-# TODO: Phase 5 — ambience UI currently reads active_ambience directly; expose via getter
+func get_active_ambience() -> Array:
+	return _active_ambience.duplicate()
+
+
 func _start_ambience(ambience_id: String) -> void:
 	if ambience_id in _ambience_players:
 		return  # Already playing
@@ -252,8 +260,8 @@ func _start_ambience(ambience_id: String) -> void:
 	add_child(player)
 	_ambience_players[ambience_id] = player
 
-	if ambience_id not in active_ambience:
-		active_ambience.append(ambience_id)
+	if ambience_id not in _active_ambience:
+		_active_ambience.append(ambience_id)
 	_sync_music_state()
 
 
@@ -279,7 +287,7 @@ func _stop_ambience(ambience_id: String) -> void:
 		return
 	var player: AudioStreamPlayer = _ambience_players[ambience_id]
 	_ambience_players.erase(ambience_id)
-	active_ambience.erase(ambience_id)
+	_active_ambience.erase(ambience_id)
 	if is_instance_valid(player):
 		player.stop()
 		player.queue_free()
@@ -332,8 +340,21 @@ func _sync_music_state() -> void:
 	SignalBus.music_state_updated.emit({
 		"current_track_index": current_track_index,
 		"playlist_mode": playlist_mode,
-		"active_ambience": active_ambience.duplicate(),
+		"active_ambience": _active_ambience.duplicate(),
 	})
+
+
+func _exit_tree() -> void:
+	if _crossfade_tween != null and _crossfade_tween.is_running():
+		_crossfade_tween.kill()
+		_crossfade_tween = null
+	for amb_id in _ambience_players.keys():
+		var player: AudioStreamPlayer = _ambience_players[amb_id]
+		if is_instance_valid(player):
+			player.stop()
+			player.queue_free()
+	_ambience_players.clear()
+	_active_ambience.clear()
 
 
 func _input(event: InputEvent) -> void:

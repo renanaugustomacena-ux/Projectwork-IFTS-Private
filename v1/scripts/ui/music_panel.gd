@@ -148,7 +148,7 @@ func _build_ambience_toggles() -> void:
 func _add_ambience_toggle(amb_id: String, amb_name: String) -> void:
 	var check := CheckButton.new()
 	check.text = amb_name
-	check.button_pressed = amb_id in AudioManager.active_ambience
+	check.button_pressed = amb_id in AudioManager.get_active_ambience()
 	check.toggled.connect(_on_ambience_toggle.bind(amb_id))
 	_ambience_container.add_child(check)
 
