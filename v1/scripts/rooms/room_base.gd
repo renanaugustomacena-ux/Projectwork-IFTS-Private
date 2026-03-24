@@ -101,6 +101,16 @@ func _spawn_decoration(item_id: String, pos: Vector2, item_scale: float) -> void
 		sprite.set_script(DecorationScript)
 		sprite.item_id = item_id
 
+	# Add collision so the character cannot walk through decorations
+	var body := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = texture.get_size()
+	shape.shape = rect
+	shape.position = texture.get_size() / 2.0
+	body.add_child(shape)
+	sprite.add_child(body)
+
 	decorations_container.add_child(sprite)
 
 

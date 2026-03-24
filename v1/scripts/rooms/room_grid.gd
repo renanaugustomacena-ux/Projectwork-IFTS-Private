@@ -5,6 +5,10 @@ extends Node2D
 const CELL_SIZE := 64
 const GRID_COLOR := Color(1.0, 1.0, 1.0, 0.12)
 const WALL_ZONE_RATIO := 0.4
+# Room.png 180x155 at scale 4, centered (640,360) → x=280..1000, y=50..670
+const ROOM_LEFT := 280.0
+const ROOM_RIGHT := 1000.0
+const ROOM_BOTTOM := 670.0
 
 
 func _ready() -> void:
@@ -24,12 +28,12 @@ func _draw() -> void:
 	var vp := Vector2(Constants.VIEWPORT_WIDTH, Constants.VIEWPORT_HEIGHT)
 	var floor_top := vp.y * WALL_ZONE_RATIO
 
-	var x := 0.0
-	while x <= vp.x:
-		draw_line(Vector2(x, floor_top), Vector2(x, vp.y), GRID_COLOR)
+	var x := ROOM_LEFT
+	while x <= ROOM_RIGHT:
+		draw_line(Vector2(x, floor_top), Vector2(x, ROOM_BOTTOM), GRID_COLOR)
 		x += CELL_SIZE
 
 	var y := floor_top
-	while y <= vp.y:
-		draw_line(Vector2(0, y), Vector2(vp.x, y), GRID_COLOR)
+	while y <= ROOM_BOTTOM:
+		draw_line(Vector2(ROOM_LEFT, y), Vector2(ROOM_RIGHT, y), GRID_COLOR)
 		y += CELL_SIZE

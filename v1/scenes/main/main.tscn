@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://d05ljvrafabtw"]
+[gd_scene load_steps=7 format=3 uid="uid://d05ljvrafabtw"]
 
 [ext_resource type="Script" uid="uid://c7xwqp5iegw1n" path="res://scripts/rooms/room_base.gd" id="1_room"]
 [ext_resource type="Script" uid="uid://v4251evgwcg2" path="res://scripts/main.gd" id="2_main"]
@@ -7,24 +7,13 @@
 [ext_resource type="Texture2D" path="res://assets/room/room.png" id="6_room_bg"]
 [ext_resource type="Script" path="res://scripts/rooms/room_grid.gd" id="7_grid"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_top"]
-size = Vector2(1280, 20)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_bottom"]
-size = Vector2(1280, 20)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_left"]
-size = Vector2(20, 410)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_right"]
-size = Vector2(20, 410)
 
 [node name="Main" type="Node2D"]
 script = ExtResource("2_main")
 
 [node name="RoomBackground" type="Sprite2D" parent="."]
 position = Vector2(640, 360)
-scale = Vector2(8, 8)
+scale = Vector2(4, 4)
 texture = ExtResource("6_room_bg")
 texture_filter = 0
 
@@ -63,25 +52,12 @@ position = Vector2(8, 25)
 
 [node name="Character" parent="Room" instance=ExtResource("5_char")]
 position = Vector2(640, 450)
-scale = Vector2(4, 4)
 
 [node name="RoomBounds" type="StaticBody2D" parent="Room"]
 
-[node name="TopWall" type="CollisionShape2D" parent="Room/RoomBounds"]
-position = Vector2(640, 280)
-shape = SubResource("RectangleShape2D_top")
-
-[node name="BottomWall" type="CollisionShape2D" parent="Room/RoomBounds"]
-position = Vector2(640, 680)
-shape = SubResource("RectangleShape2D_bottom")
-
-[node name="LeftWall" type="CollisionShape2D" parent="Room/RoomBounds"]
-position = Vector2(10, 485)
-shape = SubResource("RectangleShape2D_left")
-
-[node name="RightWall" type="CollisionShape2D" parent="Room/RoomBounds"]
-position = Vector2(1270, 485)
-shape = SubResource("RectangleShape2D_right")
+[node name="FloorBounds" type="CollisionPolygon2D" parent="Room/RoomBounds"]
+build_mode = 1
+polygon = PackedVector2Array(460, 290, 980, 365, 980, 655, 300, 655)
 
 [node name="RoomGrid" type="Node2D" parent="."]
 script = ExtResource("7_grid")
@@ -96,7 +72,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
+mouse_filter = 1
 script = ExtResource("3_dropzone")
 
 [node name="HUD" type="HBoxContainer" parent="UILayer"]

@@ -7,8 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://chkit1s0fmubi" path="res://assets/charachters/female/female_red_shirt/female_walk.png" id="4_c052x"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_x467g"]
-radius = 4.0
-height = 14.0
+radius = 16.0
+height = 56.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_pnd63"]
 atlas = ExtResource("1_gvmuv")
@@ -570,14 +570,16 @@ animations = [{
 }]
 
 [node name="CharacterBody2D" type="CharacterBody2D" unique_id=1587920895]
+motion_mode = 1
 script = ExtResource("1_ctrl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1037680944]
-position = Vector2(0, 2)
+position = Vector2(0, 8)
 shape = SubResource("CapsuleShape2D_x467g")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=217503388]
 texture_filter = 0
+scale = Vector2(4, 4)
 sprite_frames = SubResource("SpriteFrames_wxp6x")
 animation = &"idle_down"
 autoplay = "idle_down"

@@ -51,7 +51,7 @@ Main (Node2D)
 ├── Room (Node2D, room_base.gd)
 │   ├── Decorations (Node2D)
 │   ├── Character (CharacterBody2D, istanza da male/female-character.tscn)
-│   └── RoomBounds (StaticBody2D, 4 CollisionShape2D)
+│   └── RoomBounds (StaticBody2D, CollisionPolygon2D isometrico)
 ├── UILayer (CanvasLayer, layer=10)
 │   ├── DropZone (Control, full rect)
 │   └── HUD (HBoxContainer)
@@ -174,7 +174,8 @@ dal pannello Decorazioni in modalita' creativa libera.
 | Ragazzo Classico | male_old | Direzionale (8 direzioni, idle + walk) |
 
 Il personaggio e controllabile con **WASD / frecce direzionali** nella stanza di gioco,
-confinato dai bordi della stanza tramite `RoomBounds` (StaticBody2D con 4 collision shape).
+confinato dai bordi della stanza tramite `RoomBounds` (StaticBody2D con CollisionPolygon2D isometrico).
+Il movimento usa `move_and_slide()` con `motion_mode = FLOATING` (top-down).
 
 ### Musica (2 tracce)
 
@@ -256,6 +257,22 @@ Container di build: `barichello/godot-ci:4.5`
 | 4 | Core Game Loop, Audio, Desktop Polish | Completata |
 | 5 | Catalogo Decorazioni e Polish UI | In Corso |
 | 6 | Polish e Rilascio | Pianificata |
+
+## Problemi Noti
+
+| # | Problema | Dettaglio |
+|---|---------|-----------|
+| 1 | **Confini movimento personaggio** | Il personaggio puo' ancora uscire dai limiti del pavimento isometrico. Il CollisionPolygon2D (build_mode SEGMENTS) necessita di calibrazione/verifica per bloccare correttamente il CharacterBody2D all'interno della forma del pavimento. |
+| 2 | **Popup decorazioni piazzate** | Cliccando su una decorazione piazzata nella stanza, non appare nessun popup per eliminare o ruotare l'oggetto. Attualmente il sistema supporta solo right-click per rimuovere. |
+
+## Prossimi Sviluppi
+
+| # | Task | Priorita | Descrizione |
+|---|------|----------|-------------|
+| 1 | Risolvere confini movimento | Alta | Calibrare il CollisionPolygon2D isometrico oppure usare un approccio alternativo (muri ruotati, NavigationRegion2D) per confinare il personaggio nell'area pavimento |
+| 2 | Rotazione decorazioni | Media | Aggiungere la possibilita' di ruotare le decorazioni piazzate (popup o shortcut) |
+| 3 | Ridimensionamento decorazioni | Media | Aggiungere la possibilita' di scalare le decorazioni piazzate |
+| 4 | Popup interazione decorazioni | Media | Click su decorazione piazzata → popup con pulsanti Elimina / Ruota / Ridimensiona |
 
 ## Asset e Licenze
 

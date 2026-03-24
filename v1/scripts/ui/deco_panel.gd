@@ -143,28 +143,26 @@ func _create_drag_button(
 		)
 	)
 
-	btn.gui_input.connect(_on_button_gui_input.bind(btn))
+	btn.set_drag_forwarding(_forward_drag_data.bind(btn), Callable(), Callable())
 	return btn
 
 
-func _on_button_gui_input(event: InputEvent, btn: Button) -> void:
-	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		var drag_data: Dictionary = btn.get_meta("drag_data", {})
-		if drag_data.is_empty():
-			return
+func _forward_drag_data(_at_position: Vector2, btn: Button) -> Variant:
+	var drag_data: Dictionary = btn.get_meta("drag_data", {})
+	if drag_data.is_empty():
+		return null
 
-		# Create drag preview
-		var preview := TextureRect.new()
-		var tex := load(drag_data.get("sprite_path", "")) as Texture2D
-		if tex:
-			preview.texture = tex
-			preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			var preview_scale: float = drag_data.get("item_scale", 1.0)
-			var tex_size := tex.get_size()
-			preview.custom_minimum_size = tex_size * preview_scale * 0.5
-			preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var preview := TextureRect.new()
+	var tex := load(drag_data.get("sprite_path", "")) as Texture2D
+	if tex:
+		preview.texture = tex
+		preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		var preview_scale: float = drag_data.get("item_scale", 1.0)
+		preview.custom_minimum_size = tex.get_size() * preview_scale * 0.5
+		preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
-		btn.force_drag(drag_data, preview)
+	btn.set_drag_preview(preview)
+	return drag_data
 
 
 func _on_category_toggled(cat_id: String) -> void:
