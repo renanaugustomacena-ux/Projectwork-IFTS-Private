@@ -386,7 +386,7 @@ func _get_available_http() -> HTTPRequest:
 
 
 func _http_get(url: String, headers: PackedStringArray) -> Variant:
-	var http := _get_available_http()
+	var http := await _get_available_http()
 	var err := http.request(url, headers, HTTPClient.METHOD_GET)
 	if err != OK:
 		AppLogger.error("SupabaseClient", "GET request failed to start", {"error": err})
@@ -396,7 +396,7 @@ func _http_get(url: String, headers: PackedStringArray) -> Variant:
 
 
 func _post(url: String, body: String, headers: PackedStringArray) -> Variant:
-	var http := _get_available_http()
+	var http := await _get_available_http()
 	var err := http.request(url, headers, HTTPClient.METHOD_POST, body)
 	if err != OK:
 		AppLogger.error("SupabaseClient", "POST request failed to start", {"error": err})
@@ -406,7 +406,7 @@ func _post(url: String, body: String, headers: PackedStringArray) -> Variant:
 
 
 func _patch(url: String, body: String, headers: PackedStringArray) -> Variant:
-	var http := _get_available_http()
+	var http := await _get_available_http()
 	var err := http.request(url, headers, HTTPClient.METHOD_PATCH, body)
 	if err != OK:
 		AppLogger.error("SupabaseClient", "PATCH request failed to start", {"error": err})
@@ -416,7 +416,7 @@ func _patch(url: String, body: String, headers: PackedStringArray) -> Variant:
 
 
 func _delete_request(url: String, headers: PackedStringArray) -> Variant:
-	var http := _get_available_http()
+	var http := await _get_available_http()
 	var err := http.request(url, headers, HTTPClient.METHOD_DELETE)
 	if err != OK:
 		AppLogger.error("SupabaseClient", "DELETE request failed to start", {"error": err})
