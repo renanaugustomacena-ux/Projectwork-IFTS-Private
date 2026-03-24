@@ -31,7 +31,6 @@ func _wire_hud_buttons() -> void:
 		"MusicButton": "music",
 		"DecoButton": "deco",
 		"SettingsButton": "settings",
-		"ShopButton": "shop",
 	}
 
 	for button_name: String in button_map:

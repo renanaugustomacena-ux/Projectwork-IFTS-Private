@@ -1,5 +1,12 @@
 # Projectwork — Mini Cozy Room
 
+> **⚠️ ATTENZIONE COLLEGHI: Work in Progress**
+> Ciao a tutti! Vi ricordo che il progetto è un work in progress.
+> - **Documentazione:** Abbiamo tutta la documentazione necessaria all'interno delle cartelle `v1/study` e `c1/guide`. Dobbiamo tutti leggere e mantenere aggiornati questi documenti man mano che proseguiamo con i lavori.
+> - **Eventuali Errori:** Potrebbero esserci dei lievi errori al momento perché il codice generato automaticamente non è sempre perfetto. Tuttavia, abbiamo guide per correggere tutto e ottimi consigli per il lavoro futuro.
+> - **Struttura Repository:** Il repository è ora ben strutturato, più facile su cui lavorare e organizzato appositamente per lavorare in team con voi.
+> - **Branch Renan:** Il branch *Renan* contiene già tutto ciò che potete trovare nel branch *main* più piccolo.
+
 Desktop companion 2D realizzato con **Godot 4.5** (GDScript, GL Compatibility renderer).
 
 Un ambiente digitale rilassante che combina stanze pixel art personalizzabili, musica lo-fi
@@ -35,9 +42,9 @@ git checkout Renan
 │   ├── addons/            # Plugin (godot-sqlite v4.7)
 │   ├── assets/            # 1400+ asset (sprite, audio, UI, sfondi)
 │   ├── data/              # Cataloghi JSON + schema SQL
-│   ├── scenes/            # 9 scene Godot (.tscn)
-│   ├── scripts/           # 26 script GDScript
-│   └── tests/             # 5 test unitari (GdUnit4)
+│   ├── scenes/            # 8 scene Godot (.tscn)
+│   ├── scripts/           # 25 script GDScript
+│   └── tests/             # 4 test unitari (GdUnit4)
 └── README.md              # Questo file
 ```
 
@@ -49,9 +56,9 @@ git checkout Renan
 | Schema Database | [v1/data/README.md](v1/data/README.md) | JSON/SQLite/Supabase, 7 tabelle, RLS, migrazioni |
 | Plugin e Addon | [v1/addons/README.md](v1/addons/README.md) | godot-sqlite GDExtension v4.7, piattaforme supportate |
 | Asset Grafici e Audio | [v1/assets/README.md](v1/assets/README.md) | 1.422 file: sprite, audio, sfondi, UI, licenze |
-| Scene Godot | [v1/scenes/README.md](v1/scenes/README.md) | 9 scene .tscn, struttura nodi, flusso tra scene |
-| Script GDScript | [v1/scripts/README.md](v1/scripts/README.md) | 26 script, autoload, 21 segnali, moduli |
-| Test Unitari | [v1/tests/README.md](v1/tests/README.md) | 5 test GdUnit4, copertura moduli |
+| Scene Godot | [v1/scenes/README.md](v1/scenes/README.md) | 8 scene .tscn, struttura nodi, flusso tra scene |
+| Script GDScript | [v1/scripts/README.md](v1/scripts/README.md) | 25 script, autoload, 20 segnali, moduli |
+| Test Unitari | [v1/tests/README.md](v1/tests/README.md) | 4 test GdUnit4, copertura moduli |
 
 ## Contributori
 

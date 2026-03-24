@@ -124,9 +124,4 @@ custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Settings"
 
-[node name="ShopButton" type="Button" parent="UILayer/HUD"]
-custom_minimum_size = Vector2(60, 36)
-layout_mode = 2
-text = "Shop"
-
 [node name="AudioStreams" type="Node" parent="."]

@@ -24,8 +24,6 @@ signal decoration_mode_changed(active: bool)
 # UI signals
 signal panel_opened(panel_name: String)
 signal panel_closed(panel_name: String)
-signal shop_item_selected(item_id: String)
-
 # Save/Load signals
 signal save_requested
 signal save_completed

@@ -21,7 +21,7 @@ aperto in background come ambiente digitale rilassante.
 
 ### Pattern Principali
 
-- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (21 segnali)
+- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (20 segnali)
 - **Offline-first**: il salvataggio locale (JSON + SQLite) ha priorita; Supabase e opzionale
 - **Catalog-driven**: contenuti (stanze, decorazioni, personaggi, tracce) caricati da JSON
 - **Desktop companion**: FPS cap dinamico (60 fps in focus, 15 fps in background)
@@ -32,7 +32,7 @@ Caricati automaticamente in questo ordine da `project.godot`:
 
 | # | Autoload | Script | Responsabilita |
 |---|----------|--------|----------------|
-| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (21 segnali, disaccoppiamento moduli) |
+| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (20 segnali, disaccoppiamento moduli) |
 | 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID |
 | 3 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON |
 | 4 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v4.0.0 (auto-save 60s) |
@@ -57,8 +57,7 @@ Main (Node2D)
 │   └── HUD (HBoxContainer)
 │       ├── MusicButton
 │       ├── DecoButton
-│       ├── SettingsButton
-│       └── ShopButton
+│       └── SettingsButton
 ├── PanelManager (Node, creato programmaticamente)
 └── AudioStreams (Node)
 ```
@@ -98,30 +97,29 @@ v1/
 ├── data/                      # Cataloghi JSON + schema SQL
 │   ├── characters.json        #   3 personaggi giocabili
 │   ├── decorations.json       #   118 decorazioni in 14 categorie
-│   ├── rooms.json             #   4 stanze con 10 temi totali
+│   ├── rooms.json             #   1 stanza con 3 temi colore
 │   ├── tracks.json            #   2 tracce musicali
 │   └── supabase_migration.sql #   Schema DB Supabase (7 tabelle + RLS)
-├── scenes/                    # 9 scene Godot (.tscn)
+├── scenes/                    # 8 scene Godot (.tscn)
 │   ├── main/                  #   main.tscn (stanza di gioco)
 │   ├── menu/                  #   main_menu.tscn (menu principale)
-│   ├── ui/                    #   4 pannelli (music, deco, settings, shop)
+│   ├── ui/                    #   3 pannelli (music, deco, settings)
 │   ├── male-character.tscn    #   Scena personaggio maschile (CharacterBody2D)
 │   ├── female-character.tscn  #   Scena personaggio femminile (CharacterBody2D)
 │   └── cat_void.tscn          #   Animale domestico
-├── scripts/                   # 26 script GDScript
+├── scripts/                   # 25 script GDScript
 │   ├── autoload/              #   7 singleton (signal_bus, logger, game_manager, ...)
 │   ├── menu/                  #   Menu principale + personaggio walk-in
 │   ├── rooms/                 #   Stanza, decorazioni, sfondo, movimento personaggio
 │   ├── systems/               #   Performance manager
-│   ├── ui/                    #   Panel manager + 4 pannelli + drop zone
+│   ├── ui/                    #   Panel manager + 3 pannelli + drop zone
 │   ├── utils/                 #   Constants, helpers, env_loader
 │   └── main.gd                #   Controller scena principale
-└── tests/unit/                # 5 test unitari (GdUnit4)
+└── tests/unit/                # 4 test unitari (GdUnit4)
     ├── test_helpers.gd
     ├── test_logger.gd
     ├── test_save_manager.gd
-    ├── test_save_manager_state.gd
-    └── test_shop_panel.gd
+    └── test_save_manager_state.gd
 ```
 
 ### Documentazione per Cartella
@@ -131,24 +129,22 @@ v1/
 | `addons/` | [README](addons/README.md) | Plugin godot-sqlite GDExtension v4.7, piattaforme binarie |
 | `assets/` | [README](assets/README.md) | 1.422 asset: sprite, audio, sfondi, UI, licenze |
 | `data/` | [README](data/README.md) | Schema database JSON/SQLite/Supabase, 7 tabelle, RLS |
-| `scenes/` | [README](scenes/README.md) | 9 scene Godot (.tscn), struttura nodi, flusso |
-| `scripts/` | [README](scripts/README.md) | 26 script GDScript, autoload, 21 segnali, moduli |
-| `tests/` | [README](tests/README.md) | 5 test unitari GdUnit4, copertura moduli |
+| `scenes/` | [README](scenes/README.md) | 8 scene Godot (.tscn), struttura nodi, flusso |
+| `scripts/` | [README](scripts/README.md) | 25 script GDScript, autoload, 20 segnali, moduli |
+| `tests/` | [README](tests/README.md) | 4 test unitari GdUnit4, copertura moduli |
 
 ## Contenuti di Gioco
 
-### Stanze (4)
+### Stanza
 
 | Stanza | ID | Temi Disponibili |
 |--------|----|-----------------|
-| Cozy Studio | cozy_studio | modern, natural |
-| Moonlight Study | moonlight_study | magic, modern, natural |
-| Nest Room | nest_room | modern, natural, pink |
-| Cozy Kitchen | cozy_kitchen | warm, modern |
+| Cozy Studio | cozy_studio | modern, natural, pink |
 
 La stanza non usa sfondi pre-fatti: e composta da due zone colorate (muro + pavimento)
-definite come palette nei temi. Gli oggetti vengono piazzati dall'utente tramite
-drag-and-drop dal pannello Decorazioni.
+definite come palette nei temi. L'utente puo' scegliere tra 3 temi colore per
+personalizzare l'ambiente. Gli oggetti vengono piazzati tramite drag-and-drop
+dal pannello Decorazioni in modalita' creativa libera.
 
 ### Decorazioni (118 oggetti, 14 categorie)
 
@@ -258,7 +254,7 @@ Container di build: `barichello/godot-ci:4.5`
 | 2 | Asset e Pixel Art (stanze, personaggi, UI) | Completata |
 | 3 | Stanza modulare, drag-and-drop, placement rules | Completata |
 | 4 | Core Game Loop, Audio, Desktop Polish | Completata |
-| 5 | Shop e Inventario (catalogo, browser) | In Corso |
+| 5 | Catalogo Decorazioni e Polish UI | In Corso |
 | 6 | Polish e Rilascio | Pianificata |
 
 ## Asset e Licenze

@@ -3,7 +3,7 @@
 **Data**: 21 Marzo 2026 (Aggiornamento: 24 Marzo 2026)
 **Versione Progetto**: Godot 4.5 | GDScript | GL Compatibility
 **Autore**: Renan Augusto Macena
-**Ambito**: Analisi completa di 26 script, 9 scene, 5 file dati, 5 test, 3 workflow CI
+**Ambito**: Analisi completa di 25 script, 8 scene, 5 file dati, 4 test, 3 workflow CI
 
 > **Nota sull'Aggiornamento del 24 Marzo 2026**: Dopo la prima stesura dell'audit, il codebase e' stato
 > parzialmente corretto. Questo aggiornamento riflette lo stato attuale: i problemi risolti sono marcati
@@ -1428,8 +1428,10 @@ Queste non sono bug che causano crash, ma problemi nella struttura del codice ch
 
 Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni applicate al codebase. I problemi sono classificati come **CORRETTO** (risolto nel codice attuale), **PARZIALMENTE CORRETTO** (migliorato ma non completamente risolto), o **APERTO** (non ancora affrontato). Vengono inoltre aggiunti nuovi problemi scoperti durante la ri-analisi.
 
-> **Ultimo aggiornamento**: 24 Marzo 2026 (seconda revisione) — aggiornato lo stato di A4, A10, A11, A20, A21, A23,
-> AR4, AR5 e C5 dopo verifica del codice attuale. Corretti anche bug in auto-save e token refresh.
+> **Ultimo aggiornamento**: 24 Marzo 2026 (terza revisione) — semplificazione design: rimosso concetto Shop
+> (shop_panel.gd, shop_panel.tscn, test_shop_panel.gd eliminati; segnale shop_item_selected rimosso),
+> ridotto a stanza singola cozy_studio con 3 temi (modern, natural, pink), griglia visuale limitata alla
+> zona pavimento. Aggiornati A6 e conteggi.
 
 #### Problemi CRITICI — Stato Aggiornato
 
@@ -1452,7 +1454,7 @@ Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni a
 | A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. **Assegnato a Mohamed/Giovanni.** |
 | A4 | **CORRETTO** | `AudioManager._exit_tree()` ora pulisce tutti gli ambience player con `stop()` e `queue_free()`, e `_stop_ambience()` verifica `is_instance_valid()` prima della distruzione. |
 | A5 | **CORRETTO** | `play()`, `next_track()` e `previous_track()` verificano tutti `tracks.is_empty()` prima dell'accesso. |
-| A6-A7 | APERTO | Memory leak drag preview in shop_panel e deco_panel non corretti. **Assegnato a Mohamed/Giovanni.** |
+| A6 | **PARZIALMENTE CORRETTO** | `shop_panel.gd` rimosso (shop eliminato dal design). Il memory leak drag preview in `deco_panel.gd` resta aperto. **Assegnato a Mohamed/Giovanni.** |
 | A8 | **CORRETTO** | `_compare_versions()` ora usa `split(".")`, gestisce versioni a lunghezza variabile, e usa `is_valid_int()` prima del cast (righe 310-321). Gestisce correttamente formati come "1.0.0-beta". |
 | A9 | **CORRETTO** | La migrazione v3→v4 ora valida la struttura dell'inventario: verifica la presenza delle chiavi `coins` e `items`, gestisce `items` non-Array, e logga un warning con reset dei dati corrotti (righe 280-296). |
 | A10 | **CORRETTO** | I token di autenticazione sono ora salvati con `ConfigFile.save_encrypted_pass()` usando una chiave derivata da `OS.get_unique_id()` e l'anon key. Esiste anche migrazione automatica dal vecchio formato plaintext (`_try_restore_legacy_session()`). |

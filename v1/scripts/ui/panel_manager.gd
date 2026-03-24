@@ -7,7 +7,6 @@ const PANEL_SCENES: Dictionary = {
 	"music": "res://scenes/ui/music_panel.tscn",
 	"deco": "res://scenes/ui/deco_panel.tscn",
 	"settings": "res://scenes/ui/settings_panel.tscn",
-	"shop": "res://scenes/ui/shop_panel.tscn",
 }
 
 var _ui_layer: CanvasLayer = null

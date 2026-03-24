@@ -3,16 +3,11 @@ class_name Constants
 
 # Room identifiers
 const ROOM_COZY_STUDIO := "cozy_studio"
-const ROOM_MOONLIGHT_STUDY := "moonlight_study"
-const ROOM_NEST_ROOM := "nest_room"
-const ROOM_COZY_KITCHEN := "cozy_kitchen"
 
 # Room themes
 const THEME_MODERN := "modern"
 const THEME_NATURAL := "natural"
 const THEME_PINK := "pink"
-const THEME_MAGIC := "magic"
-const THEME_WARM := "warm"
 
 # Character identifiers
 const CHAR_FEMALE_RED_SHIRT := "female_red_shirt"
