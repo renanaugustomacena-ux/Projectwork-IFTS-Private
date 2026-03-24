@@ -1,9 +1,15 @@
 # Audit Completo e Piano di Stabilizzazione — Mini Cozy Room
 
-**Data**: 21 Marzo 2026
+**Data**: 21 Marzo 2026 (Aggiornamento: 24 Marzo 2026)
 **Versione Progetto**: Godot 4.5 | GDScript | GL Compatibility
 **Autore**: Renan Augusto Macena
 **Ambito**: Analisi completa di 26 script, 9 scene, 5 file dati, 5 test, 3 workflow CI
+
+> **Nota sull'Aggiornamento del 24 Marzo 2026**: Dopo la prima stesura dell'audit, il codebase e' stato
+> parzialmente corretto. Questo aggiornamento riflette lo stato attuale: i problemi risolti sono marcati
+> come **CORRETTO**, i nuovi problemi scoperti durante la ri-analisi sono stati aggiunti, e le istruzioni
+> di correzione sono state arricchite con riferimenti ai documenti di studio del progetto (cartella `study/`).
+> Vedere la Sezione 10.1 per il riepilogo completo delle modifiche.
 
 ---
 
@@ -81,12 +87,14 @@
 8. [Risultati — Scene e Dati](#8-risultati--scene-e-dati)
 9. [Risultati — Test e CI/CD](#9-risultati--test-e-cicd)
 10. [Classificazione dei Problemi](#10-classificazione-dei-problemi)
+    - 10.1 [Aggiornamento Post-Correzione (24 Marzo 2026)](#101-aggiornamento-post-correzione-24-marzo-2026)
 11. [Piano di Stabilizzazione](#11-piano-di-stabilizzazione)
 12. [Istruzioni Dettagliate per Correzione](#12-istruzioni-dettagliate-per-correzione)
 13. [Verifica e Testing](#13-verifica-e-testing)
 14. [Riferimenti e Risorse](#14-riferimenti-e-risorse)
 15. [Riepilogo Statistico](#15-riepilogo-statistico)
 16. [Guide Operative per il Team](#16-guide-operative-per-il-team)
+17. [Pratiche di Sviluppo per Prevenire Errori](#17-pratiche-di-sviluppo-per-prevenire-errori)
 
 ---
 
@@ -823,20 +831,21 @@ Pensate a questo processo come alla visita medica completa di cui abbiamo parlat
 
 ### Aree di Competenza Analizzate
 
-Per ogni area, abbiamo usato come riferimento le guide di best practice (skill files) del progetto:
+Per ogni area, abbiamo usato come riferimento i documenti di studio del progetto (cartella `study/`):
 
-| Area Analizzata | Riferimento | Cosa Abbiamo Cercato |
-|-----------------|-------------|----------------------|
-| Ciclo di vita dei nodi | `godot-engine-core.md` | I nodi vengono creati e distrutti correttamente? Le risorse vengono liberate? |
-| Qualita' del codice GDScript | `gdscript-mastery.md` | Il codice usa type hints? Gestisce gli errori? E' robusto? |
-| Sistemi 2D | `godot-2d-systems.md` | Sprite, collisioni e trasformazioni sono corretti? |
-| Sistema UI | `godot-ui-ux.md` | I pannelli vengono puliti correttamente? Il drag-and-drop funziona? |
-| Rendering pixel art | `pixel-art-rendering.md` | I filtri texture sono corretti? Lo scaling e' intero? |
-| Audio | `godot-audio.md` | Il crossfade funziona? I volumi sono gestiti in dB? |
-| Persistenza dati | `godot-data-persistence.md` | I salvataggi sono affidabili? SQLite e' usato correttamente? Le migrazioni funzionano? |
-| Testing | `godot-testing.md` | I test coprono le aree critiche? Le asserzioni sono corrette? |
-| Performance | `godot-performance.md` | Il caching e' usato? I tween sono sicuri? |
-| Pattern architetturali | `godot-design-patterns.md` | Il SignalBus e' usato correttamente? Il dirty flag e' implementato? |
+| Area Analizzata | Documento di Riferimento | Cosa Abbiamo Cercato |
+|-----------------|--------------------------|----------------------|
+| Ciclo di vita dei nodi | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 5 | I nodi vengono creati e distrutti correttamente? Le risorse vengono liberate? |
+| Qualita' del codice GDScript | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 4 | Il codice usa type hints? Gestisce gli errori? E' robusto? |
+| Architettura del progetto | [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) | L'architettura signal-driven e' rispettata? I flussi dati sono corretti? |
+| Giochi isometrici | [ISOMETRIC_GAMES.md](study/ISOMETRIC_GAMES.md) | La proiezione, il depth sorting, e il movimento sono implementati correttamente? |
+| Sistema UI e pannelli | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 10 | I pannelli vengono puliti correttamente? Il drag-and-drop funziona? |
+| Audio e crossfade | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 11 | Il crossfade funziona? I volumi sono gestiti in dB? |
+| Persistenza dati | [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) + [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 8 | I salvataggi sono affidabili? SQLite e' usato correttamente? |
+| Testing | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) Sez. 5 | I test coprono le aree critiche? Le asserzioni sono corrette? |
+| Performance e tween | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 7, 14 | Il caching e' usato? I tween sono sicuri? |
+| Pattern architetturali | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) Sez. 4 | Il SignalBus e' usato correttamente? Il dirty flag e' implementato? |
+| Build e distribuzione | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) | L'export e' configurato correttamente? La CI/CD funziona? |
 
 ### Criteri di Classificazione
 
@@ -1412,6 +1421,64 @@ Queste non sono bug che causano crash, ma problemi nella struttura del codice ch
 | AR9 | Tutti i manager | Nessuna propagazione errori (tutto silenzioso) | Quando qualcosa va storto in un manager, l'errore viene ingoiato silenziosamente. I manager che dipendono da quel risultato non sanno che c'e' stato un problema. |
 | AR10 | local_database.gd | Nessun sistema migrazione schema | Non esiste un sistema strutturato per aggiornare lo schema del database quando il gioco viene aggiornato. Ogni modifica richiede interventi manuali in piu' punti del codice. |
 | AR11 | supabase_client.gd | Schema errori inconsistente tra funzioni | Ogni funzione gestisce e ritorna errori in modo diverso, rendendo impossibile un trattamento uniforme degli errori da parte del codice chiamante. |
+
+---
+
+### 10.1 Aggiornamento Post-Correzione (24 Marzo 2026)
+
+Questa sottosezione documenta lo stato attuale dei problemi dopo le prime correzioni applicate al codebase. I problemi sono classificati come **CORRETTO** (risolto nel codice attuale), **PARZIALMENTE CORRETTO** (migliorato ma non completamente risolto), o **APERTO** (non ancora affrontato). Vengono inoltre aggiunti nuovi problemi scoperti durante la ri-analisi.
+
+#### Problemi CRITICI — Stato Aggiornato
+
+| # | Stato | Note |
+|---|-------|------|
+| C1 | **CORRETTO** | `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con **sia** `character_data` **che** `inventory_data` (riga 135-139). L'approccio signal-driven e' corretto e allineato con l'architettura. |
+| C2 | **CORRETTO** | Il backup ora verifica il risultato di `DirAccess.copy_absolute()` e logga l'errore con `AppLogger.error` se la copia fallisce (righe 114-116). Il salvataggio principale prosegue comunque. |
+| C3 | APERTO | La tabella `characters` usa ancora `account_id` come PRIMARY KEY. |
+| C4 | APERTO | Lo schema `inventario` ha ancora `coins` e `capacita` per ogni item. |
+| C5 | APERTO | Il mismatch array in `window_background.gd` non e' ancora stato corretto. |
+| C6 | APERTO | Il typo `sxt` in `characters.json` non e' ancora stato corretto. |
+| C7 | APERTO | `male_black_shirt` e' ancora incompleto nel catalogo. |
+
+#### Problemi ALTI — Stato Aggiornato
+
+| # | Stato | Note |
+|---|-------|------|
+| A1 | APERTO | I 12 script mancano ancora di `_exit_tree()` correttamente implementato. |
+| A2 | APERTO | `music_panel.gd` crea ancora un nuovo `FileDialog` ad ogni click (riga 236-244). |
+| A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. |
+| A4-A7 | APERTO | Memory leak ambience e drag preview non corretti. |
+| A8 | **CORRETTO** | `_compare_versions()` ora usa `split(".")`, gestisce versioni a lunghezza variabile, e usa `is_valid_int()` prima del cast (righe 310-321). Gestisce correttamente formati come "1.0.0-beta". |
+| A9 | **CORRETTO** | La migrazione v3→v4 ora valida la struttura dell'inventario: verifica la presenza delle chiavi `coins` e `items`, gestisce `items` non-Array, e logga un warning con reset dei dati corrotti (righe 280-296). |
+| A10-A18 | APERTO | Problemi SupabaseClient, Logger, PerformanceManager e database non corretti. |
+
+#### Violazioni Architetturali — Stato Aggiornato
+
+| # | Stato | Note |
+|---|-------|------|
+| AR2 | **PARZIALMENTE CORRETTO** | `_save_to_sqlite()` ora usa `SignalBus.save_to_database_requested.emit()` invece di chiamare direttamente `LocalDatabase` (riga 136). Tuttavia, altre interazioni SaveManager→LocalDatabase (caricamento) restano dirette. |
+| AR1, AR3-AR11 | APERTO | Le altre violazioni architetturali non sono state affrontate. |
+
+#### Nuovi Problemi Scoperti (Ri-Analisi 24 Marzo 2026)
+
+La ri-analisi approfondita del codebase, condotta con le conoscenze acquisite dai documenti di studio (in particolare `GODOT_ENGINE_STUDY.md` sul ciclo di vita dei nodi e `GAME_DEV_PLANNING.md` sulle best practice), ha rivelato i seguenti problemi aggiuntivi:
+
+| # | File | Severita' | Problema | Spiegazione |
+|---|------|-----------|----------|-------------|
+| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena | Le funzioni `_play_intro()` (riga 39), `_on_walk_in_done()` (riga 47), `_on_opzioni()` (riga 80), `_close_settings()` (riga 93) e `_transition_to_scene()` (riga 108) creano tweens con `create_tween()` usando variabili locali senza salvarle come variabili membro. Quando la scena viene distrutta durante una transizione, questi tweens potrebbero tentare di operare su nodi gia' liberati. Come spiegato in `GODOT_ENGINE_STUDY.md` Sezione 7 (Tween), i tween creati con `create_tween()` sono legati al nodo e vengono uccisi automaticamente solo se il nodo esce dall'albero in modo pulito — ma durante un `change_scene_to_file()` rapido, la sequenza di distruzione potrebbe non essere garantita. **Soluzione**: Salvare i tween come variabili membro e ucciderli esplicitamente prima di avviare una nuova transizione, oppure aggiungere un `_exit_tree()` che li uccida. |
+| A20 | audio_manager.gd:19 | MEDIO | `active_ambience` e' un array pubblico mutabile | La variabile `active_ambience: Array = []` e' dichiarata come pubblica e mutabile. Qualsiasi script esterno puo' modificarla direttamente (`AudioManager.active_ambience.append("rain")`) senza che l'AudioManager ne sia informato, bypassando completamente la logica di gestione ambience. Come spiegato in `GAME_DEV_PLANNING.md` Sezione 4 (Errori Comuni), l'esposizione di stato mutabile interno e' un "code smell" che porta a bug difficili da rintracciare. **Soluzione**: Rendere la variabile privata (`var _active_ambience: Array = []`) e fornire metodi getter/setter controllati. |
+| A21 | audio_manager.gd:181 | MEDIO | Nessun limite dimensione in `_load_audio_stream()` per file esterni | Quando l'utente importa una traccia MP3/WAV esterna, `file.get_buffer(file.get_length())` carica l'intero file in memoria senza verificarne la dimensione. Un file audio di 2 GB verrebbe caricato interamente in RAM, probabilmente causando un crash per esaurimento memoria. Dato che il gioco e' un'applicazione desktop leggera (target ~50-100 MB RAM), un file enorme lo farebbe collassare. **Soluzione**: Aggiungere un controllo `if file.get_length() > MAX_AUDIO_FILE_SIZE:` con un limite ragionevole (es. 50 MB) e mostrare un messaggio all'utente. |
+| A22 | music_panel.gd:252-256 | MEDIO | `_exit_tree()` disconnette solo 2 segnali su 9+ connessi | La funzione `_exit_tree()` disconnette solo `track_changed` e `track_play_pause_toggled` dal SignalBus. Ma in `_build_ui()` vengono connessi almeno 7 segnali aggiuntivi tramite `button.pressed.connect()`: prev, play, next, mode, volume_changed, import, e i toggle ambience. Anche se i nodi figli (bottoni) vengono distrutti con il pannello, le connessioni ai segnali SignalBus e alle funzioni del pannello devono essere esplicitamente pulite per evitare warning nel debugger e potenziali reference leak. |
+| A23 | game_manager.gd:74 | BASSO | Variabile `data` non tipizzata nel parsing JSON | La riga `var data = json.data` non specifica il tipo. Secondo le best practice GDScript documentate in `GODOT_ENGINE_STUDY.md` Sezione 4 (Type System), tutte le variabili dovrebbero avere type hint espliciti per prevenire errori a runtime e migliorare l'autocompletamento nell'editor. **Soluzione**: `var data: Variant = json.data` o meglio `var data: Dictionary = json.data as Dictionary` con null check. |
+
+**Riepilogo aggiornato dei conteggi**:
+
+| Stato | CRITICI | ALTI | ARCHITETTURALI |
+|-------|---------|------|----------------|
+| Corretti | 2 (C1, C2) | 2 (A8, A9) | 1 parziale (AR2) |
+| Nuovi trovati | 0 | 1 (A19) | 0 |
+| Nuovi MEDI/BASSI | — | — | — |
+| Ancora aperti | 5 | 17 | 10 |
 
 ---
 
@@ -2693,25 +2760,28 @@ Per una verifica completa, eseguite i test in questo ordine:
 
 ## 14. Riferimenti e Risorse
 
-### Skill Files per Area di Correzione
+### Documenti di Studio del Progetto
 
-Ogni area del progetto ha un file di riferimento (skill file) con best practice e pattern consigliati:
+Il team ha a disposizione **5 documenti di studio** completi nella cartella [`study/`](study/), creati specificamente per fornire le conoscenze necessarie a comprendere e correggere i problemi trovati in questo audit. Ogni documento e' disponibile sia in inglese che in italiano.
 
-| Area di Correzione | Skill File | Sezioni Chiave da Consultare |
-|---------------------|-----------|------------------------------|
-| `_exit_tree()`, ciclo di vita nodi | `godot-engine-core.md` | "Node Lifecycle", "queue_free vs free" |
-| Segnali, disconnessione | `godot-engine-core.md` + `godot-design-patterns.md` | "Signals" + "Observer Pattern" |
-| Type hints, gestione errori | `gdscript-mastery.md` | "Type System", "Error Handling" |
-| Collision, CharacterBody2D | `godot-2d-systems.md` | "CharacterBody2D", "StaticBody2D" |
-| Ciclo di vita pannelli, drag-and-drop | `godot-ui-ux.md` | "Panel Lifecycle", "Drag-and-Drop" |
-| Filtri texture, scaling | `pixel-art-rendering.md` | "Texture Filtering", "Integer Scaling" |
-| Crossfade, volume, ambience | `godot-audio.md` | "Crossfade", "Volume Management" |
-| Save/load, SQLite, migrazione | `godot-data-persistence.md` | "JSON Save", "SQLite", "Version Migration" |
-| GdUnit4, asserzioni | `godot-testing.md` | "Assertion API", "Testing Autoloads" |
-| FPS cap, caching, tween | `godot-performance.md` | "Dynamic FPS", "Tween Safety" |
-| Export, HTML5, piattaforme | `godot-export-deploy.md` | "Platform Detection", "HTML5 Considerations" |
-| Signal bus, dirty flag | `godot-design-patterns.md` | "Observer", "Dirty Flag", "Graceful Degradation" |
-| Animazioni tween, walk-in | `godot-animation.md` | "Tween-Based Animation", "Walk-In Cinematic" |
+| Area di Correzione | Documento di Studio | Sezioni Chiave da Consultare |
+|---------------------|---------------------|------------------------------|
+| Ciclo di vita nodi, `_exit_tree()`, `queue_free()` | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 5 "Scene System" (diagramma lifecycle), Sezione 7 "Tween & Timer" |
+| Segnali, SignalBus, disconnessione | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 6 "Signals & Signal Bus Pattern" — spiega connect/disconnect, is_connected, CONNECT_ONE_SHOT |
+| GDScript, type hints, static typing | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 4 "GDScript Reference" — type system completo, Array/Dictionary tipizzati, `@export` |
+| Pattern architetturali, signal-driven | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) + [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) | Sezione 13 "Common Patterns" (dirty flag, state machine, call_deferred) + architettura progetto |
+| Save/load, JSON, SQLite, migrazione | [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) | Sezioni "Save System", "Three-Layer Persistence", "Version Migration Chain" |
+| Proiezione isometrica, tile system, depth sorting | [ISOMETRIC_GAMES.md](study/ISOMETRIC_GAMES.md) | Sezioni 2-4 sulle formule di proiezione, Sezione 5 "Depth Sorting & Z-Order" |
+| Pre-modification checklist, errori comuni | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) | Sezione 2 "Pre-Modification Checklist", Sezione 6 "8 Common Beginner Mistakes" |
+| Version control, branching, commit | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) | Sezione 3 "Version Control" — golden rules, branching strategies, merge conflicts |
+| Testing con GdUnit4 | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) | Sezione 5 "Testing" — Arrange/Act/Assert, test doubles, GdUnit4 specifics |
+| Export, piattaforme, CI/CD | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) | Sezione 4-5 "Platform-Specific Builds", Sezione 6 "CI/CD Pipelines" |
+| Distribuzione, Steam/itch.io | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) | Sezione 7 "Distribution Platforms" |
+| Ottimizzazione, performance | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) + [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 8 "Optimization" + Sezione 14 "Performance Tips" |
+
+**Come usare i documenti di studio**: Prima di correggere un problema, leggete la sezione rilevante del documento di studio. I documenti spiegano i concetti teorici con analogie, diagrammi ASCII, e esempi di codice commentati. In questo modo, non state solo copiando la correzione, ma capite il *perche'* dietro ogni modifica.
+
+**Ordine di lettura consigliato**: [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) → [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) → [ISOMETRIC_GAMES.md](study/ISOMETRIC_GAMES.md) → [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) → [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md)
 
 ### Documentazione Ufficiale Godot
 
@@ -2720,36 +2790,28 @@ Ogni area del progetto ha un file di riferimento (skill file) con best practice 
 - **Tutorial Segnali**: https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html
 - **Guida al Salvataggio**: https://docs.godotengine.org/en/stable/tutorials/io/saving_games.html
 - **Guida all'Export**: https://docs.godotengine.org/en/stable/tutorials/export/index.html
-
-### Percorso di Apprendimento Consigliato
-
-Se siete nuovi a Godot e volete approfondire i concetti trattati in questo audit, ecco un percorso di studio suggerito:
-
-1. **Base**: Tutorial "Your First 2D Game" sulla documentazione ufficiale di Godot
-2. **Segnali**: Capitolo "Signals" della documentazione ufficiale
-3. **Scene e Nodi**: Capitolo "Scenes and Nodes" della documentazione ufficiale
-4. **GDScript**: Riferimento completo del linguaggio sulla documentazione ufficiale
-5. **Testing**: Documentazione di GdUnit4 su GitHub
-6. **Database**: Tutorial SQLite per principianti (qualsiasi risorsa online)
-7. **Pattern di Design**: Capitoli su Observer e Singleton nei libri di design patterns
+- **Guida alla Performance**: https://docs.godotengine.org/en/stable/tutorials/performance/index.html
 
 ---
 
 ## 15. Riepilogo Statistico
 
-| Categoria | Conteggio |
-|-----------|-----------|
-| File analizzati | 48 (26 script + 9 scene + 5 dati + 5 test + 3 CI) |
-| Righe di codice analizzate | ~3500 (solo script GDScript) |
-| Problemi CRITICI | 7 |
-| Problemi ALTI | 18 |
-| Violazioni architetturali | 11 |
-| Problemi MEDI | 30+ |
-| Problemi BASSI | 8 |
-| Copertura test attuale | ~15-20% |
-| Copertura test target | 50%+ |
-| Fasi di stabilizzazione | 5 |
-| Nuovi file test necessari | 6 |
+| Categoria | Audit Iniziale (21 Mar) | Aggiornamento (24 Mar) |
+|-----------|------------------------|------------------------|
+| File analizzati | 48 (26 script + 9 scene + 5 dati + 5 test + 3 CI) | Invariato |
+| Righe di codice analizzate | ~3500 (solo script GDScript) | Invariato |
+| Problemi CRITICI | 7 | 5 aperti, **2 corretti** (C1, C2) |
+| Problemi ALTI | 18 | 17 aperti, **2 corretti** (A8, A9), **1 nuovo** (A19) |
+| Violazioni architetturali | 11 | 10 aperti, **1 parzialmente corretto** (AR2) |
+| Nuovi problemi MEDI | — | **3 nuovi** (A20, A21, A22) |
+| Nuovi problemi BASSI | — | **1 nuovo** (A23) |
+| Problemi MEDI totali | 30+ | 33+ |
+| Problemi BASSI totali | 8 | 9 |
+| Copertura test attuale | ~15-20% | Invariata |
+| Copertura test target | 50%+ | 50%+ |
+| Fasi di stabilizzazione | 5 | 5 |
+| Nuovi file test necessari | 6 | 6 |
+| Documenti di studio disponibili | 0 | **5** (in `study/`) |
 
 ---
 
@@ -2774,6 +2836,246 @@ Per facilitare il lavoro di ogni membro del team, sono state create guide operat
 | [Guida Database](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Schema characters e inventario, foreign keys, seed data, Supabase |
 
 Le guide si trovano nella cartella [`guide/`](guide/) e sono pensate come versione operativa (il "come fare") di questo audit report (il "cosa fare e perche'").
+
+---
+
+## 17. Pratiche di Sviluppo per Prevenire Errori
+
+Questa sezione raccoglie le lezioni apprese dall'audit e le traduce in **regole pratiche** che il team deve seguire per evitare di introdurre gli stessi tipi di errore in futuro. Ogni regola e' collegata ai problemi specifici che avrebbe prevenuto e al documento di studio che la spiega in dettaglio.
+
+### 17.1 Regola d'Oro: Il Ciclo di Vita Completo
+
+**Regola**: Ogni script che connette segnali in `_ready()` **DEVE** avere un `_exit_tree()` che li disconnette.
+
+Questa e' la regola piu' importante del progetto. La sua violazione e' la causa di **13 problemi** su 36 trovati in questo audit (A1, A19, e vari problemi MEDI nei pannelli UI).
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                   CHECKLIST PRE-COMMIT OBBLIGATORIA                 │
+│                                                                     │
+│  Per ogni script modificato, verificare:                            │
+│                                                                     │
+│  [ ] Ogni .connect() in _ready() ha un .disconnect() in            │
+│      _exit_tree() con check is_connected()                         │
+│  [ ] Ogni create_tween() ha una variabile membro, non locale,      │
+│      e viene killato in _exit_tree()                               │
+│  [ ] Ogni Timer avviato viene fermato in _exit_tree()              │
+│  [ ] Ogni nodo creato con .new() viene liberato con                │
+│      .queue_free() in _exit_tree()                                 │
+│  [ ] Nessuna variabile pubblica mutabile (Array, Dictionary)       │
+│      espone lo stato interno                                        │
+│                                                                     │
+│  Riferimento: GODOT_ENGINE_STUDY.md, Sezione 5 "Scene System"      │
+│               GAME_DEV_PLANNING.md, Sezione 6 "Common Mistakes"    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Template `_exit_tree()` da seguire SEMPRE**:
+
+```gdscript
+func _exit_tree() -> void:
+    # 1. Disconnettere TUTTI i segnali connessi in _ready()
+    if SignalBus.nome_segnale.is_connected(_on_callback):
+        SignalBus.nome_segnale.disconnect(_on_callback)
+
+    # 2. Uccidere TUTTI i tween attivi
+    if _tween and _tween.is_running():
+        _tween.kill()
+        _tween = null
+
+    # 3. Fermare TUTTI i timer
+    if _timer and not _timer.is_stopped():
+        _timer.stop()
+
+    # 4. Liberare nodi creati dinamicamente
+    if _dynamic_node and is_instance_valid(_dynamic_node):
+        _dynamic_node.queue_free()
+```
+
+### 17.2 Programmazione Difensiva: Mai Fidarsi dei Dati
+
+**Regola**: Ogni accesso a dati esterni (file, JSON, array, dictionary) **DEVE** essere protetto da validazione.
+
+Questa regola avrebbe prevenuto: C5 (array mismatch), C6 (typo sprite), A5 (crash tracce vuote), A16 (cast unsafe).
+
+**Pattern per accesso sicuro agli array**:
+
+```gdscript
+# MAI fare cosi':
+var track = tracks[current_index]  # crash se tracks e' vuoto!
+
+# SEMPRE fare cosi':
+if tracks.is_empty():
+    push_warning("Nessuna traccia disponibile")
+    return
+current_index = clampi(current_index, 0, tracks.size() - 1)
+var track = tracks[current_index]  # ora e' sicuro
+```
+
+**Pattern per caricamento risorse sicuro**:
+
+```gdscript
+# MAI fare cosi':
+var tex = load(path) as Texture2D
+sprite.texture = tex  # crash se tex e' null!
+
+# SEMPRE fare cosi':
+var tex := load(path) as Texture2D
+if tex == null:
+    push_error("Risorsa non trovata: %s" % path)
+    return  # o usare una texture placeholder
+sprite.texture = tex
+```
+
+**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 4 "GDScript — Error Handling"; `GAME_DEV_PLANNING.md`, Sezione 6 "Common Mistakes"
+
+### 17.3 Tween Safety: Tracciare, Verificare, Uccidere
+
+**Regola**: I tween **DEVONO** essere salvati come variabili membro della classe, mai come variabili locali, e devono essere uccisi prima di crearne di nuovi.
+
+Questa regola avrebbe prevenuto: A19 (tween orfani in MainMenu) e i problemi tween in panel_manager.
+
+```gdscript
+# MAI fare cosi':
+func _animate_something() -> void:
+    var tween := create_tween()  # variabile LOCALE = persa dopo la funzione!
+    tween.tween_property(...)
+
+# SEMPRE fare cosi':
+var _tween: Tween = null  # variabile MEMBRO della classe
+
+func _animate_something() -> void:
+    # Prima uccidiamo il tween precedente (se esiste e sta girando)
+    if _tween and _tween.is_running():
+        _tween.kill()
+    # Poi ne creiamo uno nuovo e lo salviamo
+    _tween = create_tween()
+    _tween.tween_property(...)
+```
+
+**Perche'?** Un tween locale continua a vivere nel motore Godot anche dopo che la funzione e' terminata. Se il nodo viene distrutto, il tween tenta di animare un nodo inesistente → crash. Un tween membro puo' essere ucciso in `_exit_tree()`.
+
+**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 7 "Tween & Timer"
+
+### 17.4 Incapsulamento: Non Esporre Stato Mutabile
+
+**Regola**: Le variabili Array e Dictionary interne **NON** devono essere pubbliche. Usare metodi getter/setter.
+
+Questa regola avrebbe prevenuto: A20 (`active_ambience` pubblico), AR4-AR7 (scrittura diretta in dizionari di altri autoload).
+
+```gdscript
+# MAI fare cosi':
+var active_ambience: Array = []  # chiunque puo' modificarlo!
+
+# SEMPRE fare cosi':
+var _active_ambience: Array = []  # privato (prefisso _)
+
+# Getter: restituisce una COPIA, non il riferimento
+func get_active_ambience() -> Array:
+    return _active_ambience.duplicate()
+
+# Setter controllato: aggiorna lo stato con la logica appropriata
+func toggle_ambience(amb_id: String, active: bool) -> void:
+    if active and amb_id not in _active_ambience:
+        _active_ambience.append(amb_id)
+        _start_ambience_player(amb_id)
+    elif not active and amb_id in _active_ambience:
+        _active_ambience.erase(amb_id)
+        _stop_ambience_player(amb_id)
+```
+
+**Riferimento**: `GAME_DEV_PLANNING.md`, Sezione 4 "Architecture Patterns"; `GODOT_ENGINE_STUDY.md`, Sezione 13 "Common Patterns"
+
+### 17.5 Comunicazione: Sempre via SignalBus
+
+**Regola**: Gli autoload **NON** devono mai chiamarsi direttamente ne' scrivere nelle variabili di altri autoload. Tutta la comunicazione passa per il SignalBus.
+
+Questa regola avrebbe prevenuto: tutte le 11 violazioni architetturali AR1-AR11.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                CORRETTO                  SBAGLIATO            │
+│                                                              │
+│  AudioManager                    AudioManager                │
+│       │                               │                      │
+│       ▼                               ▼                      │
+│  SignalBus.emit()            SaveManager.settings["vol"]=0.5 │
+│       │                          (scrittura diretta!)        │
+│       ▼                                                      │
+│  SaveManager._on_update()                                    │
+│                                                              │
+│  "Emetto un segnale,          "Vado direttamente             │
+│   chi ha bisogno              nell'ufficio altrui             │
+│   lo raccogliera'"            e modifico i documenti"        │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 6 "Signals & Signal Bus"; `PROJECT_DEEP_DIVE.md`, Sezione "Signal-Driven Architecture"
+
+### 17.6 Testing: Scrivere il Test PRIMA della Correzione
+
+**Regola**: Prima di correggere un bug, scrivere un test che lo riproduce. Poi correggere il bug. Poi verificare che il test passi.
+
+Questo approccio si chiama **Test-Driven Development (TDD)** ed e' spiegato in dettaglio in `GAME_DEV_PLANNING.md`, Sezione 5 "Testing".
+
+```
+1. Scrivere un test che FALLISCE (riproduce il bug)
+2. Correggere il codice
+3. Verificare che il test PASSA
+4. Commit!
+```
+
+**Esempio pratico** per il bug C5 (array mismatch):
+
+```gdscript
+# Passo 1: scriviamo un test che riproduce il crash
+func test_build_layers_missing_file_no_crash() -> void:
+    # Simuliamo un layer mancante
+    var bg = auto_free(WindowBackground.new())
+    # Rinominiamo temporaneamente un file layer
+    # Il gioco non deve crashare, gli array devono essere allineati
+    bg._build_layers()
+    assert_eq(bg._layers.size(), bg._parallax_factors.size())
+
+# Passo 2: correggiamo window_background.gd
+# Passo 3: il test ora passa → commit!
+```
+
+### 17.7 Checklist Prima di Ogni Modifica
+
+Prima di modificare **qualsiasi** file del progetto, rispondete a queste 6 domande (derivate da `GAME_DEV_PLANNING.md`, Sezione 2 "Pre-Modification Checklist"):
+
+```
+1. Ho letto il file INTERO che sto per modificare?
+   (Non modificare codice che non avete letto completamente)
+
+2. Capisco TUTTI i segnali connessi in questo script?
+   (Ogni connect deve avere un disconnect)
+
+3. La mia modifica puo' rompere qualcosa in un ALTRO file?
+   (Cercate il nome della funzione/variabile in tutto il progetto)
+
+4. Ho scritto un test per questa modifica?
+   (Se no, scrivetelo prima)
+
+5. Ho aggiornato il commento/documentazione?
+   (Se la modifica cambia il comportamento)
+
+6. Ho fatto un commit PRIMA di iniziare la modifica?
+   (Cosi' potete tornare indietro se qualcosa va storto)
+```
+
+### 17.8 Convenzioni di Naming per Prevenire Errori
+
+| Tipo | Convenzione | Esempio | Perche' |
+|------|-------------|---------|---------|
+| Variabili private | Prefisso `_` | `_tween`, `_timer`, `_is_saving` | Chiaro che non vanno toccate dall'esterno |
+| Costanti | UPPER_SNAKE_CASE | `MAX_AUDIO_SIZE`, `PANEL_TWEEN_DURATION` | Distinguibili dalle variabili |
+| Segnali callback | `_on_` + nome segnale | `_on_room_changed`, `_on_save_completed` | Facile capire da quale segnale viene invocata |
+| Bool flags | `is_` / `has_` / `can_` | `is_playing`, `has_save`, `can_drop` | Leggibili come domande |
+| Tipi GDScript | Sempre espliciti | `var x: int = 0`, `func f() -> void:` | Prevengono errori di tipo a runtime |
+
+**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 4 "GDScript — Naming Conventions"
 
 ---
 
