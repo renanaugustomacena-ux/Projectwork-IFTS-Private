@@ -1,23 +1,21 @@
-[gd_scene load_steps=7 format=3 uid="uid://d05ljvrafabtw"]
+[gd_scene format=3 uid="uid://d05ljvrafabtw"]
 
 [ext_resource type="Script" uid="uid://c7xwqp5iegw1n" path="res://scripts/rooms/room_base.gd" id="1_room"]
 [ext_resource type="Script" uid="uid://v4251evgwcg2" path="res://scripts/main.gd" id="2_main"]
 [ext_resource type="Script" uid="uid://1q0vbiub785f" path="res://scripts/ui/drop_zone.gd" id="3_dropzone"]
 [ext_resource type="PackedScene" path="res://scenes/male-old-character.tscn" id="5_char"]
-[ext_resource type="Texture2D" path="res://assets/room/room.png" id="6_room_bg"]
-[ext_resource type="Script" path="res://scripts/rooms/room_grid.gd" id="7_grid"]
+[ext_resource type="Texture2D" uid="uid://cv5hfbq1fmecf" path="res://assets/room/room.png" id="6_room_bg"]
+[ext_resource type="Script" uid="uid://c40e6rx2673ds" path="res://scripts/rooms/room_grid.gd" id="7_grid"]
 
-
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=606292546]
 script = ExtResource("2_main")
 
-[node name="RoomBackground" type="Sprite2D" parent="."]
+[node name="RoomBackground" type="Sprite2D" parent="." unique_id=1824188207]
 position = Vector2(640, 360)
 scale = Vector2(4, 4)
 texture = ExtResource("6_room_bg")
-texture_filter = 0
 
-[node name="WallRect" type="ColorRect" parent="."]
+[node name="WallRect" type="ColorRect" parent="." unique_id=1475578150]
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 0.4
@@ -25,7 +23,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.165, 0.145, 0.208, 0.6)
 
-[node name="FloorRect" type="ColorRect" parent="."]
+[node name="FloorRect" type="ColorRect" parent="." unique_id=204112985]
 anchors_preset = -1
 anchor_top = 0.4
 anchor_right = 1.0
@@ -34,38 +32,41 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.239, 0.2, 0.278, 0.6)
 
-[node name="Baseboard" type="ColorRect" parent="."]
+[node name="Baseboard" type="ColorRect" parent="." unique_id=1170622796]
 anchors_preset = -1
 anchor_top = 0.4
 anchor_right = 1.0
 anchor_bottom = 0.4
 offset_top = -1.0
-offset_bottom = 1.0
+offset_right = 290.0
+offset_bottom = 657.0
 grow_horizontal = 2
 color = Color(0.29, 0.259, 0.333, 1)
 
-[node name="Room" type="Node2D" parent="."]
+[node name="Room" type="Node2D" parent="." unique_id=160373693]
 script = ExtResource("1_room")
 
-[node name="Decorations" type="Node2D" parent="Room"]
+[node name="Decorations" type="Node2D" parent="Room" unique_id=849325290]
 position = Vector2(8, 25)
 
-[node name="Character" parent="Room" instance=ExtResource("5_char")]
+[node name="Character" parent="Room" unique_id=285538804 instance=ExtResource("5_char")]
 position = Vector2(640, 450)
 
-[node name="RoomBounds" type="StaticBody2D" parent="Room"]
+[node name="RoomBounds" type="StaticBody2D" parent="Room" unique_id=682674769]
 
-[node name="FloorBounds" type="CollisionPolygon2D" parent="Room/RoomBounds"]
+[node name="FloorBounds" type="CollisionPolygon2D" parent="Room/RoomBounds" unique_id=1607978129]
+position = Vector2(226.14706, -108.80913)
+scale = Vector2(0.64430153, 1.0141051)
 build_mode = 1
-polygon = PackedVector2Array(460, 290, 980, 365, 980, 655, 300, 655)
+polygon = PackedVector2Array(96, 582.5916, 643.8801, 411.99786, 1193.3123, 583.5777, 645.4321, 763.04626)
 
-[node name="RoomGrid" type="Node2D" parent="."]
+[node name="RoomGrid" type="Node2D" parent="." unique_id=1832241696]
 script = ExtResource("7_grid")
 
-[node name="UILayer" type="CanvasLayer" parent="."]
+[node name="UILayer" type="CanvasLayer" parent="." unique_id=1391941539]
 layer = 10
 
-[node name="DropZone" type="Control" parent="UILayer"]
+[node name="DropZone" type="Control" parent="UILayer" unique_id=792991348]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -75,7 +76,7 @@ grow_vertical = 2
 mouse_filter = 1
 script = ExtResource("3_dropzone")
 
-[node name="HUD" type="HBoxContainer" parent="UILayer"]
+[node name="HUD" type="HBoxContainer" parent="UILayer" unique_id=1520605615]
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
@@ -85,14 +86,14 @@ grow_horizontal = 2
 grow_vertical = 0
 alignment = 1
 
-[node name="DecoButton" type="Button" parent="UILayer/HUD"]
+[node name="DecoButton" type="Button" parent="UILayer/HUD" unique_id=1409501704]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Decor"
 
-[node name="SettingsButton" type="Button" parent="UILayer/HUD"]
+[node name="SettingsButton" type="Button" parent="UILayer/HUD" unique_id=777371810]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Settings"
 
-[node name="AudioStreams" type="Node" parent="."]
+[node name="AudioStreams" type="Node" parent="." unique_id=364661636]

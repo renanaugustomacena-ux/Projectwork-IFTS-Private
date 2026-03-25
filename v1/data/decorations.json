@@ -10,10 +10,7 @@
 		{"id": "plants", "name": "Plants"},
 		{"id": "accessories", "name": "Accessories"},
 		{"id": "room_elements", "name": "Room Elements"},
-		{"id": "pets", "name": "Pets"},
-		{"id": "kitchen_appliances", "name": "Kitchen Appliances"},
-		{"id": "kitchen_furniture", "name": "Kitchen Furniture"},
-		{"id": "kitchen_accessories", "name": "Kitchen Accessories"}
+		{"id": "pets", "name": "Pets"}
 	],
 	"decorations": [
 		{"id": "bed_1", "name": "Classic Bed", "category": "beds", "sprite_path": "res://assets/sprites/rooms/Individuals/Bed_1.png", "placement_type": "floor", "item_scale": 3.0},
@@ -84,55 +81,6 @@
 		{"id": "room_window_2", "name": "Medium Window", "category": "room_elements", "sprite_path": "res://assets/room/window2.png", "placement_type": "wall", "item_scale": 3.0},
 		{"id": "room_window_3", "name": "Large Window", "category": "room_elements", "sprite_path": "res://assets/room/window3.png", "placement_type": "wall", "item_scale": 3.0},
 
-		{"id": "pet_cat_void", "name": "Void Cat", "category": "pets", "sprite_path": "res://assets/pets/cat_void_simple.png", "placement_type": "floor", "item_scale": 4.0},
-
-		{"id": "k_cooker_black", "name": "Black Cooker", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookers/cookerblack01a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_cooker_white", "name": "White Cooker", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookers/cookerwhite01a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_cooker_steel", "name": "Steel Cooker", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookers/cookersteel01a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_cooker_red", "name": "Red Cooker", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookers/cookerred01a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_cooker_yellow", "name": "Yellow Cooker", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookers/cookeryellow01a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_hotplate", "name": "Hot Plate", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookers/hotplate01a.png", "placement_type": "floor", "item_scale": 0.5},
-		{"id": "k_fridge_1", "name": "Retro Fridge", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/fridges/fridge01a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_fridge_2", "name": "Modern Fridge", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/fridges/fridge02a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_fridge_3", "name": "Mini Fridge", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/fridges/fridge03a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_microwave_1", "name": "Microwave", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/microwave grill/microwave01a.png", "placement_type": "floor", "item_scale": 0.5},
-		{"id": "k_microwave_2", "name": "Microwave Alt", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/microwave grill/microwave02a.png", "placement_type": "floor", "item_scale": 0.5},
-		{"id": "k_minigrill", "name": "Mini Grill", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/microwave grill/minigrill01a.png", "placement_type": "floor", "item_scale": 0.5},
-		{"id": "k_coffee_1", "name": "Coffee Machine", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/coffee machines/coffeemachine01a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_coffee_2", "name": "Espresso Machine", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/coffee machines/coffeemachine02a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_coffee_3", "name": "Pod Machine", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/coffee machines/coffeemachine03a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_toaster_1", "name": "Toaster", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/toaster/toaster01a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_toaster_2", "name": "Toaster Alt", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/toaster/toaster02a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_ricecooker", "name": "Rice Cooker", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/ricecooker/ricecooker01a.png", "placement_type": "floor", "item_scale": 0.5},
-		{"id": "k_kettle_electric", "name": "Electric Kettle", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/kettles/electrickettle01a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_kettle_steam", "name": "Steam Kettle", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/kettles/steamkettle01a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_blender", "name": "Blender", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/blenders mixers/blender01a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_mixer", "name": "Stand Mixer", "category": "kitchen_appliances", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/blenders mixers/mixer01a.png", "placement_type": "floor", "item_scale": 0.7},
-
-		{"id": "k_counter_1", "name": "Kitchen Counter", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/counters/counter01_a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_counter_2", "name": "Counter Alt", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/counters/counter02_a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_counter_3", "name": "Corner Counter", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/counters/counter03_a.png", "placement_type": "floor", "item_scale": 0.3},
-		{"id": "k_table_1", "name": "Kitchen Table", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/tables/table01a.png", "placement_type": "floor", "item_scale": 0.25},
-		{"id": "k_table_2", "name": "Dining Table", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/tables/table02a.png", "placement_type": "floor", "item_scale": 0.25},
-		{"id": "k_chair_k1", "name": "Kitchen Chair", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/chairs/chair01a.png", "placement_type": "floor", "item_scale": 0.35},
-		{"id": "k_chair_k2", "name": "Kitchen Chair Alt", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/chairs/chair02a.png", "placement_type": "floor", "item_scale": 0.35},
-		{"id": "k_chair_k3", "name": "Wooden Chair", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/chairs/chair03a.png", "placement_type": "floor", "item_scale": 0.35},
-		{"id": "k_stool", "name": "Bar Stool", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/chairs/stool01a.png", "placement_type": "floor", "item_scale": 0.4},
-		{"id": "k_cabinet_1", "name": "Wall Cabinet", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/shelves/cabinet01a.png", "placement_type": "wall", "item_scale": 0.35},
-		{"id": "k_cabinet_2", "name": "Wall Cabinet Alt", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/shelves/cabinet02a.png", "placement_type": "wall", "item_scale": 0.35},
-		{"id": "k_shelf", "name": "Wall Shelf", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/shelves/shelf01a.png", "placement_type": "wall", "item_scale": 0.4},
-		{"id": "k_sink_1", "name": "Kitchen Sink", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/sinks/sink01a.png", "placement_type": "floor", "item_scale": 0.35},
-		{"id": "k_sink_2", "name": "Double Sink", "category": "kitchen_furniture", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/sinks/sink02a.png", "placement_type": "floor", "item_scale": 0.35},
-
-		{"id": "k_spicerack_1", "name": "Spice Rack", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/spiceracks/spicerack01a.png", "placement_type": "wall", "item_scale": 0.5},
-		{"id": "k_spicerack_2", "name": "Spice Rack Alt", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/spiceracks/spicerack02a.png", "placement_type": "wall", "item_scale": 0.5},
-		{"id": "k_cookerhood_1", "name": "Cooker Hood", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookervents/cookerhood01a.png", "placement_type": "wall", "item_scale": 0.35},
-		{"id": "k_cookerhood_2", "name": "Cooker Hood Alt", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/cookervents/cookerhood02a.png", "placement_type": "wall", "item_scale": 0.35},
-		{"id": "k_board_1", "name": "Chopping Board", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/chopping boards/board01a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_board_2", "name": "Chopping Board Alt", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/chopping boards/board02a.png", "placement_type": "floor", "item_scale": 0.7},
-		{"id": "k_plate", "name": "Plate", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/plates bowls/plate01a.png", "placement_type": "floor", "item_scale": 0.8},
-		{"id": "k_bowl", "name": "Bowl", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/plates bowls/bowl01a.png", "placement_type": "floor", "item_scale": 0.8},
-		{"id": "k_fruitbowl", "name": "Fruit Bowl", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/plates bowls/fruitbowl01.png", "placement_type": "floor", "item_scale": 0.8},
-		{"id": "k_scales", "name": "Kitchen Scales", "category": "kitchen_accessories", "sprite_path": "res://assets/sprites/rooms/Isometric Kitchen Sprites/scales/scales01a.png", "placement_type": "floor", "item_scale": 0.5}
+		{"id": "pet_cat_void", "name": "Void Cat", "category": "pets", "sprite_path": "res://assets/pets/cat_void_simple.png", "placement_type": "floor", "item_scale": 4.0}
 	]
 }

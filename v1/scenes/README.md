@@ -13,7 +13,6 @@ scenes/
 │   └── main_menu.tscn         # Menu principale (scena di avvio)
 ├── ui/
 │   ├── deco_panel.tscn        # Pannello decorazioni (drag-and-drop)
-│   ├── music_panel.tscn       # Pannello musica (player lo-fi)
 │   ├── settings_panel.tscn    # Pannello impostazioni
 │   └── shop_panel.tscn        # Pannello negozio
 ├── male-character.tscn        # Personaggio maschile (CharacterBody2D)
@@ -42,7 +41,6 @@ Main (Node2D)
 ├── UILayer (CanvasLayer, layer=10)
 │   ├── DropZone (Control, full rect)
 │   └── HUD (HBoxContainer)
-│       ├── MusicButton
 │       ├── DecoButton
 │       ├── SettingsButton
 │       └── ShopButton
@@ -74,14 +72,13 @@ MainMenu (Node2D)
 
 ### ui/*.tscn — Pannelli UI
 
-I 4 pannelli sono `PanelContainer` istanziati dinamicamente da `PanelManager`.
+I 3 pannelli sono `PanelContainer` istanziati dinamicamente da `PanelManager`.
 Funzionano in mutua esclusione (un solo pannello aperto alla volta),
 con animazione fade-in/fade-out (0.3s tween) e chiusura con Escape.
 
 | Scena | Script | Funzione |
 |-------|--------|----------|
 | `deco_panel.tscn` | `scripts/ui/deco_panel.gd` | Catalogo decorazioni per categoria, drag-and-drop |
-| `music_panel.tscn` | `scripts/ui/music_panel.gd` | Player musicale, playlist, controllo volume |
 | `settings_panel.tscn` | `scripts/ui/settings_panel.gd` | Volume, lingua, display mode |
 | `shop_panel.tscn` | `scripts/ui/shop_panel.gd` | Browser negozio, acquisti, coins |
 

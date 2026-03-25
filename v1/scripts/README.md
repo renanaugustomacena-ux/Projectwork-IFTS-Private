@@ -46,7 +46,6 @@ scripts/
 ├── ui/                           # Script interfaccia utente
 │   ├── panel_manager.gd          # Lifecycle pannelli, mutua esclusione, Escape
 │   ├── deco_panel.gd             # Pannello catalogo decorazioni
-│   ├── music_panel.gd            # Pannello player musicale
 │   ├── settings_panel.gd         # Pannello impostazioni (volume, lingua, display)
 │   ├── shop_panel.gd             # Pannello negozio e inventario
 │   └── drop_zone.gd              # Drop zone per posizionamento decorazioni
@@ -137,7 +136,6 @@ Per dettagli sull'architettura e le responsabilita di ciascuno, consulta il
 - **panel_manager.gd** — Creazione/distruzione dinamica pannelli UI, caching scene,
   mutua esclusione (un solo pannello aperto), animazioni tween (0.3s), chiusura con Escape.
 - **deco_panel.gd** — Browser catalogo decorazioni con filtro per categoria.
-- **music_panel.gd** — Player musicale: selezione traccia, controllo volume, playlist mode.
 - **settings_panel.gd** — Impostazioni: volume master/music/sfx, lingua, display mode.
 - **shop_panel.gd** — Browser negozio, acquisto oggetti, gestione coins e inventario.
 - **drop_zone.gd** — Control full-rect che rileva il drop di decorazioni sulla stanza.
