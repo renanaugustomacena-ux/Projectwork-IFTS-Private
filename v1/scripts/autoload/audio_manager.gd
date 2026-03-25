@@ -49,6 +49,7 @@ func _ready() -> void:
 	SignalBus.load_completed.connect(_on_load_completed)
 
 	_load_tracks()
+	call_deferred("_auto_start_music")
 
 
 func _load_tracks() -> void:
@@ -140,35 +141,9 @@ func previous_track() -> void:
 	play()
 
 
-func import_external_track(file_path: String) -> void:
-	if not FileAccess.file_exists(file_path):
-		push_error("AudioManager: external file not found: %s" % file_path)
-		return
-
-	var ext := file_path.get_extension().to_lower()
-	if ext not in ["mp3", "wav"]:
-		push_error("AudioManager: unsupported format: %s" % ext)
-		return
-
-	var track_id := "ext_%d" % Time.get_unix_time_from_system()
-	var file_name := file_path.get_file().get_basename()
-
-	(
-		tracks
-		. append(
-			{
-				"id": track_id,
-				"title": file_name,
-				"artist": "Imported",
-				"path": file_path,
-				"genre": "imported",
-			}
-		)
-	)
-
-	current_track_index = tracks.size() - 1
-	play()
-	AppLogger.info("AudioManager", "External track imported", {"id": track_id, "path": file_path})
+func _auto_start_music() -> void:
+	if not tracks.is_empty() and not is_playing:
+		play()
 
 
 func _load_audio_stream(path: String) -> AudioStream:
@@ -357,9 +332,3 @@ func _exit_tree() -> void:
 	_active_ambience.clear()
 
 
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("toggle_music"):
-		if is_playing:
-			pause()
-		else:
-			play()

@@ -4,7 +4,6 @@ class_name PanelManager
 extends Node
 
 const PANEL_SCENES: Dictionary = {
-	"music": "res://scenes/ui/music_panel.tscn",
 	"deco": "res://scenes/ui/deco_panel.tscn",
 	"settings": "res://scenes/ui/settings_panel.tscn",
 }

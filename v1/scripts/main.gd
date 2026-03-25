@@ -28,7 +28,6 @@ func _ready() -> void:
 
 func _wire_hud_buttons() -> void:
 	var button_map := {
-		"MusicButton": "music",
 		"DecoButton": "deco",
 		"SettingsButton": "settings",
 	}
