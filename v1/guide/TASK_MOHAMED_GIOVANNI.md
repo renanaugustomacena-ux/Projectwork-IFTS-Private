@@ -3,79 +3,23 @@
 Questo documento contiene le task specifiche da completare per il progetto Mini Cozy Room.
 Ogni sezione include istruzioni dettagliate passo-passo.
 
-> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
+> **Nota sulla Semplificazione (25 Marzo 2026)**:
 > La Task 4 (Semplificazione Codice) di questo documento descrive i sistemi over-engineered del
 > codebase. E' di priorita' bassa perche' quei sistemi (SupabaseClient, LocalDatabase, SaveManager,
 > Logger) funzionano correttamente — sono solo piu' complessi del necessario.
-> Concentratevi prima sulle task 1-3 (gameplay) e 5 (verifiche). La semplificazione e' un lavoro
+> Concentratevi prima sulle task 1-2 (gameplay) e 5 (verifiche). La semplificazione e' un lavoro
 > da fare insieme al team quando le funzionalita' principali sono stabili.
 
----
-
-## TASK 1: Calibrazione Confini Movimento Personaggio (PRIORITA ALTA)
-
-### Problema
-Il personaggio puo camminare fuori dai limiti del pavimento isometrico della stanza.
-I confini attuali sono approssimati e devono essere calibrati visivamente in Godot Editor.
-
-### Come Funziona
-La stanza usa un `StaticBody2D` chiamato `RoomBounds` con un nodo figlio
-`CollisionPolygon2D` chiamato `FloorBounds`. Questo poligono ha `build_mode = 1`
-(SEGMENTS), il che significa che i lati del poligono fungono da muri invisibili.
-Il personaggio (`CharacterBody2D`) usa `move_and_slide()` e viene bloccato da questi segmenti.
-
-### Istruzioni Passo-Passo in Godot Editor
-
-1. **Aprire il progetto** in Godot Engine 4.5+
-2. **Aprire la scena** `res://scenes/main/main.tscn`
-3. **Nel pannello Scene Tree** (sinistra), navigare a:
-   ```
-   Main > Room > RoomBounds > FloorBounds
-   ```
-4. **Selezionare il nodo `FloorBounds`** (tipo: CollisionPolygon2D)
-5. **Nell'Inspector** (destra), verificare:
-   - `Build Mode` = `Segments`
-   - `Polygon` = 4 punti (attualmente: 460,290 / 980,365 / 980,655 / 300,655)
-6. **Nella viewport** (centro), i 4 punti appariranno come cerchi arancioni collegati da linee
-7. **Attivare lo strumento Edit Polygon**: nella toolbar sopra la viewport, cliccare l'icona
-   del poligono (o premere il tasto corrispondente)
-8. **Trascinare ogni punto** per allinearlo al bordo del pavimento isometrico:
-   - **Punto 1 (alto-sinistra)**: dove il muro posteriore incontra il muro sinistro a livello pavimento
-   - **Punto 2 (alto-destra)**: dove il muro posteriore incontra il bordo destro della stanza
-   - **Punto 3 (basso-destra)**: angolo in basso a destra del pavimento
-   - **Punto 4 (basso-sinistra)**: angolo in basso a sinistra del pavimento
-9. **Per aggiungere piu punti** (se servono per seguire curve):
-   - Con lo strumento Edit Polygon attivo, cliccare su un segmento per inserire un nuovo punto
-   - Utile se il bordo del pavimento non e perfettamente rettilineo
-10. **Testare**: premere F5 (o F6 per testare solo la scena corrente)
-    - Muovere il personaggio con WASD/frecce
-    - Verificare che NON possa uscire dall'area del pavimento
-    - Se passa attraverso un muro, aggiustare i punti del poligono
-11. **Salvare** la scena (Ctrl+S)
-
-### Note Tecniche
-- Il pavimento isometrico NON e un rettangolo: ha linee diagonali dove i muri incontrano il pavimento
-- Il muro posteriore ha una leggera pendenza (da sinistra a destra scende leggermente)
-- Il muro sinistro ha una pendenza piu ripida
-- Potrebbe servire un poligono con 5-6 punti per seguire bene la forma
-- La stanza (`room.png`) e 180x155 pixel, scalata a 4x, centrata a (640, 360)
-- L'immagine della stanza occupa: x=280..1000, y=50..670
-
-### Riferimento Visivo
-```
-       Punto 1 -------- Punto 2
-      /                        |
-     /                         |
-    /                          |
-Punto 4 -------------- Punto 3
-
-Il pavimento e un trapezio/parallelogramma isometrico.
-I bordi superiore e sinistro sono diagonali.
-```
+> **Modifiche recenti (25 Marzo 2026)**:
+> - La **calibrazione dei confini** del pavimento e' stata completata da Renan (la Task 1 originale).
+> - Gli **asset della cucina** (kitchen_appliances, kitchen_furniture, kitchen_accessories) sono stati eliminati.
+> - Il **pannello musica** e' stato eliminato. La musica parte automaticamente.
+> - C'e' un **solo personaggio**: Ragazzo Classico (`male_old`). La selezione personaggi non esiste piu'.
+> - I **test unitari** sono stati rimossi (dipendevano da GdUnit4, non installato).
 
 ---
 
-## TASK 2: Popup Interazione Decorazioni (PRIORITA MEDIA)
+## TASK 1: Popup Interazione Decorazioni (PRIORITA MEDIA)
 
 ### Problema
 Quando si clicca su una decorazione piazzata nella stanza, non succede nulla di visibile.
@@ -145,7 +89,7 @@ Serve un popup con pulsanti per Eliminare, Ruotare e Ridimensionare.
 
 ---
 
-## TASK 3: Rotazione e Ridimensionamento Decorazioni (PRIORITA MEDIA)
+## TASK 2: Rotazione e Ridimensionamento Decorazioni (PRIORITA MEDIA)
 
 ### Problema
 Le decorazioni piazzate non possono essere ruotate o ridimensionate dopo il posizionamento.
@@ -158,7 +102,7 @@ Le decorazioni piazzate non possono essere ruotate o ridimensionate dopo il posi
 ### Cosa Fare
 1. Quando si piazza una decorazione, salvare anche `rotation` e `scale` nei dati di salvataggio
 2. Quando si carica una partita, applicare `rotation` e `scale` salvati
-3. Il popup (Task 2) permette di modificare rotazione e scala
+3. Il popup (Task 1) permette di modificare rotazione e scala
 
 ### Formato Dati Salvataggio Attuale (in SaveManager)
 ```json
@@ -180,7 +124,7 @@ Le decorazioni piazzate non possono essere ruotate o ridimensionate dopo il posi
 
 ---
 
-## TASK 4: Semplificazione Codice Over-Engineered (PRIORITA BASSA)
+## TASK 3: Semplificazione Codice Over-Engineered (PRIORITA BASSA)
 
 ### Analisi
 Il codebase contiene sistemi troppo complessi per un gioco cozy room:
@@ -203,18 +147,17 @@ Il codebase contiene sistemi troppo complessi per un gioco cozy room:
 
 ---
 
-## TASK 5: Verifiche e Test
+## TASK 4: Verifiche e Test
 
 ### Checklist Finale
-- [ ] Il personaggio resta all'interno del pavimento isometrico in tutte le direzioni
 - [ ] Click su decorazione piazzata mostra popup con Elimina/Ruota/Ridimensiona
 - [ ] Ruotare una decorazione funziona (90 gradi)
 - [ ] Ridimensionare una decorazione funziona
 - [ ] Il salvataggio/caricamento preserva posizione, rotazione e scala delle decorazioni
 - [ ] Il drag-and-drop decorazioni funziona ancora dopo le modifiche
-- [ ] Il personaggio collide con le decorazioni piazzate (non ci cammina attraverso)
 - [ ] La musica parte automaticamente (nessun pulsante Music nel HUD)
 - [ ] Il menu mostra il personaggio Ragazzo Classico nel walk-in
+- [ ] Il personaggio resta all'interno del pavimento isometrico (gia' calibrato)
 
 ---
 

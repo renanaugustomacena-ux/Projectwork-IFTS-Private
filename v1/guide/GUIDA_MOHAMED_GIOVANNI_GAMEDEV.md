@@ -5,13 +5,20 @@
 
 **Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
 
-> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
+> **Nota sulla Semplificazione (25 Marzo 2026)**:
 > Il codebase contiene sistemi piu' avanzati del necessario. Non preoccupatevi se trovate
 > codice complesso in moduli come SupabaseClient, LocalDatabase o SaveManager — sono
 > **placeholder** o **over-engineered** e verranno semplificati. I vostri task riguardano
 > la parte di gameplay e UI, che e' la parte **essenziale** del progetto. Le correzioni
 > proposte in questa guida restano valide al 100%.
 > Consulta il [README principale](../../README.md#stato-dei-sistemi) per lo stato completo dei sistemi.
+
+> **Nota sulle modifiche recenti (25 Marzo 2026)**:
+> - Il pannello musica (`music_panel.gd` e `music_panel.tscn`) e' stato **eliminato**. La musica ora parte automaticamente senza controlli utente.
+> - Gli asset della cucina (kitchen_appliances, kitchen_furniture, kitchen_accessories) sono stati **eliminati** da `decorations.json` e dalla cartella sprites.
+> - Lo shop panel (`shop_panel.gd`) **non esiste** nel progetto.
+> - I test unitari (cartella `tests/`) sono stati rimossi perche' dipendevano da GdUnit4 (non installato).
+> - C'e' un solo personaggio giocabile: **Ragazzo Classico** (`male_old`). La selezione personaggi e' stata rimossa.
 
 ---
 
@@ -20,15 +27,14 @@
 | # | Cosa Dovete Fare | File Principale | Problema Audit | Priorita' | Tempo Stimato |
 |---|------------------|-----------------|----------------|-----------|---------------|
 | 1 | Correggere typo sprite in characters.json | `data/characters.json` | C6 | CRITICO | 5 min |
-| 2 | Risolvere personaggio male_black_shirt incompleto | `data/characters.json` + `scripts/utils/constants.gd` | C7 | CRITICO | 15 min |
+| 2 | Rimuovere costanti personaggi inutilizzati | `scripts/utils/constants.gd` | C7 | CRITICO | 10 min |
 | 3 | Correggere mismatch array in window_background.gd | `scripts/rooms/window_background.gd` | C5 | CRITICO | 20 min |
-| 4 | Correggere FileDialog memory leak in music_panel.gd | `scripts/ui/music_panel.gd` | A2 | ALTO | 25 min |
-| 5 | Correggere race condition swap personaggio in room_base.gd | `scripts/rooms/room_base.gd` | A3 | ALTO | 15 min |
-| 6 | Correggere cast Texture2D unsafe in drop_zone.gd | `scripts/ui/drop_zone.gd` | A16 | ALTO | 15 min |
-| 7 | Aggiungere `_exit_tree()` a 7 script | Vari | A1 | ALTO | 1.5 ore |
-| 8 | Aggiungere null check su character_controller.gd | `scripts/rooms/character_controller.gd` | A1 | MEDIO | 15 min |
+| 4 | Correggere race condition swap personaggio in room_base.gd | `scripts/rooms/room_base.gd` | A3 | ALTO | 15 min |
+| 5 | Correggere cast Texture2D unsafe in drop_zone.gd | `scripts/ui/drop_zone.gd` | A16 | ALTO | 15 min |
+| 6 | Aggiungere `_exit_tree()` a 6 script | Vari | A1 | ALTO | 1.5 ore |
+| 7 | Aggiungere null check su character_controller.gd | `scripts/rooms/character_controller.gd` | A1 | MEDIO | 15 min |
 
-**Tempo totale stimato**: circa 3.5 ore
+**Tempo totale stimato**: circa 3 ore
 
 ---
 
@@ -114,10 +120,9 @@ Premi `Ctrl+S` per salvare.
 
 1. Apri Godot e premi F5
 2. Avvia una nuova partita
-3. Se disponibile, seleziona il personaggio `male_old`
-4. Muoviti in tutte le direzioni (WASD o frecce)
-5. L'animazione di camminata deve funzionare senza errori
-6. Controlla il pannello Output: NON devono esserci messaggi di errore rossi tipo "resource not found"
+3. Muoviti in tutte le direzioni (WASD o frecce)
+4. L'animazione di camminata deve funzionare senza errori
+5. Controlla il pannello Output: NON devono esserci messaggi di errore rossi tipo "resource not found"
 
 ### Cosa Puo' Andare Storto
 
@@ -134,47 +139,57 @@ git push origin Renan
 
 ---
 
-## Task 2: Risolvere Personaggio male_black_shirt Incompleto (C7)
+## Task 2: Rimuovere Costanti Personaggi Inutilizzati (C7)
 
-**Tempo stimato**: 15 minuti
+**Tempo stimato**: 10 minuti
 **Priorita'**: CRITICO
 
 ### Cosa C'e' da Fare
 
-Il personaggio `male_black_shirt` e' definito nelle costanti ma non ha sprite o animazioni complete. Se un giocatore lo seleziona, il gioco potrebbe crashare. La soluzione piu' sicura e' rimuoverlo dalla lista dei personaggi selezionabili.
+Il gioco ora usa un **solo personaggio** (`male_old` — "Ragazzo Classico"). La selezione personaggi e' stata rimossa. Pero' nel file `scripts/utils/constants.gd` ci sono ancora costanti per personaggi che non esistono piu':
 
-### Passo 1: Rimuovi da constants.gd
+- `CHAR_FEMALE_RED_SHIRT` — non ha sprite nel progetto
+- `CHAR_MALE_YELLOW_SHIRT` — non ha sprite nel progetto
+- `CHAR_MALE_BLACK_SHIRT` — ha solo uno sprite parziale, non e' giocabile
 
-1. Apri `scripts/utils/constants.gd` in VS Code
-2. Trova la riga (intorno alla riga 20):
-   ```gdscript
-   const CHAR_MALE_BLACK_SHIRT := "male_black_shirt"
-   ```
-3. **Elimina l'intera riga** (selezionatela e premete `Ctrl+Shift+K` per eliminare una riga in VS Code)
+Queste costanti inutilizzate creano confusione e potrebbero causare errori se qualcuno provasse ad usarle.
 
-### Passo 2: Rimuovi da characters.json (se presente)
+### Passo 1: Apri il File
 
-1. Apri `data/characters.json`
-2. Cerca `male_black_shirt` (`Ctrl+F`)
-3. Se esiste una sezione dedicata a `male_black_shirt`, rimuovete l'intero blocco JSON che lo riguarda
-4. **Attenzione alla virgola**: In JSON, l'ultimo elemento di una lista NON deve avere la virgola. Se rimuovete l'ultimo personaggio dalla lista, assicuratevi di togliere la virgola dall'elemento che diventa l'ultimo
+Apri `scripts/utils/constants.gd` in VS Code (`Ctrl+P` -> digita `constants.gd`).
 
-### Passo 3: Aggiungi Fallback al Character Controller
+### Passo 2: Elimina le Costanti Inutilizzate
 
-Per sicurezza extra, apri `scripts/rooms/character_controller.gd` e aggiungi un controllo prima di riprodurre animazioni. Questo lo farete nel Task 8.
+Trova le righe (intorno alla riga 13-16):
+```gdscript
+const CHAR_FEMALE_RED_SHIRT := "female_red_shirt"
+const CHAR_MALE_YELLOW_SHIRT := "male_yellow_shirt"
+const CHAR_MALE_OLD := "male_old"
+const CHAR_MALE_BLACK_SHIRT := "male_black_shirt"
+```
+
+Elimina le 3 righe dei personaggi inutilizzati, lasciando SOLO:
+```gdscript
+const CHAR_MALE_OLD := "male_old"
+```
+
+Per eliminare una riga in VS Code: posizionatevi sulla riga e premete `Ctrl+Shift+K`.
+
+### Passo 3: Salva
+
+Premi `Ctrl+S` per salvare.
 
 ### Come Verificare
 
 1. Avvia il gioco (F5)
-2. Il personaggio `male_black_shirt` NON deve apparire nella lista di selezione
-3. Il gioco deve funzionare normalmente con gli altri personaggi
-4. Nessun errore nel pannello Output
+2. Il gioco deve funzionare normalmente con il personaggio Ragazzo Classico
+3. Nessun errore nel pannello Output
 
 ### Commit
 
 ```bash
-git add scripts/utils/constants.gd data/characters.json
-git commit -m "fix: rimosso personaggio male_black_shirt incompleto dal catalogo"
+git add scripts/utils/constants.gd
+git commit -m "fix: rimossi costanti personaggi inutilizzati dal catalogo"
 git push origin Renan
 ```
 
@@ -235,7 +250,7 @@ func _build_layers() -> void:
 		add_child(sprite)
 		_layers.append(sprite)
 		_parallax_factors.append(float(i) / float(count))
-		# ↑ Ma l'indice 'i' NON corrisponde piu' all'indice della sprite!
+		# Ma l'indice 'i' NON corrisponde piu' all'indice della sprite!
 ```
 
 Il problema: quando un layer manca e usiamo `continue`, `i` continua ad incrementarsi ma `_layers` e `_parallax_factors` hanno un elemento in meno. Il fattore di parallasse calcolato con `i` e' sbagliato.
@@ -304,127 +319,7 @@ git push origin Renan
 
 ---
 
-## Task 4: Correggere FileDialog Memory Leak in music_panel.gd (A2)
-
-**Tempo stimato**: 25 minuti
-**Priorita'**: ALTO
-
-### Cosa C'e' da Fare
-
-Ogni volta che l'utente clicca "Import MP3/WAV" nel pannello musica, viene creato un NUOVO FileDialog. Ma nessuno di questi dialog viene mai distrutto. E' come aprire una nuova scheda nel browser ogni volta che cercate qualcosa, senza mai chiuderle — alla fine il computer rallenta.
-
-### Il Concetto: Memory Leak
-
-Un **memory leak** (perdita di memoria) e' come un rubinetto che perde: una goccia alla volta non sembra un problema, ma dopo ore il pavimento e' allagato. In informatica, ogni volta che creiamo un oggetto senza mai distruggerlo, occupiamo un pezzetto di memoria. Dopo centinaia di creazioni, il programma rallenta e alla fine potrebbe crashare.
-
-### Passo 1: Apri il File
-
-Apri `scripts/ui/music_panel.gd` in VS Code.
-
-### Passo 2: Aggiungi una Variabile Membro per il FileDialog
-
-All'inizio del file, dopo le variabili esistenti (intorno alla riga 9), aggiungi:
-
-```gdscript
-var _file_dialog: FileDialog = null  # FileDialog riutilizzabile (creato una sola volta)
-```
-
-### Passo 3: Sostituisci la Funzione `_on_import_pressed()`
-
-Trova la funzione `_on_import_pressed()` (intorno alla riga 232) e sostituiscila:
-
-**Prima** (codice problematico, riga 232-244):
-```gdscript
-func _on_import_pressed() -> void:
-	if OS.has_feature("web"):
-		AppLogger.warn("MusicPanel", "File import not supported on web")
-		return
-	var dialog := FileDialog.new()  # PROBLEMA: crea un NUOVO dialog ogni volta!
-	dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	dialog.access = FileDialog.ACCESS_FILESYSTEM
-	dialog.filters = PackedStringArray(["*.mp3 ; MP3 Files", "*.wav ; WAV Files"])
-	dialog.title = "Import Audio Track"
-	dialog.size = Vector2i(600, 400)
-	dialog.file_selected.connect(_on_file_selected)
-	add_child(dialog)
-	dialog.popup_centered()
-```
-
-**Dopo** (codice corretto):
-```gdscript
-func _on_import_pressed() -> void:
-	# Su piattaforma web, il FileDialog non e' supportato
-	if OS.has_feature("web"):
-		AppLogger.warn("MusicPanel", "File import not supported on web")
-		return
-
-	# Creiamo il FileDialog solo la PRIMA volta che l'utente clicca
-	# Tutte le volte successive, riutilizziamo lo stesso oggetto
-	if _file_dialog == null:
-		_file_dialog = FileDialog.new()
-		_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-		_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-		# Filtri: accettiamo solo file audio MP3 e WAV
-		_file_dialog.filters = PackedStringArray(["*.mp3 ; MP3 Files", "*.wav ; WAV Files"])
-		_file_dialog.title = "Import Audio Track"
-		_file_dialog.size = Vector2i(600, 400)
-		# Connettiamo il segnale che ci dice quale file e' stato scelto
-		_file_dialog.file_selected.connect(_on_file_selected)
-		# Aggiungiamo il dialog alla scena (lo facciamo UNA sola volta)
-		add_child(_file_dialog)
-
-	# Mostriamo il dialog (sia che sia appena creato, sia che esistesse gia')
-	_file_dialog.popup_centered()
-```
-
-### Passo 4: Aggiorna `_exit_tree()` per Distruggere il FileDialog
-
-Trova la funzione `_exit_tree()` alla fine del file (riga 252) e aggiungile la pulizia del FileDialog:
-
-**Prima** (codice attuale):
-```gdscript
-func _exit_tree() -> void:
-	if SignalBus.track_changed.is_connected(_on_track_changed):
-		SignalBus.track_changed.disconnect(_on_track_changed)
-	if SignalBus.track_play_pause_toggled.is_connected(_on_play_pause_changed):
-		SignalBus.track_play_pause_toggled.disconnect(_on_play_pause_changed)
-```
-
-**Dopo** (codice aggiornato):
-```gdscript
-func _exit_tree() -> void:
-	# Disconnettiamo i segnali del SignalBus
-	if SignalBus.track_changed.is_connected(_on_track_changed):
-		SignalBus.track_changed.disconnect(_on_track_changed)
-	if SignalBus.track_play_pause_toggled.is_connected(_on_play_pause_changed):
-		SignalBus.track_play_pause_toggled.disconnect(_on_play_pause_changed)
-
-	# Distruggiamo il FileDialog se esiste
-	# is_instance_valid() verifica che l'oggetto non sia gia' stato distrutto
-	if _file_dialog and is_instance_valid(_file_dialog):
-		_file_dialog.queue_free()
-		_file_dialog = null
-```
-
-### Come Verificare
-
-1. Avvia il gioco (F5)
-2. Apri il pannello musica
-3. Clicca "Import MP3/WAV" 20 volte (chiudendo il dialog ogni volta)
-4. Il gioco NON deve rallentare
-5. Nel Profiler di Godot (Debug -> Profiler -> Start), il conteggio oggetti non deve crescere costantemente
-
-### Commit
-
-```bash
-git add scripts/ui/music_panel.gd
-git commit -m "fix: corretto memory leak FileDialog in music_panel.gd"
-git push origin Renan
-```
-
----
-
-## Task 5: Correggere Race Condition Swap Personaggio (A3)
+## Task 4: Correggere Race Condition Swap Personaggio (A3)
 
 **Tempo stimato**: 15 minuti
 **Priorita'**: ALTO
@@ -475,7 +370,7 @@ call_deferred("add_child", new_char)
 
 1. Avvia il gioco (F5)
 2. Entra in una stanza
-3. Cambia personaggio rapidamente 20 volte di seguito
+3. Se il sistema di cambio personaggio e' ancora attivo, provate a cambiare personaggio
 4. Non devono esserci crash, personaggi duplicati, o errori nel pannello Output
 
 ### Commit
@@ -488,7 +383,7 @@ git push origin Renan
 
 ---
 
-## Task 6: Correggere Cast Texture2D Unsafe in drop_zone.gd (A16)
+## Task 5: Correggere Cast Texture2D Unsafe in drop_zone.gd (A16)
 
 **Tempo stimato**: 15 minuti
 **Priorita'**: ALTO
@@ -543,12 +438,12 @@ git push origin Renan
 
 ---
 
-## Task 7: Aggiungere `_exit_tree()` a 7 Script (A1)
+## Task 6: Aggiungere `_exit_tree()` a 6 Script (A1)
 
 **Tempo stimato**: 1.5 ore
 **Priorita'**: ALTO
 
-Questo e' il task piu' grande. Dovete aggiungere la funzione `_exit_tree()` a 7 script che attualmente non la hanno. La buona notizia e' che il procedimento e' sempre lo stesso — e' una **ricetta** che si ripete.
+Questo e' il task piu' grande. Dovete aggiungere la funzione `_exit_tree()` a 6 script che attualmente non la hanno. La buona notizia e' che il procedimento e' sempre lo stesso — e' una **ricetta** che si ripete.
 
 ### La Ricetta (da Ripetere per Ogni File)
 
@@ -560,7 +455,7 @@ Per ogni file, il procedimento e' identico:
 4. **Cercate timer e tween** — se ci sono, aggiungeteli alla pulizia
 5. **Salvate e testate** (F5 in Godot)
 
-### File 7.1: `scripts/rooms/room_base.gd`
+### File 6.1: `scripts/rooms/room_base.gd`
 
 **Segnali da disconnettere** (trovati in `_ready()`, righe 15-19):
 
@@ -585,7 +480,7 @@ func _exit_tree() -> void:
 
 ---
 
-### File 7.2: `scripts/main.gd`
+### File 6.2: `scripts/main.gd`
 
 **Segnali da disconnettere** (trovati in `_ready()`, riga 24):
 
@@ -606,7 +501,7 @@ func _exit_tree() -> void:
 
 ---
 
-### File 7.3: `scripts/ui/deco_panel.gd`
+### File 6.3: `scripts/ui/deco_panel.gd`
 
 Questo file ha gia' un `_exit_tree()` vuoto (riga 196). Dovete completarlo.
 
@@ -629,7 +524,7 @@ func _exit_tree() -> void:
 
 ---
 
-### File 7.4: `scripts/ui/settings_panel.gd`
+### File 6.4: `scripts/ui/settings_panel.gd`
 
 Questo file ha gia' un `_exit_tree()` vuoto (riga 134). Dovete completarlo.
 
@@ -659,7 +554,7 @@ func _exit_tree() -> void:
 
 ---
 
-### File 7.5: `scripts/menu/main_menu.gd`
+### File 6.5: `scripts/menu/main_menu.gd`
 
 **Segnali connessi in `_ready()`** (righe 25-34):
 ```gdscript
@@ -690,7 +585,7 @@ func _exit_tree() -> void:
 
 ---
 
-### File 7.6: `scripts/menu/menu_character.gd`
+### File 6.6: `scripts/menu/menu_character.gd`
 
 Questo script crea un **Timer** (riga 73-77) per l'animazione dei frame.
 
@@ -708,35 +603,16 @@ func _exit_tree() -> void:
 
 ---
 
-### File 7.7: `scripts/ui/shop_panel.gd`
-
-Questo script non connette segnali SignalBus in `_ready()`, ma crea connessioni dinamiche durante `_build_ui()` per i pulsanti delle categorie e degli item. Questi sono nodi figli che vengono distrutti con il pannello.
-
-**Aggiungete alla fine del file**:
-
-```gdscript
-func _exit_tree() -> void:
-	# I pulsanti sono nodi figli del pannello e saranno distrutti automaticamente
-	# con il pannello stesso (queue_free ricorsivo). Non serve disconnettere
-	# i segnali dei nodi figli in questo caso.
-	pass
-```
-
-**Nota**: In questo caso il `_exit_tree()` e' un placeholder per documentare che abbiamo considerato la pulizia e determinato che non serve. Questo e' comunque utile come documentazione per chi legge il codice.
-
----
-
-### Riepilogo Task 7
+### Riepilogo Task 6
 
 | # | File | Segnali da Disconnettere | Timer/Tween |
 |---|------|-------------------------|-------------|
-| 7.1 | room_base.gd | 3 segnali SignalBus | No |
-| 7.2 | main.gd | 1 segnale SignalBus | No |
-| 7.3 | deco_panel.gd | 1 segnale pulsante (completare stub vuoto) | No |
-| 7.4 | settings_panel.gd | 4 segnali slider/option (completare stub vuoto) | No |
-| 7.5 | main_menu.gd | 5 segnali (4 pulsanti + 1 personaggio) | No |
-| 7.6 | menu_character.gd | 1 segnale timer | 1 Timer |
-| 7.7 | shop_panel.gd | Nessuno (nodi figli) | No |
+| 6.1 | room_base.gd | 3 segnali SignalBus | No |
+| 6.2 | main.gd | 1 segnale SignalBus | No |
+| 6.3 | deco_panel.gd | 1 segnale pulsante (completare stub vuoto) | No |
+| 6.4 | settings_panel.gd | 4 segnali slider/option (completare stub vuoto) | No |
+| 6.5 | main_menu.gd | 5 segnali (4 pulsanti + 1 personaggio) | No |
+| 6.6 | menu_character.gd | 1 segnale timer | 1 Timer |
 
 ### Come Verificare (per tutti i file)
 
@@ -750,14 +626,14 @@ func _exit_tree() -> void:
 
 ```bash
 # Commit cumulativo per tutti i file
-git add scripts/rooms/room_base.gd scripts/main.gd scripts/ui/deco_panel.gd scripts/ui/settings_panel.gd scripts/menu/main_menu.gd scripts/menu/menu_character.gd scripts/ui/shop_panel.gd
-git commit -m "fix: aggiunto _exit_tree() con disconnessione segnali a 7 script"
+git add scripts/rooms/room_base.gd scripts/main.gd scripts/ui/deco_panel.gd scripts/ui/settings_panel.gd scripts/menu/main_menu.gd scripts/menu/menu_character.gd
+git commit -m "fix: aggiunto _exit_tree() con disconnessione segnali a 6 script"
 git push origin Renan
 ```
 
 ---
 
-## Task 8: Aggiungere Null Check su character_controller.gd (A1)
+## Task 7: Aggiungere Null Check su character_controller.gd (A1)
 
 **Tempo stimato**: 15 minuti
 **Priorita'**: MEDIO
@@ -815,19 +691,17 @@ git push origin Renan
 
 ```
 - [ ] Task 1: Corretto typo sxt -> sx in characters.json
-- [ ] Task 2: Rimosso male_black_shirt dal catalogo
+- [ ] Task 2: Rimossi costanti personaggi inutilizzati da constants.gd
 - [ ] Task 3: Corretto allineamento array in window_background.gd
-- [ ] Task 4: FileDialog creato una sola volta in music_panel.gd
-- [ ] Task 5: Race condition swap personaggio corretto con call_deferred
-- [ ] Task 6: Null check su caricamento texture in drop_zone.gd
-- [ ] Task 7.1: _exit_tree() aggiunto a room_base.gd (3 segnali)
-- [ ] Task 7.2: _exit_tree() aggiunto a main.gd (1 segnale)
-- [ ] Task 7.3: _exit_tree() completato in deco_panel.gd
-- [ ] Task 7.4: _exit_tree() completato in settings_panel.gd (4 segnali)
-- [ ] Task 7.5: _exit_tree() aggiunto a main_menu.gd (5 segnali)
-- [ ] Task 7.6: _exit_tree() aggiunto a menu_character.gd (1 timer)
-- [ ] Task 7.7: _exit_tree() aggiunto a shop_panel.gd (placeholder)
-- [ ] Task 8: Null check su _anim in character_controller.gd
+- [ ] Task 4: Race condition swap personaggio corretto con call_deferred
+- [ ] Task 5: Null check su caricamento texture in drop_zone.gd
+- [ ] Task 6.1: _exit_tree() aggiunto a room_base.gd (3 segnali)
+- [ ] Task 6.2: _exit_tree() aggiunto a main.gd (1 segnale)
+- [ ] Task 6.3: _exit_tree() completato in deco_panel.gd
+- [ ] Task 6.4: _exit_tree() completato in settings_panel.gd (4 segnali)
+- [ ] Task 6.5: _exit_tree() aggiunto a main_menu.gd (5 segnali)
+- [ ] Task 6.6: _exit_tree() aggiunto a menu_character.gd (1 timer)
+- [ ] Task 7: Null check su _anim in character_controller.gd
 - [ ] Test manuale: giocata sessione completa senza crash
 - [ ] Profiler: nessuna crescita costante di memoria
 ```

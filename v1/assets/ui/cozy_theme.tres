@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=13 format=3 uid="uid://c33lri4rnp82y"]
+[gd_resource type="Theme" format=3 uid="uid://c33lri4rnp82y"]
 
 [ext_resource type="Texture2D" uid="uid://cmkexh27ie8jf" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/brown.png" id="1_brown"]
 [ext_resource type="Texture2D" uid="uid://bvrf3shjf1ex5" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/brown_inlay.png" id="2_brown_inlay"]
