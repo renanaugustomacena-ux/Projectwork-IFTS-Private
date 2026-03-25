@@ -8,24 +8,6 @@ const FRAME_INTERVAL := 0.15
 
 const WALKABLE_CHARACTERS := [
 	{
-		"id": "female_red_shirt",
-		"walk_path": "res://assets/charachters/female/female_red_shirt/female_walk.png",
-		"hframes": 4,
-		"vframes": 5,
-		"walk_row": 2,
-		"flip_h": false,
-		"char_scale": 5.0,
-	},
-	{
-		"id": "male_yellow_shirt",
-		"walk_path": "res://assets/charachters/male/male_yellow_shirt/male_walk.png",
-		"hframes": 4,
-		"vframes": 5,
-		"walk_row": 2,
-		"flip_h": false,
-		"char_scale": 5.0,
-	},
-	{
 		"id": "male_old",
 		"walk_path": "res://assets/charachters/male/old/male_walk/male_walk_side.png",
 		"hframes": 4,
@@ -44,7 +26,7 @@ var _current_frame: int = 0
 
 
 func walk_in() -> void:
-	var char_data: Dictionary = WALKABLE_CHARACTERS[randi() % WALKABLE_CHARACTERS.size()]
+	var char_data: Dictionary = WALKABLE_CHARACTERS[0]
 
 	var texture := load(char_data["walk_path"]) as Texture2D
 	if texture == null:

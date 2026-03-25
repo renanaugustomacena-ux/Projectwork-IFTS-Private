@@ -4,8 +4,7 @@ extends Node2D
 const DecorationScript := preload("res://scripts/rooms/decoration_system.gd")
 
 const CHARACTER_SCENES := {
-	"male_yellow_shirt": "res://scenes/male-character.tscn",
-	"female_red_shirt": "res://scenes/female-character.tscn",
+	"male_old": "res://scenes/male-old-character.tscn",
 }
 
 @onready var decorations_container: Node2D = $Decorations

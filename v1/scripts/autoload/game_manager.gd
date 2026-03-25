@@ -5,7 +5,7 @@ extends Node
 # Current game state
 var current_room_id: String = "cozy_studio"
 var current_theme: String = "modern"
-var current_character_id: String = "female_red_shirt"
+var current_character_id: String = "male_old"
 var current_outfit_id: String = ""
 var is_decoration_mode: bool = false
 

@@ -1,32 +1,6 @@
 {
 	"characters": [
 		{
-			"id": "female_red_shirt",
-			"name": "Ragazza Camicia Rossa",
-			"gender": "female",
-			"sprite_path": "res://assets/charachters/female/female_red_shirt/female_idle.png",
-			"sprite_type": "spritesheet",
-			"animations": {
-				"idle": "res://assets/charachters/female/female_red_shirt/female_idle.png",
-				"walk": "res://assets/charachters/female/female_red_shirt/female_walk.png",
-				"interact": "res://assets/charachters/female/female_red_shirt/female_interact.png",
-				"rotate": "res://assets/charachters/female/female_red_shirt/female_rotate.png"
-			}
-		},
-		{
-			"id": "male_yellow_shirt",
-			"name": "Ragazzo Camicia Gialla",
-			"gender": "male",
-			"sprite_path": "res://assets/charachters/male/male_yellow_shirt/male_idle.png",
-			"sprite_type": "spritesheet",
-			"animations": {
-				"idle": "res://assets/charachters/male/male_yellow_shirt/male_idle.png",
-				"walk": "res://assets/charachters/male/male_yellow_shirt/male_walk.png",
-				"interact": "res://assets/charachters/male/male_yellow_shirt/male_interact.png",
-				"rotate": "res://assets/charachters/male/male_yellow_shirt/male_rotate.png"
-			}
-		},
-		{
 			"id": "male_old",
 			"name": "Ragazzo Classico",
 			"gender": "male",
@@ -64,18 +38,6 @@
 					"up_side_sx": "res://assets/charachters/male/old/male_interact/male_interact_up_side_sx.png"
 				},
 				"rotate": "res://assets/charachters/male/old/male_rotate/male_rotate.png"
-			}
-		},
-		{
-			"id": "male_black_shirt",
-			"name": "Ragazzo Camicia Nera",
-			"gender": "male",
-			"sprite_path": "res://assets/charachters/male/old/male_black_shirt/male_idle_down_black_shirt.png",
-			"sprite_type": "directional",
-			"animations": {
-				"idle": {
-					"down": "res://assets/charachters/male/old/male_black_shirt/male_idle_down_black_shirt.png"
-				}
 			}
 		}
 	]

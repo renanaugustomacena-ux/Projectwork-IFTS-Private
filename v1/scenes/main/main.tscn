@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://c7xwqp5iegw1n" path="res://scripts/rooms/room_base.gd" id="1_room"]
 [ext_resource type="Script" uid="uid://v4251evgwcg2" path="res://scripts/main.gd" id="2_main"]
 [ext_resource type="Script" uid="uid://1q0vbiub785f" path="res://scripts/ui/drop_zone.gd" id="3_dropzone"]
-[ext_resource type="PackedScene" uid="uid://cboy4uryuyrwc" path="res://scenes/male-character.tscn" id="5_char"]
+[ext_resource type="PackedScene" path="res://scenes/male-old-character.tscn" id="5_char"]
 [ext_resource type="Texture2D" path="res://assets/room/room.png" id="6_room_bg"]
 [ext_resource type="Script" path="res://scripts/rooms/room_grid.gd" id="7_grid"]
 
@@ -84,11 +84,6 @@ offset_top = -44.0
 grow_horizontal = 2
 grow_vertical = 0
 alignment = 1
-
-[node name="MusicButton" type="Button" parent="UILayer/HUD"]
-custom_minimum_size = Vector2(60, 36)
-layout_mode = 2
-text = "Music"
 
 [node name="DecoButton" type="Button" parent="UILayer/HUD"]
 custom_minimum_size = Vector2(60, 36)
