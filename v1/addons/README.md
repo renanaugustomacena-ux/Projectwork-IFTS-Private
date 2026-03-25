@@ -1,5 +1,10 @@
 # Mini Cozy Room — Plugin e Addon
 
+> **Nota sulla Semplificazione**: Il plugin godot-sqlite e' utilizzato da `LocalDatabase`, che
+> e' attualmente **over-engineered** (il salvataggio JSON basta). Se LocalDatabase venisse rimosso
+> in futuro, anche questo addon potrebbe essere rimosso dal progetto, riducendo la dimensione
+> del repository. Per ora resta necessario perche' LocalDatabase e' ancora attivo.
+
 Questa cartella contiene i plugin Godot e i binari GDExtension utilizzati dal progetto.
 Attualmente l'unico addon e **godot-sqlite**.
 

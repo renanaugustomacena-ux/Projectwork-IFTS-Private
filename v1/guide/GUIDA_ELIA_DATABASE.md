@@ -1,9 +1,23 @@
 # Guida Operativa — Elia Zoccatelli (Database Support)
 
-**Data**: 21 Marzo 2026
+**Data**: 21 Marzo 2026 (Aggiornamento: 25 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.4, 8, 11 Fase 1.4 e 3, 12
+
+> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
+> Il sistema database (LocalDatabase + Supabase) e' attualmente **over-engineered** per le
+> necessita' del gioco. Le 7 tabelle SQLite replicano la struttura Supabase, ma il salvataggio
+> JSON via SaveManager e' sufficiente per tutte le funzionalita' attuali del gioco.
+>
+> Le correzioni proposte in questa guida **restano valide e utili** — sia per migliorare lo
+> schema attuale (che e' comunque funzionante), sia come **esercizio didattico** importante
+> sulla progettazione di database relazionali (PRIMARY KEY, FOREIGN KEY, normalizzazione).
+>
+> In futuro, LocalDatabase potrebbe essere semplificato a 2-3 tabelle o rimosso del tutto,
+> e SupabaseClient (gia' placeholder) potrebbe essere sostituito con uno stub vuoto.
+> Il Task 6 (allineamento Supabase) e' di priorita' bassa proprio per questo motivo.
+> Consulta il [README principale](../../README.md#stato-dei-sistemi) per lo stato completo dei sistemi.
 
 ---
 

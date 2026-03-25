@@ -1,9 +1,17 @@
 # Guida Operativa — Mohamed & Giovanni (Game Assets, Core Logic & Design Lead)
 
-**Data**: 21 Marzo 2026
+**Data**: 21 Marzo 2026 (Aggiornamento: 25 Marzo 2026)
 **Prerequisito**: Leggete prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il vostro ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
+
+> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
+> Il codebase contiene sistemi piu' avanzati del necessario. Non preoccupatevi se trovate
+> codice complesso in moduli come SupabaseClient, LocalDatabase o SaveManager — sono
+> **placeholder** o **over-engineered** e verranno semplificati. I vostri task riguardano
+> la parte di gameplay e UI, che e' la parte **essenziale** del progetto. Le correzioni
+> proposte in questa guida restano valide al 100%.
+> Consulta il [README principale](../../README.md#stato-dei-sistemi) per lo stato completo dei sistemi.
 
 ---
 

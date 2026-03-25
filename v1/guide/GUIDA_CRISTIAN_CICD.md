@@ -1,9 +1,17 @@
 # Guida Operativa — Cristian Marino (CI/CD & Documentation Lead)
 
-**Data**: 21 Marzo 2026
+**Data**: 21 Marzo 2026 (Aggiornamento: 25 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.7, 6.8, 9.3, 11 Fase 5, 14
+
+> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
+> Alcuni sistemi su cui lavorerai (Logger, PerformanceManager) sono funzionanti ma piu' avanzati
+> del necessario per un gioco cozy. Le correzioni proposte in questa guida **restano valide**
+> e utili — sia come miglioramento che come esercizio didattico. In futuro, il Logger potrebbe
+> essere semplificato (e' enterprise-grade, troppo per le nostre necessita'), ma per ora e' il
+> sistema attivo. Il PerformanceManager e' invece leggero e va mantenuto cosi' com'e'.
+> Consulta il [README principale](../../README.md#stato-dei-sistemi) per lo stato completo dei sistemi.
 
 ---
 

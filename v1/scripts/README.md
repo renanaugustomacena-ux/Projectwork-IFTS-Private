@@ -1,5 +1,13 @@
 # Mini Cozy Room — Script GDScript
 
+> **Nota sulla Semplificazione**: Alcuni script in questa cartella sono **placeholder** o
+> **over-engineered** rispetto alle necessita' del gioco. In particolare:
+> `supabase_client.gd` (placeholder, il gioco e' offline), `local_database.gd` (over-engineered,
+> il JSON basta), `save_manager.gd` (migrazione versioni eccessiva), `logger.gd` (enterprise-grade).
+> Questi script funzionano ma sono candidati alla semplificazione. Gli script essenziali sono:
+> `signal_bus.gd`, `game_manager.gd`, `audio_manager.gd`, `performance_manager.gd` e tutti gli
+> script di gameplay in `rooms/`, `menu/`, `ui/`.
+
 Questa cartella contiene tutti i **26 script GDScript** del progetto, organizzati in
 6 sottocartelle piu il controller principale `main.gd`.
 

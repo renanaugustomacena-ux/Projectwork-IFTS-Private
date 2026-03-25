@@ -1,5 +1,15 @@
 # Mini Cozy Room — Schema Database
 
+> **Nota sulla Semplificazione**: Il sistema database a tre livelli (JSON + SQLite + Supabase)
+> descritto qui e' **over-engineered** per le necessita' attuali del gioco.
+> - **JSON (SaveManager)**: Livello primario, **essenziale** — e' il formato che il gioco usa davvero.
+> - **SQLite (LocalDatabase)**: Mirror del JSON. **Semplificabile** — potrebbe essere ridotto a 2-3 tabelle o rimosso.
+> - **Supabase**: **Placeholder** — il gioco funziona completamente offline. Lo schema SQL e' documentato
+>   ma non attivamente utilizzato. La sincronizzazione cloud e' opzionale e non ancora implementata.
+>
+> I cataloghi JSON (`characters.json`, `decorations.json`, `rooms.json`, `tracks.json`) sono invece
+> **essenziali** e usati attivamente dal GameManager.
+
 Documentazione dello schema dati utilizzato dal progetto, sia in cloud (Supabase)
 che in locale (SQLite via godot-sqlite v4.7).
 

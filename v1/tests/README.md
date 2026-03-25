@@ -1,5 +1,11 @@
 # Mini Cozy Room — Test Unitari
 
+> **Nota sulla Semplificazione**: I test esistenti coprono moduli essenziali (Helpers, SaveManager)
+> e moduli che potrebbero essere semplificati in futuro (Logger). Se un modulo testato viene
+> semplificato o rimosso, i relativi test dovranno essere aggiornati di conseguenza.
+> I nuovi test proposti nell'audit report per moduli come AudioManager e GameManager
+> restano validi indipendentemente dalla semplificazione.
+
 Questa cartella contiene **5 test suite** basate sul framework **GdUnit4** per Godot 4.x.
 I test verificano funzioni utility, comportamento degli autoload, integrita del sistema
 di salvataggio e logica del pannello negozio.

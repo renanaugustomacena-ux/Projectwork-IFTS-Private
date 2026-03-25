@@ -3,6 +3,13 @@
 Questo documento contiene le task specifiche da completare per il progetto Mini Cozy Room.
 Ogni sezione include istruzioni dettagliate passo-passo.
 
+> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
+> La Task 4 (Semplificazione Codice) di questo documento descrive i sistemi over-engineered del
+> codebase. E' di priorita' bassa perche' quei sistemi (SupabaseClient, LocalDatabase, SaveManager,
+> Logger) funzionano correttamente — sono solo piu' complessi del necessario.
+> Concentratevi prima sulle task 1-3 (gameplay) e 5 (verifiche). La semplificazione e' un lavoro
+> da fare insieme al team quando le funzionalita' principali sono stabili.
+
 ---
 
 ## TASK 1: Calibrazione Confini Movimento Personaggio (PRIORITA ALTA)

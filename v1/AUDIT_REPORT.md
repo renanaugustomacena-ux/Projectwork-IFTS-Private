@@ -11,6 +11,21 @@
 > di correzione sono state arricchite con riferimenti ai documenti di studio del progetto (cartella `study/`).
 > Vedere la Sezione 10.1 per il riepilogo completo delle modifiche.
 
+> **⚠️ Nota sulla Semplificazione del Codebase (25 Marzo 2026)**:
+> E' in corso un lavoro di semplificazione del codebase per renderlo piu' accessibile al team senza
+> perdere funzionalita'. Alcuni sistemi analizzati in questo audit sono **placeholder** o **over-engineered**:
+>
+> - **SupabaseClient**: E' un placeholder. Il gioco funziona completamente offline; questo modulo
+>   puo' essere sostituito con uno stub vuoto o rimosso.
+> - **LocalDatabase**: Over-engineered. Le 7 tabelle SQLite replicano Supabase, ma il salvataggio
+>   JSON via SaveManager e' sufficiente. Puo' essere ridotto o rimosso.
+> - **SaveManager**: La catena di migrazione v1→v4 e' eccessiva. Un singolo formato basta.
+> - **Logger**: Funzionante ma enterprise-grade. Opzionale per un gioco cozy.
+>
+> Le correzioni proposte in questo audit restano valide, ma i colleghi dovrebbero sapere che
+> i sistemi piu' complessi sono candidati alla semplificazione. Se una correzione riguarda un
+> sistema che verra' poi semplificato, ha comunque valore come esercizio didattico.
+
 ---
 
 ## Team di Progetto

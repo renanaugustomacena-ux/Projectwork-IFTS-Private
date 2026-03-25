@@ -5,6 +5,12 @@ Seguitela dall'inizio alla fine prima di iniziare qualsiasi lavoro sul progetto.
 
 **Tempo stimato**: 30-45 minuti
 
+> **Nota per il team (25 Marzo 2026)**: Il progetto contiene sistemi avanzati come SupabaseClient
+> e LocalDatabase che sono **placeholder** o **over-engineered**. Non preoccupatevi se trovate
+> codice complesso — e' in fase di semplificazione. Consultate il
+> [README principale](../../README.md#stato-dei-sistemi) per capire quali sistemi sono essenziali
+> e quali possono essere semplificati o sostituiti.
+
 ---
 
 ## Indice

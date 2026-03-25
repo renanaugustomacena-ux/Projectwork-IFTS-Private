@@ -1,5 +1,13 @@
 # Mini Cozy Room — Documentazione Tecnica
 
+> **⚠️ Nota: Semplificazione in Corso**
+> Il codebase contiene sistemi avanzati che sono in fase di semplificazione.
+> Alcuni moduli sono **placeholder** (SupabaseClient), altri sono **over-engineered**
+> rispetto alle necessità del gioco (LocalDatabase, SaveManager migrations, Logger).
+> Tutto funziona correttamente, ma l'obiettivo è rendere il codice più accessibile
+> senza perdere funzionalità. Vedere la sezione [Stato Semplificazione](#stato-semplificazione)
+> per dettagli su cosa è essenziale, cosa è placeholder e cosa è sostituibile.
+
 ## Descrizione
 
 Mini Cozy Room e un desktop companion 2D che combina stanze pixel art
@@ -30,16 +38,16 @@ aperto in background come ambiente digitale rilassante.
 
 Caricati automaticamente in questo ordine da `project.godot`:
 
-| # | Autoload | Script | Responsabilita |
-|---|----------|--------|----------------|
-| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (20 segnali, disaccoppiamento moduli) |
-| 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID |
-| 3 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON |
-| 4 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v4.0.0 (auto-save 60s) |
-| 5 | `LocalDatabase` | local_database.gd | Database SQLite locale (WAL mode, 7 tabelle) |
-| 6 | `AudioManager` | audio_manager.gd | Riproduzione musica lo-fi con crossfade e import esterno |
-| 7 | `SupabaseClient` | supabase_client.gd | Client HTTP per Supabase REST API |
-| 8 | `PerformanceManager` | performance_manager.gd | FPS cap dinamico (60/15) |
+| # | Autoload | Script | Responsabilita | Stato |
+|---|----------|--------|----------------|-------|
+| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (20 segnali, disaccoppiamento moduli) | Essenziale |
+| 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID | Opzionale — over-engineered, funziona ma e' piu' del necessario |
+| 3 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON | Essenziale |
+| 4 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v4.0.0 (auto-save 60s) | Semplificabile — il sistema di migrazione v1→v4 e' eccessivo |
+| 5 | `LocalDatabase` | local_database.gd | Database SQLite locale (WAL mode, 7 tabelle) | Semplificabile — il JSON via SaveManager basta; SQLite e' ridondante |
+| 6 | `AudioManager` | audio_manager.gd | Riproduzione musica lo-fi con crossfade e import esterno | Essenziale |
+| 7 | `SupabaseClient` | supabase_client.gd | Client HTTP per Supabase REST API | Placeholder — il gioco e' offline, sostituibile con stub |
+| 8 | `PerformanceManager` | performance_manager.gd | FPS cap dinamico (60/15) | Essenziale |
 
 ### Scene Tree — Stanza di Gioco
 
@@ -258,6 +266,39 @@ Container di build: `barichello/godot-ci:4.5`
 | 4 | Core Game Loop, Audio, Desktop Polish | Completata |
 | 5 | Catalogo Decorazioni e Polish UI | In Corso |
 | 6 | Polish e Rilascio | Pianificata |
+
+## Stato Semplificazione
+
+Il progetto contiene sistemi con complessita' superiore a quella necessaria per un gioco cozy room.
+Questo e' il risultato di una fase iniziale di sviluppo dove sono state costruite basi solide
+pensando a funzionalita' future. L'obiettivo attuale e' **semplificare senza perdere funzionalita'**.
+
+### Sistemi Placeholder (possono essere rimossi/sostituiti)
+
+| Sistema | Perche' e' placeholder | Alternativa |
+|---------|----------------------|-------------|
+| **SupabaseClient** (515 righe) | Client REST completo con pool HTTP, token refresh, autenticazione. Il gioco e' completamente offline. | Sostituire con uno stub che logga "online features disabled" (~10 righe) |
+| **LocalDatabase** (298 righe) | 7 tabelle SQLite che replicano la struttura Supabase. Tutti i dati necessari sono gia' salvati in JSON via SaveManager. | Rimuovere completamente o ridurre a 2-3 tabelle essenziali |
+
+### Sistemi Over-engineered (funzionanti ma semplificabili)
+
+| Sistema | Cosa c'e' di troppo | Semplificazione possibile |
+|---------|---------------------|--------------------------|
+| **SaveManager** (327 righe) | Catena migrazione v1→v2→v3→v4, backup con error checking, auto-save timer | Usare un singolo formato JSON senza backward compatibility |
+| **Logger** (220 righe) | Log strutturati JSON Lines con rotazione file, livello enterprise | Ridurre a un semplice `print()` wrapper o usare il print nativo di Godot |
+
+### Sistemi Essenziali (da mantenere)
+
+| Sistema | Perche' e' essenziale |
+|---------|----------------------|
+| **SignalBus** | Pattern architetturale fondamentale per il disaccoppiamento moduli |
+| **GameManager** | Carica i cataloghi JSON, gestisce lo stato di gioco |
+| **AudioManager** | Musica auto-play, crossfade, gestione playlist |
+| **PerformanceManager** | FPS cap dinamico, leggero e utile |
+
+> **Per i colleghi:** Se durante il lavoro trovate un sistema troppo complesso o ridondante,
+> non preoccupatevi — probabilmente e' gia' nella lista delle semplificazioni.
+> Concentratevi sulle vostre task principali e segnalate eventuali dubbi.
 
 ## Problemi Noti
 
