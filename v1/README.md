@@ -50,12 +50,11 @@ Main (Node2D)
 ├── Baseboard (ColorRect, 2px divisore)
 ├── Room (Node2D, room_base.gd)
 │   ├── Decorations (Node2D)
-│   ├── Character (CharacterBody2D, istanza da male/female-character.tscn)
+│   ├── Character (CharacterBody2D, istanza da male-old-character.tscn)
 │   └── RoomBounds (StaticBody2D, CollisionPolygon2D isometrico)
 ├── UILayer (CanvasLayer, layer=10)
 │   ├── DropZone (Control, full rect)
 │   └── HUD (HBoxContainer)
-│       ├── MusicButton
 │       ├── DecoButton
 │       └── SettingsButton
 ├── PanelManager (Node, creato programmaticamente)
@@ -165,24 +164,26 @@ dal pannello Decorazioni in modalita' creativa libera.
 | Kitchen Furniture | varies | 3x | floor |
 | Kitchen Accessories | varies | 3x | floor |
 
-### Personaggi (3)
+### Personaggio
 
 | Personaggio | ID | Tipo Animazione |
 |-------------|----|-----------------|
-| Ragazza Camicia Rossa | female_red_shirt | Spritesheet (idle, walk, interact, rotate) |
-| Ragazzo Camicia Gialla | male_yellow_shirt | Spritesheet (idle, walk, interact, rotate) |
-| Ragazzo Classico | male_old | Direzionale (8 direzioni, idle + walk) |
+| Ragazzo Classico | male_old | Direzionale (8 direzioni, idle + walk + interact + rotate) |
 
-Il personaggio e controllabile con **WASD / frecce direzionali** nella stanza di gioco,
+Personaggio unico del gioco. Sprite direzionali 32x32 con 4 frame per direzione.
+Controllabile con **WASD / frecce direzionali** nella stanza di gioco,
 confinato dai bordi della stanza tramite `RoomBounds` (StaticBody2D con CollisionPolygon2D isometrico).
 Il movimento usa `move_and_slide()` con `motion_mode = FLOATING` (top-down).
 
-### Musica (2 tracce)
+### Musica (2 tracce, auto-play)
 
 | Traccia | Sorgente | Tipo |
 |---------|----------|------|
 | Light Rain | Mixkit | Loop ambientale |
 | Rain & Thunder | Mixkit | Loop ambientale |
+
+La musica parte automaticamente all'avvio del gioco. Non ci sono controlli utente
+per la musica (nessun pulsante Music nel HUD). Le tracce si alternano in shuffle.
 
 ## Salvataggio
 
@@ -267,12 +268,15 @@ Container di build: `barichello/godot-ci:4.5`
 
 ## Prossimi Sviluppi
 
-| # | Task | Priorita | Descrizione |
-|---|------|----------|-------------|
-| 1 | Risolvere confini movimento | Alta | Calibrare il CollisionPolygon2D isometrico oppure usare un approccio alternativo (muri ruotati, NavigationRegion2D) per confinare il personaggio nell'area pavimento |
-| 2 | Rotazione decorazioni | Media | Aggiungere la possibilita' di ruotare le decorazioni piazzate (popup o shortcut) |
-| 3 | Ridimensionamento decorazioni | Media | Aggiungere la possibilita' di scalare le decorazioni piazzate |
-| 4 | Popup interazione decorazioni | Media | Click su decorazione piazzata → popup con pulsanti Elimina / Ruota / Ridimensiona |
+| # | Task | Assegnato a | Priorita | Descrizione |
+|---|------|-------------|----------|-------------|
+| 1 | Calibrazione confini movimento | Mohamed / Giovanni | Alta | Calibrare i punti del CollisionPolygon2D in Godot Editor per seguire la forma del pavimento isometrico |
+| 2 | Popup interazione decorazioni | Mohamed / Giovanni | Media | Click su decorazione piazzata → popup con pulsanti Elimina / Ruota / Ridimensiona |
+| 3 | Rotazione decorazioni | Mohamed / Giovanni | Media | Aggiungere rotazione (90 gradi) alle decorazioni piazzate |
+| 4 | Ridimensionamento decorazioni | Mohamed / Giovanni | Media | Aggiungere scaling alle decorazioni piazzate |
+| 5 | Semplificazione codice | Mohamed / Giovanni | Bassa | Ridurre complessita SupabaseClient, LocalDatabase, SaveManager |
+
+Guida dettagliata per Mohamed e Giovanni: [TASK_MOHAMED_GIOVANNI.md](guide/TASK_MOHAMED_GIOVANNI.md)
 
 ## Asset e Licenze
 
