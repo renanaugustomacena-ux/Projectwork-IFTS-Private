@@ -2,16 +2,29 @@
 
 [ext_resource type="PackedScene" uid="uid://uufc8r5qr7pa" path="res://scenes/room.tscn" id="1_yqjtg"]
 [ext_resource type="PackedScene" uid="uid://cboy4uryuyrwc" path="res://scenes/male-character.tscn" id="2_lnu2h"]
+[ext_resource type="PackedScene" uid="uid://bsctegqwk4fe3" path="res://scenes/female-character.tscn" id="3_lbhrr"]
 [ext_resource type="PackedScene" uid="uid://bolodsplnqnqu" path="res://scenes/virtual_joystick.tscn" id="3_lnu2h"]
+[ext_resource type="PackedScene" uid="uid://bpkd6hq3vm6o1" path="res://scenes/window1.tscn" id="5_p57ef"]
+[ext_resource type="PackedScene" uid="uid://81djoh30as2n" path="res://scenes/door.tscn" id="6_u5sy4"]
 
 [node name="Game" type="Node2D" unique_id=1822793542]
 
 [node name="room" parent="." unique_id=1648951168 instance=ExtResource("1_yqjtg")]
 position = Vector2(-1, 15)
 
+[node name="window1" parent="." unique_id=1522180996 instance=ExtResource("5_p57ef")]
+position = Vector2(37, -5)
+
+[node name="door" parent="." unique_id=1380041328 instance=ExtResource("6_u5sy4")]
+position = Vector2(-41, 10)
+
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=37255617]
 
 [node name="VirtualJoystick" parent="CanvasLayer" unique_id=912784726 instance=ExtResource("3_lnu2h")]
+metadata/_edit_use_anchors_ = true
 
-[node name="CharacterBody2D" parent="." unique_id=1587920895 instance=ExtResource("2_lnu2h")]
-position = Vector2(-3, 36)
+[node name="Female" parent="." unique_id=1587920895 instance=ExtResource("3_lbhrr")]
+position = Vector2(-27, 30)
+
+[node name="Male" parent="." unique_id=1691135567 instance=ExtResource("2_lnu2h")]
+position = Vector2(29, 30)
