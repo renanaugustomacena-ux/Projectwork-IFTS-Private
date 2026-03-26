@@ -1,11 +1,21 @@
 [gd_scene format=3 uid="uid://uufc8r5qr7pa"]
 
 [ext_resource type="Texture2D" uid="uid://cv5hfbq1fmecf" path="res://assets/room/room.png" id="1_36trf"]
+[ext_resource type="Texture2D" uid="uid://cmc57uawy772k" path="res://assets/menu/background.png" id="1_ffxv4"]
+[ext_resource type="Texture2D" uid="uid://sbya711yr600" path="res://assets/room/bed/sprite_bed_cyan2.png" id="3_7dqbv"]
+[ext_resource type="Texture2D" uid="uid://cmxeepiq1a8hf" path="res://assets/room/mess/floor_mess1.png" id="4_ybpoa"]
+[ext_resource type="Texture2D" uid="uid://c0dgbvp8ctcxw" path="res://assets/room/mess/floor_mess2.png" id="5_qtoah"]
+[ext_resource type="Texture2D" uid="uid://b7gxayjouhqd7" path="res://assets/room/mess/floor_mess3.png" id="6_eom3m"]
+[ext_resource type="PackedScene" uid="uid://cdvaygbvu8ubt" path="res://scenes/window3.tscn" id="7_tk5fv"]
+[ext_resource type="PackedScene" uid="uid://81djoh30as2n" path="res://scenes/door.tscn" id="8_w68ji"]
 
 [node name="room" type="StaticBody2D" unique_id=1648951168]
 
+[node name="Background" type="Sprite2D" parent="." unique_id=1781629417]
+texture = ExtResource("1_ffxv4")
+
 [node name="Camera2D" type="Camera2D" parent="." unique_id=183385469]
-zoom = Vector2(4, 4)
+zoom = Vector2(3.6, 3.6)
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="." unique_id=1376329003]
 build_mode = 1
@@ -13,3 +23,25 @@ polygon = PackedVector2Array(0, -26, -83, 14, -83, 30, 0, 71, 84, 30, 84, 13)
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=683385401]
 texture = ExtResource("1_36trf")
+
+[node name="SpriteBedCyan2" type="Sprite2D" parent="." unique_id=1658559749]
+position = Vector2(2, -10)
+texture = ExtResource("3_7dqbv")
+
+[node name="FloorMess1" type="Sprite2D" parent="." unique_id=836746145]
+position = Vector2(-32, 28)
+texture = ExtResource("4_ybpoa")
+
+[node name="FloorMess2" type="Sprite2D" parent="." unique_id=2121728949]
+position = Vector2(29, 37)
+texture = ExtResource("5_qtoah")
+
+[node name="FloorMess3" type="Sprite2D" parent="." unique_id=62704288]
+position = Vector2(-1, 52)
+texture = ExtResource("6_eom3m")
+
+[node name="window3" parent="." unique_id=1522180996 instance=ExtResource("7_tk5fv")]
+position = Vector2(40, -23)
+
+[node name="door" parent="." unique_id=1148667855 instance=ExtResource("8_w68ji")]
+position = Vector2(-68, 9)
