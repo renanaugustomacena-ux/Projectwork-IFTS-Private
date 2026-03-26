@@ -4,19 +4,14 @@
 [ext_resource type="PackedScene" uid="uid://cboy4uryuyrwc" path="res://scenes/male-character.tscn" id="2_lnu2h"]
 [ext_resource type="PackedScene" uid="uid://bsctegqwk4fe3" path="res://scenes/female-character.tscn" id="3_lbhrr"]
 [ext_resource type="PackedScene" uid="uid://bolodsplnqnqu" path="res://scenes/virtual_joystick.tscn" id="3_lnu2h"]
-[ext_resource type="PackedScene" uid="uid://bpkd6hq3vm6o1" path="res://scenes/window1.tscn" id="5_p57ef"]
-[ext_resource type="PackedScene" uid="uid://81djoh30as2n" path="res://scenes/door.tscn" id="6_u5sy4"]
+[ext_resource type="PackedScene" uid="uid://eaqyaeykmaj2" path="res://scenes/ui_male.tscn" id="5_u5sy4"]
+[ext_resource type="Texture2D" uid="uid://bnwudo25fujqk" path="res://assets/menu/buttons_static/sprite_settings_static.png" id="6_gee14"]
+[ext_resource type="Texture2D" uid="uid://df5ajxgm8n26n" path="res://assets/menu/buttons_static/button_interact_static.png" id="7_0tnpc"]
 
 [node name="Game" type="Node2D" unique_id=1822793542]
 
 [node name="room" parent="." unique_id=1648951168 instance=ExtResource("1_yqjtg")]
 position = Vector2(-1, 15)
-
-[node name="window1" parent="." unique_id=1522180996 instance=ExtResource("5_p57ef")]
-position = Vector2(37, -5)
-
-[node name="door" parent="." unique_id=1380041328 instance=ExtResource("6_u5sy4")]
-position = Vector2(-41, 10)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=37255617]
 
@@ -24,7 +19,20 @@ position = Vector2(-41, 10)
 metadata/_edit_use_anchors_ = true
 
 [node name="Female" parent="." unique_id=1587920895 instance=ExtResource("3_lbhrr")]
+visible = false
 position = Vector2(-27, 30)
 
 [node name="Male" parent="." unique_id=1691135567 instance=ExtResource("2_lnu2h")]
 position = Vector2(29, 30)
+
+[node name="ui_male" parent="." unique_id=1522180996 instance=ExtResource("5_u5sy4")]
+position = Vector2(-111, -48)
+
+[node name="SpriteSettingsStatic" type="Sprite2D" parent="." unique_id=1076908254]
+position = Vector2(137, -55)
+texture = ExtResource("6_gee14")
+
+[node name="ButtonInteractStatic" type="Sprite2D" parent="." unique_id=192038382]
+position = Vector2(126.00001, 80)
+scale = Vector2(1.1538461, 1.1538461)
+texture = ExtResource("7_0tnpc")
