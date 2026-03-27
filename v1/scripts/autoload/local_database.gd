@@ -13,6 +13,7 @@ func _ready() -> void:
 	_open_database()
 	if _is_open:
 		_create_tables()
+		_migrate_schema()
 		AppLogger.info("LocalDatabase", "Database initialized", {"path": DB_PATH})
 	SignalBus.save_to_database_requested.connect(_on_save_requested)
 
@@ -69,7 +70,9 @@ func _create_tables() -> void:
 			+ "auth_uid TEXT UNIQUE,"
 			+ "data_di_iscrizione TEXT NOT NULL DEFAULT (date('now')),"
 			+ "data_di_nascita TEXT NOT NULL DEFAULT '',"
-			+ "mail TEXT NOT NULL DEFAULT ''"
+			+ "mail TEXT NOT NULL DEFAULT '',"
+			+ "coins INTEGER DEFAULT 0,"
+			+ "inventario_capacita INTEGER DEFAULT 50"
 			+ ");"
 		)
 	)
@@ -104,10 +107,9 @@ func _create_tables() -> void:
 		(
 			"CREATE TABLE IF NOT EXISTS inventario ("
 			+ "inventario_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "account_id INTEGER REFERENCES accounts(account_id) ON DELETE CASCADE,"
-			+ "item_id INTEGER,"
-			+ "capacita INTEGER DEFAULT 50,"
-			+ "coins INTEGER DEFAULT 0"
+			+ "account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,"
+			+ "item_id INTEGER NOT NULL,"
+			+ "quantita INTEGER DEFAULT 1"
 			+ ");"
 		)
 	)
@@ -115,17 +117,33 @@ func _create_tables() -> void:
 	_execute(
 		(
 			"CREATE TABLE IF NOT EXISTS characters ("
-			+ "account_id INTEGER PRIMARY KEY REFERENCES accounts(account_id) ON DELETE CASCADE,"
-			+ "nome TEXT,"
+			+ "character_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,"
+			+ "nome TEXT DEFAULT '',"
 			+ "genere INTEGER DEFAULT 1,"
 			+ "colore_occhi INTEGER DEFAULT 0,"
 			+ "colore_capelli INTEGER DEFAULT 0,"
 			+ "colore_pelle INTEGER DEFAULT 0,"
-			+ "livello_stress INTEGER DEFAULT 0,"
-			+ "inventario INTEGER REFERENCES inventario(inventario_id)"
+			+ "livello_stress INTEGER DEFAULT 0"
 			+ ");"
 		)
 	)
+
+
+func _migrate_schema() -> void:
+	var rows := _select(
+		"SELECT sql FROM sqlite_master WHERE type='table' AND name='characters';", []
+	)
+	if rows.is_empty():
+		return
+	var schema: String = rows[0].get("sql", "")
+	if "character_id" in schema:
+		return
+	AppLogger.info("LocalDatabase", "Migrating database to new schema")
+	_execute("DROP TABLE IF EXISTS characters;")
+	_execute("DROP TABLE IF EXISTS inventario;")
+	_create_tables()
+	AppLogger.info("LocalDatabase", "Schema migration completed")
 
 
 # ---- CRUD: Accounts ----
