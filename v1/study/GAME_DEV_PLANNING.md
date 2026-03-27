@@ -1002,5 +1002,150 @@ If we need 1000 decorations later, THEN we optimize.
 
 ---
 
+## 13. Checklist Pre-Commit per il Progetto
+
+Prima di ogni `git commit`, verificate questi punti. Stampate questa lista e tenetela accanto al monitor.
+
+```text
+CODICE
+[ ] Ho eseguito gdlint v1/scripts/ senza errori?
+[ ] Ho eseguito gdformat --check v1/scripts/ senza errori?
+[ ] Ho premuto F5 e il gioco parte senza errori rossi nel pannello Output?
+[ ] I miei type hints sono completi? (variabili, parametri, return type)
+
+DATI
+[ ] Se ho modificato un file JSON (characters, decorations, rooms, tracks):
+    - Le virgole sono corrette? (ultima voce di un oggetto NON ha virgola)
+    - I percorsi sprite esistono? (res://assets/sprites/...)
+    - Ho mantenuto la struttura esistente? (stessi campi degli altri oggetti)
+
+GIT
+[ ] Il messaggio di commit e' in italiano e descrive COSA e PERCHE'?
+[ ] Non sto committando file sensibili? (.env, .db, credenziali)
+[ ] Non sto committando la cartella .godot/ ? (e' nel .gitignore)
+[ ] Ho fatto git diff per rivedere le modifiche prima del commit?
+
+SEGNALI
+[ ] Se ho aggiunto un connect() in _ready(), ho il corrispondente
+    disconnect() in _exit_tree()?
+[ ] Se emetto un nuovo segnale, l'ho dichiarato in signal_bus.gd?
+```
+
+---
+
+## 14. Come Gestire un Blocco Tecnico
+
+Quando incontrate un problema che non riuscite a risolvere, seguite questi 5 passi:
+
+### Passo 1: Leggete l'Errore (Davvero)
+
+Il pannello Output di Godot mostra errori con informazioni precise:
+
+```text
+res://scripts/rooms/room_base.gd:142 - Invalid call. Nonexistent function 'get_character' in base 'Nil'.
+         ^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         File e riga esatti        |    Descrizione del problema
+                                   Numero di riga
+```
+
+Copiate l'errore INTERO. Non riassumete — i dettagli contano.
+
+### Passo 2: Riproducete il Problema
+
+Se non riuscite a far accadere l'errore in modo prevedibile, non potete confermarne la risoluzione. Annotate:
+
+- Quali passi esatti causano l'errore?
+- Succede sempre o solo a volte?
+- Succede solo con certi dati (un personaggio specifico, una decorazione specifica)?
+
+### Passo 3: Isolate il Problema
+
+Usate `print()` temporanei per restringere il punto esatto:
+
+```gdscript
+func _problematic_function(data: Dictionary) -> void:
+    print("1 - Entrato nella funzione")  # Questo appare?
+    var result := process(data)
+    print("2 - Process completato: ", result)  # E questo?
+    apply(result)
+    print("3 - Apply completato")  # E questo?
+```
+
+Se vedete "1" e "2" ma non "3", il problema e' in `apply()`.
+
+### Passo 4: Cercate Prima di Chiedere
+
+1. **F1 in Godot**: apre la documentazione integrata della classe/funzione
+2. **Ctrl+Shift+F**: cerca nel progetto se qualcun altro ha risolto lo stesso problema
+3. **Google**: "godot 4 + messaggio di errore" — spesso il primo risultato su Reddit o GitHub risolve
+
+### Passo 5: Chiedete Aiuto con Contesto
+
+Se dopo 20 minuti non avete risolto, chiedete. Ma fornite SEMPRE:
+
+- L'errore esatto (copia-incolla dal pannello Output)
+- Il file e la riga dove si verifica
+- Cosa stavate cercando di fare
+- Cosa avete gia' provato
+
+**Template messaggio**:
+
+```text
+PROBLEMA: [descrizione breve]
+ERRORE: [copia-incolla errore dal pannello Output]
+FILE: [percorso:riga]
+HO PROVATO: [lista di cose provate]
+CONTESTO: [cosa stavo facendo quando e' successo]
+```
+
+---
+
+## 15. Anti-Pattern Specifici del Progetto Mini Cozy Room
+
+Errori comuni che abbiamo visto (o rischiamo di vedere) in questo progetto specifico.
+
+### Modificare project.godot a Mano
+
+Il file `project.godot` e' gestito da Godot. Modificarlo con un editor di testo puo' corrompere il progetto.
+
+**Regola**: Usate SEMPRE le impostazioni del progetto (`Project → Project Settings`) nell'editor Godot. L'unica eccezione e' la sezione `[autoload]` durante il setup iniziale.
+
+### Aggiungere Asset senza Passare dal Catalogo
+
+```text
+SBAGLIATO:
+1. Copio uno sprite in assets/sprites/
+2. Lo carico direttamente nel codice con load("res://assets/sprites/nuova_sedia.png")
+
+CORRETTO:
+1. Copio lo sprite in assets/sprites/decorations/
+2. Aggiungo una voce in data/decorations.json con id, nome, categoria, sprite_path
+3. Il gioco lo trova automaticamente tramite GameManager.decoration_catalog
+```
+
+Il catalogo JSON e' il "registro" ufficiale dei contenuti. Se un asset non e' nel catalogo, per il gioco non esiste.
+
+### Committare la Cartella .godot/
+
+La cartella `.godot/` contiene cache importate, shader compilati, e file temporanei specifici della vostra macchina. E' gia' nel `.gitignore` — ma se fate `git add .` o `git add -A` potreste includerla per errore.
+
+**Verificate sempre**: `git status` prima di `git commit`. Se vedete file `.godot/`, rimuoveteli dallo staging:
+
+```bash
+git reset HEAD .godot/
+```
+
+### Ignorare gli Warning del Pannello Output
+
+Warning gialli NON sono "informazioni decorative". Ogni warning e' un potenziale bug:
+
+- `Unused signal "nome_segnale"` → avete dichiarato un segnale che nessuno ascolta
+- `The local variable "x" is declared but never used` → codice morto, rimuovetelo
+- `Integer division` → state dividendo interi e perdendo la parte decimale
+
+**Regola del progetto**: Zero warning nel pannello Output durante il gameplay. Ogni warning va o risolto o convertito in un `push_warning()` esplicito con motivazione.
+
+---
+
 *Study document for Mini Cozy Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*
