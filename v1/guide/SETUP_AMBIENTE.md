@@ -5,11 +5,10 @@ Seguitela dall'inizio alla fine prima di iniziare qualsiasi lavoro sul progetto.
 
 **Tempo stimato**: 30-45 minuti
 
-> **Nota per il team (25 Marzo 2026)**: Il progetto contiene sistemi avanzati come SupabaseClient
-> e LocalDatabase che sono **placeholder** o **over-engineered**. Non preoccupatevi se trovate
-> codice complesso — e' in fase di semplificazione. Consultate il
-> [README principale](../../README.md#stato-dei-sistemi) per capire quali sistemi sono essenziali
-> e quali possono essere semplificati o sostituiti.
+> **Nota per il team (27 Marzo 2026)**: SupabaseClient e' stato rimosso dal progetto.
+> Il gioco funziona esclusivamente offline con JSON + SQLite.
+> Alcuni sistemi (Logger, SaveManager) sono piu' complessi del necessario ma funzionano
+> e non richiedono modifiche. Concentratevi sui vostri task principali.
 
 ---
 
@@ -335,7 +334,7 @@ v1/                              <-- Cartella principale del progetto Godot
 │   ├── decorations.json         <-- Catalogo decorazioni (118 oggetti)
 │   ├── rooms.json               <-- Catalogo stanze (4 stanze, 10 temi)
 │   ├── tracks.json              <-- Catalogo tracce musicali
-│   └── supabase_migration.sql   <-- Schema database Supabase (cloud)
+│   └── README.md                <-- Documentazione schema database
 │
 ├── scenes/                      <-- Scene Godot (.tscn) — la struttura visuale del gioco
 │   ├── main/main.tscn           <-- Scena della stanza di gioco
@@ -350,12 +349,12 @@ v1/                              <-- Cartella principale del progetto Godot
 │   │   ├── save_manager.gd      <-- Salvataggio/caricamento dati
 │   │   ├── local_database.gd    <-- Database SQLite locale
 │   │   ├── audio_manager.gd     <-- Gestione musica e suoni
-│   │   └── supabase_client.gd   <-- Client per Supabase (cloud)
+│   │   └── audio_manager.gd     <-- Musica lo-fi con crossfade
 │   ├── menu/                    <-- Script del menu principale
 │   ├── rooms/                   <-- Script della stanza e decorazioni
 │   ├── systems/                 <-- Performance manager
 │   ├── ui/                      <-- Script dei pannelli e dell'interfaccia
-│   └── utils/                   <-- Costanti, helper, caricatore .env
+│   └── utils/                   <-- Costanti e helper
 │       └── constants.gd         <-- Costanti globali (nomi stanze, personaggi, FPS)
 │
 ├── tests/unit/                  <-- Test unitari (GdUnit4)
@@ -561,33 +560,7 @@ gdformat --version
 
 ---
 
-## 9. Configurazione File .env per Supabase (Opzionale)
-
-### Cos'e' il File .env?
-
-Il file `.env` contiene le **credenziali segrete** per connettersi al database cloud Supabase. E' come un foglietto con la password del Wi-Fi: serve per connettersi, ma **non deve essere condiviso pubblicamente**.
-
-**Importante**: Il gioco funziona perfettamente **senza** il file `.env`. La connessione Supabase e' opzionale — il gioco salva tutto localmente in JSON e SQLite. Il `.env` serve solo se volete abilitare la sincronizzazione cloud.
-
-### Come Configurare (se necessario)
-
-1. Nella cartella principale del progetto (`Projectwork-IFTS/`), troverete un file `.env.example`
-2. Copiatelo e rinominatelo in `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-3. Aprite il file `.env` con un editor di testo e inserite i vostri valori:
-   ```bash
-   SUPABASE_URL=https://il-vostro-progetto.supabase.co
-   SUPABASE_ANON_KEY=il-vostro-anon-key-qui
-   ```
-4. I valori li trovate nella dashboard Supabase: **Settings** → **API** → **Project URL** e **anon/public key**
-
-**ATTENZIONE**: Il file `.env` e' nel `.gitignore` — NON verra' mai committato. Questo e' intenzionale. Non forzate il commit di `.env`.
-
----
-
-## 10. Autenticazione Git — SSH e Personal Access Token
+## 9. Autenticazione Git — SSH e Personal Access Token
 
 Se durante il `git push` vi viene chiesto utente e password, avete due opzioni per autenticarvi.
 

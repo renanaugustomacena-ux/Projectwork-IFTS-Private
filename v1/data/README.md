@@ -1,30 +1,22 @@
 # Mini Cozy Room — Schema Database
 
-> **Nota sulla Semplificazione**: Il sistema database a tre livelli (JSON + SQLite + Supabase)
-> descritto qui e' **over-engineered** per le necessita' attuali del gioco.
-> - **JSON (SaveManager)**: Livello primario, **essenziale** — e' il formato che il gioco usa davvero.
-> - **SQLite (LocalDatabase)**: Mirror del JSON. **Semplificabile** — potrebbe essere ridotto a 2-3 tabelle o rimosso.
-> - **Supabase**: **Placeholder** — il gioco funziona completamente offline. Lo schema SQL e' documentato
->   ma non attivamente utilizzato. La sincronizzazione cloud e' opzionale e non ancora implementata.
->
-> I cataloghi JSON (`characters.json`, `decorations.json`, `rooms.json`, `tracks.json`) sono invece
+> **Nota**: Il gioco funziona esclusivamente offline con JSON + SQLite.
+> SupabaseClient e' stato rimosso (marzo 2026).
+> I cataloghi JSON (`characters.json`, `decorations.json`, `rooms.json`, `tracks.json`) sono
 > **essenziali** e usati attivamente dal GameManager.
 
-Documentazione dello schema dati utilizzato dal progetto, sia in cloud (Supabase)
-che in locale (SQLite via godot-sqlite v4.7).
+Documentazione dello schema dati utilizzato dal progetto (SQLite via godot-sqlite v4.7 + JSON).
 
 ## Panoramica
 
-Il sistema adotta un approccio **offline-first** con doppia persistenza:
+Il sistema adotta un approccio **offline-only** con doppia persistenza locale:
 
-| Livello | Tecnologia | File/Servizio | Scopo |
-|---------|------------|---------------|-------|
+| Livello | Tecnologia | File | Scopo |
+|---------|------------|------|-------|
 | Primario | JSON | `user://save_data.json` (v4.0.0) | Salvataggio rapido, migrazione automatica |
 | Mirror | SQLite | `user://cozy_room.db` (WAL mode) | Query strutturate, integrita referenziale |
-| Cloud | Supabase (PostgreSQL) | Progetto Supabase remoto | Sincronizzazione opzionale, backup |
 
 `SaveManager` scrive contemporaneamente su JSON e SQLite ad ogni salvataggio (auto-save ogni 60s).
-La sincronizzazione Supabase e opzionale e degrada in modo trasparente se non disponibile.
 
 ## Schema Relazionale (7 Tabelle)
 
@@ -50,7 +42,7 @@ La sincronizzazione Supabase e opzionale e degrada in modo trasparente se non di
 
 ### accounts
 
-Account utente, estende `auth.users` di Supabase.
+Account utente.
 
 | Colonna | Tipo | Vincoli | Descrizione |
 |---------|------|---------|-------------|
@@ -124,14 +116,6 @@ Palette colori disponibili per varianti oggetto.
 | Colonna | Tipo | Vincoli | Descrizione |
 |---------|------|---------|-------------|
 | `colore_id` | INTEGER | PK, AUTO INCREMENT | ID univoco colore |
-
-## Row Level Security (RLS)
-
-Tutte le tabelle su Supabase hanno **RLS abilitato** con policy di isolamento utente:
-
-- Ogni utente puo leggere e modificare **solo i propri dati**
-- Le policy filtrano per `auth.uid() = auth_uid` (accounts) o tramite join su account_id
-- Nessun accesso cross-utente e possibile
 
 ## Implementazione Locale (SQLite)
 
@@ -207,20 +191,8 @@ Il `SaveManager` gestisce la migrazione automatica tra versioni dello schema:
 | v2.0.0 | v3.0.0 | Aggiunta sezione `inventory` |
 | v3.0.0 | v4.0.0 | Aggiunta `display_mode` in settings |
 
-## Migrazione SQL Supabase
-
-Lo schema completo per il setup iniziale di Supabase si trova in
-[`supabase_migration.sql`](supabase_migration.sql). Include:
-
-- Creazione delle 7 tabelle con vincoli e foreign key
-- Abilitazione RLS su tutte le tabelle
-- Policy di sicurezza per isolamento utente
-- Dati di esempio per testing
-
-Per applicare la migrazione, eseguirla nel SQL Editor della dashboard Supabase.
-
 ## Vedi Anche
 
 - [README Tecnico](../README.md) — Architettura generale e sistema di salvataggio
-- [README Script](../scripts/README.md) — Script che interagiscono con il database (`local_database.gd`, `save_manager.gd`, `supabase_client.gd`)
+- [README Script](../scripts/README.md) — Script che interagiscono con il database (`local_database.gd`, `save_manager.gd`)
 - [README Addon](../addons/README.md) — Plugin godot-sqlite che alimenta il layer SQLite

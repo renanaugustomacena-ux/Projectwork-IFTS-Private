@@ -1,12 +1,9 @@
 # Guide Operative per il Team — Mini Cozy Room
 
-> **⚠️ Nota Importante: Semplificazione in Corso**
-> Il codebase contiene sistemi avanzati (SupabaseClient, LocalDatabase, SaveManager, Logger)
-> che sono **placeholder** o **over-engineered** rispetto alle necessita' del gioco.
-> Funzionano correttamente, ma sono piu' complessi del necessario.
-> Le correzioni proposte nelle guide restano valide sia come esercizio che come miglioramento,
-> ma sappiate che alcuni di questi sistemi potrebbero essere semplificati o sostituiti in futuro.
-> Per la lista completa dei sistemi e il loro stato, consultate il [README principale](../../README.md#stato-dei-sistemi).
+> **⚠️ Aggiornamento 27 Marzo 2026**
+> SupabaseClient e' stato rimosso (codice morto). CI/CD semplificata a un solo job lint.
+> Il gioco funziona esclusivamente offline con JSON + SQLite.
+> Le correzioni proposte nelle guide restano valide sia come esercizio che come miglioramento.
 
 Questa cartella contiene le guide operative personalizzate per ogni membro del team.
 Ogni guida e' pensata per essere seguita dall'inizio alla fine, passo dopo passo.
