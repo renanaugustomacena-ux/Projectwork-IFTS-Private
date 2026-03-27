@@ -1,38 +1,45 @@
 # Guida Operativa — Elia Zoccatelli (Database Support)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 25 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 27 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.4, 8, 11 Fase 1.4 e 3, 12
 
-> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
-> Il sistema database (LocalDatabase + Supabase) e' attualmente **over-engineered** per le
-> necessita' del gioco. Le 7 tabelle SQLite replicano la struttura Supabase, ma il salvataggio
-> JSON via SaveManager e' sufficiente per tutte le funzionalita' attuali del gioco.
+> **Nota sullo Stato delle Correzioni (27 Marzo 2026)**:
+> Le correzioni critiche allo schema database (C3, C4, C1, A17) sono state **gia' effettuate**
+> da Renan nel file `scripts/autoload/local_database.gd`. Questa guida documenta:
 >
-> Le correzioni proposte in questa guida **restano valide e utili** — sia per migliorare lo
-> schema attuale (che e' comunque funzionante), sia come **esercizio didattico** importante
-> sulla progettazione di database relazionali (PRIMARY KEY, FOREIGN KEY, normalizzazione).
+> 1. **Cosa e' stato corretto e perche'** — per capire le scelte progettuali
+> 2. **I concetti database** — PRIMARY KEY, FOREIGN KEY, normalizzazione, WAL
+> 3. **Task rimanenti per Elia** — seed data e allineamento Supabase
 >
-> In futuro, LocalDatabase potrebbe essere semplificato a 2-3 tabelle o rimosso del tutto,
-> e SupabaseClient (gia' placeholder) potrebbe essere sostituito con uno stub vuoto.
-> Il Task 6 (allineamento Supabase) e' di priorita' bassa proprio per questo motivo.
-> Consulta il [README principale](../../README.md#stato-dei-sistemi) per lo stato completo dei sistemi.
+> Il sistema database (LocalDatabase + Supabase) e' attualmente over-engineered per le
+> necessita' del gioco. Il salvataggio JSON via SaveManager e' la fonte primaria di dati;
+> SQLite ne e' il mirror locale. Questa struttura resta valida come **esercizio didattico**
+> sulla progettazione di database relazionali.
 
 ---
 
-## Le Tue Responsabilita'
+## Stato delle Correzioni
 
-| # | Cosa Devi Fare | File Principale | Problema Audit | Priorita' | Tempo Stimato |
-|---|----------------|-----------------|----------------|-----------|---------------|
-| 1 | Ridisegnare tabella characters (PRIMARY KEY) | `scripts/autoload/local_database.gd` | C3 | CRITICO | 45 min |
-| 2 | Ristrutturare tabella inventario | `scripts/autoload/local_database.gd` | C4 | CRITICO | 45 min |
-| 3 | Aggiungere foreign key item_id nell'inventario | `scripts/autoload/local_database.gd` | C4 | CRITICO | 15 min |
-| 4 | Aggiungere seed data per tabelle vuote | `scripts/autoload/local_database.gd` | A18 | MEDIO | 30 min |
-| 5 | Migliorare propagazione errori apertura database | `scripts/autoload/local_database.gd` | A17 | MEDIO | 20 min |
-| 6 | Allineare schema Supabase con le modifiche | `data/supabase_migration.sql` | — | BASSO | 30 min |
+| Problema Audit | Descrizione | Stato | Chi l'ha Fatto |
+|---------------|-------------|-------|----------------|
+| C3 | characters: account_id come PK (1 solo personaggio per account) | CORRETTO | Renan |
+| C4 | inventario: coins/capacita ripetuti per ogni item | CORRETTO | Renan |
+| C1 | _on_save_requested() ignorava l'inventario | CORRETTO | Renan |
+| A17 | Diagnostica apertura database insufficiente | CORRETTO | Renan |
+| A18 | Seed data per tabelle vuote | DA FARE | Elia |
+| — | Allineamento schema Supabase | DA FARE (bassa priorita') | Elia |
 
-**Tempo totale stimato**: circa 3 ore
+## Task Rimanenti per Elia
+
+| # | Cosa Devi Fare | File Principale | Priorita' | Tempo Stimato |
+|---|----------------|-----------------|-----------|---------------|
+| 1 | Studiare le correzioni effettuate (leggi la sezione sotto) | `scripts/autoload/local_database.gd` | ALTO | 30 min |
+| 2 | Aggiungere seed data per account locale | `scripts/autoload/local_database.gd` | MEDIO | 20 min |
+| 3 | Allineare schema Supabase con le modifiche | `data/supabase_migration.sql` | BASSO | 30 min |
+
+**Tempo totale stimato**: circa 1.5 ore
 
 ---
 
@@ -146,637 +153,202 @@ SELECT COUNT(*) FROM characters WHERE account_id = 1;
 
 ---
 
-## Task 1: Ridisegnare Tabella Characters (C3)
+## Correzioni Gia' Effettuate (da Renan, 27 Marzo 2026)
 
-**Sezione Audit di riferimento**: 6.4, Problema C3
-**Tempo stimato**: 45 minuti
-**Priorita'**: CRITICO
+Queste correzioni sono gia' nel codice. Leggi questa sezione per capire **cosa** e' cambiato e **perche'**.
 
-### Cosa C'e' da Fare
+### Correzione C3: Tabella Characters — Nuova PRIMARY KEY
 
-Attualmente la tabella `characters` usa `account_id` come PRIMARY KEY. Questo significa che un account puo' avere **un solo** personaggio. Se prova a creare un secondo personaggio, il database lo rifiuta o sovrascrive il primo. La correzione e' aggiungere un `character_id` come PRIMARY KEY separato.
+**Problema**: `account_id` era la PRIMARY KEY, quindi un account poteva avere UN SOLO personaggio.
 
-### Il Problema in Dettaglio
+**Prima** (schema vecchio):
 
-**Schema attuale** (nel file `local_database.gd`, righe 115-128):
 ```sql
-CREATE TABLE IF NOT EXISTS characters (
-    account_id INTEGER PRIMARY KEY REFERENCES accounts(account_id) ON DELETE CASCADE,
-    -- ↑ ERRORE: account_id come PRIMARY KEY significa UN personaggio per account!
-    nome TEXT,
+CREATE TABLE characters (
+    account_id INTEGER PRIMARY KEY ...  -- UN personaggio per account!
+    inventario INTEGER REFERENCES inventario(inventario_id)  -- circolare
+);
+```
+
+**Dopo** (schema corretto, riga 134-146 di `local_database.gd`):
+
+```sql
+CREATE TABLE characters (
+    character_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- ogni personaggio ha il suo ID
+    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
+    nome TEXT DEFAULT '',
     genere INTEGER DEFAULT 1,
     colore_occhi INTEGER DEFAULT 0,
     colore_capelli INTEGER DEFAULT 0,
     colore_pelle INTEGER DEFAULT 0,
-    livello_stress INTEGER DEFAULT 0,
-    inventario INTEGER REFERENCES inventario(inventario_id)
+    livello_stress INTEGER DEFAULT 0
 );
 ```
 
-Il campo `inventario` che riferisce a `inventario_id` e' anche problematico perche' mescola la relazione account-inventario con la relazione personaggio-inventario.
+**Cosa e' cambiato**:
 
-### Passo 1: Apri il File
+- `character_id` e' la nuova PRIMARY KEY — ogni personaggio ha un ID univoco
+- `account_id` e' diventata una FOREIGN KEY con `NOT NULL` — il legame con l'account e' garantito
+- Rimossa la colonna `inventario` (era circolare e non usata)
 
-Apri `scripts/autoload/local_database.gd` in VS Code.
+**Nota tecnica**: La funzione `get_character()` e' rimasta invariata nel nome perche' e' usata solo internamente da `upsert_character()`. L'UPDATE ora usa `WHERE character_id = ?` invece di `WHERE account_id = ?` per essere preciso.
 
-### Passo 2: Trova e Sostituisci lo Schema della Tabella Characters
+### Correzione C4: Tabella Inventario — Normalizzazione
 
-Trova il blocco `_execute(` per la tabella characters (righe 115-128). Sostituiscilo con:
+**Problema**: `coins` e `capacita` erano ripetuti in ogni riga dell'inventario. Con 10 oggetti, avevi 10 copie del saldo monete. Aggiornare una riga e non le altre creava inconsistenze.
 
-```gdscript
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS characters ("
-			+ "character_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			# character_id: ogni personaggio ha il suo ID univoco
-			# AUTOINCREMENT: il database assegna automaticamente il numero successivo
-			+ "account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,"
-			# account_id: a quale account appartiene questo personaggio
-			# NOT NULL: ogni personaggio DEVE avere un account
-			# ON DELETE CASCADE: se l'account viene eliminato, i personaggi vengono eliminati
-			+ "nome TEXT DEFAULT '',"
-			+ "genere INTEGER DEFAULT 1,"
-			+ "colore_occhi INTEGER DEFAULT 0,"
-			+ "colore_capelli INTEGER DEFAULT 0,"
-			+ "colore_pelle INTEGER DEFAULT 0,"
-			+ "livello_stress INTEGER DEFAULT 0,"
-			+ "creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-			# creato_il: quando il personaggio e' stato creato (automatico)
-			+ "UNIQUE(account_id, nome)"
-			# UNIQUE: nello stesso account, non ci possono essere due personaggi con lo stesso nome
-			+ ");"
-		)
-	)
-```
+**Soluzione**:
 
-**Cosa cambia**:
-- `character_id` e' la nuova PRIMARY KEY (un ID univoco per ogni personaggio)
-- `account_id` diventa una FOREIGN KEY (un collegamento all'account)
-- Rimosso il campo `inventario` (la relazione e' gestita dalla tabella inventario stessa)
-- Aggiunto `creato_il` per tracciare quando il personaggio e' stato creato
-- Aggiunto vincolo `UNIQUE(account_id, nome)` per evitare duplicati nello stesso account
+- `coins` e `inventario_capacita` sono stati spostati nella tabella `accounts` (dove appartengono — un valore per account)
+- La tabella `inventario` ora ha solo `account_id`, `item_id`, `quantita`
 
-### Passo 3: Aggiorna la Funzione `get_character()`
+**Schema inventario corretto** (riga 123-131):
 
-Trova la funzione `get_character()` (riga 168) e rinominala in `get_characters()` (plurale) per riflettere che ora puo' restituire piu' personaggi:
-
-**Prima** (riga 168-172):
-```gdscript
-func get_character(account_id: int) -> Dictionary:
-	var rows := _select("SELECT * FROM characters WHERE account_id = ?;", [account_id])
-	if rows.is_empty():
-		return {}
-	return rows[0]
-```
-
-**Dopo**:
-```gdscript
-# Restituisce TUTTI i personaggi di un account (puo' essere piu' di uno)
-func get_characters(account_id: int) -> Array:
-	return _select("SELECT * FROM characters WHERE account_id = ?;", [account_id])
-
-
-# Restituisce UN singolo personaggio per ID
-func get_character_by_id(character_id: int) -> Dictionary:
-	var rows := _select("SELECT * FROM characters WHERE character_id = ?;", [character_id])
-	if rows.is_empty():
-		return {}
-	return rows[0]
-```
-
-### Passo 4: Aggiorna la Funzione `upsert_character()`
-
-La funzione attuale (riga 175) cerca il personaggio per `account_id`, ma ora puo' esserci piu' di un personaggio per account. Aggiorna la logica:
-
-**Prima** (riga 175-208):
-```gdscript
-func upsert_character(account_id: int, data: Dictionary) -> bool:
-	var existing := get_character(account_id)
-	# ... logica basata su account_id ...
-```
-
-**Dopo**:
-```gdscript
-func upsert_character(account_id: int, data: Dictionary) -> bool:
-	# Cerchiamo il personaggio per account_id E nome
-	var nome: String = data.get("nome", "")
-	var rows := _select(
-		"SELECT * FROM characters WHERE account_id = ? AND nome = ?;", [account_id, nome]
-	)
-
-	if not rows.is_empty():
-		# Il personaggio esiste gia' — aggiorniamo i suoi dati
-		var char_id: int = rows[0].get("character_id", -1)
-		return _execute_bound(
-			(
-				"UPDATE characters SET genere = ?, colore_occhi = ?,"
-				+ " colore_capelli = ?, colore_pelle = ?, livello_stress = ? WHERE character_id = ?;"
-			),
-			[
-				1 if data.get("genere", true) else 0,
-				data.get("colore_occhi", 0),
-				data.get("colore_capelli", 0),
-				data.get("colore_pelle", 0),
-				data.get("livello_stress", 0),
-				char_id,
-			]
-		)
-
-	# Il personaggio non esiste — creiamolo
-	return _execute_bound(
-		(
-			"INSERT INTO characters (account_id, nome, genere, colore_occhi,"
-			+ " colore_capelli, colore_pelle, livello_stress) VALUES (?, ?, ?, ?, ?, ?, ?);"
-		),
-		[
-			account_id,
-			nome,
-			1 if data.get("genere", true) else 0,
-			data.get("colore_occhi", 0),
-			data.get("colore_capelli", 0),
-			data.get("colore_pelle", 0),
-			data.get("livello_stress", 0),
-		]
-	)
-```
-
-### Passo 5: Gestire il Database Esistente
-
-**Importante**: Se il database `cozy_room.db` esiste gia' con il vecchio schema, `CREATE TABLE IF NOT EXISTS` non lo modifichera' (la tabella esiste gia'!). Per applicare il nuovo schema, dovete:
-
-**Opzione A — Eliminare il database** (se non contiene dati importanti):
-1. Chiudete il gioco
-2. Trovate il file `cozy_room.db` (percorsi indicati sopra)
-3. Eliminatelo
-4. Riavviate il gioco — il database verra' ricreato con il nuovo schema
-
-**Opzione B — Migrazione** (se ci sono dati da preservare):
-Aggiungete una funzione di migrazione in `_create_tables()`, dopo la creazione delle tabelle:
-
-```gdscript
-func _migrate_characters_table() -> void:
-	# Verifichiamo se la tabella ha il vecchio schema
-	# (account_id come PRIMARY KEY senza character_id)
-	var rows := _select(
-		"SELECT sql FROM sqlite_master WHERE type='table' AND name='characters';", []
-	)
-	if rows.is_empty():
-		return
-
-	var schema: String = rows[0].get("sql", "")
-	if "character_id" in schema:
-		return  # Lo schema e' gia' aggiornato
-
-	# Migrazione: rinominiamo la vecchia tabella, creiamo la nuova, copiamo i dati
-	AppLogger.info("LocalDatabase", "Migrating characters table to new schema")
-	_execute("ALTER TABLE characters RENAME TO characters_old;")
-	# La tabella nuova viene creata da _create_tables()
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS characters ("
-			+ "character_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,"
-			+ "nome TEXT DEFAULT '',"
-			+ "genere INTEGER DEFAULT 1,"
-			+ "colore_occhi INTEGER DEFAULT 0,"
-			+ "colore_capelli INTEGER DEFAULT 0,"
-			+ "colore_pelle INTEGER DEFAULT 0,"
-			+ "livello_stress INTEGER DEFAULT 0,"
-			+ "creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-			+ "UNIQUE(account_id, nome)"
-			+ ");"
-		)
-	)
-	# Copiamo i dati dalla vecchia tabella alla nuova
-	_execute(
-		(
-			"INSERT INTO characters (account_id, nome, genere, colore_occhi,"
-			+ " colore_capelli, colore_pelle, livello_stress)"
-			+ " SELECT account_id, COALESCE(nome, ''), genere, colore_occhi,"
-			+ " colore_capelli, colore_pelle, livello_stress FROM characters_old;"
-		)
-	)
-	# Eliminiamo la vecchia tabella
-	_execute("DROP TABLE characters_old;")
-	AppLogger.info("LocalDatabase", "Characters table migration completed")
-```
-
-Chiamate questa funzione in `_ready()` dopo `_create_tables()`:
-```gdscript
-func _ready() -> void:
-	_open_database()
-	if _is_open:
-		_create_tables()
-		_migrate_characters_table()  # Aggiungi questa riga
-		AppLogger.info("LocalDatabase", "Database initialized", {"path": DB_PATH})
-	SignalBus.save_to_database_requested.connect(_on_save_requested)
-```
-
-### Come Verificare
-
-1. Elimina il file `cozy_room.db` (percorsi sopra)
-2. Avvia il gioco (F5) — il database viene ricreato
-3. Apri il database con DB Browser
-4. Verifica che la tabella `characters` abbia la colonna `character_id` come PRIMARY KEY
-5. Crea un personaggio, salva il gioco
-6. Esegui: `SELECT * FROM characters;` — deve esserci una riga con `character_id = 1`
-
-### Cosa Puo' Andare Storto
-
-- **"table characters already exists"**: Questo NON e' un errore — `CREATE TABLE IF NOT EXISTS` lo ignora. Ma il vecchio schema rimane. Usa l'Opzione A o B sopra per risolvere
-- **Errore nelle funzioni che chiamano `get_character()`**: Dopo la rinomina in `get_characters()`, cercate tutte le occorrenze di `get_character(` nel progetto (`Ctrl+Shift+F` in VS Code) e aggiornatele
-
-### Commit
-
-```bash
-git add scripts/autoload/local_database.gd
-git commit -m "fix: ridisegnata tabella characters con character_id come PRIMARY KEY"
-git push origin Renan
-```
-
----
-
-## Task 2: Ristrutturare Tabella Inventario (C4)
-
-**Sezione Audit di riferimento**: 6.4, Problema C4
-**Tempo stimato**: 45 minuti
-**Priorita'**: CRITICO
-
-### Cosa C'e' da Fare
-
-La tabella `inventario` attuale ha i campi `coins` e `capacita` in ogni riga. Ma monete e capacita' sono proprieta' dell'**account**, non del singolo oggetto. E' come scrivere il saldo del conto corrente su ogni ricevuta di acquisto — non ha senso e crea duplicazioni.
-
-### Il Problema
-
-**Schema attuale**:
 ```sql
 CREATE TABLE inventario (
     inventario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    account_id INTEGER REFERENCES accounts(account_id),
-    item_id INTEGER,          -- quale oggetto
-    capacita INTEGER DEFAULT 50,  -- ← ERRORE: proprieta' dell'account, non dell'oggetto
-    coins INTEGER DEFAULT 0       -- ← ERRORE: proprieta' dell'account, non dell'oggetto
+    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL,
+    quantita INTEGER DEFAULT 1
 );
 ```
 
-Se un utente ha 10 oggetti nell'inventario, `coins` e `capacita` sono ripetuti 10 volte. E se aggiornate `coins` in una riga ma non nelle altre, i dati diventano inconsistenti.
+**Nota importante**: `item_id` NON ha una foreign key verso la tabella `items` perche' la tabella items e' attualmente vuota (il sistema di oggetti usa i cataloghi JSON, non il database SQL). Aggiungere un FK a una tabella vuota impedirebbe qualsiasi inserimento nell'inventario.
 
-### Passo 1: Aggiungi Colonne alla Tabella Accounts
+### Correzione C1: Persistenza Inventario su SQLite
 
-Apri `scripts/autoload/local_database.gd`. Trova lo schema della tabella `accounts` (righe 65-75).
+**Problema**: `_on_save_requested()` riceveva sia character che inventory data dal segnale `save_to_database_requested`, ma **salvava solo il character**. L'inventario veniva completamente ignorato.
 
-Aggiorna aggiungendo `coins` e `inventario_capacita`:
+**Soluzione** (riga 35-49): Aggiunta gestione dell'inventario:
 
-**Prima**:
 ```gdscript
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS accounts ("
-			+ "account_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "auth_uid TEXT UNIQUE,"
-			+ "data_di_iscrizione TEXT NOT NULL DEFAULT (date('now')),"
-			+ "data_di_nascita TEXT NOT NULL DEFAULT '',"
-			+ "mail TEXT NOT NULL DEFAULT ''"
-			+ ");"
-		)
-	)
+# Ora salva ENTRAMBI: character e inventory
+if data.has("character") and data["character"] is Dictionary:
+    upsert_character(account_id, data["character"])
+if data.has("inventory") and data["inventory"] is Dictionary:
+    _save_inventory(account_id, data["inventory"])
 ```
 
-**Dopo**:
-```gdscript
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS accounts ("
-			+ "account_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "auth_uid TEXT UNIQUE,"
-			+ "data_di_iscrizione TEXT NOT NULL DEFAULT (date('now')),"
-			+ "data_di_nascita TEXT NOT NULL DEFAULT '',"
-			+ "mail TEXT NOT NULL DEFAULT '',"
-			+ "coins INTEGER DEFAULT 0,"
-			# coins: le monete dell'utente — un valore per account
-			+ "inventario_capacita INTEGER DEFAULT 50"
-			# inventario_capacita: quanti oggetti puo' avere l'utente
-			+ ");"
-		)
-	)
-```
+La nuova funzione `_save_inventory()` (riga 284-298):
 
-### Passo 2: Ristruttura la Tabella Inventario
+- Aggiorna `coins` e `inventario_capacita` nella tabella `accounts`
+- Sincronizza gli items: cancella quelli vecchi e re-inserisce quelli correnti
 
-Trova lo schema della tabella `inventario` (righe 103-112) e sostituiscilo:
+### Correzione A17: Diagnostica Apertura Database
 
-**Prima** (righe 103-112):
-```gdscript
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS inventario ("
-			+ "inventario_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "account_id INTEGER REFERENCES accounts(account_id) ON DELETE CASCADE,"
-			+ "item_id INTEGER,"
-			+ "capacita INTEGER DEFAULT 50,"
-			+ "coins INTEGER DEFAULT 0"
-			+ ");"
-		)
-	)
-```
+**Problema**: Se il database non si apriva, il log diceva solo "Failed to open database" senza dettagli utili.
 
-**Dopo**:
-```gdscript
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS inventario ("
-			+ "inventario_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,"
-			# account_id: a quale account appartiene questo oggetto
-			+ "item_id INTEGER NOT NULL REFERENCES items(item_id),"
-			# item_id: quale oggetto e' — FOREIGN KEY verso la tabella items
-			# Questo garantisce che non si possano inserire oggetti inesistenti
-			+ "quantita INTEGER DEFAULT 1,"
-			# quantita: quanti di questo oggetto ha l'utente
-			+ "aggiunto_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-			# aggiunto_il: quando l'oggetto e' stato aggiunto
-			+ "UNIQUE(account_id, item_id)"
-			# Un utente non puo' avere due righe per lo stesso oggetto
-			# Se compra un oggetto che ha gia', si incrementa la quantita'
-			+ ");"
-		)
-	)
-```
+**Soluzione**: Ora logga anche il sistema operativo, la directory user data, e verifica che le foreign keys siano effettivamente attive dopo l'abilitazione.
 
-### Passo 3: Aggiorna le Funzioni CRUD dell'Inventario
+### Migrazione Automatica
 
-Trova le funzioni dell'inventario (righe 214-226) e aggiornale:
+Se il database esiste gia' con il vecchio schema, la funzione `_migrate_schema()` (riga 150-163) lo rileva automaticamente e ricrea le tabelle corrette. Questo e' sicuro perche' il file JSON e' la fonte primaria dei dati — SQLite e' solo un mirror che viene ripopolato al prossimo auto-save (ogni 60 secondi).
 
-**Prima**:
-```gdscript
-func add_inventory_item(account_id: int, item_id: int, coins: int = 0, capacita: int = 50) -> bool:
-	return _execute_bound(
-		"INSERT INTO inventario (account_id, item_id, coins, capacita) VALUES (?, ?, ?, ?);",
-		[account_id, item_id, coins, capacita]
-	)
-```
+### Pulizia Segnale
 
-**Dopo**:
-```gdscript
-# Aggiunge un oggetto all'inventario (o incrementa la quantita' se esiste gia')
-func add_inventory_item(account_id: int, item_id: int, quantita: int = 1) -> bool:
-	# Proviamo a inserire l'oggetto. Se esiste gia' (stesso account + item),
-	# incrementiamo la quantita' invece di creare una riga duplicata
-	return _execute_bound(
-		(
-			"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?)"
-			+ " ON CONFLICT(account_id, item_id) DO UPDATE SET quantita = quantita + ?;"
-		),
-		[account_id, item_id, quantita, quantita]
-	)
-
-
-# Rimuove un oggetto dall'inventario (o decrementa la quantita')
-func remove_inventory_item(account_id: int, item_id: int, quantita: int = 1) -> bool:
-	# Prima decrementiamo la quantita'
-	_execute_bound(
-		"UPDATE inventario SET quantita = quantita - ? WHERE account_id = ? AND item_id = ?;",
-		[quantita, account_id, item_id]
-	)
-	# Poi rimuoviamo le righe con quantita' <= 0
-	return _execute_bound(
-		"DELETE FROM inventario WHERE account_id = ? AND item_id = ? AND quantita <= 0;",
-		[account_id, item_id]
-	)
-
-
-# Aggiorna le monete di un account
-func update_coins(account_id: int, coins: int) -> bool:
-	return _execute_bound("UPDATE accounts SET coins = ? WHERE account_id = ?;", [coins, account_id])
-
-
-# Legge le monete di un account
-func get_coins(account_id: int) -> int:
-	var rows := _select("SELECT coins FROM accounts WHERE account_id = ?;", [account_id])
-	if rows.is_empty():
-		return 0
-	return rows[0].get("coins", 0)
-```
-
-Potete anche rimuovere la vecchia funzione `update_inventory_coins()` che non serve piu'.
-
-### Come Verificare
-
-1. Elimina il vecchio database `cozy_room.db`
-2. Avvia il gioco (F5) — il database viene ricreato con il nuovo schema
-3. Apri il database con DB Browser
-4. Verifica:
-   - La tabella `accounts` ha le colonne `coins` e `inventario_capacita`
-   - La tabella `inventario` ha le colonne `account_id`, `item_id`, `quantita`, `aggiunto_il`
-   - La tabella `inventario` NON ha piu' le colonne `coins` e `capacita`
-5. Prova a inserire un item inesistente con la query:
-   ```sql
-   INSERT INTO inventario (account_id, item_id) VALUES (1, 99999);
-   ```
-   Deve FALLIRE con un errore di foreign key
-
-### Commit
-
-```bash
-git add scripts/autoload/local_database.gd
-git commit -m "fix: ristrutturata tabella inventario, spostato coins/capacita in accounts"
-git push origin Renan
-```
+Aggiunto `_exit_tree()` (riga 21-23) che disconnette il segnale `save_to_database_requested` quando il nodo viene rimosso dall'albero. Questo previene errori nel caso il segnale venga emesso dopo la distruzione del nodo.
 
 ---
 
-## Task 3: Aggiungere Foreign Key item_id nell'Inventario (C4)
+## Task 1 per Elia: Verificare le Correzioni con DB Browser
 
-Se hai completato il Task 2, questo e' gia' stato fatto! La riga:
-
-```sql
-item_id INTEGER NOT NULL REFERENCES items(item_id)
-```
-
-e' la foreign key che collega l'inventario alla tabella items. Verificate con DB Browser che la foreign key funzioni:
-
-```sql
--- Questo deve funzionare (item_id = 1 dovrebbe esistere dopo il seed data)
-INSERT INTO inventario (account_id, item_id) VALUES (1, 1);
-
--- Questo deve FALLIRE (item_id = 99999 non esiste)
-INSERT INTO inventario (account_id, item_id) VALUES (1, 99999);
-```
-
----
-
-## Task 4: Aggiungere Seed Data per Tabelle Vuote (A18)
-
-**Sezione Audit di riferimento**: A18
 **Tempo stimato**: 30 minuti
-**Priorita'**: MEDIO
+**Priorita'**: ALTO
 
-### Cosa C'e' da Fare
+Questo task e' per capire e verificare le correzioni gia' fatte. E' un esercizio didattico importante.
 
-Le tabelle `colore`, `categoria`, `shop`, e `items` sono attualmente vuote alla creazione. Senza dati iniziali, il gioco non puo' funzionare (non ci sono oggetti nel negozio, non ci sono categorie, ecc.). Il "seed data" e' un insieme di dati iniziali che vengono inseriti alla creazione del database.
+### Passo 1: Elimina il Vecchio Database
 
-### Il Concetto: Seed Data
+1. Chiudi il gioco (Godot deve essere chiuso)
+2. Trova il file `cozy_room.db` (percorsi nella sezione "Cos'e' SQLite?" sopra)
+3. Elimina `cozy_room.db`, `cozy_room.db-wal`, `cozy_room.db-shm`
 
-Immaginate di aprire un negozio nuovo. Il giorno dell'inaugurazione, gli scaffali devono essere gia' pieni di prodotti — non potete aprire con un negozio vuoto! Il seed data e' come il "primo carico di merce" del vostro negozio digitale.
+### Passo 2: Avvia il Gioco e Verifica
 
-### Passo 1: Crea la Funzione di Seed
+1. Avvia il gioco con F5 in Godot
+2. Aspetta qualche secondo (il database viene ricreato)
+3. Chiudi il gioco
+4. Apri il database con DB Browser for SQLite
 
-Aggiungi questa funzione in `local_database.gd`, dopo `_create_tables()`:
+### Passo 3: Query di Verifica
 
-```gdscript
-func _seed_initial_data() -> void:
-	# Verifichiamo se i dati iniziali sono gia' stati inseriti
-	# Se la tabella categorie ha gia' dati, non inseriamo nulla
-	var categories := _select("SELECT COUNT(*) as count FROM categoria;", [])
-	if not categories.is_empty() and categories[0].get("count", 0) > 0:
-		return  # I dati iniziali sono gia' presenti
+Esegui queste query nella tab "Execute SQL" di DB Browser:
 
-	AppLogger.info("LocalDatabase", "Inserting seed data")
+```sql
+-- 1. Verifica che characters abbia character_id come PK
+SELECT sql FROM sqlite_master WHERE name = 'characters';
+-- Deve contenere "character_id INTEGER PRIMARY KEY AUTOINCREMENT"
 
-	# Inseriamo le categorie di decorazioni
-	# Queste corrispondono alle categorie usate in decorations.json
-	var category_names := [
-		"beds", "desks", "chairs", "wardrobes", "windows",
-		"wall_decor", "potted_plants", "plants", "accessories",
-		"room_elements", "pets", "kitchen_appliances",
-		"kitchen_furniture", "kitchen_accessories"
-	]
-	for cat_name in category_names:
-		_execute_bound("INSERT INTO categoria (categoria_id) VALUES (NULL);", [])
+-- 2. Verifica che accounts abbia coins e inventario_capacita
+SELECT sql FROM sqlite_master WHERE name = 'accounts';
+-- Deve contenere "coins INTEGER DEFAULT 0" e "inventario_capacita INTEGER DEFAULT 50"
 
-	# Inseriamo alcuni colori base
-	for i in 10:
-		_execute_bound("INSERT INTO colore (colore_id) VALUES (NULL);", [])
+-- 3. Verifica che inventario NON abbia coins e capacita
+SELECT sql FROM sqlite_master WHERE name = 'inventario';
+-- Deve avere solo: inventario_id, account_id, item_id, quantita
 
-	# Inseriamo un account locale di default
-	var existing_account := get_account_by_auth_uid("local")
-	if existing_account.is_empty():
-		upsert_account("local", "offline@local", "")
+-- 4. Verifica che l'account locale esista (creato dal primo salvataggio)
+SELECT * FROM accounts;
 
-	AppLogger.info("LocalDatabase", "Seed data inserted")
-```
-
-### Passo 2: Chiama la Funzione in `_ready()`
-
-Aggiorna `_ready()` per chiamare il seed dopo la creazione delle tabelle:
-
-```gdscript
-func _ready() -> void:
-	_open_database()
-	if _is_open:
-		_create_tables()
-		_migrate_characters_table()  # Se hai fatto il Task 1
-		_seed_initial_data()         # Aggiungi questa riga
-		AppLogger.info("LocalDatabase", "Database initialized", {"path": DB_PATH})
-	SignalBus.save_to_database_requested.connect(_on_save_requested)
-```
-
-### Come Verificare
-
-1. Elimina il vecchio database
-2. Avvia il gioco
-3. Apri il database con DB Browser
-4. Esegui: `SELECT COUNT(*) FROM categoria;` — deve restituire 14
-5. Esegui: `SELECT COUNT(*) FROM colore;` — deve restituire 10
-6. Esegui: `SELECT * FROM accounts WHERE auth_uid = 'local';` — deve esserci una riga
-
-### Commit
-
-```bash
-git add scripts/autoload/local_database.gd
-git commit -m "feat: aggiunto seed data per categorie, colori e account locale"
-git push origin Renan
+-- 5. Verifica le foreign keys attive
+PRAGMA foreign_keys;
+-- Deve restituire 1
 ```
 
 ---
 
-## Task 5: Migliorare Propagazione Errori Apertura Database (A17)
+## Task 2 per Elia: Aggiungere Seed Data (A18)
 
-**Sezione Audit di riferimento**: A17
 **Tempo stimato**: 20 minuti
 **Priorita'**: MEDIO
 
-### Cosa C'e' da Fare
+Le tabelle `colore` e `categoria` sono vuote. Per un esercizio didattico, puoi aggiungere una funzione che inserisce dati iniziali alla creazione del database.
 
-La funzione `_open_database()` attuale logga l'errore ma non propaga le informazioni sull'errore ai chiamanti in modo utile. Miglioriamo il reporting.
+### Cosa Fare
 
-### Passo 1: Aggiorna `_open_database()`
+Aggiungi questa funzione in `local_database.gd` dopo `_migrate_schema()`:
 
-Trova la funzione `_open_database()` (riga 51) e aggiornala:
-
-**Prima** (righe 51-61):
 ```gdscript
-func _open_database() -> void:
-	_db = SQLite.new()
-	_db.path = DB_PATH
-	_db.verbosity_level = SQLite.QUIET
-	if not _db.open_db():
-		AppLogger.error("LocalDatabase", "Failed to open database", {"path": DB_PATH})
-		_db = null
-		return
-	_is_open = true
-	_execute("PRAGMA journal_mode=WAL;")
-	_execute("PRAGMA foreign_keys=ON;")
+func _seed_initial_data() -> void:
+    var accounts := _select("SELECT COUNT(*) as count FROM accounts;", [])
+    if not accounts.is_empty() and accounts[0].get("count", 0) > 0:
+        return
+    AppLogger.info("LocalDatabase", "Inserting seed data")
+    upsert_account("local", "offline@local", "")
+    AppLogger.info("LocalDatabase", "Seed data inserted")
 ```
 
-**Dopo**:
+Poi aggiungi la chiamata in `_ready()` dopo `_migrate_schema()`:
+
 ```gdscript
-func _open_database() -> void:
-	_db = SQLite.new()
-	_db.path = DB_PATH
-	_db.verbosity_level = SQLite.QUIET
-
-	if not _db.open_db():
-		# Il database non si e' aperto — logghiamo un errore dettagliato
-		AppLogger.error("LocalDatabase", "Failed to open database", {
-			"path": DB_PATH,
-			"os": OS.get_name(),
-			"user_data_dir": OS.get_user_data_dir(),
-		})
-		# Proviamo a capire il motivo dell'errore
-		var dir := DirAccess.open("user://")
-		if dir == null:
-			AppLogger.error("LocalDatabase", "Cannot access user:// directory")
-		_db = null
-		return
-
-	_is_open = true
-	# WAL mode: migliora le prestazioni di scrittura
-	_execute("PRAGMA journal_mode=WAL;")
-	# Foreign keys: abilita i vincoli di integrita' referenziale
-	_execute("PRAGMA foreign_keys=ON;")
-	# Verifica che le foreign keys siano effettivamente attive
-	var fk_check := _select("PRAGMA foreign_keys;", [])
-	if fk_check.is_empty() or fk_check[0].get("foreign_keys", 0) != 1:
-		AppLogger.warn("LocalDatabase", "Foreign keys not enabled — integrity checks disabled")
+func _ready() -> void:
+    _open_database()
+    if _is_open:
+        _create_tables()
+        _migrate_schema()
+        _seed_initial_data()  # Aggiungi questa riga
+        AppLogger.info("LocalDatabase", "Database initialized", {"path": DB_PATH})
+    SignalBus.save_to_database_requested.connect(_on_save_requested)
 ```
-
-### Come Verificare
-
-1. Avvia il gioco normalmente — nessun errore nel pannello Output
-2. Il database si apre correttamente
-3. Nella console, dovreste vedere: `[INFO] LocalDatabase: Database initialized`
 
 ### Commit
 
 ```bash
 git add scripts/autoload/local_database.gd
-git commit -m "fix: migliorata diagnostica apertura database con dettagli OS"
+git commit -m "Aggiunto seed data per account locale di default"
 git push origin Renan
 ```
 
 ---
 
-## Task 6: Allineare Schema Supabase con le Modifiche (Facoltativo)
+## Task 3 per Elia: Allineare Schema Supabase (Facoltativo)
 
 **Tempo stimato**: 30 minuti
 **Priorita'**: BASSO
 
-### Cosa C'e' da Fare
+Il file `data/supabase_migration.sql` contiene lo schema per il database cloud Supabase. Dopo le correzioni allo schema SQLite locale, lo schema Supabase dovrebbe essere allineato.
 
-Il file `data/supabase_migration.sql` contiene lo schema per il database cloud Supabase. Dopo le modifiche allo schema SQLite locale (Task 1-3), lo schema Supabase dovrebbe essere allineato.
-
-**Nota**: Questo task e' meno urgente perche' Supabase e' opzionale nel progetto. Puoi farlo dopo aver completato tutti gli altri task.
+**Nota**: Supabase e' opzionale nel progetto. Questo task e' di priorita' bassa.
 
 ### Differenze tra SQLite e PostgreSQL (Supabase)
 
@@ -791,37 +363,36 @@ Il file `data/supabase_migration.sql` contiene lo schema per il database cloud S
 
 Apri `data/supabase_migration.sql` e applica le stesse modifiche logiche:
 
-1. Tabella `characters`: aggiungi `character_id SERIAL PRIMARY KEY`, cambia `account_id` in foreign key
-2. Tabella `inventario`: rimuovi `coins` e `capacita`, aggiungi `quantita` e `aggiunto_il`
+1. Tabella `characters`: aggiungi `character_id SERIAL PRIMARY KEY`, cambia `account_id` in FK
+2. Tabella `inventario`: rimuovi `coins` e `capacita`, aggiungi `quantita`
 3. Tabella `accounts`: aggiungi `coins INTEGER DEFAULT 0` e `inventario_capacita INTEGER DEFAULT 50`
 
 ---
 
 ## Checklist Finale
 
-```
-- [ ] Task 1: Tabella characters ha character_id come PRIMARY KEY
-- [ ] Task 1: Funzione get_characters() restituisce Array (non Dictionary)
-- [ ] Task 1: Funzione upsert_character() cerca per account_id + nome
-- [ ] Task 1: Migrazione dal vecchio schema funziona (se applicabile)
-- [ ] Task 2: Tabella inventario ha quantita e aggiunto_il
-- [ ] Task 2: Tabella inventario NON ha coins e capacita
-- [ ] Task 2: Tabella accounts ha coins e inventario_capacita
-- [ ] Task 2: Funzione add_inventory_item() usa ON CONFLICT
-- [ ] Task 2: Funzione remove_inventory_item() funziona
-- [ ] Task 3: Foreign key item_id impedisce inserimento item inesistenti
-- [ ] Task 4: Seed data inserito (14 categorie, 10 colori, 1 account)
-- [ ] Task 5: Diagnostica apertura database con dettagli OS
-- [ ] Task 5: Verifica foreign keys attive con PRAGMA
-- [ ] Il gioco si avvia senza errori di database
-- [ ] DB Browser mostra il nuovo schema correttamente
+```text
+Correzioni gia' fatte (verificare con DB Browser):
+- [ ] Tabella characters ha character_id come PRIMARY KEY
+- [ ] Tabella characters NON ha colonna inventario
+- [ ] Tabella accounts ha colonne coins e inventario_capacita
+- [ ] Tabella inventario NON ha colonne coins e capacita
+- [ ] Tabella inventario ha colonna quantita
+- [ ] Il gioco si avvia senza errori di database nel pannello Output
+- [ ] Dopo un salvataggio, SELECT * FROM characters restituisce dati
+- [ ] Dopo un salvataggio, SELECT coins FROM accounts restituisce il valore corretto
+
+Task per Elia:
+- [ ] Task 1: Verificato schema con DB Browser
+- [ ] Task 2: Seed data inserito (account locale presente alla creazione)
+- [ ] Task 3: Schema Supabase allineato (facoltativo)
 ```
 
 ---
 
 ## Schema Visuale del Database
 
-Questo diagramma mostra le relazioni tra le 7 tabelle del database dopo le correzioni (Task 1-3):
+Questo diagramma mostra le relazioni tra le 7 tabelle del database come implementate nel codice (`local_database.gd`):
 
 ```text
 ┌─────────────────────────┐
@@ -841,54 +412,42 @@ Questo diagramma mostra le relazioni tra le 7 tabelle del database dopo le corre
 │       characters         │     │       inventario         │   │
 │─────────────────────────│     │─────────────────────────│   │
 │ character_id (PK, AUTO) │     │ inventario_id (PK, AUTO)│   │
-│ account_id   (FK) ──────│─┐   │ account_id   (FK) ──────│───┘
-│ nome                     │ │   │ item_id      (FK) ──────│───┐
-│ genere                   │ │   │ quantita                 │   │
-│ colore_occhi             │ │   │ aggiunto_il              │   │
-│ colore_capelli           │ │   │ UNIQUE(account_id,       │   │
-│ colore_pelle             │ │   │        item_id)          │   │
-│ livello_stress           │ │   └─────────────────────────┘   │
-│ creato_il                │ │                                  │
-│ UNIQUE(account_id, nome) │ │   ┌─────────────────────────┐   │
-└─────────────────────────┘ │   │         items             │   │
-                             │   │─────────────────────────│   │
-                             │   │ item_id    (PK, AUTO)   │◄──┘
-                             │   │ nome                     │
-                             │   │ categoria_id (FK) ──────│───┐
-                             │   │ colore_id    (FK) ──────│─┐ │
-                             │   │ prezzo                   │ │ │
-                             │   └─────────────────────────┘ │ │
-                             │                                │ │
-                             │   ┌─────────────────────────┐  │ │
-                             │   │        colore            │  │ │
-                             │   │─────────────────────────│  │ │
-                             │   │ colore_id  (PK, AUTO)   │◄─┘ │
-                             │   │ (nome, hex, ecc.)        │    │
-                             │   └─────────────────────────┘    │
-                             │                                   │
-                             │   ┌─────────────────────────┐    │
-                             │   │       categoria          │    │
-                             │   │─────────────────────────│    │
-                             │   │ categoria_id (PK, AUTO) │◄───┘
-                             │   │ (nome, descrizione)      │
-                             │   └─────────────────────────┘
-                             │
-                             │   ┌─────────────────────────┐
-                             │   │         shop             │
-                             │   │─────────────────────────│
-                             │   │ shop_id    (PK, AUTO)   │
-                             │   │ account_id (FK) ────────│─── → accounts
-                             │   │ item_id    (FK) ────────│─── → items
-                             │   │ acquistato_il            │
-                             │   └─────────────────────────┘
+│ account_id   (FK→accts) │     │ account_id   (FK→accts) │───┘
+│ nome                     │     │ item_id      (NOT NULL)  │
+│ genere                   │     │ quantita                 │
+│ colore_occhi             │     └─────────────────────────┘
+│ colore_capelli           │
+│ colore_pelle             │     ┌─────────────────────────┐
+│ livello_stress           │     │         items            │
+└─────────────────────────┘     │─────────────────────────│
+                                 │ item_id    (PK, AUTO)   │
+                                 │ shop_id    (FK→shop)    │
+┌─────────────────────────┐     │ categoria_id (FK→categ) │
+│        colore            │     │ prezzo                   │
+│─────────────────────────│     │ disponibilita            │
+│ colore_id  (PK, AUTO)   │◄────│ colore_id  (FK→colore)  │
+└─────────────────────────┘     └──────────┬──────────────┘
+                                            │
+┌─────────────────────────┐                │
+│       categoria          │◄───────────────┘
+│─────────────────────────│
+│ categoria_id (PK, AUTO) │     ┌─────────────────────────┐
+└─────────────────────────┘     │         shop             │
+                                 │─────────────────────────│
+                                 │ shop_id    (PK, AUTO)   │
+                                 │ prezzo_item              │
+                                 └─────────────────────────┘
 
 Legenda:
   PK = PRIMARY KEY       FK = FOREIGN KEY
   AUTO = AUTOINCREMENT   1:N = relazione uno-a-molti
-  ──► = direzione della foreign key (da figlio a genitore)
 ```
 
-**Come leggere il diagramma**: le frecce partono dalla tabella "figlia" e puntano alla tabella "genitore". Ad esempio, `characters.account_id` → `accounts.account_id` significa che ogni personaggio appartiene a un account.
+**Note importanti sullo schema**:
+
+- `inventario.item_id` **NON** ha una FK verso `items` — la tabella items e' attualmente vuota (gli oggetti sono nei cataloghi JSON). Aggiungere un FK bloccherebbe tutti gli inserimenti.
+- Le tabelle `colore`, `categoria` e `shop` sono stub minimali (solo la PK o una colonna). Sono presenti per la struttura relazionale ma non sono popolate.
+- `coins` e `inventario_capacita` stanno in `accounts`, non in `inventario` — un valore per account, non ripetuto per ogni item.
 
 ---
 
@@ -932,23 +491,18 @@ PRAGMA journal_mode;
 
 ### "UNIQUE constraint failed"
 
-**Quando capita**: State provando a inserire un record duplicato dove c'e' un vincolo UNIQUE. Per esempio, due personaggi con lo stesso nome nello stesso account.
+**Quando capita**: State provando a inserire un record duplicato dove c'e' un vincolo UNIQUE. Nel nostro schema, il vincolo UNIQUE piu' comune e' `auth_uid` nella tabella `accounts`.
 
 **Soluzione**:
 1. **Verificate i dati esistenti**:
    ```sql
-   -- Cercate duplicati nella tabella characters
-   SELECT account_id, nome, COUNT(*) as duplicati
-   FROM characters
-   GROUP BY account_id, nome
+   -- Cercate account duplicati per auth_uid
+   SELECT auth_uid, COUNT(*) as duplicati
+   FROM accounts
+   GROUP BY auth_uid
    HAVING COUNT(*) > 1;
    ```
-2. **Se ci sono duplicati, rimuovete quelli in eccesso** (tenete il piu' recente):
-   ```sql
-   -- Mostra tutti i personaggi per decidere quale tenere
-   SELECT character_id, account_id, nome, creato_il FROM characters
-   ORDER BY account_id, nome, creato_il DESC;
-   ```
+2. **Usate la funzione upsert**: Il codice usa `upsert_account()` che controlla se l'account esiste gia' prima di inserire. Se il problema persiste, verificate che non ci siano inserimenti manuali duplicati.
 
 ### "table already exists" vs schema vecchio
 
@@ -1043,8 +597,8 @@ COMMIT;  -- Conferma tutte le operazioni — ora sono definitive
 
 ### Quando Usare le Transazioni
 
-- **Migrazione schema** (Task 1, Passo 5): rinominare tabella + creare nuova + copiare dati — se una fallisce, devono fallire tutte
-- **Seed data** (Task 4): inserire 14 categorie + 10 colori + 1 account — se una fallisce, meglio riprovare da zero
+- **Migrazione schema**: rinominare tabella + creare nuova + copiare dati — se una fallisce, devono fallire tutte
+- **Seed data** (Task 2): inserire account locale — se fallisce, meglio riprovare da zero
 - **Acquisto oggetto**: togliere monete + aggiungere all'inventario — atomico
 
 ### Transazioni in GDScript
@@ -1068,8 +622,7 @@ func _purchase_item(account_id: int, item_id: int, price: int) -> bool:
 
     # Operazione 2: aggiungi all'inventario
     var insert_ok := _execute_bound(
-        "INSERT INTO inventario (account_id, item_id) VALUES (?, ?)"
-        + " ON CONFLICT(account_id, item_id) DO UPDATE SET quantita = quantita + 1;",
+        "INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, 1);",
         [account_id, item_id]
     )
 
@@ -1084,19 +637,21 @@ func _purchase_item(account_id: int, item_id: int, price: int) -> bool:
 
 ---
 
-## Task 6 Espanso: Schema Supabase con SQL PostgreSQL
+## Task 3 Espanso: Schema Supabase con SQL PostgreSQL
 
-Se decidi di affrontare il Task 6 (allineamento Supabase), ecco il SQL completo da inserire in `data/supabase_migration.sql`. Ricorda che PostgreSQL ha una sintassi leggermente diversa da SQLite.
+Se decidi di affrontare il Task 3 (allineamento Supabase), ecco il SQL completo da inserire in `data/supabase_migration.sql`. Ricorda che PostgreSQL ha una sintassi leggermente diversa da SQLite.
 
 ### SQL di Migrazione Completo
+
+Questo schema rispecchia fedelmente le tabelle create in `local_database.gd`, adattate alla sintassi PostgreSQL:
 
 ```sql
 -- ============================================================
 -- Mini Cozy Room — Schema Supabase (PostgreSQL)
--- Allineato con le correzioni SQLite (Task 1-3)
+-- Allineato con local_database.gd (27 Marzo 2026)
 -- ============================================================
 
--- Tabella accounts (con coins e capacita')
+-- Tabella accounts (coins e inventario_capacita qui, non in inventario)
 CREATE TABLE IF NOT EXISTS accounts (
     account_id SERIAL PRIMARY KEY,
     auth_uid TEXT UNIQUE,
@@ -1107,7 +662,41 @@ CREATE TABLE IF NOT EXISTS accounts (
     inventario_capacita INTEGER DEFAULT 50
 );
 
--- Tabella characters (con character_id separato)
+-- Tabella colore (stub — solo PK)
+CREATE TABLE IF NOT EXISTS colore (
+    colore_id SERIAL PRIMARY KEY
+);
+
+-- Tabella categoria (stub — solo PK)
+CREATE TABLE IF NOT EXISTS categoria (
+    categoria_id SERIAL PRIMARY KEY
+);
+
+-- Tabella shop
+CREATE TABLE IF NOT EXISTS shop (
+    shop_id SERIAL PRIMARY KEY,
+    prezzo_item INTEGER
+);
+
+-- Tabella items
+CREATE TABLE IF NOT EXISTS items (
+    item_id SERIAL PRIMARY KEY,
+    shop_id INTEGER REFERENCES shop(shop_id),
+    categoria_id INTEGER REFERENCES categoria(categoria_id),
+    prezzo INTEGER,
+    disponibilita INTEGER DEFAULT 1,
+    colore_id INTEGER REFERENCES colore(colore_id)
+);
+
+-- Tabella inventario (senza coins/capacita, senza FK a items)
+CREATE TABLE IF NOT EXISTS inventario (
+    inventario_id SERIAL PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL,
+    quantita INTEGER DEFAULT 1
+);
+
+-- Tabella characters (character_id come PK separata)
 CREATE TABLE IF NOT EXISTS characters (
     character_id SERIAL PRIMARY KEY,
     account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
@@ -1116,51 +705,11 @@ CREATE TABLE IF NOT EXISTS characters (
     colore_occhi INTEGER DEFAULT 0,
     colore_capelli INTEGER DEFAULT 0,
     colore_pelle INTEGER DEFAULT 0,
-    livello_stress INTEGER DEFAULT 0,
-    creato_il TIMESTAMP DEFAULT NOW(),
-    UNIQUE(account_id, nome)
-);
-
--- Tabella categoria
-CREATE TABLE IF NOT EXISTS categoria (
-    categoria_id SERIAL PRIMARY KEY,
-    nome TEXT DEFAULT ''
-);
-
--- Tabella colore
-CREATE TABLE IF NOT EXISTS colore (
-    colore_id SERIAL PRIMARY KEY,
-    nome TEXT DEFAULT '',
-    hex TEXT DEFAULT ''
-);
-
--- Tabella items
-CREATE TABLE IF NOT EXISTS items (
-    item_id SERIAL PRIMARY KEY,
-    nome TEXT DEFAULT '',
-    categoria_id INTEGER REFERENCES categoria(categoria_id),
-    colore_id INTEGER REFERENCES colore(colore_id),
-    prezzo INTEGER DEFAULT 0
-);
-
--- Tabella inventario (senza coins/capacita, con quantita)
-CREATE TABLE IF NOT EXISTS inventario (
-    inventario_id SERIAL PRIMARY KEY,
-    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
-    item_id INTEGER NOT NULL REFERENCES items(item_id),
-    quantita INTEGER DEFAULT 1,
-    aggiunto_il TIMESTAMP DEFAULT NOW(),
-    UNIQUE(account_id, item_id)
-);
-
--- Tabella shop
-CREATE TABLE IF NOT EXISTS shop (
-    shop_id SERIAL PRIMARY KEY,
-    account_id INTEGER REFERENCES accounts(account_id) ON DELETE CASCADE,
-    item_id INTEGER REFERENCES items(item_id),
-    acquistato_il TIMESTAMP DEFAULT NOW()
+    livello_stress INTEGER DEFAULT 0
 );
 ```
+
+**Nota**: Lo schema Supabase rispecchia esattamente lo schema SQLite locale. Non aggiungere colonne extra (come `creato_il`, `aggiunto_il`) o vincoli UNIQUE a meno che non siano presenti anche nel codice GDScript — altrimenti i due database diventano inconsistenti.
 
 ### Row Level Security (RLS) — Facoltativo
 
