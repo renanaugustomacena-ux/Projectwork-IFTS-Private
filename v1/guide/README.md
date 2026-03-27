@@ -88,16 +88,21 @@ SETTIMANA 4 — Integrazione e Verifica
 
 ---
 
-## Timeline Stimata del Progetto
+## Timeline del Progetto — Scadenza: 22 Aprile 2026
 
-| Settimana | Obiettivo | Chi | Ore Stimate |
-|-----------|-----------|-----|-------------|
-| **1** | Setup ambiente + task fondamentali (CI, schema DB, typo sprite) | Tutti | 4-6h ciascuno |
-| **2** | Correzioni core (array, race condition, Logger, seed data) | Tutti | 3-4h ciascuno |
-| **3** | Pulizia lifecycle (_exit_tree), null check, Supabase | Tutti | 3-5h ciascuno |
-| **4** | Integrazione test CI, test manuale completo, documentazione finale | Tutti | 2-3h ciascuno |
+**Obiettivo**: il gioco deve **funzionare** e **essere presentabile** entro il 22 aprile.
+Non deve essere perfetto — deve essere stabile, senza crash, e con le funzionalita' core operative.
 
-**Totale stimato per persona**: ~12-18 ore distribuite su 4 settimane.
+| Periodo | Obiettivo | Chi | Ore Stimate |
+| ------- | --------- | --- | ----------- |
+| **28 Mar - 4 Apr** | Setup ambiente + task CRITICI (CI, schema DB, typo sprite) | Tutti | 4-6h ciascuno |
+| **5 Apr - 11 Apr** | Correzioni core (array, race condition, Logger, seed data) | Tutti | 3-4h ciascuno |
+| **12 Apr - 18 Apr** | Pulizia lifecycle (_exit_tree), null check, test manuale | Tutti | 3-5h ciascuno |
+| **19 Apr - 22 Apr** | Test finale, fix urgenti, documentazione, preparazione presentazione | Tutti | 2-3h ciascuno |
+
+**Totale stimato per persona**: ~12-18 ore distribuite su ~4 settimane.
+
+**Priorita' assoluta**: concentratevi sui task CRITICI e ALTI. I task MEDI e BASSI sono bonus se avanzate tempo.
 
 ---
 
