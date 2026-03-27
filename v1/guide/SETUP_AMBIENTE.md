@@ -506,6 +506,187 @@ git diff
 
 **Regola importante**: Se avete fatto un pasticcio troppo grande e non sapete come uscirne, **chiedete aiuto a Renan prima di fare qualsiasi cosa distruttiva**. E' molto meglio chiedere aiuto che perdere il lavoro di qualcun altro.
 
+### Problema: "Godot non trova il plugin godot-sqlite"
+
+**Causa**: La cartella `addons/godot-sqlite/` potrebbe essere incompleta o mancante.
+
+**Soluzione**:
+1. Verificate che la cartella `v1/addons/godot-sqlite/` esista e contenga file `.gdextension` e le librerie native (`.dll`, `.so`, `.dylib`)
+2. Se manca, ripetete il `git pull origin Renan` — i file binari sono nel repository
+3. In Godot, andate in **Project** → **Project Settings** → **Plugins** e verificate che il plugin sia attivato
+4. Se il plugin non appare nella lista, chiudete e riaprite Godot
+
+### Problema: "Il gioco si avvia con schermo nero"
+
+**Cause possibili**:
+1. La scena principale non e' configurata correttamente
+   - **Soluzione**: Project → Project Settings → General → Run → Main Scene deve essere `res://scenes/menu/main_menu.tscn`
+2. Un autoload ha un errore che blocca l'inizializzazione
+   - **Soluzione**: Guardate il pannello Output per errori rossi. Cercate messaggi che citano `_ready()` o `autoload`
+3. I file di asset mancano (sprite, font, temi)
+   - **Soluzione**: Verificate che `v1/assets/` contenga le sottocartelle `backgrounds/`, `sprites/`, `fonts/`, `themes/`
+
+### Problema: "gdlint o gdformat non trovato"
+
+**Causa**: Il pacchetto `gdtoolkit` non e' installato nel vostro Python.
+
+**Soluzione**:
+```bash
+# Verificate che Python sia installato
+python --version
+# Se non trovato, provate:
+python3 --version
+
+# Installate gdtoolkit (il pacchetto che include gdlint e gdformat)
+pip install "gdtoolkit>=4,<5"
+# Se pip non funziona, provate:
+pip3 install "gdtoolkit>=4,<5"
+
+# Verificate l'installazione
+gdlint --version
+gdformat --version
+```
+
+**Nota**: Su Windows, potrebbe essere necessario aggiungere la cartella Scripts di Python al PATH. Il percorso tipico e': `C:\Users\VOSTRO_NOME\AppData\Local\Programs\Python\PythonXX\Scripts\`
+
+### Problema: "Cannot connect to Language Server" in VS Code
+
+**Causa**: L'estensione godot-tools non riesce a comunicare con Godot.
+
+**Soluzione**:
+1. **Godot DEVE essere aperto** con il progetto caricato — l'LSP (Language Server Protocol) funziona solo quando Godot e' in esecuzione
+2. Verificate la porta: in Godot, andate in **Editor** → **Editor Settings** → **Network** → **Language Server** → la porta predefinita e' `6005`
+3. In VS Code, verificate che l'impostazione `godotTools.gdscript_lsp_server_port` sia `6005`
+4. Se avete **due istanze di Godot** aperte, la seconda non puo' usare la stessa porta. Chiudete una delle due
+
+---
+
+## 9. Configurazione File .env per Supabase (Opzionale)
+
+### Cos'e' il File .env?
+
+Il file `.env` contiene le **credenziali segrete** per connettersi al database cloud Supabase. E' come un foglietto con la password del Wi-Fi: serve per connettersi, ma **non deve essere condiviso pubblicamente**.
+
+**Importante**: Il gioco funziona perfettamente **senza** il file `.env`. La connessione Supabase e' opzionale — il gioco salva tutto localmente in JSON e SQLite. Il `.env` serve solo se volete abilitare la sincronizzazione cloud.
+
+### Come Configurare (se necessario)
+
+1. Nella cartella principale del progetto (`Projectwork-IFTS/`), troverete un file `.env.example`
+2. Copiatelo e rinominatelo in `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+3. Aprite il file `.env` con un editor di testo e inserite i vostri valori:
+   ```bash
+   SUPABASE_URL=https://il-vostro-progetto.supabase.co
+   SUPABASE_ANON_KEY=il-vostro-anon-key-qui
+   ```
+4. I valori li trovate nella dashboard Supabase: **Settings** → **API** → **Project URL** e **anon/public key**
+
+**ATTENZIONE**: Il file `.env` e' nel `.gitignore` — NON verra' mai committato. Questo e' intenzionale. Non forzate il commit di `.env`.
+
+---
+
+## 10. Autenticazione Git — SSH e Personal Access Token
+
+Se durante il `git push` vi viene chiesto utente e password, avete due opzioni per autenticarvi.
+
+### Opzione A: SSH Key (Consigliata)
+
+Le chiavi SSH vi permettono di autenticarvi senza inserire la password ogni volta.
+
+**1. Generare la chiave SSH**:
+```bash
+# Genera una chiave SSH (premete Invio a tutte le domande)
+ssh-keygen -t ed25519 -C "la-vostra-email@esempio.com"
+```
+
+**2. Copiare la chiave pubblica**:
+```bash
+# Su Linux/Mac:
+cat ~/.ssh/id_ed25519.pub
+
+# Su Windows (Git Bash):
+cat ~/.ssh/id_ed25519.pub
+# Oppure: clip < ~/.ssh/id_ed25519.pub  (copia negli appunti)
+```
+
+**3. Aggiungere la chiave a GitHub**:
+1. Andate su https://github.com/settings/keys
+2. Cliccate **"New SSH key"**
+3. Incollate la chiave pubblica (inizia con `ssh-ed25519 ...`)
+4. Date un nome (es. "Il mio portatile") e salvate
+
+**4. Testare la connessione**:
+```bash
+ssh -T git@github.com
+# Dovete vedere: "Hi VOSTRO_USERNAME! You've successfully authenticated"
+```
+
+**5. Cambiare il remote URL** (da HTTPS a SSH):
+```bash
+cd ~/Documenti/Projectwork-IFTS
+git remote set-url origin git@github.com:ZroGP/Projectwork-IFTS.git
+```
+
+### Opzione B: Personal Access Token (PAT)
+
+Se non volete usare SSH, potete creare un token personale.
+
+1. Andate su https://github.com/settings/tokens
+2. Cliccate **"Generate new token (classic)"**
+3. Date un nome (es. "Projectwork") e selezionate il permesso **repo**
+4. Cliccate **"Generate token"** e **COPIATE il token** (non lo vedrete piu')
+5. Quando Git chiede la password, usate il token al posto della password
+
+### Troubleshooting Autenticazione
+
+| Errore | Causa | Soluzione |
+| ------ | ----- | --------- |
+| `Permission denied (publickey)` | Chiave SSH non configurata o non aggiunta a GitHub | Seguite i passi sopra per SSH |
+| `fatal: Authentication failed` | Password/token errato o scaduto | Rigenerate il PAT o verificate la chiave SSH |
+| `remote: Repository not found` | Non avete accesso al repository | Chiedete a Giovanni (ZroGP) di aggiungervi come collaboratori |
+| `Could not read from remote repository` | URL del remote errato | Verificate con `git remote -v` e correggete con `git remote set-url origin URL` |
+
+---
+
+## 11. Estensioni VS Code Consigliate
+
+Oltre a `godot-tools` (obbligatoria), queste estensioni migliorano la produttivita':
+
+| Estensione | Sviluppatore | A Cosa Serve |
+| ---------- | ------------ | ------------ |
+| **godot-tools** | Geequlim | Supporto GDScript, autocompletamento, connessione LSP con Godot (OBBLIGATORIA) |
+| **GitLens** | GitKraken | Mostra chi ha modificato ogni riga di codice e quando (git blame visuale) |
+| **Error Lens** | Alexander | Evidenzia gli errori direttamente nel codice, inline, senza dover guardare il pannello problemi |
+| **EditorConfig for VS Code** | EditorConfig | Rispetta le impostazioni di formattazione del progetto (tab vs spazi, fine riga) |
+| **Markdown All in One** | Yu Zhang | Anteprima e formattazione dei file `.md` (utile per leggere guide e report) |
+
+**Come installare**: `Ctrl+Shift+X` → cercate il nome → cliccate **Install**.
+
+---
+
+## 12. Percorsi File `user://` per Sistema Operativo
+
+Godot usa il prefisso `user://` per indicare la cartella dati dell'utente. Questa cartella contiene salvataggi, log e database. La posizione reale varia per sistema operativo:
+
+| Sistema Operativo | Percorso Reale di `user://` |
+| ----------------- | --------------------------- |
+| **Windows** | `%APPDATA%\Godot\app_userdata\Mini Cozy Room\` |
+| **Linux** | `~/.local/share/godot/app_userdata/Mini Cozy Room/` |
+| **macOS** | `~/Library/Application Support/Godot/app_userdata/Mini Cozy Room/` |
+
+**File che troverete in questa cartella**:
+
+| File | Contenuto |
+| ---- | --------- |
+| `save_data.json` | Salvataggio principale del gioco (stanza attiva, decorazioni, personaggio) |
+| `save_data.backup.json` | Backup automatico del salvataggio precedente |
+| `cozy_room.db` | Database SQLite (mirror strutturato dei dati) |
+| `logs/game_YYYYMMDD.jsonl` | File di log giornaliero in formato JSON Lines |
+
+**Suggerimento**: Se il gioco si comporta in modo strano, provate a eliminare `save_data.json` e `cozy_room.db`. Al prossimo avvio, il gioco ricreera' entrambi i file con valori predefiniti.
+
 ---
 
 *Prossimo passo: aprite la vostra guida personale dalla [pagina indice](README.md) e iniziate a lavorare sui vostri task.*
