@@ -110,6 +110,10 @@
 15. [Riepilogo Statistico](#15-riepilogo-statistico)
 16. [Guide Operative per il Team](#16-guide-operative-per-il-team)
 17. [Pratiche di Sviluppo per Prevenire Errori](#17-pratiche-di-sviluppo-per-prevenire-errori)
+18. [Matrice di Prioritizzazione e Valutazione Rischio](#18-matrice-di-prioritizzazione-e-valutazione-rischio)
+19. [Stima Ore-Persona per Fase](#19-stima-ore-persona-per-fase)
+20. [Piano di Rollback](#20-piano-di-rollback--cosa-fare-se-una-correzione-rompe-qualcosa)
+21. [Appendice — File Modificati per Fase](#21-appendice--file-modificati-per-fase)
 
 ---
 
@@ -3108,6 +3112,239 @@ Prima di modificare **qualsiasi** file del progetto, rispondete a queste 6 doman
 | Tipi GDScript | Sempre espliciti | `var x: int = 0`, `func f() -> void:` | Prevengono errori di tipo a runtime |
 
 **Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 4 "GDScript — Naming Conventions"
+
+---
+
+## 18. Matrice di Prioritizzazione e Valutazione Rischio
+
+Questa sezione traduce la classificazione dei problemi (Sezione 10) in una **matrice decisionale** che combina severita', probabilita' di occorrenza, impatto sull'utente e sforzo di correzione. L'obiettivo e' aiutare il team a decidere **in che ordine affrontare le correzioni** quando il tempo e' limitato (scadenza: 22 aprile 2026).
+
+### 18.1 Legenda Valutazione
+
+| Dimensione | Scala | Significato |
+|------------|-------|-------------|
+| **Probabilita'** | Alta / Media / Bassa | Quanto spesso l'utente incontra il problema durante l'uso normale |
+| **Impatto Utente** | Critico / Alto / Medio / Basso | Quanto e' grave per l'utente quando il problema si verifica |
+| **Sforzo** | S (< 30 min) / M (30-90 min) / L (2-4 ore) | Tempo stimato per la correzione completa inclusi test |
+| **Priorita'** | P1 (subito) / P2 (entro 1 sett) / P3 (entro 2 sett) / P4 (se avanza tempo) | Quando deve essere corretto rispetto alla scadenza |
+
+### 18.2 Matrice Problemi CRITICI
+
+| ID | Problema | Probab. | Impatto | Sforzo | Priorita' | Assegnato | Note |
+|----|----------|---------|---------|--------|-----------|-----------|------|
+| C3 | PK characters impedisce multipli PG | Alta | Critico | M | **P1** | Elia | Blocca il design multi-personaggio |
+| C4 | Schema inventario confuso | Media | Alto | M | **P1** | Elia | Dati inconsistenti, FK rotte |
+| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | **P1** | Mohamed/Giovanni | Crash immediato con male_old |
+| C7 | male_black_shirt incompleto | Media | Critico | S | **P1** | Mohamed/Giovanni | Crash al cambio animazione |
+
+### 18.3 Matrice Problemi ALTI
+
+| ID | Problema | Probab. | Impatto | Sforzo | Priorita' | Assegnato |
+|----|----------|---------|---------|--------|-----------|-----------|
+| A1 | _exit_tree() mancante (12 script) | Alta | Alto | L | **P2** | Mohamed/Giovanni + Cristian |
+| A2 | FileDialog memory leak | Media | Medio | S | **P2** | Mohamed/Giovanni |
+| A3 | Race condition swap personaggio | Media | Alto | M | **P2** | Mohamed/Giovanni |
+| A6 | Memory leak drag preview deco_panel | Media | Medio | S | **P2** | Mohamed/Giovanni |
+| A12 | Logger flush sincrono | Bassa | Medio | M | **P3** | Cristian |
+| A13 | Log persi se file non disponibile | Bassa | Basso | M | **P3** | Cristian |
+| A14 | Posizione finestra non persistita | Media | Basso | S | **P3** | Cristian |
+| A15 | Rimozione duplicati item_id | Bassa | Medio | S | **P3** | Mohamed/Giovanni |
+| A16 | Cast Texture2D unsafe | Bassa | Alto | S | **P3** | Mohamed/Giovanni |
+| A17 | Tabelle seed vuote | Alta | Medio | M | **P2** | Elia |
+| A18 | Errore DB non propagato | Bassa | Medio | S | **P3** | Elia |
+| A19 | Tween orfani main_menu | Media | Medio | M | **P2** | Mohamed/Giovanni |
+| A22 | music_panel _exit_tree incompleto | Media | Medio | S | **P2** | Mohamed/Giovanni |
+
+### 18.4 Regola Decisionale
+
+Quando il tempo stringe, seguite questa regola:
+
+```text
+1. TUTTO cio' che e' P1 deve essere fatto PRIMA di qualsiasi P2
+2. P2 devono essere completati PRIMA di passare a P3
+3. P3 sono importanti ma il gioco funziona senza
+4. P4 sono bonus — fateli solo se avanzate tempo
+
+Se siete in dubbio su cosa fare: correggete il problema con
+la probabilita' piu' ALTA tra quelli della stessa priorita'.
+Un bug frequente con impatto medio e' peggio di un bug raro
+con impatto alto (per la presentazione del 22 aprile).
+```
+
+---
+
+## 19. Stima Ore-Persona per Fase
+
+Questa tabella presenta una stima realistica delle ore necessarie per completare ogni fase del piano di stabilizzazione (Sezione 11), suddivise per responsabile.
+
+### 19.1 Stima per Fase e Responsabile
+
+| Fase | Descrizione | Elia | Mohamed/Giov. | Cristian | Renan | Totale Fase |
+|------|-------------|------|---------------|----------|-------|-------------|
+| **Fase 1** | Integrita' Dati (CRITICO) | 3h | 1.5h | — | 1h (review) | **5.5h** |
+| **Fase 2** | Memoria e Lifecycle (ALTO) | — | 5h | 1.5h | 1h (review) | **7.5h** |
+| **Fase 3** | Errori e Validazione (MEDIO) | 1h | 2h | 2h | 1h (review) | **6h** |
+| **Fase 4** | Allineamento Architettura | — | 1h | 1h | 3h | **5h** |
+| **Fase 5** | Copertura Test | 1h | 2h | 3h | 1h (review) | **7h** |
+| **Totale** | | **5h** | **11.5h** | **7.5h** | **7h** | **31h** |
+
+### 19.2 Distribuzione Settimanale (Scadenza 22 Aprile 2026)
+
+| Settimana | Date | Obiettivo | Ore/persona stimate |
+|-----------|------|-----------|---------------------|
+| Settimana 1 | 28 Mar - 4 Apr | Fase 1 completa (P1) + inizio Fase 2 | 4-6h |
+| Settimana 2 | 5 Apr - 11 Apr | Fase 2 completa (P2) + inizio Fase 3 | 3-5h |
+| Settimana 3 | 12 Apr - 18 Apr | Fase 3 + Fase 4 + inizio Fase 5 | 3-4h |
+| Settimana 4 | 19 Apr - 22 Apr | Fase 5 + test finale + fix urgenti | 2-3h |
+
+**Nota**: Le ore sono stime conservative. Includono tempo per capire il codice, implementare, testare e committare. Se siete piu' veloci, usate il tempo extra per i task P3/P4.
+
+### 19.3 Percorso Critico (Dipendenze tra Fasi)
+
+```text
+Fase 1 (Integrita' Dati)
+  │
+  ├── C3/C4 (Elia: schema DB) ──────────────┐
+  ├── C6/C7 (Mohamed/Giov: characters.json)──┤
+  │                                           ▼
+  │                                    Fase 2 (Lifecycle)
+  │                                      │
+  │                                      ├── A1 (_exit_tree 12 script)
+  │                                      ├── A3 (race condition)
+  │                                      ├── A19 (tween orfani)
+  │                                      │
+  │                                      ▼
+  │                                    Fase 3 (Validazione)
+  │                                      │
+  │                                      ├── A12-A13 (Logger)
+  │                                      ├── A15-A16 (decoration, drop_zone)
+  │                                      │
+  │                                      ▼
+  │                                    Fase 4 (Architettura)
+  │                                      │
+  │                                      ├── AR6-AR11 (disaccoppiamento)
+  │                                      │
+  │                                      ▼
+  └──────────────────────────────────► Fase 5 (Test)
+                                         │
+                                         ├── Test per OGNI fase precedente
+                                         ├── CI green su tutti i workflow
+                                         └── Test manuale completo
+
+ATTENZIONE: La Fase 5 (Test) dipende da TUTTE le fasi precedenti.
+Cristian puo' iniziare a preparare i file test durante le Fasi 1-3,
+ma la configurazione CI finale richiede che i file test siano stabili.
+```
+
+---
+
+## 20. Piano di Rollback — Cosa Fare se una Correzione Rompe Qualcosa
+
+### 20.1 Strategia di Rollback per Ogni Fase
+
+| Fase | Rischio Rollback | Strategia |
+|------|-----------------|-----------|
+| Fase 1 (Schema DB) | ALTO — Cambio schema puo' rendere il DB esistente incompatibile | Backup DB prima di ogni modifica. Se il nuovo schema rompe il gioco, ripristinare il backup (procedura in GUIDA_ELIA_DATABASE.md) |
+| Fase 2 (Lifecycle) | BASSO — Aggiunta _exit_tree non rompe nulla di esistente | Se un disconnect causa errori, commentare la riga problematica e aprire un issue |
+| Fase 3 (Validazione) | BASSO — Aggiunta di check non modifica il flusso principale | Usare `push_warning` invece di `push_error` se non siete sicuri della gravita' |
+| Fase 4 (Architettura) | MEDIO — Modificare la comunicazione tra autoload puo' rompere catene di segnali | Testare ogni singola modifica isolatamente. Se un segnale non arriva, verificare l'ordine autoload |
+| Fase 5 (Test) | NESSUNO — I test non modificano il codice di produzione | Se un test fallisce, il problema e' nel test o nel codice (non nel processo di testing) |
+
+### 20.2 Procedura di Emergenza
+
+Se dopo un commit il gioco non si avvia o crasha immediatamente:
+
+```text
+1. NON fate git reset --hard (potreste perdere lavoro)
+2. Identificate l'ultimo commit funzionante:
+   git log --oneline -10
+3. Create un branch di backup:
+   git branch backup-prima-del-fix
+4. Revert del singolo commit problematico:
+   git revert <hash-del-commit>
+5. Pushate il revert:
+   git push
+6. Analizzate il problema con calma e riprovate
+```
+
+**Se NON sapete cosa fare: contattate Renan IMMEDIATAMENTE.** Non tentate fix al buio.
+
+---
+
+## 21. Appendice — File Modificati per Fase
+
+Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. Utile per capire in anticipo i possibili conflitti Git e coordinare il lavoro del team.
+
+### Fase 1 — Integrita' Dati
+
+| File | Modifiche | Chi |
+|------|-----------|-----|
+| `scripts/autoload/local_database.gd` | Schema characters (PK), schema inventario, FK, seed data, diagnostica apertura | Elia |
+| `data/characters.json` | Fix typo sprite "sxt"→"sx", completare/rimuovere male_black_shirt | Mohamed/Giovanni |
+| `scripts/utils/constants.gd` | Rimuovere costanti per personaggi rimossi | Mohamed/Giovanni |
+| `data/supabase_migration.sql` | Allineamento schema PostgreSQL (opzionale) | Elia |
+
+### Fase 2 — Memoria e Lifecycle
+
+| File | Modifiche | Chi |
+|------|-----------|-----|
+| `scripts/ui/panel_manager.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
+| `scripts/ui/deco_panel.gd` | _exit_tree() + fix memory leak drag preview | Mohamed/Giovanni |
+| `scripts/ui/settings_panel.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
+| `scripts/ui/music_panel.gd` | Fix FileDialog leak + _exit_tree() completo (9 segnali) | Mohamed/Giovanni |
+| `scripts/rooms/room_base.gd` | _exit_tree() + fix race condition swap (call_deferred) | Mohamed/Giovanni |
+| `scripts/rooms/decoration_system.gd` | _exit_tree() + fix rimozione duplicati | Mohamed/Giovanni |
+| `scripts/rooms/room_grid.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
+| `scripts/rooms/character_controller.gd` | null check _anim + validazione nomi animazione | Mohamed/Giovanni |
+| `scripts/menu/main_menu.gd` | _exit_tree() + fix tween orfani (A19) | Mohamed/Giovanni |
+| `scripts/menu/menu_character.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
+| `scripts/main.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
+| `scripts/autoload/logger.gd` | Fix flush sincrono + log persi | Cristian |
+| `systems/performance_manager.gd` | _exit_tree() + persistenza posizione finestra | Cristian |
+
+### Fase 3 — Errori e Validazione
+
+| File | Modifiche | Chi |
+|------|-----------|-----|
+| `scripts/autoload/save_manager.gd` | _validate_save_data(), safety version comparison | Elia (supporto) |
+| `scripts/rooms/decoration_system.gd` | Fix rimozione duplicati item_id (A15) | Mohamed/Giovanni |
+| `scripts/ui/drop_zone.gd` | Cast Texture2D safe (A16) | Mohamed/Giovanni |
+| `scripts/autoload/logger.gd` | Fallback se file log non disponibile (A13) | Cristian |
+
+### Fase 4 — Allineamento Architetturale
+
+| File | Modifiche | Chi |
+|------|-----------|-----|
+| `systems/performance_manager.gd` | Comunicazione via SignalBus (AR6) | Renan |
+| `scripts/ui/settings_panel.gd` | Comunicazione via SignalBus (AR7) | Renan |
+| `scripts/autoload/signal_bus.gd` | Eventuali nuovi segnali per AR6-AR7 | Renan |
+| `scripts/autoload/local_database.gd` | Sistema migrazione schema (AR10) | Renan |
+| `scripts/autoload/supabase_client.gd` | Schema errori consistente (AR11) | Renan |
+
+### Fase 5 — Copertura Test
+
+| File | Modifiche | Chi |
+|------|-----------|-----|
+| `tests/unit/test_local_database.gd` | Test schema, FK, seed data | Elia |
+| `tests/unit/test_save_manager.gd` | Test save/load, migrazione, backup | Cristian |
+| `tests/unit/test_signal_bus.gd` | Test emissione/ricezione segnali | Cristian |
+| `tests/unit/test_audio_manager.gd` | Test bounds check, crossfade | Mohamed/Giovanni |
+| `tests/unit/test_decoration_system.gd` | Test posizionamento, rimozione | Mohamed/Giovanni |
+| `tests/unit/test_game_manager.gd` | Test caricamento cataloghi | Mohamed/Giovanni |
+| `.github/workflows/*.yml` | Aggiunta test nella pipeline CI | Cristian |
+
+### Potenziali Conflitti Git
+
+```text
+FILE AD ALTO RISCHIO CONFLITTO (modificati da piu' persone):
+- scripts/autoload/local_database.gd  → Elia (schema) + Renan (migrazione)
+- systems/performance_manager.gd      → Cristian (_exit_tree) + Renan (SignalBus)
+- scripts/ui/settings_panel.gd        → Mohamed/Giov. (_exit_tree) + Renan (SignalBus)
+
+STRATEGIA: Completare prima le modifiche lifecycle (Fase 2), poi quelle
+architetturali (Fase 4). Non lavorare sullo stesso file in parallelo.
+Coordinatevi nel gruppo Teams prima di iniziare un file "conteso".
+```
 
 ---
 
