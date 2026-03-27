@@ -708,13 +708,112 @@ git push origin Renan
 
 ---
 
+## Ordine Consigliato dei Task
+
+Non fateli a caso — seguite questo ordine per massimizzare l'efficienza:
+
+1. **Task 1** (typo sprite) e **Task 2** (costanti) → fateli **per primi**, 15 minuti totali. Correggono dati fondamentali
+2. **Task 3** (array mismatch) → **secondo**, previene crash dello sfondo
+3. **Task 4** (race condition) e **Task 5** (texture cast) → **terzo**, fix di stabilita'
+4. **Task 7** (null check) → **quarto**, semplice e veloce
+5. **Task 6** (_exit_tree per 6 script) → **per ultimo**, e' il piu' lungo ma non blocca nessun altro task
+
+---
+
+## Come Dividere il Lavoro tra Mohamed e Giovanni
+
+**Suggerimento** (potete organizzarvi diversamente se preferite):
+
+| Mohamed | Giovanni |
+| ------- | -------- |
+| Task 1 (typo sprite — characters.json) | Task 3 (array mismatch — window_background.gd) |
+| Task 2 (costanti — constants.gd) | Task 4 (race condition — room_base.gd) |
+| Task 7 (null check — character_controller.gd) | Task 5 (texture cast — drop_zone.gd) |
+| Task 6.1-6.3 (_exit_tree: room_base, main, deco_panel) | Task 6.4-6.6 (_exit_tree: settings_panel, main_menu, menu_character) |
+
+**Regole importanti**:
+
+- **Fate sempre `git pull origin Renan` prima di iniziare** per evitare conflitti
+- **Comunicate cosa state facendo**: "Sto lavorando su Task 3" nel gruppo
+- **Non lavorate sullo stesso file** contemporaneamente
+- Se finite prima dell'altro, aiutatelo con i suoi task
+
+---
+
+## Glossario Rapido dei Termini Godot
+
+Riferimento veloce per i termini che trovate nelle correzioni:
+
+| Termine | Significato |
+| ------- | ----------- |
+| `queue_free()` | Distruggi questo nodo in modo sicuro (alla fine del frame) |
+| `_exit_tree()` | Funzione chiamata automaticamente quando il nodo viene rimosso dalla scena |
+| `_ready()` | Funzione chiamata quando il nodo e' stato aggiunto alla scena ed e' pronto |
+| `is_connected()` | Controlla se un segnale e' collegato a una funzione |
+| `connect()` / `disconnect()` | Collega/scollega un segnale a una funzione |
+| `call_deferred()` | Esegui questa funzione alla fine del frame corrente (non subito) |
+| `Tween` | Animazione programmata nel codice (es. fade in/out, movimento graduale) |
+| `Callable` | Un riferimento a una funzione, passabile come parametro |
+| `load()` / `preload()` | Carica una risorsa (sprite, scena, audio) dal disco |
+| `as Texture2D` | Cast: prova a interpretare una risorsa come texture 2D |
+| `push_warning()` | Stampa un avviso giallo nel pannello Output (non blocca il gioco) |
+| `null` | Valore "vuoto" — significa che la variabile non contiene niente |
+
+---
+
+## Verifica Complessiva Post-Correzioni
+
+Dopo aver completato TUTTI i task, fate questo test manuale completo:
+
+```text
+TEST 1 — Avvio e Menu (2 minuti)
+- [ ] Avviare il gioco (F5)
+- [ ] Il menu principale si carica senza errori
+- [ ] Il personaggio del menu cammina correttamente
+- [ ] I pulsanti del menu funzionano
+
+TEST 2 — Gameplay Base (5 minuti)
+- [ ] Entrare nella stanza (Nuova Partita)
+- [ ] Il personaggio si muove in tutte le direzioni con animazioni corrette
+- [ ] Lo sfondo foresta ha l'effetto parallax (foglie si muovono)
+- [ ] Nessun errore nel pannello Output
+
+TEST 3 — Decorazioni (3 minuti)
+- [ ] Aprire il pannello decorazioni
+- [ ] Trascinare una decorazione sulla stanza
+- [ ] La decorazione si posiziona correttamente sulla griglia
+- [ ] Chiudere e riaprire il pannello — funziona senza errori
+
+TEST 4 — Pannelli UI (3 minuti)
+- [ ] Aprire e chiudere ogni pannello 3 volte di seguito
+- [ ] Nessun errore nel pannello Output
+- [ ] Nessun rallentamento visibile
+
+TEST 5 — Salvataggio (2 minuti)
+- [ ] Piazzare 2-3 decorazioni
+- [ ] Chiudere il gioco
+- [ ] Riaprire il gioco e caricare il salvataggio
+- [ ] Le decorazioni sono ancora al loro posto
+
+TEST 6 — Profiler (5 minuti)
+- [ ] Debug → Monitor → attivare "Object Count" e "Memory"
+- [ ] Giocare per 5 minuti facendo: menu → stanza → pannelli → menu → stanza
+- [ ] I contatori NON devono crescere costantemente (leggera crescita ok, crescita continua = leak)
+```
+
+Se tutti i test passano: complimenti, avete finito!
+Se qualcosa fallisce: annotate quale test fallisce e quale errore vedete nel pannello Output, poi contattate Renan.
+
+---
+
 ## Risorse Utili
 
-- **Documentazione Godot 4 — Segnali**: https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html
-- **Documentazione Godot 4 — Scene e Nodi**: https://docs.godotengine.org/en/stable/getting_started/introduction/key_concepts_overview.html
-- **Documentazione Godot 4 — GDScript**: https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html
+- **Documentazione Godot 4 — Segnali**: <https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html>
+- **Documentazione Godot 4 — Scene e Nodi**: <https://docs.godotengine.org/en/stable/getting_started/introduction/key_concepts_overview.html>
+- **Documentazione Godot 4 — GDScript**: <https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html>
 
 ---
 
 *Guida redatta come parte dell'audit pre-rilascio del progetto Mini Cozy Room.*
+*Scadenza progetto: 22 Aprile 2026.*
 *Per domande o chiarimenti, contattate Renan Augusto Macena (System Architect & Project Supervisor).*
