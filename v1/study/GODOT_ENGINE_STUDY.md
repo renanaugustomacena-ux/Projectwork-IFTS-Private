@@ -1313,5 +1313,136 @@ theme/custom = "res://assets/ui/cozy_theme.tres"      # Global UI theme
 
 ---
 
+## 19. Troubleshooting Godot — Errori Comuni e Soluzioni
+
+Errori che incontrerete spesso durante lo sviluppo con Godot 4 e come risolverli.
+
+### "Node not found: NodeName"
+
+**Causa**: State cercando un nodo che non esiste nell'albero della scena, oppure il percorso e' sbagliato.
+
+**Soluzioni**:
+
+1. Verificate il percorso nel pannello Scene (il nome deve corrispondere esattamente, case-sensitive)
+2. Se usate `$Path/To/Node`, controllate che il nodo genitore sia corretto
+3. Se il nodo viene creato dinamicamente, potrebbe non esistere ancora in `_ready()` — usate `call_deferred()`
+4. Usate il **Remote Scene Tree** (pannello "Remote" durante il gameplay) per vedere i nodi effettivamente presenti
+
+### "Cyclic reference detected"
+
+**Causa**: Due script si riferiscono l'uno all'altro con `preload()` o `class_name`, creando un ciclo.
+
+**Soluzioni**:
+
+1. Sostituite `preload()` con `load()` in uno dei due script (load e' lazy, rompe il ciclo)
+2. Usate i segnali invece di riferimenti diretti tra classi
+3. Estraete l'interfaccia comune in un terzo script
+
+### "Invalid get index 'property' (on base: 'Nil')"
+
+**Causa**: State accedendo a una proprieta' di un oggetto che e' `null`. Tipico quando un nodo e' stato distrutto con `queue_free()` ma una variabile punta ancora ad esso.
+
+**Soluzioni**:
+
+1. Controllate con `if node != null and is_instance_valid(node):`
+2. Impostate la variabile a `null` dopo `queue_free()` del nodo
+3. Verificate che il nodo non sia stato liberato da un altro script
+
+### "Cannot convert argument X from 'Type' to 'OtherType'"
+
+**Causa**: State passando un valore del tipo sbagliato a una funzione. Tipico con `int` vs `float`, `String` vs `StringName`, o `Resource` vs il tipo specifico.
+
+**Soluzioni**:
+
+1. Usate cast espliciti: `value as float`, `str(value)`, `int(value)`
+2. Per risorse, verificate il tipo: `if resource is Texture2D:`
+3. Aggiungete type hints ovunque per far emergere questi errori prima
+
+### "res://path/file.ext: No such file or directory"
+
+**Causa**: Il percorso della risorsa e' sbagliato, il file e' stato spostato, o c'e' un typo.
+
+**Soluzioni**:
+
+1. Verificate che il file esista esattamente a quel percorso (case-sensitive su Linux!)
+2. Dopo aver spostato file, usate "Reimport" nel pannello FileSystem di Godot
+3. Cercate nel progetto con `Ctrl+Shift+F` per trovare tutti i riferimenti al vecchio percorso
+
+---
+
+## 20. Suggerimenti di Produttivita' nell'Editor Godot
+
+### Shortcut Fondamentali
+
+| Shortcut | Azione |
+| -------- | ------ |
+| `F1` | Apre la documentazione integrata (cerca classe o funzione) |
+| `F5` | Avvia il gioco |
+| `F6` | Avvia la scena corrente (senza passare dal menu) |
+| `F8` | Ferma il gioco |
+| `Ctrl+Shift+F` | Cerca testo in tutti i file del progetto |
+| `Ctrl+D` | Duplica la riga corrente nello script editor |
+| `Ctrl+K` | Commenta/decommenta la selezione |
+| `Ctrl+.` | Autocomplete (suggerimenti codice) |
+| `Ctrl+Click` su un tipo | Vai alla definizione (apre lo script/classe) |
+
+### Remote Inspector (Debug in Tempo Reale)
+
+Durante il gameplay (`F5`), potete ispezionare lo stato del gioco in tempo reale:
+
+1. **Pannello "Remote"**: mostra l'albero dei nodi del gioco in esecuzione. Potete selezionare qualsiasi nodo e vederne le proprieta' attuali nell'Inspector
+2. **Pannello "Debugger"**: mostra stack trace, variabili locali, breakpoint
+3. **Performance Monitor**: `Debugger → Monitors` mostra FPS, draw calls, physics ticks, memoria
+
+### print() vs push_warning() vs push_error()
+
+```gdscript
+# Per debug temporaneo (rimuovere prima del commit!)
+print("Valore: ", variabile)
+
+# Per avvisi non critici (restano nel codice, visibili nel pannello Output)
+push_warning("Texture non trovata, uso placeholder")
+
+# Per errori gravi (visibili in rosso nel pannello Output)
+push_error("File di salvataggio corrotto: " + file_path)
+```
+
+**Regola del progetto**: niente `print()` nel codice committato. Usate `AppLogger` per logging strutturato:
+
+```gdscript
+AppLogger.info("NomeClasse", "Messaggio", {"chiave": valore})
+AppLogger.warn("NomeClasse", "Qualcosa di strano", {"dettagli": info})
+AppLogger.error("NomeClasse", "Qualcosa di rotto", {"errore": msg})
+```
+
+---
+
+## 21. Confronto con Altri Game Engine
+
+Per capire meglio Godot, e' utile confrontarlo con i suoi concorrenti principali.
+
+| Aspetto | Godot 4 | Unity | Unreal Engine |
+| ------- | ------- | ----- | ------------- |
+| **Linguaggio** | GDScript, C#, C++ | C# | C++, Blueprints |
+| **Licenza** | MIT (completamente gratuito e open source) | Gratuito fino a soglia ricavi, poi royalty | Gratuito fino a $1M ricavi, poi 5% royalty |
+| **Dimensione editor** | ~100 MB | ~5-10 GB | ~30-50 GB |
+| **Ideale per** | 2D, pixel art, prototipi, giochi indie | 2D e 3D, mobile, AR/VR | AAA 3D, fotorealismo, open world |
+| **Scene system** | Albero di nodi (Node), composizione | GameObject + Component | Actor + Component |
+| **Build 2D** | Eccellente (nativo, performante) | Buono (ma nato per 3D) | Possibile ma non ideale |
+| **Curva apprendimento** | Bassa (GDScript simile a Python) | Media (C# potente ma verboso) | Alta (C++ complesso, Blueprints visuali) |
+| **Community** | In crescita rapida, open source | Enorme, matura | Enorme, professionale |
+| **Export Web** | Supportato (HTML5) | Supportato (WebGL) | Limitato |
+| **Mobile** | Supportato | Eccellente | Possibile ma pesante |
+
+### Perche' Godot per Mini Cozy Room?
+
+1. **Pixel art 2D nativo**: Godot ha supporto first-class per il 2D, non e' un "adattamento" del 3D
+2. **Leggerezza**: L'editor e' 100 MB, il gioco esportato pesa pochi MB — ideale per un desktop companion
+3. **GDScript**: Simile a Python, facile da imparare per studenti IFTS senza esperienza C#/C++
+4. **Open source**: Nessun costo di licenza, nessun vincolo legale, codice ispezionabile
+5. **Esportazione multipiattaforma**: Windows, Linux, macOS, Web da un unico progetto
+
+---
+
 *Study document for Mini Cozy Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*
