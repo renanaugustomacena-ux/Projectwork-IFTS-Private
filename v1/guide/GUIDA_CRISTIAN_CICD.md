@@ -583,14 +583,109 @@ Usa questa checklist per verificare di aver completato tutto. Spunta ogni voce m
 
 ---
 
+## Prima di Iniziare: Dipendenze dai Task degli Altri
+
+Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
+
+| Task | Puoi Iniziare Subito? | Dipendenze |
+| ---- | --------------------- | ---------- |
+| Task 1 (lint test nella CI) | **SI'** | Nessuna |
+| Task 2 (branch proto → Renan) | **SI'** | Nessuna |
+| Task 3 (Logger session ID) | **SI'** | Nessuna |
+| Task 4 (Logger buffer) | **SI'** | Nessuna |
+| Task 5 (PerformanceManager _exit_tree) | **SI'** | Nessuna |
+| Task 6 (configurare test nella CI) | **NO** | Dipende da Mohamed/Giovanni/Elia che creino i file test |
+| Task 7 (aggiornare documentazione) | **NO** | Dipende dal completamento di tutti gli altri task |
+
+**Suggerimento**: inizia subito con Task 1 e 2 (10-20 min), poi passa a Task 3-5. Cosi' la CI funziona subito per tutto il team.
+
+---
+
+## Troubleshooting: Problemi Comuni con la CI
+
+### "Il job fallisce con 'Godot executable not found'"
+
+**Causa**: La CI usa un'immagine Docker che deve scaricare Godot. Se la versione specificata nel workflow non corrisponde a quella disponibile, il download fallisce.
+
+**Soluzione**: Verifica nel file `ci.yml` che la versione di Godot sia `4.5-stable` e che l'URL di download sia corretto. Confronta con la pagina ufficiale dei rilasci: <https://github.com/godotengine/godot/releases>.
+
+### "I test passano in locale ma falliscono nella CI"
+
+**Causa**: La CI esegue Godot in modalita' **headless** (senza schermo). I test che dipendono dal rendering grafico (es. verificare la posizione di uno sprite) non funzionano.
+
+**Soluzione**:
+
+- Assicurarsi che i test non dipendano da `get_viewport().size` o da rendering visuale
+- Usare `--headless` anche in locale per riprodurre il problema: `godot --path v1 --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --add "res://tests/"`
+
+### "Il lint fallisce con 'unexpected token'"
+
+**Causa**: La versione di `gdtoolkit` installata nella CI non e' compatibile con Godot 4.5.
+
+**Soluzione**: Verifica che il file `ci.yml` installi la versione corretta:
+
+```yaml
+- name: Install gdtoolkit
+  run: pip install "gdtoolkit>=4,<5"
+```
+
+### "Timeout durante l'esecuzione dei test"
+
+**Causa**: Un test ha un loop infinito o aspetta un segnale che non arriva mai.
+
+**Soluzione**:
+
+1. Identifica quale test blocca guardando l'output della CI (l'ultimo test stampato prima del timeout)
+2. In locale, esegui solo quel test per isolare il problema
+3. Verifica che tutti i `await` abbiano un timeout o una condizione di uscita
+
+### "YAML syntax error in ci.yml"
+
+**Causa**: YAML e' molto sensibile all'indentazione. Un tab invece di spazi, o un'indentazione sbagliata, rompe tutto.
+
+**Soluzione**:
+
+- YAML usa **solo spazi** (2 per livello), MAI tab
+- Verificate online: copiate il contenuto di `ci.yml` su <https://www.yamllint.com/> per validarlo
+- In VS Code, l'estensione **YAML** (Red Hat) evidenzia gli errori in tempo reale
+
+---
+
+## Come Leggere i Log di GitHub Actions
+
+Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare i log:
+
+1. Andate su <https://github.com/ZroGP/Projectwork-IFTS>
+2. Cliccate la tab **"Actions"** in alto
+3. Vedrete una lista di workflow runs. Cliccate su quello che vi interessa (il piu' recente in alto)
+4. Nella pagina del run, vedrete i **job** (es. "lint", "test", "security"). Cliccate sul job fallito
+5. Si aprono i **passi** (steps). Ogni passo ha un triangolo per espandere l'output
+6. Il passo fallito avra' un'icona rossa (X). Espandetelo per vedere l'errore esatto
+7. Per rieseguire un job fallito: cliccate **"Re-run failed jobs"** in alto a destra
+
+**Suggerimento**: se un job fallisce per un errore transitorio (es. timeout di rete), il re-run spesso risolve il problema senza modifiche al codice.
+
+---
+
+## Suggerimenti e Best Practice per la CI
+
+1. **Testate sempre in locale prima del push**: eseguite `gdlint v1/scripts/ v1/tests/` e `gdformat --check v1/scripts/ v1/tests/` prima di pushare. Cosi' evitate di aspettare 5 minuti per scoprire un errore di formattazione
+2. **Un commit = un cambiamento logico**: non mescolate fix del Logger con modifiche alla CI nello stesso commit. Se la CI fallisce, e' piu' facile capire quale commit ha rotto
+3. **Controllate i minuti di Actions**: GitHub Free ha un limite di 2000 minuti/mese per le Actions. Non pushate 20 volte in un'ora per testare — testate in locale
+4. **Usate `workflow_dispatch`** per trigger manuali: il nostro `ci.yml` ha gia' `workflow_dispatch:`. Nella tab Actions, potete cliccare "Run workflow" per lanciare la CI manualmente senza fare un push
+
+---
+
 ## Risorse Utili
 
-- **Documentazione GitHub Actions**: https://docs.github.com/en/actions
-- **Documentazione GdUnit4**: https://mikeschulze.github.io/gdUnit4/
-- **Documentazione gdtoolkit**: https://github.com/Scony/godot-gdscript-toolkit
-- **Riferimento YAML**: https://yaml.org/spec/ (per il file ci.yml)
+- **Documentazione GitHub Actions**: <https://docs.github.com/en/actions>
+- **Documentazione GdUnit4**: <https://mikeschulze.github.io/gdUnit4/>
+- **Documentazione gdtoolkit**: <https://github.com/Scony/godot-gdscript-toolkit>
+- **Riferimento YAML**: <https://yaml.org/spec/> (per il file ci.yml)
+- **Validatore YAML online**: <https://www.yamllint.com/>
 
 ---
 
 *Guida redatta come parte dell'audit pre-rilascio del progetto Mini Cozy Room.*
+*Scadenza progetto: 22 Aprile 2026.*
 *Per domande o chiarimenti, contattate Renan Augusto Macena (System Architect & Project Supervisor).*
