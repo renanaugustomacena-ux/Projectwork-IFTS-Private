@@ -30,9 +30,6 @@ __pycache__/
 .env
 config.cfg
 
-# Supabase local development
-.supabase/
-
 # Test reports
 tests/reports/
 
