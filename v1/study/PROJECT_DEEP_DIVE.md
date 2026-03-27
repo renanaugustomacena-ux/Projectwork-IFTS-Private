@@ -595,5 +595,156 @@ Mini Cozy Room is designed as an **IFTS academic project**, which means it serve
 
 ---
 
+## 11. FAQ — Domande Frequenti sull'Architettura
+
+Domande che potreste ricevere in sede d'esame o che aiutano a capire le scelte del progetto.
+
+### Perche' SQLite e non un database server (MySQL, PostgreSQL)?
+
+SQLite e' un database **embedded**: vive in un singolo file dentro la cartella dell'utente, non richiede un server separato. Per un desktop companion che deve funzionare offline e avviarsi in pochi secondi, e' la scelta ideale. Un database server richiederebbe installazione, configurazione e un processo sempre attivo — complessita' non giustificata per un'app che salva dati di un singolo utente locale.
+
+**Quando SQLite NON basta**: se il gioco dovesse supportare multiplayer in tempo reale con migliaia di utenti simultanei, servirebbe un database server. Per questo esiste Supabase (PostgreSQL) come layer opzionale.
+
+### Perche' JSON + SQLite insieme (doppia persistenza)?
+
+Il salvataggio JSON (`user://save_data.json`) e' **veloce da leggere e scrivere**, e il formato e' leggibile da un umano con un editor di testo. Ma JSON non supporta query complesse, relazioni tra dati, o transazioni atomiche.
+
+SQLite gestisce dati relazionali (personaggi che appartengono ad account, oggetti nell'inventario con foreign key) con garanzie di integrita'. Il JSON e' il "salvataggio rapido", SQLite e' il "database strutturato". Entrambi vengono scritti in `save_game()` per ridondanza.
+
+### Perche' GL Compatibility e non Vulkan?
+
+Il renderer GL Compatibility usa OpenGL ES 3.0, supportato da praticamente qualsiasi hardware degli ultimi 15 anni, incluse schede video integrate Intel. Vulkan offre prestazioni superiori ma richiede hardware piu' recente e driver aggiornati. Per un'app pixel art 2D a basso consumo, GL Compatibility e' la scelta corretta: massima compatibilita', zero overhead grafico non necessario.
+
+### Perche' i segnali invece di chiamate dirette?
+
+I segnali implementano il **pattern Observer**: il produttore non conosce i consumatori. Se AudioManager emette `track_changed`, non deve sapere se SaveManager, un pannello UI, o nessuno e' in ascolto. Questo permette di:
+- Aggiungere/rimuovere funzionalita' senza toccare il codice esistente
+- Testare ogni sistema in isolamento (mock dei segnali)
+- Evitare dipendenze circolari tra autoload
+
+Il costo e' una leggera indirezione: per capire "chi reagisce a questo segnale" dovete cercare `connect` nel progetto.
+
+---
+
+## 12. Flusso Completo: "Dal Click alla Decorazione Salvata"
+
+Traccia completa di cosa succede quando l'utente posiziona una decorazione nella stanza.
+
+```text
+UTENTE: trascina un oggetto dal pannello inventario alla stanza
+
+1. InventoryPanel._on_item_drag_started(item_data)
+   └── Crea un drag preview (TextureRect con lo sprite dell'oggetto)
+       └── Il nodo drag preview viene aggiunto alla scena temporaneamente
+
+2. DropZone._can_drop_data(position, data) → true
+   └── Verifica che il dato trascinato sia valido (ha item_id, sprite_path)
+   └── Verifica che la posizione sia all'interno della griglia della stanza
+
+3. DropZone._drop_data(position, data)
+   └── Calcola posizione snap: Helpers.snap_to_grid(position)  → griglia 64px
+   └── Emette: SignalBus.decoration_placed.emit(item_data, snapped_pos)
+
+4. SignalBus.decoration_placed  →  ascoltatori reagiscono:
+
+   4a. DecorationSystem._on_decoration_placed(item_data, pos)
+       └── Crea un nodo Sprite2D per la decorazione
+       └── Imposta posizione, scala, texture
+       └── Aggiunge il nodo alla scena (come figlio del container decorazioni)
+       └── Aggiorna l'array interno _placed_decorations
+
+   4b. SaveManager._on_decoration_placed(item_data, pos)
+       └── Imposta _is_dirty = true  (flag "ci sono modifiche non salvate")
+
+5. Auto-save timer (ogni 60 secondi) controlla _is_dirty
+   └── _is_dirty e' true → chiama save_game()
+
+6. SaveManager.save_game()
+   └── Serializza TUTTI i dati di gioco in un Dictionary
+   └── Scrive JSON su user://save_data.json (con backup atomico)
+   └── Scrive su SQLite via LocalDatabase.save_room_state()
+   └── Imposta _is_dirty = false
+   └── Emette: SignalBus.save_completed.emit()
+```
+
+**Punti critici** (dove i bug del report si manifestano):
+- **Passo 3**: Se `Helpers.snap_to_grid()` non arrotonda correttamente → decorazione fuori griglia
+- **Passo 4a**: Se `_exit_tree()` manca in DecorationSystem → memory leak alla chiusura
+- **Passo 6**: Se il salvataggio JSON fallisce ma SQLite riesce (o viceversa) → dati inconsistenti
+
+---
+
+## 13. Errori Architetturali da Evitare
+
+Anti-pattern specifici di questo progetto. Se li riconoscete nel vostro codice, correggete subito.
+
+### Usare `_init()` per inizializzare autoload
+
+```gdscript
+# SBAGLIATO — gli altri autoload potrebbero non essere pronti
+func _init() -> void:
+    SignalBus.room_changed.connect(_on_room)  # SignalBus potrebbe non esistere!
+
+# CORRETTO — _ready() garantisce che tutti gli autoload precedenti siano pronti
+func _ready() -> void:
+    SignalBus.room_changed.connect(_on_room)
+```
+
+### Gestire pannelli fuori da PanelManager
+
+```gdscript
+# SBAGLIATO — crea un pannello "selvaggio" che PanelManager non conosce
+var panel = preload("res://scenes/ui/settings.tscn").instantiate()
+add_child(panel)
+
+# CORRETTO — solo PanelManager gestisce i pannelli
+SignalBus.panel_opened.emit("settings")
+# PanelManager reagisce al segnale e crea il pannello
+```
+
+### Hardcodare contenuti invece di usare i cataloghi
+
+```gdscript
+# SBAGLIATO — se il personaggio viene rinominato, questo codice si rompe
+if character_name == "male_brown_hair":
+    speed = 120
+
+# CORRETTO — leggi dal catalogo
+var char_data: Dictionary = GameManager.character_catalog.get(character_id, {})
+var speed: int = char_data.get("speed", Constants.DEFAULT_SPEED)
+```
+
+### Modificare variabili di altri autoload direttamente
+
+```gdscript
+# SBAGLIATO — coupling diretto, viola l'architettura a segnali
+SaveManager.game_data["settings"]["volume"] = 0.5
+
+# CORRETTO — emetti un segnale, lascia che SaveManager reagisca
+SignalBus.settings_updated.emit({"volume": 0.5})
+```
+
+---
+
+## 14. Domande di Auto-Studio
+
+Provate a rispondere senza guardare il codice. Poi verificate la vostra risposta leggendo i file indicati.
+
+1. **Quanti segnali ha il SignalBus?** Elencatene almeno 10 con il loro scopo. *(Verifica: `scripts/autoload/signal_bus.gd`)*
+
+2. **In che ordine vengono caricati gli autoload?** Perche' l'ordine e' importante? *(Verifica: `project.godot`, sezione [autoload])*
+
+3. **Cosa succede se chiudete il gioco senza salvare manualmente?** I dati vengono persi? *(Verifica: `scripts/autoload/save_manager.gd`, funzione `_notification()`)*
+
+4. **Perche' le decorazioni hanno un campo `placement_type`?** Cosa succederebbe se un oggetto "wall" venisse posizionato sul pavimento? *(Verifica: `data/decorations.json`, `scripts/rooms/decoration_system.gd`)*
+
+5. **Quante tabelle ha il database SQLite?** Per ognuna, qual e' la PRIMARY KEY? *(Verifica: `scripts/autoload/local_database.gd`, funzione `_create_tables()`)*
+
+6. **Come fa il gioco a sapere quale personaggio mostrare all'avvio?** Traccia il flusso dal salvataggio al rendering. *(Verifica: `save_manager.gd` → `game_manager.gd` → `room_base.gd`)*
+
+7. **Cosa succederebbe se rimuoveste SignalBus dal progetto?** Quali sistemi si romperebbero e perche'? *(Ragionamento: pensate a tutti i `SignalBus.*.connect()` nel codebase)*
+
+---
+
 *Study document for Mini Cozy Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*
