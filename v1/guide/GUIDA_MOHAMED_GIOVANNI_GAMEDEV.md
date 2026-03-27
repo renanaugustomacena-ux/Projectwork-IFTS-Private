@@ -1,6 +1,6 @@
-# Guida Operativa — Mohamed & Giovanni (Game Assets, Core Logic & Design Lead)
+# Guida Operativa Completa — Mohamed & Giovanni (Game Assets, Core Logic & Design Lead)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 25 Marzo 2026)
+**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 27 Marzo 2026)
 **Prerequisito**: Leggete prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il vostro ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
@@ -18,27 +18,40 @@
 > - Gli asset della cucina (kitchen_appliances, kitchen_furniture, kitchen_accessories) sono stati **eliminati** da `decorations.json` e dalla cartella sprites.
 > - Lo shop panel (`shop_panel.gd`) **non esiste** nel progetto.
 > - I test unitari (cartella `tests/`) sono stati rimossi perche' dipendevano da GdUnit4 (non installato).
->
-> **Aggiornamento 27 Marzo 2026 — Personaggi e Integrazione Asset**:
-> - I personaggi `female_red_shirt` e `male_yellow_shirt` **verranno attivati** (vedi [GUIDA_INTEGRAZIONE_ASSET.md](GUIDA_INTEGRAZIONE_ASSET.md) Task A)
-> - La **Task 2 di questa guida cambia**: rimuovere SOLO `CHAR_MALE_BLACK_SHIRT`, NON le altre costanti
-> - Leggete la guida integrazione **dopo** aver completato i bug fix di questa guida
 
 ---
 
-## Le Vostre Responsabilita'
+## Panoramica Generale
 
-| # | Cosa Dovete Fare | File Principale | Problema Audit | Priorita' | Tempo Stimato |
-|---|------------------|-----------------|----------------|-----------|---------------|
-| 1 | Correggere typo sprite in characters.json | `data/characters.json` | C6 | CRITICO | 5 min |
-| 2 | Rimuovere costanti personaggi inutilizzati | `scripts/utils/constants.gd` | C7 | CRITICO | 10 min |
-| 3 | Correggere mismatch array in window_background.gd | `scripts/rooms/window_background.gd` | C5 | CRITICO | 20 min |
-| 4 | Correggere race condition swap personaggio in room_base.gd | `scripts/rooms/room_base.gd` | A3 | ALTO | 15 min |
-| 5 | Correggere cast Texture2D unsafe in drop_zone.gd | `scripts/ui/drop_zone.gd` | A16 | ALTO | 15 min |
-| 6 | Aggiungere `_exit_tree()` a 6 script | Vari | A1 | ALTO | 1.5 ore |
-| 7 | Aggiungere null check su character_controller.gd | `scripts/rooms/character_controller.gd` | A1 | MEDIO | 15 min |
+Questa guida contiene **tutti** i vostri task, divisi in tre parti:
 
-**Tempo totale stimato**: circa 3 ore
+| Parte | Descrizione | Task | Priorita' |
+|-------|-------------|------|-----------|
+| **1 — Bug Fix Audit** | Correzioni critiche trovate nell'audit del codice | Task 1-7 | CRITICO/ALTO |
+| **2 — Integrazione Asset** | Portare asset da `projectwork-ifts/` in `v1/` | Task 8-11 | ALTO/MEDIO |
+| **3 — Nuove Funzionalita'** | Popup decorazioni e rotazione/ridimensionamento | Task 12-13 | MEDIO |
+
+**Ordine**: Fate **prima** i bug fix (Parte 1), **poi** l'integrazione (Parte 2), **infine** le nuove funzionalita' (Parte 3).
+
+### Riepilogo di Tutti i Task
+
+| # | Cosa Fare | File Principale | Priorita' | Tempo |
+|---|-----------|-----------------|-----------|-------|
+| 1 | Correggere typo sprite in characters.json | `data/characters.json` | CRITICO | 5 min |
+| 2 | Rimuovere costanti personaggi inutilizzati | `scripts/utils/constants.gd` | CRITICO | 10 min |
+| 3 | Correggere mismatch array in window_background.gd | `scripts/rooms/window_background.gd` | CRITICO | 20 min |
+| 4 | Correggere race condition swap personaggio | `scripts/rooms/room_base.gd` | ALTO | 15 min |
+| 5 | Correggere cast Texture2D unsafe | `scripts/ui/drop_zone.gd` | ALTO | 15 min |
+| 6 | Aggiungere `_exit_tree()` a 6 script | Vari | ALTO | 1.5 ore |
+| 7 | Aggiungere null check su character_controller.gd | `scripts/rooms/character_controller.gd` | MEDIO | 15 min |
+| 8 | Integrare il Virtual Joystick | `addons/virtual_joystick` | ALTO | 45 min |
+| 9 | Integrare gli asset della loading screen | `assets/sprites/loading/` | MEDIO | 30 min |
+| 10 | Integrare gli asset dei bottoni menu | `assets/sprites/menu/` | BASSO | 20 min |
+| 11 | Registrare nuovi mobili nel catalogo decorazioni | `data/decorations.json` | MEDIO | 45 min |
+| 12 | Popup interazione decorazioni | `scripts/rooms/decoration_system.gd` | MEDIO | 30 min |
+| 13 | Rotazione e ridimensionamento decorazioni | `scripts/rooms/decoration_system.gd` | MEDIO | 30 min |
+
+**Tempo totale stimato**: circa 6 ore (distribuite su piu' sessioni)
 
 ---
 
@@ -95,6 +108,12 @@ SignalBus.room_changed.emit("cozy_studio", "modern")
 
 ---
 
+# PARTE 1: Bug Fix Audit (Task 1-7)
+
+Queste sono le correzioni critiche trovate durante l'audit del codice. Fatele **per prime**.
+
+---
+
 ## Task 1: Correggere Typo Sprite in characters.json (C6)
 
 **Tempo stimato**: 5 minuti
@@ -128,11 +147,6 @@ Premi `Ctrl+S` per salvare.
 4. L'animazione di camminata deve funzionare senza errori
 5. Controlla il pannello Output: NON devono esserci messaggi di errore rossi tipo "resource not found"
 
-### Cosa Puo' Andare Storto
-
-- **Nessuna occorrenza trovata**: Il typo potrebbe essere gia' stato corretto. Cercate manualmente `male_walk_down_side` nel file per verificare che il percorso sia corretto
-- **Troppo occorrenze trovate**: `sxt` potrebbe apparire altrove nel file. Prima di sostituire tutto, controllate che ogni occorrenza sia effettivamente un errore
-
 ### Commit
 
 ```bash
@@ -150,11 +164,11 @@ git push origin Renan
 
 ### Cosa C'e' da Fare
 
-Il gioco ora usa un **solo personaggio** (`male_old` — "Ragazzo Classico"). La selezione personaggi e' stata rimossa. Pero' nel file `scripts/utils/constants.gd` ci sono ancora costanti per personaggi che non esistono piu':
+Il gioco usa un **solo personaggio** (`male_old` — "Ragazzo Classico"). La selezione personaggi non esiste. Pero' nel file `scripts/utils/constants.gd` ci sono ancora costanti per personaggi che non esistono:
 
-- `CHAR_FEMALE_RED_SHIRT` — non ha sprite nel progetto
-- `CHAR_MALE_YELLOW_SHIRT` — non ha sprite nel progetto
-- `CHAR_MALE_BLACK_SHIRT` — ha solo uno sprite parziale, non e' giocabile
+- `CHAR_FEMALE_RED_SHIRT` — non e' giocabile
+- `CHAR_MALE_YELLOW_SHIRT` — non e' giocabile
+- `CHAR_MALE_BLACK_SHIRT` — non e' giocabile
 
 Queste costanti inutilizzate creano confusione e potrebbero causare errori se qualcuno provasse ad usarle.
 
@@ -691,23 +705,506 @@ git push origin Renan
 
 ---
 
-## Checklist Finale
+# PARTE 2: Integrazione Asset da `projectwork-ifts/` (Task 8-11)
 
+Questi task servono a portare gli asset creati da Mohamed nel progetto `projectwork-ifts/` dentro il progetto ufficiale `v1/`.
+
+## Contesto: La Situazione dei Due Progetti
+
+Nel repository esistono **due progetti Godot separati**:
+
+```text
+Repository root/
+  v1/                    <-- il progetto UFFICIALE (qui lavoriamo tutti)
+  projectwork-ifts/      <-- il vostro progetto parallelo (lavoro di Mohamed)
 ```
-- [ ] Task 1: Corretto typo sxt -> sx in characters.json
-- [ ] Task 2: Rimossi costanti personaggi inutilizzati da constants.gd
-- [ ] Task 3: Corretto allineamento array in window_background.gd
-- [ ] Task 4: Race condition swap personaggio corretto con call_deferred
-- [ ] Task 5: Null check su caricamento texture in drop_zone.gd
-- [ ] Task 6.1: _exit_tree() aggiunto a room_base.gd (3 segnali)
-- [ ] Task 6.2: _exit_tree() aggiunto a main.gd (1 segnale)
-- [ ] Task 6.3: _exit_tree() completato in deco_panel.gd
-- [ ] Task 6.4: _exit_tree() completato in settings_panel.gd (4 segnali)
-- [ ] Task 6.5: _exit_tree() aggiunto a main_menu.gd (5 segnali)
-- [ ] Task 6.6: _exit_tree() aggiunto a menu_character.gd (1 timer)
-- [ ] Task 7: Null check su _anim in character_controller.gd
-- [ ] Test manuale: giocata sessione completa senza crash
-- [ ] Profiler: nessuna crescita costante di memoria
+
+Il lavoro fatto in `projectwork-ifts/` (joystick, personaggi 8 direzioni, loading screen, bottoni menu, letti, gatto, griglia isometrica) **non e' integrato** in `v1/`. Sono due giochi separati che non si parlano.
+
+### Cosa Si Puo' Portare
+
+Gli **sprite** (.png) e l'**addon virtual joystick** si possono copiare direttamente. Gli script (.gd) e le scene con logica (.tscn) di `projectwork-ifts/` **NON si possono copiare** perche' hanno un'architettura incompatibile. Il progetto `v1/` usa un sistema a segnali (SignalBus), cataloghi JSON, e script condivisi. Gli script di `projectwork-ifts/` non usano niente di questo.
+
+### Regole Fondamentali
+
+1. **NON copiate script (.gd) da `projectwork-ifts/` a `v1/`** — hanno architettura incompatibile
+2. **NON modificate gli autoload** (SignalBus, GameManager, SaveManager, ecc.) — sono responsabilita' di Renan
+3. **Potete copiare liberamente sprite (.png)** e scene (.tscn) di sole risorse visive
+4. **Lavorate SOLO nel branch Renan** — fate `git pull origin Renan` prima di iniziare
+5. **Testate con F5 dopo ogni modifica** — se il gioco non parte, annullate l'ultima modifica
+
+### Cosa NON Integrare (Tabella Riferimento)
+
+| File da `projectwork-ifts/` | Motivo |
+|------|--------|
+| `scripts/male_character.gd` | v1 usa `character_controller.gd` unico per tutti i personaggi. Lo script di Mohamed ha un sistema armi (`aim_weapon`) con nodi che non esistono — crasherebbe. |
+| `scripts/female_character.gd` | Identico a `male_character.gd` — stessi problemi. |
+| `scripts/grid_test.gd` | Sistema griglia isometrica incompatibile con `room_grid.gd` di v1 (dimensioni celle diverse 16x8 vs 64x64). |
+| `scenes/main/game.tscn` | Scena principale di `projectwork-ifts/`. Non ha script, non usa SignalBus. |
+| `scenes/main/room.tscn` | Struttura stanza diversa (StaticBody2D vs Node2D). |
+| `scenes/main/settings.tscn` | TouchScreenButton singolo senza logica. v1 ha un pannello settings completo. |
+| `scenes/main/interact.tscn` | TouchScreenButton senza logica collegata. |
+| `scenes/menu/*.tscn` | Menu con posizioni assolute hardcoded, senza script. v1 ha un menu funzionante. |
+| `scenes/ui/ui_male.tscn` | Usa `StaticBody2D` come root per UI (sbagliato). Non usa Control. |
+| `scenes/ui/ui_female.tscn` | Stesso problema di `ui_male.tscn`. |
+| `project.godot` | Configurazione del progetto parallelo. NON sovrascrivere quello di v1. |
+
+---
+
+## Task 8: Integrare il Virtual Joystick
+
+**Tempo stimato**: 45 minuti
+**Priorita'**: ALTO
+
+Il virtual joystick in `projectwork-ifts/` e' un addon di terze parti (CF Studios) che simula input direzionale su touch screen. Funziona anche con il mouse (utile per testare su PC).
+
+### Passo 1: Copiare l'Addon
+
+Copiate l'intera cartella dell'addon:
+
+```bash
+# Dal terminale, nella root del repository
+cp -r projectwork-ifts/addons/virtual_joystick v1/addons/virtual_joystick
+```
+
+### Passo 2: Copiare le Texture Custom del Joystick
+
+Il vostro progetto usa texture personalizzate per il joystick (diverse da quelle di default dell'addon):
+
+```bash
+# Copiate le texture UI nella cartella asset di v1
+mkdir -p v1/assets/sprites/ui
+cp projectwork-ifts/assets/menu/ui/sprite_pad_base.png v1/assets/sprites/ui/
+cp projectwork-ifts/assets/menu/ui/sprite_pad_lever.png v1/assets/sprites/ui/
+```
+
+### Passo 3: Abilitare il Plugin in Godot
+
+1. Aprite il progetto `v1/` in Godot Editor
+2. Andate in **Project -> Project Settings -> Plugins**
+3. Dovreste vedere "Virtual Joystick" nella lista
+4. Attivate il checkbox **Enable** accanto al plugin
+5. Chiudete le impostazioni
+
+Se il plugin non appare, riavviate Godot Editor.
+
+### Passo 4: Aggiungere il Joystick alla Scena di Gioco
+
+1. Aprite `scenes/main/main.tscn` in Godot Editor (doppio click)
+2. Nella scena, trovate il nodo `UILayer` (e' un CanvasLayer)
+3. Click destro su `UILayer` -> **Add Child Node**
+4. Cercate **VirtualJoystick** nella lista (se il plugin e' attivo, appare come tipo di nodo)
+5. Cliccate **Create**
+
+Se `VirtualJoystick` non appare come tipo di nodo:
+
+1. Click destro su `UILayer` -> **Instantiate Child Scene**
+2. Navigate a `addons/virtual_joystick/` e cercate se c'e' una scena `.tscn` di esempio
+3. In alternativa, aggiungete un nodo `Control` e assegnategli lo script `addons/virtual_joystick/scripts/virtual_joystick.gd`
+
+### Passo 5: Configurare il Joystick
+
+Selezionate il nodo VirtualJoystick e nell'Inspector configurate:
+
+| Proprieta' | Valore | Motivo |
+|------------|--------|--------|
+| Joystick Mode | FIXED | Il joystick resta in posizione fissa (piu' intuitivo per desktop) |
+| Dead Zone | 0.2 | Zona morta al centro per evitare movimenti accidentali |
+| Clamp Zone | 1.0 | Il cerchio esterno limita il movimento |
+| Visibility Mode | ALWAYS | Sempre visibile (anche senza toccare lo schermo) |
+| Use Input Actions | ON | Simula i tasti `ui_left`/`ui_right`/`ui_up`/`ui_down` |
+
+**Posizionamento**: Trascinate il joystick nell'angolo in basso a sinistra dello schermo. Una posizione ragionevole e':
+- Position X: circa 120
+- Position Y: circa 550
+- Scale: circa (2.5, 2.5)
+
+Se avete copiato le texture custom (Passo 2), assegnatele:
+- **Base Texture**: `res://assets/sprites/ui/sprite_pad_base.png`
+- **Stick Texture**: `res://assets/sprites/ui/sprite_pad_lever.png`
+
+### Passo 6: Abilitare Touch Emulation
+
+Per poter testare il joystick con il **mouse** su PC (senza touch screen):
+
+1. **Project -> Project Settings -> Input Devices -> Pointing**
+2. Abilitate: **Emulate Touch From Mouse** = `On`
+3. Disabilitate: **Emulate Mouse From Touch** = `Off`
+
+### Passo 7: Verificare
+
+1. Avviate il gioco con F5
+2. Il joystick deve apparire nell'angolo in basso a sinistra
+3. Cliccate e trascinate con il mouse sul joystick — il personaggio deve muoversi
+4. Il personaggio deve muoversi anche con le frecce della tastiera (l'input coesiste)
+5. Rilasciando il joystick, il personaggio si ferma
+6. Nessun errore nel pannello Output
+
+### Commit
+
+```bash
+git add v1/addons/virtual_joystick v1/assets/sprites/ui/sprite_pad_base.png v1/assets/sprites/ui/sprite_pad_lever.png
+git commit -m "Integrato addon virtual joystick con texture personalizzate"
+git push origin Renan
+```
+
+---
+
+## Task 9: Integrare gli Asset della Loading Screen
+
+**Tempo stimato**: 30 minuti
+**Priorita'**: MEDIO
+
+Il progetto `v1/` ha gia' una loading screen funzionante (un rettangolo colorato che sfuma). Possiamo migliorarla con gli sprite creati da Mohamed.
+
+### Passo 1: Copiare gli Asset
+
+```bash
+mkdir -p v1/assets/sprites/loading
+cp projectwork-ifts/assets/menu/loading/background.png v1/assets/sprites/loading/
+cp projectwork-ifts/assets/menu/loading/background_title.png v1/assets/sprites/loading/
+cp projectwork-ifts/assets/menu/loading/loading_base_bar.png v1/assets/sprites/loading/
+cp projectwork-ifts/assets/menu/loading/loading_charging_bar.png v1/assets/sprites/loading/
+cp projectwork-ifts/assets/menu/loading/loading_people.png v1/assets/sprites/loading/
+```
+
+### Passo 2: Aggiornare la Loading Screen nel Menu
+
+La loading screen attuale e' in `scenes/menu/main_menu.tscn`, nodo `LoadingScreen` (un semplice ColorRect). Per usare i nuovi asset:
+
+1. Aprite `scenes/menu/main_menu.tscn` in Godot Editor
+2. Selezionate il nodo `LoadingScreen`
+3. Cambiate il tipo da `ColorRect` a `TextureRect`
+4. Nell'Inspector, impostate:
+   - **Texture**: `res://assets/sprites/loading/background.png`
+   - **Expand Mode**: `Ignore Size` (per riempire tutto lo schermo)
+   - **Stretch Mode**: `Keep Aspect Covered`
+5. Come figlio di `LoadingScreen`, aggiungete un `Sprite2D` per il titolo:
+   - **Texture**: `res://assets/sprites/loading/background_title.png`
+   - **Position**: centrate nello schermo (640, 200)
+6. Come altro figlio, aggiungete un `Sprite2D` per la barra di caricamento:
+   - **Texture**: `res://assets/sprites/loading/loading_base_bar.png`
+   - **Position**: centrate in basso (640, 500)
+7. Come altro figlio, aggiungete un `Sprite2D` per i personaggi:
+   - **Texture**: `res://assets/sprites/loading/loading_people.png`
+   - **Position**: centrate (640, 350)
+
+**Nota**: La barra di caricamento sara' statica (solo visuale). Implementare una barra animata richiede modifiche allo script `main_menu.gd`, che e' facoltativo e di bassa priorita'.
+
+### Passo 3: Verificare
+
+1. Avviate il gioco con F5
+2. La loading screen deve mostrare il background illustrato, il titolo, e i personaggi
+3. Dopo un momento, sfuma e appare il menu principale
+4. Nessun errore nel pannello Output
+
+### Commit
+
+```bash
+git add v1/assets/sprites/loading/ v1/scenes/menu/main_menu.tscn
+git commit -m "Integrati asset loading screen con background illustrato e personaggi"
+git push origin Renan
+```
+
+---
+
+## Task 10: Integrare gli Asset dei Bottoni Menu
+
+**Tempo stimato**: 20 minuti
+**Priorita'**: BASSO
+
+Mohamed ha creato bottoni pixel art con stato normal/pressed per il menu. Attualmente `v1/` usa bottoni di testo semplici (nodo `Button`). Per ora, copiamo solo gli asset per averli disponibili.
+
+### Passo 1: Copiare gli Asset
+
+```bash
+mkdir -p v1/assets/sprites/menu/buttons_static
+mkdir -p v1/assets/sprites/menu/buttons_pressed
+cp projectwork-ifts/assets/menu/buttons_static/*.png v1/assets/sprites/menu/buttons_static/
+cp projectwork-ifts/assets/menu/buttons_pressed/*.png v1/assets/sprites/menu/buttons_pressed/
+```
+
+### Passo 2: Uso Futuro
+
+L'integrazione visuale dei bottoni nella UI del menu e' un lavoro di design che va fatto con calma. Per ora, gli asset sono disponibili in:
+
+- `assets/sprites/menu/buttons_static/` — stato normale (quando il bottone non e' premuto)
+- `assets/sprites/menu/buttons_pressed/` — stato premuto
+
+Bottoni disponibili: account, credits, english, espanol, home, interact, italiano, language, no, quit, settings, shop, yes, exit_x.
+
+Per usarli in futuro, potete convertire i `Button` del menu in `TextureButton` e assegnare le texture normal/pressed.
+
+### Commit
+
+```bash
+git add v1/assets/sprites/menu/
+git commit -m "Aggiunti asset bottoni menu pixel art (static + pressed)"
+git push origin Renan
+```
+
+---
+
+## Task 11: Registrare Nuovi Mobili nel Catalogo Decorazioni
+
+**Tempo stimato**: 45 minuti
+**Priorita'**: MEDIO
+
+Mohamed ha creato sprite per letti (8 varianti colore), finestre (3 varianti), una porta, e disordine sul pavimento. Alcuni di questi possono essere aggiunti al catalogo decorazioni per essere usati nel gioco.
+
+### Passo 1: Copiare gli Asset Mancanti
+
+Verificate prima cosa esiste gia' in `v1/assets/`:
+
+```bash
+# Guardate cosa c'e'
+ls v1/assets/sprites/rooms/
+ls v1/assets/sprites/decorations/
+```
+
+Copiate solo gli asset che mancano:
+
+```bash
+# Letti (probabilmente non esistono ancora in v1)
+mkdir -p v1/assets/sprites/decorations/beds
+cp projectwork-ifts/assets/room/bed/*.png v1/assets/sprites/decorations/beds/
+
+# Disordine (floor mess — per dare vita alla stanza)
+mkdir -p v1/assets/sprites/decorations/mess
+cp projectwork-ifts/assets/room/mess/*.png v1/assets/sprites/decorations/mess/
+```
+
+### Passo 2: Aggiungere al Catalogo Decorazioni
+
+Aprite `data/decorations.json` e aggiungete le nuove decorazioni nell'array `"decorations"`. Rispettate il formato esistente:
+
+```json
+{
+    "id": "bed_black_1",
+    "name": "Letto Nero Variante 1",
+    "category": "furniture",
+    "sprite_path": "res://assets/sprites/decorations/beds/sprite_bed_black1.png",
+    "placement_type": "floor",
+    "item_scale": 1.0
+},
+{
+    "id": "bed_cyan_1",
+    "name": "Letto Celeste Variante 1",
+    "category": "furniture",
+    "sprite_path": "res://assets/sprites/decorations/beds/sprite_bed_cyan1.png",
+    "placement_type": "floor",
+    "item_scale": 1.0
+},
+{
+    "id": "bed_olive_1",
+    "name": "Letto Oliva Variante 1",
+    "category": "furniture",
+    "sprite_path": "res://assets/sprites/decorations/beds/sprite_bed_olive1.png",
+    "placement_type": "floor",
+    "item_scale": 1.0
+},
+{
+    "id": "bed_violet_1",
+    "name": "Letto Viola Variante 1",
+    "category": "furniture",
+    "sprite_path": "res://assets/sprites/decorations/beds/sprite_bed_violet1.png",
+    "placement_type": "floor",
+    "item_scale": 1.0
+},
+{
+    "id": "floor_mess_1",
+    "name": "Disordine Pavimento 1",
+    "category": "decoration",
+    "sprite_path": "res://assets/sprites/decorations/mess/floor_mess1.png",
+    "placement_type": "floor",
+    "item_scale": 0.8
+},
+{
+    "id": "floor_mess_2",
+    "name": "Disordine Pavimento 2",
+    "category": "decoration",
+    "sprite_path": "res://assets/sprites/decorations/mess/floor_mess2.png",
+    "placement_type": "floor",
+    "item_scale": 0.8
+}
+```
+
+**Nota**: Aggiungete anche le varianti 2 dei letti (`bed_black_2`, `bed_cyan_2`, `bed_olive_2`, `bed_violet_2`) e `floor_mess_3` seguendo lo stesso schema. In totale sono 11 nuove decorazioni.
+
+**ATTENZIONE al JSON**: L'ultimo elemento dell'array NON deve avere una virgola dopo la `}`. Esempio:
+
+```json
+{
+    "decorations": [
+        { ... },
+        { ... },
+        { ... }     <-- NIENTE virgola sull'ultimo elemento!
+    ]
+}
+```
+
+### Passo 3: Regolare `item_scale`
+
+I letti di Mohamed sono sprite pixel art piccoli. Potrebbero essere troppo piccoli o troppo grandi nella stanza di `v1/`. Dopo aver aggiunto le entry al catalogo:
+
+1. Avviate il gioco
+2. Aprite il pannello decorazioni (pulsante in basso)
+3. Trascinate un letto nella stanza
+4. Se e' troppo grande/piccolo, tornate al JSON e aggiustate `item_scale` (es. 2.0 per raddoppiare, 0.5 per dimezzare)
+
+### Passo 4: Verificare
+
+1. Avviate il gioco con F5
+2. Aprite il pannello decorazioni
+3. Nella categoria "furniture" devono apparire i nuovi letti
+4. Trascinatene uno nella stanza — deve posizionarsi sulla griglia 64px
+5. Chiudete e riaprite il gioco — la decorazione deve essere stata salvata
+
+### Commit
+
+```bash
+git add v1/assets/sprites/decorations/ v1/data/decorations.json
+git commit -m "Aggiunti 11 nuovi mobili al catalogo decorazioni (letti e disordine pavimento)"
+git push origin Renan
+```
+
+---
+
+# PARTE 3: Nuove Funzionalita' (Task 12-13)
+
+Questi task aggiungono funzionalita' nuove al sistema decorazioni. Fateli **solo dopo** aver completato le Parti 1 e 2.
+
+---
+
+## Task 12: Popup Interazione Decorazioni
+
+**Tempo stimato**: 30 minuti
+**Priorita'**: MEDIO
+
+### Cosa C'e' da Fare
+
+Quando si clicca su una decorazione piazzata nella stanza, non succede nulla di visibile. Attualmente il sistema supporta solo: tasto destro per rimuovere, trascinamento per spostare. Serve un popup con pulsanti per Eliminare, Ruotare e Ridimensionare.
+
+### File da Modificare
+
+- `scripts/rooms/decoration_system.gd`
+
+### Implementazione
+
+1. **Nel file `decoration_system.gd`**, aggiungere una variabile e le funzioni per il popup:
+
+```gdscript
+var _popup: PanelContainer = null
+
+func _show_popup(decoration: Sprite2D) -> void:
+	if _popup != null:
+		_popup.queue_free()
+
+	_popup = PanelContainer.new()
+	var vbox := VBoxContainer.new()
+
+	var btn_delete := Button.new()
+	btn_delete.text = "Elimina"
+	btn_delete.pressed.connect(_on_delete.bind(decoration))
+
+	var btn_rotate := Button.new()
+	btn_rotate.text = "Ruota 90"
+	btn_rotate.pressed.connect(_on_rotate.bind(decoration))
+
+	var btn_resize := Button.new()
+	btn_resize.text = "Ridimensiona"
+	btn_resize.pressed.connect(_on_resize.bind(decoration))
+
+	vbox.add_child(btn_delete)
+	vbox.add_child(btn_rotate)
+	vbox.add_child(btn_resize)
+	_popup.add_child(vbox)
+	_popup.global_position = get_global_mouse_position()
+	get_tree().current_scene.add_child(_popup)
+
+func _on_delete(decoration: Sprite2D) -> void:
+	decoration.queue_free()
+	_popup.queue_free()
+	_popup = null
+	SignalBus.save_requested.emit()
+
+func _on_rotate(decoration: Sprite2D) -> void:
+	decoration.rotation_degrees += 90.0
+	SignalBus.save_requested.emit()
+
+func _on_resize(decoration: Sprite2D) -> void:
+	# Cicla tra 3 scale
+	var current_scale := decoration.scale.x
+	if current_scale < 1.5:
+		decoration.scale = Vector2(2.0, 2.0)
+	elif current_scale < 2.5:
+		decoration.scale = Vector2(3.0, 3.0)
+	else:
+		decoration.scale = Vector2(1.0, 1.0)
+	SignalBus.save_requested.emit()
+```
+
+2. **Modificare `_input_event`** per chiamare `_show_popup()` al click sinistro (se non si sta trascinando)
+
+3. **Chiudere il popup** quando si clicca altrove (connettere un segnale o gestire in `_input`)
+
+### Commit
+
+```bash
+git add scripts/rooms/decoration_system.gd
+git commit -m "Aggiunto popup interazione decorazioni con elimina, ruota e ridimensiona"
+git push origin Renan
+```
+
+---
+
+## Task 13: Rotazione e Ridimensionamento — Persistenza Dati
+
+**Tempo stimato**: 30 minuti
+**Priorita'**: MEDIO
+
+### Cosa C'e' da Fare
+
+Le modifiche del Task 12 (rotazione, ridimensionamento) funzionano durante la sessione di gioco, ma **non vengono salvate**. Quando riaprite il gioco, le decorazioni tornano alla dimensione e rotazione originali.
+
+### File da Modificare
+
+- `scripts/rooms/decoration_system.gd` — aggiungere logica rotazione/scala al salvataggio
+- `scripts/rooms/room_base.gd` — aggiornare `_spawn_decoration()` e `_save_decorations()`
+- `scripts/autoload/save_manager.gd` — aggiungere campo `rotation` ai dati decorazione
+
+### Formato Dati Salvataggio Attuale
+
+```json
+{
+    "decorations": [
+        {"item_id": "plant_01", "position": [400, 500], "item_scale": 6.0}
+    ]
+}
+```
+
+### Formato Aggiornato
+
+```json
+{
+    "decorations": [
+        {"item_id": "plant_01", "position": [400, 500], "item_scale": 6.0, "rotation": 0.0}
+    ]
+}
+```
+
+### Cosa Fare
+
+1. Quando si piazza una decorazione, salvare anche `rotation` e `scale` nei dati di salvataggio
+2. Quando si carica una partita, applicare `rotation` e `scale` salvati
+3. Il popup (Task 12) permette di modificare rotazione e scala
+
+### Commit
+
+```bash
+git add scripts/rooms/decoration_system.gd scripts/rooms/room_base.gd scripts/autoload/save_manager.gd
+git commit -m "Persistenza rotazione e scala decorazioni nel salvataggio"
+git push origin Renan
 ```
 
 ---
@@ -716,11 +1213,16 @@ git push origin Renan
 
 Non fateli a caso — seguite questo ordine per massimizzare l'efficienza:
 
-1. **Task 1** (typo sprite) e **Task 2** (costanti) → fateli **per primi**, 15 minuti totali. Correggono dati fondamentali
-2. **Task 3** (array mismatch) → **secondo**, previene crash dello sfondo
-3. **Task 4** (race condition) e **Task 5** (texture cast) → **terzo**, fix di stabilita'
-4. **Task 7** (null check) → **quarto**, semplice e veloce
-5. **Task 6** (_exit_tree per 6 script) → **per ultimo**, e' il piu' lungo ma non blocca nessun altro task
+1. **Task 1** (typo sprite) e **Task 2** (costanti) — fateli **per primi**, 15 minuti totali. Correggono dati fondamentali
+2. **Task 3** (array mismatch) — **secondo**, previene crash dello sfondo
+3. **Task 4** (race condition) e **Task 5** (texture cast) — **terzo**, fix di stabilita'
+4. **Task 7** (null check) — **quarto**, semplice e veloce
+5. **Task 6** (_exit_tree per 6 script) — **quinto**, e' il piu' lungo ma non blocca nessun altro task
+6. **Task 8** (virtual joystick) — **sesto**, il piu' importante dell'integrazione
+7. **Task 11** (nuovi mobili nel catalogo) — **settimo**, arricchisce il gameplay
+8. **Task 9** (loading screen) — **ottavo**, migliora l'aspetto visivo
+9. **Task 10** (bottoni menu, solo copia asset) — **nono**, bassa priorita'
+10. **Task 12-13** (popup + persistenza decorazioni) — **per ultimi**, nuove funzionalita'
 
 ---
 
@@ -734,6 +1236,9 @@ Non fateli a caso — seguite questo ordine per massimizzare l'efficienza:
 | Task 2 (costanti — constants.gd) | Task 4 (race condition — room_base.gd) |
 | Task 7 (null check — character_controller.gd) | Task 5 (texture cast — drop_zone.gd) |
 | Task 6.1-6.3 (_exit_tree: room_base, main, deco_panel) | Task 6.4-6.6 (_exit_tree: settings_panel, main_menu, menu_character) |
+| Task 8 (virtual joystick — voi l'avete configurato!) | Task 11 (nuovi mobili nel catalogo) |
+| Task 9 (loading screen) | Task 12-13 (popup + persistenza decorazioni) |
+| Task 10 (bottoni menu) | — |
 
 **Regole importanti**:
 
@@ -741,27 +1246,52 @@ Non fateli a caso — seguite questo ordine per massimizzare l'efficienza:
 - **Comunicate cosa state facendo**: "Sto lavorando su Task 3" nel gruppo
 - **Non lavorate sullo stesso file** contemporaneamente
 - Se finite prima dell'altro, aiutatelo con i suoi task
+- Se il gioco non parte dopo una modifica, fate `git stash` per annullare e chiedete aiuto
 
 ---
 
-## Glossario Rapido dei Termini Godot
+## Checklist Finale
 
-Riferimento veloce per i termini che trovate nelle correzioni:
+### Parte 1 — Bug Fix Audit
 
-| Termine | Significato |
-| ------- | ----------- |
-| `queue_free()` | Distruggi questo nodo in modo sicuro (alla fine del frame) |
-| `_exit_tree()` | Funzione chiamata automaticamente quando il nodo viene rimosso dalla scena |
-| `_ready()` | Funzione chiamata quando il nodo e' stato aggiunto alla scena ed e' pronto |
-| `is_connected()` | Controlla se un segnale e' collegato a una funzione |
-| `connect()` / `disconnect()` | Collega/scollega un segnale a una funzione |
-| `call_deferred()` | Esegui questa funzione alla fine del frame corrente (non subito) |
-| `Tween` | Animazione programmata nel codice (es. fade in/out, movimento graduale) |
-| `Callable` | Un riferimento a una funzione, passabile come parametro |
-| `load()` / `preload()` | Carica una risorsa (sprite, scena, audio) dal disco |
-| `as Texture2D` | Cast: prova a interpretare una risorsa come texture 2D |
-| `push_warning()` | Stampa un avviso giallo nel pannello Output (non blocca il gioco) |
-| `null` | Valore "vuoto" — significa che la variabile non contiene niente |
+```text
+- [ ] Task 1: Corretto typo sxt -> sx in characters.json
+- [ ] Task 2: Rimosse tutte le costanti personaggi inutilizzati da constants.gd
+- [ ] Task 3: Corretto allineamento array in window_background.gd
+- [ ] Task 4: Race condition swap personaggio corretto con call_deferred
+- [ ] Task 5: Null check su caricamento texture in drop_zone.gd
+- [ ] Task 6.1: _exit_tree() aggiunto a room_base.gd (3 segnali)
+- [ ] Task 6.2: _exit_tree() aggiunto a main.gd (1 segnale)
+- [ ] Task 6.3: _exit_tree() completato in deco_panel.gd
+- [ ] Task 6.4: _exit_tree() completato in settings_panel.gd (4 segnali)
+- [ ] Task 6.5: _exit_tree() aggiunto a main_menu.gd (5 segnali)
+- [ ] Task 6.6: _exit_tree() aggiunto a menu_character.gd (1 timer)
+- [ ] Task 7: Null check su _anim in character_controller.gd
+```
+
+### Parte 2 — Integrazione Asset
+
+```text
+- [ ] Task 8: Addon virtual_joystick copiato in v1/addons/
+- [ ] Task 8: Plugin abilitato in Project Settings
+- [ ] Task 8: Joystick visibile e funzionante nella scena di gioco
+- [ ] Task 8: Touch emulation abilitata
+- [ ] Task 9: Asset loading screen copiati
+- [ ] Task 9: Loading screen mostra il nuovo background
+- [ ] Task 10: Asset bottoni menu copiati in v1/assets/sprites/menu/
+- [ ] Task 11: Sprite letti e disordine copiati
+- [ ] Task 11: decorations.json ha le nuove entry (letti + mess)
+- [ ] Task 11: Decorazioni trascinabili e posizionabili in gioco
+```
+
+### Parte 3 — Nuove Funzionalita'
+
+```text
+- [ ] Task 12: Click su decorazione piazzata mostra popup con Elimina/Ruota/Ridimensiona
+- [ ] Task 12: Ruotare una decorazione funziona (90 gradi)
+- [ ] Task 12: Ridimensionare una decorazione funziona
+- [ ] Task 13: Il salvataggio/caricamento preserva rotazione e scala delle decorazioni
+```
 
 ---
 
@@ -780,12 +1310,14 @@ TEST 2 — Gameplay Base (5 minuti)
 - [ ] Entrare nella stanza (Nuova Partita)
 - [ ] Il personaggio si muove in tutte le direzioni con animazioni corrette
 - [ ] Lo sfondo foresta ha l'effetto parallax (foglie si muovono)
+- [ ] Il joystick e' visibile e funzionante (Task 8)
 - [ ] Nessun errore nel pannello Output
 
 TEST 3 — Decorazioni (3 minuti)
 - [ ] Aprire il pannello decorazioni
 - [ ] Trascinare una decorazione sulla stanza
 - [ ] La decorazione si posiziona correttamente sulla griglia
+- [ ] I nuovi mobili (letti, disordine) appaiono nel catalogo (Task 11)
 - [ ] Chiudere e riaprire il pannello — funziona senza errori
 
 TEST 4 — Pannelli UI (3 minuti)
@@ -800,8 +1332,8 @@ TEST 5 — Salvataggio (2 minuti)
 - [ ] Le decorazioni sono ancora al loro posto
 
 TEST 6 — Profiler (5 minuti)
-- [ ] Debug → Monitor → attivare "Object Count" e "Memory"
-- [ ] Giocare per 5 minuti facendo: menu → stanza → pannelli → menu → stanza
+- [ ] Debug -> Monitor -> attivare "Object Count" e "Memory"
+- [ ] Giocare per 5 minuti facendo: menu -> stanza -> pannelli -> menu -> stanza
 - [ ] I contatori NON devono crescere costantemente (leggera crescita ok, crescita continua = leak)
 ```
 
@@ -810,11 +1342,34 @@ Se qualcosa fallisce: annotate quale test fallisce e quale errore vedete nel pan
 
 ---
 
+## Glossario Rapido dei Termini Godot
+
+| Termine | Significato |
+| ------- | ----------- |
+| `queue_free()` | Distruggi questo nodo in modo sicuro (alla fine del frame) |
+| `_exit_tree()` | Funzione chiamata automaticamente quando il nodo viene rimosso dalla scena |
+| `_ready()` | Funzione chiamata quando il nodo e' stato aggiunto alla scena ed e' pronto |
+| `is_connected()` | Controlla se un segnale e' collegato a una funzione |
+| `connect()` / `disconnect()` | Collega/scollega un segnale a una funzione |
+| `call_deferred()` | Esegui questa funzione alla fine del frame corrente (non subito) |
+| `Tween` | Animazione programmata nel codice (es. fade in/out, movimento graduale) |
+| `Callable` | Un riferimento a una funzione, passabile come parametro |
+| `load()` / `preload()` | Carica una risorsa (sprite, scena, audio) dal disco |
+| `as Texture2D` | Cast: prova a interpretare una risorsa come texture 2D |
+| `push_warning()` | Stampa un avviso giallo nel pannello Output (non blocca il gioco) |
+| `null` | Valore "vuoto" — significa che la variabile non contiene niente |
+
+---
+
 ## Risorse Utili
 
 - **Documentazione Godot 4 — Segnali**: <https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html>
 - **Documentazione Godot 4 — Scene e Nodi**: <https://docs.godotengine.org/en/stable/getting_started/introduction/key_concepts_overview.html>
 - **Documentazione Godot 4 — GDScript**: <https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html>
+- **CollisionPolygon2D**: <https://docs.godotengine.org/en/stable/classes/class_collisionpolygon2d.html>
+- **CharacterBody2D**: <https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html>
+- **Studio materiale progetto**: `v1/study/GODOT_ENGINE_STUDY_IT.md`
+- **Deep dive progetto**: `v1/study/PROJECT_DEEP_DIVE_IT.md`
 
 ---
 
