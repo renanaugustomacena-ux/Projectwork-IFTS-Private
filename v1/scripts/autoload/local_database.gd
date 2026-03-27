@@ -40,6 +40,8 @@ func _on_save_requested(data: Dictionary) -> void:
 		return
 	if data.has("character") and data["character"] is Dictionary:
 		upsert_character(account_id, data["character"])
+	if data.has("inventory") and data["inventory"] is Dictionary:
+		_save_inventory(account_id, data["inventory"])
 
 
 func close() -> void:
@@ -193,10 +195,14 @@ func get_character(account_id: int) -> Dictionary:
 func upsert_character(account_id: int, data: Dictionary) -> bool:
 	var existing := get_character(account_id)
 	if not existing.is_empty():
+		var char_id: int = existing.get("character_id", -1)
+		if char_id < 0:
+			return false
 		return _execute_bound(
 			(
 				"UPDATE characters SET nome = ?, genere = ?, colore_occhi = ?,"
-				+ " colore_capelli = ?, colore_pelle = ?, livello_stress = ? WHERE account_id = ?;"
+				+ " colore_capelli = ?, colore_pelle = ?, livello_stress = ?"
+				+ " WHERE character_id = ?;"
 			),
 			[
 				data.get("nome", ""),
@@ -205,7 +211,7 @@ func upsert_character(account_id: int, data: Dictionary) -> bool:
 				data.get("colore_capelli", 0),
 				data.get("colore_pelle", 0),
 				data.get("livello_stress", 0),
-				account_id,
+				char_id,
 			]
 		)
 
@@ -233,15 +239,48 @@ func get_inventory(account_id: int) -> Array:
 	return _select("SELECT * FROM inventario WHERE account_id = ?;", [account_id])
 
 
-func add_inventory_item(account_id: int, item_id: int, coins: int = 0, capacita: int = 50) -> bool:
+func add_inventory_item(account_id: int, item_id: int, quantita: int = 1) -> bool:
 	return _execute_bound(
-		"INSERT INTO inventario (account_id, item_id, coins, capacita) VALUES (?, ?, ?, ?);",
-		[account_id, item_id, coins, capacita]
+		"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);",
+		[account_id, item_id, quantita]
 	)
 
 
-func update_inventory_coins(inventario_id: int, coins: int) -> bool:
-	return _execute_bound("UPDATE inventario SET coins = ? WHERE inventario_id = ?;", [coins, inventario_id])
+func remove_inventory_item(account_id: int, item_id: int) -> bool:
+	return _execute_bound(
+		"DELETE FROM inventario WHERE account_id = ? AND item_id = ?;",
+		[account_id, item_id]
+	)
+
+
+func update_coins(account_id: int, coins: int) -> bool:
+	return _execute_bound(
+		"UPDATE accounts SET coins = ? WHERE account_id = ?;", [coins, account_id]
+	)
+
+
+func get_coins(account_id: int) -> int:
+	var rows := _select("SELECT coins FROM accounts WHERE account_id = ?;", [account_id])
+	if rows.is_empty():
+		return 0
+	return rows[0].get("coins", 0)
+
+
+func _save_inventory(account_id: int, inv_data: Dictionary) -> void:
+	var coins: int = inv_data.get("coins", 0)
+	var capacita: int = inv_data.get("capacita", 50)
+	_execute_bound(
+		"UPDATE accounts SET coins = ?, inventario_capacita = ? WHERE account_id = ?;",
+		[coins, capacita, account_id]
+	)
+	var items: Array = inv_data.get("items", [])
+	_execute_bound("DELETE FROM inventario WHERE account_id = ?;", [account_id])
+	for item in items:
+		if item is Dictionary and item.has("item_id"):
+			_execute_bound(
+				"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);",
+				[account_id, item.get("item_id", 0), item.get("quantita", 1)]
+			)
 
 
 # ---- CRUD: Items ----
