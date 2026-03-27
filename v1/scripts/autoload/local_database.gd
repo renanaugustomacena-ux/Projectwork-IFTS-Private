@@ -1,6 +1,5 @@
 ## LocalDatabase — SQLite local database for offline-first persistence.
 ## Uses godot-sqlite GDExtension to store game data in user://cozy_room.db.
-## Schema mirrors Supabase tables (7 tables).
 extends Node
 
 const DB_PATH := "user://cozy_room"

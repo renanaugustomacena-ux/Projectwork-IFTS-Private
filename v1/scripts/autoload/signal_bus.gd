@@ -39,10 +39,4 @@ signal music_state_updated(state: Dictionary)
 signal save_to_database_requested(data: Dictionary)
 
 # Settings signals
-# TODO: Phase 5 — i18n system, connect language_changed to TranslationServer
 signal language_changed(lang_code: String)
-
-# Auth signals
-signal user_authenticated(user_id: String)
-signal user_signed_out
-signal auth_error(message: String)
