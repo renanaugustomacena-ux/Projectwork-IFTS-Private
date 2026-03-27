@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://boudpnv1nk301"]
+
+[ext_resource type="PackedScene" uid="uid://uufc8r5qr7pa" path="res://scenes/main/room.tscn" id="1_0rn35"]
+[ext_resource type="PackedScene" uid="uid://bolodsplnqnqu" path="res://scenes/ui/virtual_joystick.tscn" id="2_kjrfb"]
+[ext_resource type="PackedScene" uid="uid://bsctegqwk4fe3" path="res://scenes/characters/female-character.tscn" id="3_se30j"]
+[ext_resource type="PackedScene" uid="uid://cboy4uryuyrwc" path="res://scenes/characters/male-character.tscn" id="4_ktwa8"]
+[ext_resource type="PackedScene" uid="uid://eaqyaeykmaj2" path="res://scenes/ui/ui_male.tscn" id="5_157ky"]
+[ext_resource type="PackedScene" uid="uid://dsu3648qmn636" path="res://scenes/main/settings.tscn" id="6_y58yt"]
+[ext_resource type="PackedScene" uid="uid://cc6v8hc8uxl2d" path="res://scenes/main/interact.tscn" id="7_5j5yt"]
+[ext_resource type="PackedScene" uid="uid://0obb5ka7llbe" path="res://scenes/room/bed/bed_black_1.tscn" id="8_kjrfb"]
+
+[node name="Game" type="Node2D" unique_id=1822793542]
+position = Vector2(1, -15)
+
+[node name="room" parent="." unique_id=1648951168 instance=ExtResource("1_0rn35")]
+position = Vector2(-1, 15)
+
+[node name="bed_black1" parent="." unique_id=271292597 instance=ExtResource("8_kjrfb")]
+position = Vector2(-9, 6)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=37255617]
+
+[node name="VirtualJoystick" parent="CanvasLayer" unique_id=912784726 instance=ExtResource("2_kjrfb")]
+offset_left = 140.0
+offset_top = 532.0
+offset_right = 140.0
+offset_bottom = 532.0
+joystick_scale = 2.8000000000000003
+metadata/_edit_use_anchors_ = true
+
+[node name="Female" parent="." unique_id=1587920895 instance=ExtResource("3_se30j")]
+visible = false
+position = Vector2(-27, 30)
+
+[node name="Male" parent="." unique_id=1691135567 instance=ExtResource("4_ktwa8")]
+position = Vector2(29, 30)
+
+[node name="ui_male" parent="." unique_id=1522180996 instance=ExtResource("5_157ky")]
+position = Vector2(-113, -48)
+
+[node name="settings" parent="." unique_id=1104318527 instance=ExtResource("6_y58yt")]
+position = Vector2(125.99999, -62)
+scale = Vector2(1.25, 1.25)
+
+[node name="interact" parent="." unique_id=1895821791 instance=ExtResource("7_5j5yt")]
+position = Vector2(111, 58.000008)
+scale = Vector2(1.5789474, 1.5789474)

@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://dpqo3w2xne0bx"]
+
+[ext_resource type="Texture2D" uid="uid://f2lfqt7jkaj0" path="res://assets/menu/buttons_base/sprite_quit_base.png" id="1_dyglm"]
+[ext_resource type="Texture2D" uid="uid://dl3mcykjlpvy8" path="res://assets/menu/buttons_static/button_yes_static.png" id="2_n3408"]
+[ext_resource type="Texture2D" uid="uid://bt06xcuskrggr" path="res://assets/menu/buttons_pressed/button_yes_pressed.png" id="3_jdp01"]
+[ext_resource type="Texture2D" uid="uid://31rgg8tfbhyk" path="res://assets/menu/buttons_static/button_no_static.png" id="4_qnuws"]
+[ext_resource type="Texture2D" uid="uid://bdpqqiuanikt6" path="res://assets/menu/buttons_pressed/button_no_pressed.png" id="5_8wxvc"]
+
+[node name="SpriteQuitBase" type="Sprite2D" unique_id=702619594]
+position = Vector2(278, 237)
+texture = ExtResource("1_dyglm")
+
+[node name="yes" type="TouchScreenButton" parent="." unique_id=461436342]
+position = Vector2(-31, 0)
+texture_normal = ExtResource("2_n3408")
+texture_pressed = ExtResource("3_jdp01")
+
+[node name="no" type="TouchScreenButton" parent="." unique_id=1566460971]
+position = Vector2(4, 0)
+texture_normal = ExtResource("4_qnuws")
+texture_pressed = ExtResource("5_8wxvc")

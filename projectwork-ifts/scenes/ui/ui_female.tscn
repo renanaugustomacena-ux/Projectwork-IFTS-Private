@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://4x8usi38ab3i"]
+
+[ext_resource type="Texture2D" uid="uid://bp1vs1d8wp3b4" path="res://assets/menu/ui/ui_female.png" id="1_ftu5i"]
+[ext_resource type="Texture2D" uid="uid://b6bwxeul0nc1o" path="res://assets/menu/buttons_static/button_home_static.png" id="2_vluhb"]
+[ext_resource type="Texture2D" uid="uid://7bpmg5nkgq0i" path="res://assets/menu/buttons_pressed/button_home_pressed.png" id="3_ivjjp"]
+[ext_resource type="Texture2D" uid="uid://bga2rc6rtmt5x" path="res://assets/menu/buttons_static/button_shop_static.png" id="4_u2s6q"]
+[ext_resource type="Texture2D" uid="uid://x6qgcih27yal" path="res://assets/menu/buttons_pressed/button_shop_pressed.png" id="5_chanw"]
+
+[node name="ui_female" type="StaticBody2D" unique_id=1522180996]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1895361715]
+texture = ExtResource("1_ftu5i")
+
+[node name="home" type="TouchScreenButton" parent="." unique_id=560242025]
+position = Vector2(-17, 6)
+texture_normal = ExtResource("2_vluhb")
+texture_pressed = ExtResource("3_ivjjp")
+
+[node name="shop" type="TouchScreenButton" parent="." unique_id=1353008320]
+position = Vector2(-36, 6)
+texture_normal = ExtResource("4_u2s6q")
+texture_pressed = ExtResource("5_chanw")

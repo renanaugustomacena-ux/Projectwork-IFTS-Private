@@ -1,8 +1,0 @@
-[gd_scene format=3 uid="uid://4x8usi38ab3i"]
-
-[ext_resource type="Texture2D" uid="uid://bp1vs1d8wp3b4" path="res://assets/menu/ui/ui_female.png" id="1_ftu5i"]
-
-[node name="ui_female" type="StaticBody2D" unique_id=1522180996]
-
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1895361715]
-texture = ExtResource("1_ftu5i")

@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://cptre0uyhsret"]
+
+[ext_resource type="Texture2D" uid="uid://5kukdvu7r1nq" path="res://assets/menu/buttons_base/sprite_menu_settings_base.png" id="1_sxhk8"]
+[ext_resource type="Texture2D" uid="uid://jk6aypom0nuo" path="res://assets/menu/buttons_static/exit_x_static.png" id="2_pkkkh"]
+[ext_resource type="Texture2D" uid="uid://15kwvcpk0unu" path="res://assets/menu/buttons_pressed/exit_x_pressed.png" id="3_k5nou"]
+[ext_resource type="Texture2D" uid="uid://bvc0h0qf7lp5u" path="res://assets/menu/buttons_static/button_language_static.png" id="4_1aqbi"]
+[ext_resource type="Texture2D" uid="uid://c81t1p2akimrd" path="res://assets/menu/buttons_pressed/button_language_pressed.png" id="5_wjls5"]
+[ext_resource type="Texture2D" uid="uid://cms4qh4b2p61j" path="res://assets/menu/buttons_static/button_account_static.png" id="6_ef2b1"]
+[ext_resource type="Texture2D" uid="uid://ivao4snt0edi" path="res://assets/menu/buttons_pressed/button_account_pressed.png" id="7_n3cfa"]
+[ext_resource type="Texture2D" uid="uid://nteyqwxdqr8k" path="res://assets/menu/buttons_static/button_credits_static.png" id="8_lihbq"]
+[ext_resource type="Texture2D" uid="uid://cpoik0umiwmyr" path="res://assets/menu/buttons_pressed/button_credits_pressed.png" id="9_ltat5"]
+[ext_resource type="Texture2D" uid="uid://cd7qxjucr7bdg" path="res://assets/menu/buttons_static/button_quit_static.png" id="10_xjxc0"]
+[ext_resource type="Texture2D" uid="uid://ckjr0b2e1qwq0" path="res://assets/menu/buttons_pressed/button_quit_pressed.png" id="11_2ptlq"]
+
+[node name="SpriteMenuSettingsBase" type="Sprite2D" unique_id=1772093488]
+position = Vector2(364, 206)
+texture = ExtResource("1_sxhk8")
+
+[node name="X" type="TouchScreenButton" parent="." unique_id=1463630916]
+position = Vector2(46, -31)
+texture_normal = ExtResource("2_pkkkh")
+texture_pressed = ExtResource("3_k5nou")
+
+[node name="language" type="TouchScreenButton" parent="." unique_id=904585461]
+position = Vector2(-39, -21)
+texture_normal = ExtResource("4_1aqbi")
+texture_pressed = ExtResource("5_wjls5")
+
+[node name="account" type="TouchScreenButton" parent="." unique_id=1845385686]
+position = Vector2(12, -21)
+texture_normal = ExtResource("6_ef2b1")
+texture_pressed = ExtResource("7_n3cfa")
+
+[node name="credits" type="TouchScreenButton" parent="." unique_id=1379022674]
+position = Vector2(12, -6)
+texture_normal = ExtResource("8_lihbq")
+texture_pressed = ExtResource("9_ltat5")
+
+[node name="quit" type="TouchScreenButton" parent="." unique_id=1575641951]
+position = Vector2(18, 9)
+texture_normal = ExtResource("10_xjxc0")
+texture_pressed = ExtResource("11_2ptlq")
