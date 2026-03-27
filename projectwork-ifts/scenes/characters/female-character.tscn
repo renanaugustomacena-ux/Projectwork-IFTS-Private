@@ -6,9 +6,9 @@
 [ext_resource type="Texture2D" uid="uid://b3t2kduc6gehv" path="res://assets/charachters/female/female_red_shirt/female_rotate.png" id="3_8yly0"]
 [ext_resource type="Texture2D" uid="uid://chkit1s0fmubi" path="res://assets/charachters/female/female_red_shirt/female_walk.png" id="4_c052x"]
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_x467g"]
-radius = 4.0
-height = 14.0
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_3mf85"]
+radius = 3.0
+height = 8.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_pnd63"]
 atlas = ExtResource("1_gvmuv")
@@ -572,9 +572,9 @@ animations = [{
 [node name="Female" type="CharacterBody2D" unique_id=1587920895]
 script = ExtResource("1_8yly0")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1037680944]
-position = Vector2(0, 2)
-shape = SubResource("CapsuleShape2D_x467g")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1052170119]
+position = Vector2(0, 5)
+shape = SubResource("CapsuleShape2D_3mf85")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=217503388]
 sprite_frames = SubResource("SpriteFrames_wxp6x")

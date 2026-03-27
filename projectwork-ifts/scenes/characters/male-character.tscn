@@ -7,8 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://bvhsub051kcd7" path="res://assets/charachters/male/male_yellow_shirt/male_walk.png" id="3_rw2ni"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_x467g"]
-radius = 4.0
-height = 14.0
+radius = 3.0
+height = 8.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_opfsr"]
 atlas = ExtResource("1_y6b3s")
@@ -573,7 +573,7 @@ animations = [{
 script = ExtResource("1_opfsr")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1037680944]
-position = Vector2(0, 1)
+position = Vector2(0, 5)
 shape = SubResource("CapsuleShape2D_x467g")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=960677456]
