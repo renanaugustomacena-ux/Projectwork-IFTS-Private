@@ -56,3 +56,6 @@ __MACOSX/
 Thumbs.db
 desktop.ini
 v1/SUPERVISOR_WORKPLAN.md
+
+# PDF export artifacts (generated, not versioned)
+v1/export_pdf/

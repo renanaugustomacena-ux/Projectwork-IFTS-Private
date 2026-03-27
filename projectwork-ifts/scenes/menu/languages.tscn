@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://bqy8d2dg8jomp"]
+
+[ext_resource type="Texture2D" uid="uid://wcycrxpcxmyo" path="res://assets/menu/buttons_base/sprite_languages_base.png" id="1_d0psb"]
+[ext_resource type="Texture2D" uid="uid://b76pqjmepodct" path="res://assets/menu/buttons_static/button_english_static.png" id="2_311av"]
+[ext_resource type="Texture2D" uid="uid://bysm5pwsvv8sl" path="res://assets/menu/buttons_pressed/button_english_pressed.png" id="3_k1jux"]
+[ext_resource type="Texture2D" uid="uid://cfin6e3jc7xad" path="res://assets/menu/buttons_static/button_italiano_static.png" id="4_lu4b1"]
+[ext_resource type="Texture2D" uid="uid://by3fi00teqdrd" path="res://assets/menu/buttons_pressed/button_italiano_pressed.png" id="5_eml61"]
+[ext_resource type="Texture2D" uid="uid://bjxk0h48qnu0c" path="res://assets/menu/buttons_static/button_espanol_static.png" id="6_6638g"]
+[ext_resource type="Texture2D" uid="uid://bf658vpe6rjpi" path="res://assets/menu/buttons_pressed/button_espanol_pressed.png" id="7_ooccl"]
+[ext_resource type="Texture2D" uid="uid://jk6aypom0nuo" path="res://assets/menu/buttons_static/exit_x_static.png" id="8_k1jux"]
+[ext_resource type="Texture2D" uid="uid://15kwvcpk0unu" path="res://assets/menu/buttons_pressed/exit_x_pressed.png" id="9_lu4b1"]
+
+[node name="SpriteLanguagesBase" type="Sprite2D" unique_id=2085574721]
+position = Vector2(282, 157)
+texture = ExtResource("1_d0psb")
+
+[node name="english" type="TouchScreenButton" parent="." unique_id=183202275]
+position = Vector2(-38, -10)
+texture_normal = ExtResource("2_311av")
+texture_pressed = ExtResource("3_k1jux")
+
+[node name="italiano" type="TouchScreenButton" parent="." unique_id=2137029523]
+position = Vector2(3, -10)
+texture_normal = ExtResource("4_lu4b1")
+texture_pressed = ExtResource("5_eml61")
+
+[node name="espanol" type="TouchScreenButton" parent="." unique_id=1044659130]
+position = Vector2(-17, 7)
+texture_normal = ExtResource("6_6638g")
+texture_pressed = ExtResource("7_ooccl")
+
+[node name="X" type="TouchScreenButton" parent="." unique_id=1546153046]
+position = Vector2(46, -31)
+texture_normal = ExtResource("8_k1jux")
+texture_pressed = ExtResource("9_lu4b1")
