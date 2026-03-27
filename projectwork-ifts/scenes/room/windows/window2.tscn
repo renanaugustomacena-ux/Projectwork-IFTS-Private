@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://b0bmeahl61d1k"]
+
+[ext_resource type="Texture2D" uid="uid://dt3ioodk4ugu6" path="res://assets/room/window2.png" id="1_rf0vj"]
+
+[node name="window2" type="StaticBody2D" unique_id=1522180996]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1895361715]
+texture = ExtResource("1_rf0vj")
