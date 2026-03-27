@@ -18,7 +18,11 @@
 > - Gli asset della cucina (kitchen_appliances, kitchen_furniture, kitchen_accessories) sono stati **eliminati** da `decorations.json` e dalla cartella sprites.
 > - Lo shop panel (`shop_panel.gd`) **non esiste** nel progetto.
 > - I test unitari (cartella `tests/`) sono stati rimossi perche' dipendevano da GdUnit4 (non installato).
-> - C'e' un solo personaggio giocabile: **Ragazzo Classico** (`male_old`). La selezione personaggi e' stata rimossa.
+>
+> **Aggiornamento 27 Marzo 2026 — Personaggi e Integrazione Asset**:
+> - I personaggi `female_red_shirt` e `male_yellow_shirt` **verranno attivati** (vedi [GUIDA_INTEGRAZIONE_ASSET.md](GUIDA_INTEGRAZIONE_ASSET.md) Task A)
+> - La **Task 2 di questa guida cambia**: rimuovere SOLO `CHAR_MALE_BLACK_SHIRT`, NON le altre costanti
+> - Leggete la guida integrazione **dopo** aver completato i bug fix di questa guida
 
 ---
 
