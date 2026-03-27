@@ -38,7 +38,7 @@
 
 - **Sezione 6.3** — SaveManager: correggere race condition auto-save, backup senza error checking, inventario non salvato su SQLite (problemi C1, C2, C3)
 - **Sezione 6.5** — AudioManager: bounds check tracce vuote, memory leak ambience, crossfade tween safety (problemi A4, A5)
-- **Sezione 6.6** — SupabaseClient: token auth plaintext, HTTP pool illimitato, timeout mancanti (problemi A10, A11)
+- **Sezione 6.6** — ~~SupabaseClient~~ **RIMOSSO** (27 Marzo 2026): intero autoload eliminato dal progetto (codice morto, zero chiamanti). Problemi A10, A11 non piu' applicabili.
 - **Sezione 11, Fase 4** — Allineamento architetturale: eliminare coupling diretto tra singleton, introdurre nuovi segnali `settings_updated`, `music_state_updated`, `save_to_database_requested` (violazioni AR1-AR11)
 - **Sezione 11, Fase 1** — Integrità dati: coordinare la correzione di tutti i problemi critici C1-C7
 - **Sezione 11, Fase 5** — Supervisione della copertura test e verifica finale pre-delivery
@@ -973,11 +973,14 @@ Capire i problemi di questo file richiede una conoscenza base dei database. Brev
 
 ---
 
-### 6.6 supabase_client.gd (~481 righe, 35 funzioni)
+### 6.6 supabase_client.gd — RIMOSSO (27 Marzo 2026)
 
-**Cosa fa questo file**: Gestisce la comunicazione con **Supabase**, un servizio cloud che permette di sincronizzare i dati del gioco online. E' l'addetto alle "comunicazioni esterne": si occupa di autenticazione (login/registrazione), invio e ricezione dati dal server, e gestione dei token di sicurezza.
+> **Questo file e' stato eliminato dal progetto.** L'analisi seguente e' mantenuta per riferimento
+> storico. I problemi A10 e A11 non sono piu' applicabili. La rimozione e' stata motivata dal fatto
+> che SupabaseClient aveva zero chiamanti nel codebase (codice morto). Il gioco funziona
+> esclusivamente offline con JSON + SQLite.
 
-Questo componente e' opzionale — il gioco funziona anche senza connessione internet — ma quando e' attivo, gestisce dati sensibili (credenziali, token di autenticazione), quindi la sicurezza e' particolarmente importante.
+~~**Cosa fa questo file**: Gestisce la comunicazione con **Supabase**, un servizio cloud che permette di sincronizzare i dati del gioco online.~~
 
 | # | Severita' | Problema | Riga | Spiegazione |
 |---|-----------|----------|------|-------------|

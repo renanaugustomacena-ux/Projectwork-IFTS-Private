@@ -1,12 +1,10 @@
 # Mini Cozy Room — Documentazione Tecnica
 
-> **⚠️ Nota: Semplificazione in Corso**
-> Il codebase contiene sistemi avanzati che sono in fase di semplificazione.
-> Alcuni moduli sono **placeholder** (SupabaseClient), altri sono **over-engineered**
-> rispetto alle necessità del gioco (LocalDatabase, SaveManager migrations, Logger).
-> Tutto funziona correttamente, ma l'obiettivo è rendere il codice più accessibile
-> senza perdere funzionalità. Vedere la sezione [Stato Semplificazione](#stato-semplificazione)
-> per dettagli su cosa è essenziale, cosa è placeholder e cosa è sostituibile.
+> **⚠️ Nota: Semplificazione Completata (Marzo 2026)**
+> Il codebase e' stato semplificato: SupabaseClient rimosso (codice morto, zero chiamanti),
+> CI/CD ridotta a un solo job lint. Il gioco funziona esclusivamente offline con JSON + SQLite.
+> Alcuni sistemi restano piu' complessi del necessario (Logger, SaveManager migrations) ma
+> funzionano e non richiedono modifiche.
 
 ## Descrizione
 
@@ -29,8 +27,8 @@ aperto in background come ambiente digitale rilassante.
 
 ### Pattern Principali
 
-- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (20 segnali)
-- **Offline-first**: il salvataggio locale (JSON + SQLite) ha priorita; Supabase e opzionale
+- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (18 segnali)
+- **Offline-only**: il salvataggio locale (JSON + SQLite) gestisce tutti i dati
 - **Catalog-driven**: contenuti (stanze, decorazioni, personaggi, tracce) caricati da JSON
 - **Desktop companion**: FPS cap dinamico (60 fps in focus, 15 fps in background)
 
@@ -38,16 +36,15 @@ aperto in background come ambiente digitale rilassante.
 
 Caricati automaticamente in questo ordine da `project.godot`:
 
-| # | Autoload | Script | Responsabilita | Stato |
-|---|----------|--------|----------------|-------|
-| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (20 segnali, disaccoppiamento moduli) | Essenziale |
-| 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID | Opzionale — over-engineered, funziona ma e' piu' del necessario |
-| 3 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON | Essenziale |
-| 4 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v4.0.0 (auto-save 60s) | Semplificabile — il sistema di migrazione v1→v4 e' eccessivo |
-| 5 | `LocalDatabase` | local_database.gd | Database SQLite locale (WAL mode, 7 tabelle) | Semplificabile — il JSON via SaveManager basta; SQLite e' ridondante |
-| 6 | `AudioManager` | audio_manager.gd | Riproduzione musica lo-fi con crossfade e import esterno | Essenziale |
-| 7 | `SupabaseClient` | supabase_client.gd | Client HTTP per Supabase REST API | Placeholder — il gioco e' offline, sostituibile con stub |
-| 8 | `PerformanceManager` | performance_manager.gd | FPS cap dinamico (60/15) | Essenziale |
+| # | Autoload | Script | Responsabilita |
+|---|----------|--------|----------------|
+| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (18 segnali, disaccoppiamento moduli) |
+| 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID |
+| 3 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON |
+| 4 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v4.0.0 (auto-save 60s) |
+| 5 | `LocalDatabase` | local_database.gd | Database SQLite locale (WAL mode, 7 tabelle) |
+| 6 | `AudioManager` | audio_manager.gd | Riproduzione musica lo-fi con crossfade e import esterno |
+| 7 | `PerformanceManager` | performance_manager.gd | FPS cap dinamico (60/15) |
 
 ### Scene Tree — Stanza di Gioco
 
@@ -106,7 +103,7 @@ v1/
 │   ├── decorations.json       #   118 decorazioni in 14 categorie
 │   ├── rooms.json             #   1 stanza con 3 temi colore
 │   ├── tracks.json            #   2 tracce musicali
-│   └── supabase_migration.sql #   Schema DB Supabase (7 tabelle + RLS)
+│   └── README.md              #   Documentazione schema database
 ├── scenes/                    # 8 scene Godot (.tscn)
 │   ├── main/                  #   main.tscn (stanza di gioco)
 │   ├── menu/                  #   main_menu.tscn (menu principale)
@@ -115,12 +112,12 @@ v1/
 │   ├── female-character.tscn  #   Scena personaggio femminile (CharacterBody2D)
 │   └── cat_void.tscn          #   Animale domestico
 ├── scripts/                   # 25 script GDScript
-│   ├── autoload/              #   7 singleton (signal_bus, logger, game_manager, ...)
+│   ├── autoload/              #   7 singleton (signal_bus, logger, game_manager, audio_manager, ...)
 │   ├── menu/                  #   Menu principale + personaggio walk-in
 │   ├── rooms/                 #   Stanza, decorazioni, sfondo, movimento personaggio
 │   ├── systems/               #   Performance manager
 │   ├── ui/                    #   Panel manager + 3 pannelli + drop zone
-│   ├── utils/                 #   Constants, helpers, env_loader
+│   ├── utils/                 #   Constants, helpers
 │   └── main.gd                #   Controller scena principale
 └── tests/unit/                # 4 test unitari (GdUnit4)
     ├── test_helpers.gd
@@ -135,7 +132,7 @@ v1/
 |----------|--------|-------------|
 | `addons/` | [README](addons/README.md) | Plugin godot-sqlite GDExtension v4.7, piattaforme binarie |
 | `assets/` | [README](assets/README.md) | 1.422 asset: sprite, audio, sfondi, UI, licenze |
-| `data/` | [README](data/README.md) | Schema database JSON/SQLite/Supabase, 7 tabelle, RLS |
+| `data/` | [README](data/README.md) | Schema database JSON/SQLite, 7 tabelle |
 | `scenes/` | [README](scenes/README.md) | 8 scene Godot (.tscn), struttura nodi, flusso |
 | `scripts/` | [README](scripts/README.md) | 25 script GDScript, autoload, 20 segnali, moduli |
 | `tests/` | [README](tests/README.md) | 4 test unitari GdUnit4, copertura moduli |
@@ -221,16 +218,10 @@ La pipeline GitHub Actions e definita in `.github/workflows/`:
 
 | Workflow | Trigger | Job |
 |----------|---------|-----|
-| `ci.yml` | Push su `Renan`, PR su `main` | Lint (gdlint + gdformat), Test (GdUnit4), Security Scan |
+| `ci.yml` | Push su `Renan`, PR su `main` | Lint (gdlint + gdformat) |
 | `build.yml` | Push su `main`, tag `v*` | Export Windows (.exe), Export HTML5 |
 
 Container di build: `barichello/godot-ci:4.5`
-
-### Security Scan
-
-- Rilevamento segreti (API key, password)
-- Validazione `.env` (solo variabili sintetiche)
-- Marcatori dati sintetici
 
 ## Sviluppo
 
@@ -260,45 +251,31 @@ Container di build: `barichello/godot-ci:4.5`
 | Fase | Descrizione | Stato |
 |------|-------------|-------|
 | 0 | Infrastruttura (CI/CD, linting, test) | Completata |
-| 1 | Backend Supabase (auth, schema DB, RLS) | Completata |
+| 1 | Backend dati (schema DB, persistenza locale) | Completata |
 | 2 | Asset e Pixel Art (stanze, personaggi, UI) | Completata |
 | 3 | Stanza modulare, drag-and-drop, placement rules | Completata |
 | 4 | Core Game Loop, Audio, Desktop Polish | Completata |
 | 5 | Catalogo Decorazioni e Polish UI | In Corso |
 | 6 | Polish e Rilascio | Pianificata |
 
-## Stato Semplificazione
+## Stato Semplificazione (aggiornato 27 Marzo 2026)
 
-Il progetto contiene sistemi con complessita' superiore a quella necessaria per un gioco cozy room.
-Questo e' il risultato di una fase iniziale di sviluppo dove sono state costruite basi solide
-pensando a funzionalita' future. L'obiettivo attuale e' **semplificare senza perdere funzionalita'**.
+Il progetto e' stato semplificato rimuovendo il codice non necessario:
 
-### Sistemi Placeholder (possono essere rimossi/sostituiti)
+- **SupabaseClient rimosso** — 515 righe di codice morto (zero chiamanti nel codebase)
+- **CI/CD semplificata** — da 3 pipeline (lint + test + security + database) a 1 solo job lint
+- **EnvLoader rimosso** — usato solo da SupabaseClient
+- **Segnali auth rimossi** — 3 segnali orfani eliminati da SignalBus
 
-| Sistema | Perche' e' placeholder | Alternativa |
-|---------|----------------------|-------------|
-| **SupabaseClient** (515 righe) | Client REST completo con pool HTTP, token refresh, autenticazione. Il gioco e' completamente offline. | Sostituire con uno stub che logga "online features disabled" (~10 righe) |
-| **LocalDatabase** (298 righe) | 7 tabelle SQLite che replicano la struttura Supabase. Tutti i dati necessari sono gia' salvati in JSON via SaveManager. | Rimuovere completamente o ridurre a 2-3 tabelle essenziali |
+### Sistemi ancora piu' complessi del necessario (ma funzionanti)
 
-### Sistemi Over-engineered (funzionanti ma semplificabili)
+| Sistema | Nota |
+|---------|------|
+| **Logger** (220 righe) | Log strutturati JSONL con rotazione file. Funziona, non richiede modifiche. |
+| **SaveManager** (327 righe) | Catena migrazione v1→v4. Funziona, non richiede modifiche. |
 
-| Sistema | Cosa c'e' di troppo | Semplificazione possibile |
-|---------|---------------------|--------------------------|
-| **SaveManager** (327 righe) | Catena migrazione v1→v2→v3→v4, backup con error checking, auto-save timer | Usare un singolo formato JSON senza backward compatibility |
-| **Logger** (220 righe) | Log strutturati JSON Lines con rotazione file, livello enterprise | Ridurre a un semplice `print()` wrapper o usare il print nativo di Godot |
-
-### Sistemi Essenziali (da mantenere)
-
-| Sistema | Perche' e' essenziale |
-|---------|----------------------|
-| **SignalBus** | Pattern architetturale fondamentale per il disaccoppiamento moduli |
-| **GameManager** | Carica i cataloghi JSON, gestisce lo stato di gioco |
-| **AudioManager** | Musica auto-play, crossfade, gestione playlist |
-| **PerformanceManager** | FPS cap dinamico, leggero e utile |
-
-> **Per i colleghi:** Se durante il lavoro trovate un sistema troppo complesso o ridondante,
-> non preoccupatevi — probabilmente e' gia' nella lista delle semplificazioni.
-> Concentratevi sulle vostre task principali e segnalate eventuali dubbi.
+> **Per i colleghi:** Concentratevi sulle vostre task principali.
+> I sistemi complessi funzionano e non vanno toccati.
 
 ## Problemi Noti
 
@@ -315,9 +292,8 @@ pensando a funzionalita' future. L'obiettivo attuale e' **semplificare senza per
 | 2 | Popup interazione decorazioni | Mohamed / Giovanni | Media | Click su decorazione piazzata → popup con pulsanti Elimina / Ruota / Ridimensiona |
 | 3 | Rotazione decorazioni | Mohamed / Giovanni | Media | Aggiungere rotazione (90 gradi) alle decorazioni piazzate |
 | 4 | Ridimensionamento decorazioni | Mohamed / Giovanni | Media | Aggiungere scaling alle decorazioni piazzate |
-| 5 | Semplificazione codice | Mohamed / Giovanni | Bassa | Ridurre complessita SupabaseClient, LocalDatabase, SaveManager |
 
-Guida dettagliata per Mohamed e Giovanni: [TASK_MOHAMED_GIOVANNI.md](guide/TASK_MOHAMED_GIOVANNI.md)
+Guida dettagliata per Mohamed e Giovanni: [GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md)
 
 ## Asset e Licenze
 

@@ -5,13 +5,10 @@
 
 **Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
 
-> **Nota sulla Semplificazione (25 Marzo 2026)**:
-> Il codebase contiene sistemi piu' avanzati del necessario. Non preoccupatevi se trovate
-> codice complesso in moduli come SupabaseClient, LocalDatabase o SaveManager — sono
-> **placeholder** o **over-engineered** e verranno semplificati. I vostri task riguardano
-> la parte di gameplay e UI, che e' la parte **essenziale** del progetto. Le correzioni
-> proposte in questa guida restano valide al 100%.
-> Consulta il [README principale](../../README.md#stato-dei-sistemi) per lo stato completo dei sistemi.
+> **Nota sulla Semplificazione (27 Marzo 2026)**:
+> SupabaseClient e' stato rimosso dal progetto (codice morto, zero chiamanti).
+> I vostri task riguardano la parte di gameplay e UI, che e' la parte **essenziale**.
+> Le correzioni proposte in questa guida restano valide al 100%.
 
 > **Nota sulle modifiche recenti (25 Marzo 2026)**:
 > - Il pannello musica (`music_panel.gd` e `music_panel.tscn`) e' stato **eliminato**. La musica ora parte automaticamente senza controlli utente.

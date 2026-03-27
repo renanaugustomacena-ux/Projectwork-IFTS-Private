@@ -5,27 +5,24 @@
 
 **Riferimenti nell'Audit Report**: Sezioni 6.7, 6.8, 9.3, 11 Fase 5, 14
 
-> **⚠️ Nota sulla Semplificazione (25 Marzo 2026)**:
-> Alcuni sistemi su cui lavorerai (Logger, PerformanceManager) sono funzionanti ma piu' avanzati
-> del necessario per un gioco cozy. Le correzioni proposte in questa guida **restano valide**
-> e utili — sia come miglioramento che come esercizio didattico. In futuro, il Logger potrebbe
-> essere semplificato (e' enterprise-grade, troppo per le nostre necessita'), ma per ora e' il
-> sistema attivo. Il PerformanceManager e' invece leggero e va mantenuto cosi' com'e'.
-> Consulta il [README principale](../../README.md#stato-dei-sistemi) per lo stato completo dei sistemi.
+> **⚠️ Nota Aggiornamento (27 Marzo 2026)**:
+> La CI/CD e' stata semplificata: rimossi il job test (GdUnit4 non installato), il job
+> security-scan e l'intera pipeline database-ci.yml. Resta solo il job lint (gdlint + gdformat)
+> con branch aggiornato a Renan e path v1/tests/ incluso. I Task 1 e 2 sono gia' stati completati.
+> Restano da fare i Task 3-5 (Logger e PerformanceManager) e il Task 6 (documentazione).
 
 ---
 
 ## Le Tue Responsabilita'
 
-| # | Cosa Devi Fare | File Principale | Sezione Audit | Priorita' | Tempo Stimato |
-|---|----------------|-----------------|---------------|-----------|---------------|
-| 1 | Aggiungere linting dei file test nella CI | `.github/workflows/ci.yml` | 9.3 | MEDIO | 20 min |
-| 2 | Aggiornare branch CI da "proto" a "Renan" | `.github/workflows/ci.yml` | 9.3 | ALTO | 10 min |
-| 3 | Correggere Logger: session ID con possibili collisioni | `scripts/autoload/logger.gd` | 6.7, A13 | MEDIO | 30 min |
-| 4 | Correggere Logger: log persi se file non disponibile | `scripts/autoload/logger.gd` | 6.7, A12 | MEDIO | 20 min |
-| 5 | Aggiungere `_exit_tree()` al PerformanceManager | `scripts/systems/performance_manager.gd` | 6.8, A14 | ALTO | 20 min |
-| 6 | Configurare i nuovi test nella pipeline CI | `.github/workflows/ci.yml` | Fase 5 | MEDIO | 30 min |
-| 7 | Aggiornare documentazione e riferimenti | Vari README | 14 | BASSO | 1 ora |
+| # | Cosa Devi Fare | File Principale | Sezione Audit | Priorita' | Tempo Stimato | Stato |
+|---|----------------|-----------------|---------------|-----------|---------------|-------|
+| 1 | ~~Aggiungere linting dei file test nella CI~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
+| 2 | ~~Aggiornare branch CI da "proto" a "Renan"~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
+| 3 | Correggere Logger: session ID con possibili collisioni | `scripts/autoload/logger.gd` | 6.7, A13 | MEDIO | 30 min | DA FARE |
+| 4 | Correggere Logger: log persi se file non disponibile | `scripts/autoload/logger.gd` | 6.7, A12 | MEDIO | 20 min | DA FARE |
+| 5 | Aggiungere `_exit_tree()` al PerformanceManager | `scripts/systems/performance_manager.gd` | 6.8, A14 | ALTO | 20 min | DA FARE |
+| 6 | Aggiornare documentazione e riferimenti | Vari README | 14 | BASSO | 1 ora | DA FARE |
 
 ---
 
@@ -485,54 +482,7 @@ git push origin Renan
 
 ---
 
-## Task 6: Configurare i Nuovi Test nella Pipeline CI
-
-**Sezione Audit di riferimento**: Fase 5
-**Tempo stimato**: 30 minuti
-**Priorita'**: MEDIO
-
-### Cosa C'e' da Fare
-
-Dopo che Mohamed, Giovanni ed Elia avranno creato i nuovi file di test (descritti nelle loro guide), dovrai assicurarti che la pipeline CI li esegua correttamente. Al momento, la pipeline esegue gia' tutti i test nella cartella `res://tests/` — quindi i nuovi file verranno eseguiti automaticamente appena aggiunti.
-
-Il tuo compito e' **verificare** che tutto funzioni dopo che i nuovi test sono stati aggiunti.
-
-### Cosa Devi Fare
-
-1. **Aspetta** che i colleghi creino i nuovi file di test:
-   - `tests/unit/test_audio_manager.gd`
-   - `tests/unit/test_local_database.gd`
-   - `tests/unit/test_room_base.gd`
-   - `tests/unit/test_panel_manager.gd`
-   - `tests/unit/test_game_manager.gd`
-   - `tests/unit/test_window_background.gd`
-
-2. **Verifica in locale** che i test passino:
-   ```bash
-   # Esegui i test in locale da Godot
-   # Premi F5 con la scena di test attiva, oppure usa il pannello GdUnit4
-   ```
-
-3. **Verifica nella CI** che i test passino:
-   - Dopo ogni push, controlla la tab "Actions" su GitHub
-   - Il job "GdUnit4 Tests" deve essere verde
-
-4. **Se un test fallisce nella CI ma funziona in locale**:
-   - Il test potrebbe dipendere da risorse grafiche non disponibili in modalita' headless (senza schermo)
-   - Soluzione: aggiungi `# GdUnit Test` come marcatore e assicurati che il test non dipenda dal rendering
-
-### Passo Extra: Aggiungere Linting ai Nuovi File Test
-
-Se hai completato il Task 1, i nuovi file di test verranno automaticamente controllati da `gdlint` e `gdformat`. Se trovi errori di formattazione nei nuovi file test:
-
-```bash
-# Formatta automaticamente tutti i file di test
-gdformat v1/tests/
-```
-
----
-
-## Task 7: Aggiornare Documentazione e Riferimenti
+## Task 6: Aggiornare Documentazione e Riferimenti
 
 **Sezione Audit di riferimento**: 14
 **Tempo stimato**: 1 ora
@@ -571,13 +521,11 @@ git commit -m "docs: aggiornato README test con i 6 nuovi file di test"
 Usa questa checklist per verificare di aver completato tutto. Spunta ogni voce man mano che la completi:
 
 ```
-- [ ] CI/CD: gdlint e gdformat includono v1/tests/
-- [ ] CI/CD: branch aggiornato da "proto" a "Renan"
+- [x] CI/CD: gdlint e gdformat includono v1/tests/ (GIA' FATTO)
+- [x] CI/CD: branch aggiornato da "proto" a "Renan" (GIA' FATTO)
 - [ ] Logger: session ID usa Crypto per casualita' sicura
 - [ ] Logger: buffer mantiene ultimi 100 messaggi se file non disponibile
 - [ ] PerformanceManager: _exit_tree() disconnette 3 segnali
-- [ ] CI: tutti i nuovi test vengono eseguiti nella pipeline
-- [ ] CI: tutti i test passano (verde su GitHub Actions)
 - [ ] Documentazione: README e riferimenti aggiornati
 ```
 
@@ -589,15 +537,14 @@ Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
 
 | Task | Puoi Iniziare Subito? | Dipendenze |
 | ---- | --------------------- | ---------- |
-| Task 1 (lint test nella CI) | **SI'** | Nessuna |
-| Task 2 (branch proto → Renan) | **SI'** | Nessuna |
+| ~~Task 1 (lint test nella CI)~~ | — | GIA' FATTO |
+| ~~Task 2 (branch proto → Renan)~~ | — | GIA' FATTO |
 | Task 3 (Logger session ID) | **SI'** | Nessuna |
 | Task 4 (Logger buffer) | **SI'** | Nessuna |
 | Task 5 (PerformanceManager _exit_tree) | **SI'** | Nessuna |
-| Task 6 (configurare test nella CI) | **NO** | Dipende da Mohamed/Giovanni/Elia che creino i file test |
-| Task 7 (aggiornare documentazione) | **NO** | Dipende dal completamento di tutti gli altri task |
+| Task 6 (aggiornare documentazione) | **NO** | Dipende dal completamento di tutti gli altri task |
 
-**Suggerimento**: inizia subito con Task 1 e 2 (10-20 min), poi passa a Task 3-5. Cosi' la CI funziona subito per tutto il team.
+**Suggerimento**: inizia subito con Task 3-5, poi passa al Task 6 quando tutti hanno finito.
 
 ---
 
@@ -609,15 +556,6 @@ Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
 
 **Soluzione**: Verifica nel file `ci.yml` che la versione di Godot sia `4.5-stable` e che l'URL di download sia corretto. Confronta con la pagina ufficiale dei rilasci: <https://github.com/godotengine/godot/releases>.
 
-### "I test passano in locale ma falliscono nella CI"
-
-**Causa**: La CI esegue Godot in modalita' **headless** (senza schermo). I test che dipendono dal rendering grafico (es. verificare la posizione di uno sprite) non funzionano.
-
-**Soluzione**:
-
-- Assicurarsi che i test non dipendano da `get_viewport().size` o da rendering visuale
-- Usare `--headless` anche in locale per riprodurre il problema: `godot --path v1 --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --add "res://tests/"`
-
 ### "Il lint fallisce con 'unexpected token'"
 
 **Causa**: La versione di `gdtoolkit` installata nella CI non e' compatibile con Godot 4.5.
@@ -628,16 +566,6 @@ Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
 - name: Install gdtoolkit
   run: pip install "gdtoolkit>=4,<5"
 ```
-
-### "Timeout durante l'esecuzione dei test"
-
-**Causa**: Un test ha un loop infinito o aspetta un segnale che non arriva mai.
-
-**Soluzione**:
-
-1. Identifica quale test blocca guardando l'output della CI (l'ultimo test stampato prima del timeout)
-2. In locale, esegui solo quel test per isolare il problema
-3. Verifica che tutti i `await` abbiano un timeout o una condizione di uscita
 
 ### "YAML syntax error in ci.yml"
 
@@ -658,7 +586,7 @@ Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare 
 1. Andate su <https://github.com/ZroGP/Projectwork-IFTS>
 2. Cliccate la tab **"Actions"** in alto
 3. Vedrete una lista di workflow runs. Cliccate su quello che vi interessa (il piu' recente in alto)
-4. Nella pagina del run, vedrete i **job** (es. "lint", "test", "security"). Cliccate sul job fallito
+4. Nella pagina del run, vedrete il job **"lint"**. Cliccate sul job fallito
 5. Si aprono i **passi** (steps). Ogni passo ha un triangolo per espandere l'output
 6. Il passo fallito avra' un'icona rossa (X). Espandetelo per vedere l'errore esatto
 7. Per rieseguire un job fallito: cliccate **"Re-run failed jobs"** in alto a destra
@@ -679,7 +607,6 @@ Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare 
 ## Risorse Utili
 
 - **Documentazione GitHub Actions**: <https://docs.github.com/en/actions>
-- **Documentazione GdUnit4**: <https://mikeschulze.github.io/gdUnit4/>
 - **Documentazione gdtoolkit**: <https://github.com/Scony/godot-gdscript-toolkit>
 - **Riferimento YAML**: <https://yaml.org/spec/> (per il file ci.yml)
 - **Validatore YAML online**: <https://www.yamllint.com/>

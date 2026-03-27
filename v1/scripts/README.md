@@ -1,14 +1,10 @@
 # Mini Cozy Room — Script GDScript
 
-> **Nota sulla Semplificazione**: Alcuni script in questa cartella sono **placeholder** o
-> **over-engineered** rispetto alle necessita' del gioco. In particolare:
-> `supabase_client.gd` (placeholder, il gioco e' offline), `local_database.gd` (over-engineered,
-> il JSON basta), `save_manager.gd` (migrazione versioni eccessiva), `logger.gd` (enterprise-grade).
-> Questi script funzionano ma sono candidati alla semplificazione. Gli script essenziali sono:
-> `signal_bus.gd`, `game_manager.gd`, `audio_manager.gd`, `performance_manager.gd` e tutti gli
-> script di gameplay in `rooms/`, `menu/`, `ui/`.
+> **Nota**: SupabaseClient e EnvLoader sono stati rimossi (marzo 2026) perche' il gioco
+> funziona esclusivamente offline. Logger e SaveManager sono piu' complessi del necessario
+> ma funzionano correttamente e non richiedono modifiche.
 
-Questa cartella contiene tutti i **26 script GDScript** del progetto, organizzati in
+Questa cartella contiene tutti i **24 script GDScript** del progetto, organizzati in
 6 sottocartelle piu il controller principale `main.gd`.
 
 L'architettura e **signal-driven**: tutta la comunicazione tra moduli passa per
@@ -24,14 +20,13 @@ L'architettura e **signal-driven**: tutta la comunicazione tra moduli passa per
 
 ```
 scripts/
-├── autoload/                     # 7 singleton caricati automaticamente
-│   ├── signal_bus.gd             # Bus eventi globale (21 segnali)
+├── autoload/                     # 6 singleton caricati automaticamente
+│   ├── signal_bus.gd             # Bus eventi globale (18 segnali)
 │   ├── logger.gd                 # Logging strutturato con correlation ID
 │   ├── game_manager.gd           # Stato di gioco, caricamento cataloghi JSON
 │   ├── save_manager.gd           # Salvataggio JSON v4.0.0 + auto-save 60s
 │   ├── local_database.gd         # Database SQLite (WAL, 7 tabelle)
-│   ├── audio_manager.gd          # Musica lo-fi con crossfade e import esterno
-│   └── supabase_client.gd        # Client HTTP per Supabase REST API
+│   └── audio_manager.gd          # Musica lo-fi con crossfade e import esterno
 ├── menu/                         # Script menu principale
 │   ├── main_menu.gd              # Loading screen, bottoni, transizioni scena
 │   └── menu_character.gd         # Walk-in animato personaggio casuale
@@ -51,8 +46,7 @@ scripts/
 │   └── drop_zone.gd              # Drop zone per posizionamento decorazioni
 ├── utils/                        # Utilita condivise
 │   ├── constants.gd              # Costanti globali (class_name Constants)
-│   ├── helpers.gd                # Funzioni utility (class_name Helpers)
-│   └── env_loader.gd             # Caricamento config da user://config.cfg
+│   └── helpers.gd                # Funzioni utility (class_name Helpers)
 └── main.gd                       # Controller scena principale
 ```
 
@@ -62,18 +56,17 @@ Caricati automaticamente in ordine da `project.godot`:
 
 | # | Nome | Script | Responsabilita |
 |---|------|--------|----------------|
-| 1 | `SignalBus` | autoload/signal_bus.gd | Bus eventi globale (21 segnali, disaccoppiamento moduli) |
+| 1 | `SignalBus` | autoload/signal_bus.gd | Bus eventi globale (18 segnali, disaccoppiamento moduli) |
 | 2 | `AppLogger` | autoload/logger.gd | Logging strutturato con correlation ID e rotazione file |
 | 3 | `GameManager` | autoload/game_manager.gd | Stato di gioco, caricamento cataloghi JSON (rooms, decorations, characters, tracks) |
 | 4 | `SaveManager` | autoload/save_manager.gd | Salvataggio locale JSON v4.0.0 con auto-save ogni 60s, migrazione automatica |
 | 5 | `LocalDatabase` | autoload/local_database.gd | Database SQLite locale (WAL mode, foreign keys, 7 tabelle, query parametrizzate) |
 | 6 | `AudioManager` | autoload/audio_manager.gd | Riproduzione musica con crossfade (2s), playlist (sequential/shuffle/repeat), import esterno |
-| 7 | `SupabaseClient` | autoload/supabase_client.gd | Client HTTP per Supabase REST API (auth, CRUD), config via EnvLoader |
-| 8 | `PerformanceManager` | systems/performance_manager.gd | FPS cap dinamico (60 focused / 15 background) |
+| 7 | `PerformanceManager` | systems/performance_manager.gd | FPS cap dinamico (60 focused / 15 background) |
 
 > **Nota:** PerformanceManager si trova in `systems/`, non in `autoload/`, ma e comunque caricato come singleton.
 
-## SignalBus — Segnali (21)
+## SignalBus — Segnali (18)
 
 | Categoria | Segnale | Parametri |
 |-----------|---------|-----------|
@@ -90,20 +83,17 @@ Caricati automaticamente in ordine da `project.godot`:
 | Decoration | `decoration_mode_changed` | active: bool |
 | UI | `panel_opened` | panel_name: String |
 | UI | `panel_closed` | panel_name: String |
-| UI | `shop_item_selected` | item_id: String |
 | Save | `save_requested` | — |
 | Save | `save_completed` | — |
 | Save | `load_completed` | — |
+| Settings | `settings_updated` | key: String, value: Variant |
 | Settings | `language_changed` | lang_code: String |
-| Auth | `user_authenticated` | user_id: String |
-| Auth | `user_signed_out` | — |
-| Auth | `auth_error` | message: String |
 
 ## Dettaglio Moduli
 
 ### autoload/
 
-I 7 singleton in `autoload/` vengono inizializzati nell'ordine definito in `project.godot`.
+I 6 singleton in `autoload/` (+ PerformanceManager in `systems/`) vengono inizializzati nell'ordine definito in `project.godot`.
 Per dettagli sull'architettura e le responsabilita di ciascuno, consulta il
 [README tecnico](../README.md#autoload-singleton).
 
@@ -146,8 +136,6 @@ Per dettagli sull'architettura e le responsabilita di ciascuno, consulta il
   modalita playlist, valori FPS, dimensioni viewport, durate animazioni.
 - **helpers.gd** — Funzioni utility (`class_name Helpers`): serializzazione Vector2,
   clamping viewport, formattazione tempo, grid snapping, stringhe data.
-- **env_loader.gd** — Carica configurazione chiave=valore da `user://config.cfg`
-  per dati sensibili (Supabase URL, API key).
 
 ## Vedi Anche
 

@@ -11,10 +11,11 @@
 >
 > 1. **Cosa e' stato corretto e perche'** — per capire le scelte progettuali
 > 2. **I concetti database** — PRIMARY KEY, FOREIGN KEY, normalizzazione, WAL
-> 3. **Task rimanenti per Elia** — seed data e allineamento Supabase
+> 3. **Task rimanenti per Elia** — verifica correzioni e seed data
 >
-> Il sistema database (LocalDatabase + Supabase) e' attualmente over-engineered per le
-> necessita' del gioco. Il salvataggio JSON via SaveManager e' la fonte primaria di dati;
+> **Nota (27 Marzo 2026)**: SupabaseClient e' stato rimosso dal progetto. Il gioco funziona
+> esclusivamente offline con JSON + SQLite. Il Task 3 (allineamento Supabase) non e' piu' necessario.
+> Il salvataggio JSON via SaveManager e' la fonte primaria di dati;
 > SQLite ne e' il mirror locale. Questa struttura resta valida come **esercizio didattico**
 > sulla progettazione di database relazionali.
 
@@ -341,34 +342,6 @@ git push origin Renan
 
 ---
 
-## Task 3 per Elia: Allineare Schema Supabase (Facoltativo)
-
-**Tempo stimato**: 30 minuti
-**Priorita'**: BASSO
-
-Il file `data/supabase_migration.sql` contiene lo schema per il database cloud Supabase. Dopo le correzioni allo schema SQLite locale, lo schema Supabase dovrebbe essere allineato.
-
-**Nota**: Supabase e' opzionale nel progetto. Questo task e' di priorita' bassa.
-
-### Differenze tra SQLite e PostgreSQL (Supabase)
-
-| Concetto | SQLite | PostgreSQL (Supabase) |
-|----------|--------|----------------------|
-| Auto-incremento | `INTEGER PRIMARY KEY AUTOINCREMENT` | `SERIAL PRIMARY KEY` |
-| Timestamp default | `DEFAULT CURRENT_TIMESTAMP` | `DEFAULT NOW()` |
-| Booleani | `INTEGER (0 o 1)` | `BOOLEAN` |
-| Testo | `TEXT` | `TEXT` o `VARCHAR(n)` |
-
-### Cosa Modificare
-
-Apri `data/supabase_migration.sql` e applica le stesse modifiche logiche:
-
-1. Tabella `characters`: aggiungi `character_id SERIAL PRIMARY KEY`, cambia `account_id` in FK
-2. Tabella `inventario`: rimuovi `coins` e `capacita`, aggiungi `quantita`
-3. Tabella `accounts`: aggiungi `coins INTEGER DEFAULT 0` e `inventario_capacita INTEGER DEFAULT 50`
-
----
-
 ## Checklist Finale
 
 ```text
@@ -385,7 +358,6 @@ Correzioni gia' fatte (verificare con DB Browser):
 Task per Elia:
 - [ ] Task 1: Verificato schema con DB Browser
 - [ ] Task 2: Seed data inserito (account locale presente alla creazione)
-- [ ] Task 3: Schema Supabase allineato (facoltativo)
 ```
 
 ---
@@ -637,122 +609,12 @@ func _purchase_item(account_id: int, item_id: int, price: int) -> bool:
 
 ---
 
-## Task 3 Espanso: Schema Supabase con SQL PostgreSQL
-
-Se decidi di affrontare il Task 3 (allineamento Supabase), ecco il SQL completo da inserire in `data/supabase_migration.sql`. Ricorda che PostgreSQL ha una sintassi leggermente diversa da SQLite.
-
-### SQL di Migrazione Completo
-
-Questo schema rispecchia fedelmente le tabelle create in `local_database.gd`, adattate alla sintassi PostgreSQL:
-
-```sql
--- ============================================================
--- Mini Cozy Room — Schema Supabase (PostgreSQL)
--- Allineato con local_database.gd (27 Marzo 2026)
--- ============================================================
-
--- Tabella accounts (coins e inventario_capacita qui, non in inventario)
-CREATE TABLE IF NOT EXISTS accounts (
-    account_id SERIAL PRIMARY KEY,
-    auth_uid TEXT UNIQUE,
-    data_di_iscrizione DATE NOT NULL DEFAULT CURRENT_DATE,
-    data_di_nascita TEXT NOT NULL DEFAULT '',
-    mail TEXT NOT NULL DEFAULT '',
-    coins INTEGER DEFAULT 0,
-    inventario_capacita INTEGER DEFAULT 50
-);
-
--- Tabella colore (stub — solo PK)
-CREATE TABLE IF NOT EXISTS colore (
-    colore_id SERIAL PRIMARY KEY
-);
-
--- Tabella categoria (stub — solo PK)
-CREATE TABLE IF NOT EXISTS categoria (
-    categoria_id SERIAL PRIMARY KEY
-);
-
--- Tabella shop
-CREATE TABLE IF NOT EXISTS shop (
-    shop_id SERIAL PRIMARY KEY,
-    prezzo_item INTEGER
-);
-
--- Tabella items
-CREATE TABLE IF NOT EXISTS items (
-    item_id SERIAL PRIMARY KEY,
-    shop_id INTEGER REFERENCES shop(shop_id),
-    categoria_id INTEGER REFERENCES categoria(categoria_id),
-    prezzo INTEGER,
-    disponibilita INTEGER DEFAULT 1,
-    colore_id INTEGER REFERENCES colore(colore_id)
-);
-
--- Tabella inventario (senza coins/capacita, senza FK a items)
-CREATE TABLE IF NOT EXISTS inventario (
-    inventario_id SERIAL PRIMARY KEY,
-    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
-    item_id INTEGER NOT NULL,
-    quantita INTEGER DEFAULT 1
-);
-
--- Tabella characters (character_id come PK separata)
-CREATE TABLE IF NOT EXISTS characters (
-    character_id SERIAL PRIMARY KEY,
-    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
-    nome TEXT DEFAULT '',
-    genere INTEGER DEFAULT 1,
-    colore_occhi INTEGER DEFAULT 0,
-    colore_capelli INTEGER DEFAULT 0,
-    colore_pelle INTEGER DEFAULT 0,
-    livello_stress INTEGER DEFAULT 0
-);
-```
-
-**Nota**: Lo schema Supabase rispecchia esattamente lo schema SQLite locale. Non aggiungere colonne extra (come `creato_il`, `aggiunto_il`) o vincoli UNIQUE a meno che non siano presenti anche nel codice GDScript — altrimenti i due database diventano inconsistenti.
-
-### Row Level Security (RLS) — Facoltativo
-
-Supabase usa RLS per controllare chi puo' leggere/scrivere i dati. Ogni utente vede solo i propri dati:
-
-```sql
--- Abilitiamo RLS su tutte le tabelle con dati utente
-ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE characters ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inventario ENABLE ROW LEVEL SECURITY;
-
--- Policy: ogni utente vede solo il proprio account
-CREATE POLICY "Users see own account"
-    ON accounts FOR SELECT
-    USING (auth_uid = auth.uid()::text);
-
--- Policy: ogni utente vede solo i propri personaggi
-CREATE POLICY "Users see own characters"
-    ON characters FOR SELECT
-    USING (account_id IN (
-        SELECT account_id FROM accounts WHERE auth_uid = auth.uid()::text
-    ));
-
--- Policy: ogni utente vede solo il proprio inventario
-CREATE POLICY "Users see own inventory"
-    ON inventario FOR SELECT
-    USING (account_id IN (
-        SELECT account_id FROM accounts WHERE auth_uid = auth.uid()::text
-    ));
-```
-
-**Nota**: RLS e' un argomento avanzato. Se non vi e' chiaro, saltatelo — il gioco funziona anche senza.
-
----
-
 ## Risorse Utili
 
 - **Tutorial SQLite**: https://www.sqlitetutorial.net/
 - **DB Browser for SQLite**: https://sqlitebrowser.org/
 - **Documentazione godot-sqlite**: https://github.com/2shady4u/godot-sqlite
 - **Riferimento SQL**: https://www.w3schools.com/sql/
-- **PostgreSQL vs SQLite**: https://www.sqlite.org/different.html
-- **Supabase Docs (Row Level Security)**: https://supabase.com/docs/guides/auth/row-level-security
 
 ---
 
