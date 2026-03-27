@@ -18,6 +18,11 @@ func _ready() -> void:
 	SignalBus.save_to_database_requested.connect(_on_save_requested)
 
 
+func _exit_tree() -> void:
+	if SignalBus.save_to_database_requested.is_connected(_on_save_requested):
+		SignalBus.save_to_database_requested.disconnect(_on_save_requested)
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		close()
@@ -56,12 +61,22 @@ func _open_database() -> void:
 	_db.path = DB_PATH
 	_db.verbosity_level = SQLite.QUIET
 	if not _db.open_db():
-		AppLogger.error("LocalDatabase", "Failed to open database", {"path": DB_PATH})
+		AppLogger.error("LocalDatabase", "Failed to open database", {
+			"path": DB_PATH,
+			"os": OS.get_name(),
+			"user_data_dir": OS.get_user_data_dir(),
+		})
+		var dir := DirAccess.open("user://")
+		if dir == null:
+			AppLogger.error("LocalDatabase", "Cannot access user:// directory")
 		_db = null
 		return
 	_is_open = true
 	_execute("PRAGMA journal_mode=WAL;")
 	_execute("PRAGMA foreign_keys=ON;")
+	var fk_check := _select("PRAGMA foreign_keys;", [])
+	if fk_check.is_empty() or fk_check[0].get("foreign_keys", 0) != 1:
+		AppLogger.warn("LocalDatabase", "Foreign keys not enabled")
 
 
 func _create_tables() -> void:
