@@ -1049,5 +1049,147 @@ Phase 4 (Post-release):
 
 ---
 
+## 13. Troubleshooting Export — Problemi Comuni
+
+### "Export template not found"
+
+**Causa**: Non avete scaricato i template di esportazione per la versione corrente di Godot.
+
+**Soluzione**:
+1. Aprite Godot → `Editor → Manage Export Templates`
+2. Cliccate "Download and Install" per la versione corrente
+3. Attendete il download (~500 MB per tutti i template)
+4. Riprovate l'export
+
+**Se il download fallisce**: Scaricate manualmente i template da https://godotengine.org/download e importateli con "Install from File".
+
+### godot-sqlite non funziona dopo l'export
+
+**Causa**: Il GDExtension godot-sqlite richiede che i file binari nativi (.dll, .so, .dylib) siano inclusi nell'export.
+
+**Soluzione**:
+1. Verificate che `v1/addons/godot-sqlite/` contenga i binari per la piattaforma target:
+   - Windows: `libgdsqlite.windows.template_release.x86_64.dll`
+   - Linux: `libgdsqlite.linux.template_release.x86_64.so`
+   - Web: `libgdsqlite.web.template_release.wasm32.wasm`
+2. Nelle impostazioni Export, verificate che i filtri NON escludano `addons/`
+3. Nella sezione "Resources" dell'export preset, assicuratevi che `*.gdextension` sia incluso
+
+### HTML5: Schermo Nero dopo il Caricamento
+
+**Cause comuni**:
+1. **SharedArrayBuffer non supportato**: L'export HTML5 di Godot 4 richiede che il server invii gli header:
+   ```
+   Cross-Origin-Opener-Policy: same-origin
+   Cross-Origin-Embedder-Policy: require-corp
+   ```
+   Soluzione: Usate un server locale che li supporta (vedi sezione 15)
+
+2. **File .pck troppo grande**: Se il file `.pck` supera i 50 MB, il browser potrebbe non riuscire a caricarlo. Ottimizzate gli asset (sezione 14)
+
+3. **WebGL non supportato**: Browser molto vecchi o configurazioni con WebGL disabilitato. Verificate su https://get.webgl.org/
+
+### Windows Defender Blocca l'Eseguibile
+
+**Causa**: Windows Defender segnala gli eseguibili non firmati (code-signed) come potenzialmente pericolosi.
+
+**Soluzioni**:
+1. **Per lo sviluppo**: Aggiungete la cartella di export alle eccezioni di Windows Defender
+2. **Per la distribuzione**: Firmate l'eseguibile con un certificato di code signing (a pagamento, ~$200-400/anno)
+3. **Alternativa gratuita**: Distribuite su itch.io con il loro launcher, che gestisce la trust chain
+
+---
+
+## 14. Ottimizzazione Dimensione Build
+
+Il peso dell'eseguibile finale influisce su download, storage e tempi di avvio. Ecco come ridurlo.
+
+### Audio: WAV vs OGG
+
+| Formato | Dimensione (1 min musica) | Qualita' | Uso Consigliato |
+|---------|--------------------------|----------|-----------------|
+| WAV | ~10 MB | Lossless | Solo effetti sonori brevi (<5 sec) |
+| OGG Vorbis | ~1 MB | Lossy (buona) | Musica, ambience, loop lunghi |
+| MP3 | ~1 MB | Lossy (buona) | NON usare in Godot 4 (supporto limitato) |
+
+**Azione**: Convertite TUTTE le tracce musicali in `v1/assets/audio/music/` da WAV a OGG Vorbis con qualita' 6 (bilanciamento dimensione/qualita'). Potete usare Audacity (gratuito) o FFmpeg:
+```bash
+# Converte tutti i WAV in OGG (qualita' 6)
+for f in v1/assets/audio/music/*.wav; do
+    ffmpeg -i "$f" -c:a libvorbis -q:a 6 "${f%.wav}.ogg"
+done
+```
+
+### Texture Compression
+
+Nelle impostazioni di Import di ogni texture (pannello Import in Godot):
+- **Compress Mode**: "Lossless" per pixel art (mantiene la nitidezza dei pixel)
+- **Filter**: "Nearest" (gia' impostato globalmente nel progetto)
+- **Mipmaps**: OFF per 2D (le mipmap sono utili solo per il 3D)
+
+### Feature Stripping (Riduzione Funzionalita')
+
+Nelle impostazioni Export, disabilitate le funzionalita' non usate:
+- **3D**: Disabilitate tutto (siamo un gioco 2D)
+- **Navigation**: Disabilitate (non usiamo pathfinding con NavigationServer)
+- **XR (VR/AR)**: Disabilitate
+- **Advanced text server**: Se non usate lingue RTL (arabo, ebraico), potete usare il text server base
+
+Questo puo' ridurre l'eseguibile di 5-15 MB.
+
+---
+
+## 15. Test Export Locale — Guida Passo Passo
+
+### Export Windows (da Windows)
+
+```text
+1. Project → Export → Add → Windows Desktop
+2. Configurate:
+   - Export Path: una cartella fuori dal progetto (es. C:\Users\voi\Desktop\MCR_Export\)
+   - Architecture: x86_64
+   - Embed PCK: ON (crea un singolo .exe)
+3. Cliccate "Export Project"
+4. Navigate alla cartella e fate doppio click sull'eseguibile
+5. Verificate:
+   - [ ] Il gioco si avvia senza errori
+   - [ ] La musica funziona
+   - [ ] Il salvataggio funziona (decorate, chiudete, riaprite — decorazioni presenti?)
+   - [ ] Nessun crash dopo 2 minuti di uso
+```
+
+### Export HTML5 + Test Locale
+
+L'export web richiede un server HTTP per funzionare (non potete aprire il file .html direttamente).
+
+```text
+1. Project → Export → Add → Web
+2. Configurate:
+   - Export Path: cartella dedicata (es. export_web/)
+   - Thread Support: ON (necessario per godot-sqlite)
+3. Cliccate "Export Project"
+4. Aprite un terminale nella cartella di export e avviate un server locale:
+```
+
+```bash
+# Python 3 (installato di default su Linux/macOS)
+cd path/to/export_web/
+python3 -m http.server 8000
+
+# Poi aprite nel browser: http://localhost:8000
+```
+
+**Nota importante**: Il server Python base NON invia gli header COOP/COEP necessari. Per un test completo, usate:
+
+```bash
+# Installate un server con supporto header (richiede Node.js)
+npx http-server -p 8000 --cors -c-1 \
+  -S -C cert.pem -K key.pem \
+  --header "Cross-Origin-Opener-Policy: same-origin" \
+  --header "Cross-Origin-Embedder-Policy: require-corp"
+```
+
+---
+
 *Study document for Mini Cozy Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*
