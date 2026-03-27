@@ -875,5 +875,102 @@ If Mini Cozy Room evolves toward a more isometric look:
 
 ---
 
+## 14. Esercizi Pratici
+
+Tre esercizi per verificare la comprensione dei concetti isometrici. Provate a risolverli su carta prima di verificare al computer.
+
+### Esercizio 1: Conversione Coordinate
+
+Data una posizione schermo `(640, 360)` (centro del viewport 1280x720), calcolate le coordinate isometriche corrispondenti usando le formule:
+
+```text
+tile_x = (screen_x / tile_width + screen_y / tile_height) / 2
+tile_y = (screen_y / tile_height - screen_x / tile_width) / 2
+```
+
+Con `tile_width = 64` e `tile_height = 32`:
+- `tile_x = (640/64 + 360/32) / 2 = (10 + 11.25) / 2 = 10.625`
+- `tile_y = (360/32 - 640/64) / 2 = (11.25 - 10) / 2 = 0.625`
+
+**Domanda**: se la stanza e' una griglia 10x10, questa posizione e' valida? *(Risposta: si', tile (10, 0) e' l'angolo destro della griglia)*
+
+### Esercizio 2: Ordine di Disegno (Y-Sort)
+
+Date queste 4 decorazioni con posizioni isometriche:
+- Letto: `(2, 3)`
+- Scrivania: `(4, 1)`
+- Pianta: `(2, 5)`
+- Sedia: `(4, 3)`
+
+In quale ordine devono essere disegnate perche' la sovrapposizione sia corretta? *(Suggerimento: in vista isometrica, gli oggetti con `y` maggiore sono "davanti" e devono essere disegnati dopo)*
+
+**Risposta**: Scrivania (y=1) → Letto (y=3) e Sedia (y=3, ma x=4 > 2) → Pianta (y=5). In Godot, `Y-Sort` gestisce questo automaticamente basandosi sulla `position.y` di ogni nodo.
+
+### Esercizio 3: Progettare il Layout di una Stanza
+
+Disegnate su carta una stanza isometrica 8x6 con:
+- Un letto nell'angolo in alto a destra (2x1 tiles)
+- Una scrivania lungo la parete sinistra (1x2 tiles)
+- Una pianta in ogni angolo visibile (1x1 tile)
+
+Quali posizioni tile assegnereste a ogni oggetto? Considerate che gli oggetti piu' grandi di 1x1 occupano piu' celle e il punto di ancoraggio e' la cella in basso a sinistra dell'oggetto.
+
+---
+
+## 15. Strumenti per Pixel Art Isometrica
+
+### Editor Consigliati
+
+| Strumento | Tipo | Prezzo | Ideale per |
+|-----------|------|--------|------------|
+| **Aseprite** | Pixel art editor | $20 (o compilare gratis da sorgente) | Animazioni sprite sheet, palette, onion skinning |
+| **Piskel** | Pixel art editor (web) | Gratuito | Prototipi veloci, sprite semplici, accessibile da browser |
+| **Pyxel Edit** | Tile map editor | $9 | Tileset isometrici, tile animation, auto-tiling |
+| **Tiled** | Map editor | Gratuito (open source) | Level design, mappe isometriche, esportazione JSON |
+| **GIMP** | Image editor | Gratuito (open source) | Post-processing, batch resize, palette editing |
+
+### Consigli per Sprite Isometrici
+
+1. **Usate una griglia guida**: Create un template con la griglia isometrica (diamante 64x32) e disegnateci sopra
+2. **Angolo 30 gradi**: Le linee orizzontali isometriche hanno un rapporto 2:1 (ogni 2 pixel orizzontali, 1 pixel verticale)
+3. **Ombre consistenti**: Decidete una direzione della luce (es. alto-sinistra) e mantenetela per tutti gli oggetti
+4. **Palette limitata**: Usate massimo 16-32 colori per mantenere coerenza visiva
+5. **Outline**: Per oggetti piccoli, un contorno di 1px aiuta la leggibilita'
+6. **Test nel gioco**: Importate lo sprite in Godot appena possibile per verificare scale e posizionamento
+
+---
+
+## 16. Giochi Famosi: Tecniche Isometriche nel Dettaglio
+
+### Stardew Valley — "Finta" Isometrica
+
+Stardew Valley NON e' tecnicamente isometrico — usa una vista top-down con prospettiva leggermente inclinata. Ma molti lo percepiscono come isometrico per via di:
+- **Profondita' simulata**: gli oggetti in basso sono "davanti" (Y-Sort)
+- **Ombre proiettate**: danno l'illusione di tridimensionalita'
+- **Proporzioni personaggio**: il personaggio e' disegnato come visto da un angolo leggermente elevato
+
+**Lezione per Mini Cozy Room**: Non serve un sistema isometrico "puro" per dare l'illusione di profondita'. Il nostro progetto usa lo stesso approccio di Stardew Valley.
+
+### Habbo Hotel — Isometrico Classico
+
+Habbo Hotel e' un esempio perfetto di isometrico 2:1 con pixel art:
+- Griglia diamante rigorosa (ogni tile e' un diamante)
+- Sprite dei mobili disegnati con la stessa angolazione
+- Sistema di profondita' basato sulla posizione nella griglia
+- Stanze personalizzabili (la stessa idea di Mini Cozy Room!)
+
+**Lezione per Mini Cozy Room**: Il nostro sistema di decorazioni segue lo stesso principio di Habbo — posizionamento su griglia con snap.
+
+### Unpacking — Isometrico Narrativo
+
+Unpacking usa la vista isometrica per raccontare una storia attraverso gli oggetti:
+- Ogni oggetto ha una posizione "naturale" suggerita
+- Il giocatore scopre la personalita' del personaggio tramite i suoi oggetti
+- La griglia e' nascosta ma presente (snap gentile)
+
+**Lezione per Mini Cozy Room**: La personalizzazione della stanza NON e' solo estetica — racconta qualcosa dell'utente. Questo e' il motivo per cui il gioco salva la posizione esatta di ogni decorazione.
+
+---
+
 *Study document for Mini Cozy Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*
