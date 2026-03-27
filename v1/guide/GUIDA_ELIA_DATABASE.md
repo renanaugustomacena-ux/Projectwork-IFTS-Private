@@ -819,12 +819,391 @@ Apri `data/supabase_migration.sql` e applica le stesse modifiche logiche:
 
 ---
 
+## Schema Visuale del Database
+
+Questo diagramma mostra le relazioni tra le 7 tabelle del database dopo le correzioni (Task 1-3):
+
+```text
+┌─────────────────────────┐
+│        accounts          │
+│─────────────────────────│
+│ account_id  (PK, AUTO)  │◄──────────────────────────────────┐
+│ auth_uid    (UNIQUE)     │                                    │
+│ data_di_iscrizione       │                                    │
+│ data_di_nascita          │                                    │
+│ mail                     │                                    │
+│ coins                    │  ← monete qui, NON in inventario   │
+│ inventario_capacita      │  ← capacita' qui, NON in inventar. │
+└──────────┬──────────────┘                                    │
+           │ 1:N                                               │
+           ▼                                                   │
+┌─────────────────────────┐     ┌─────────────────────────┐   │
+│       characters         │     │       inventario         │   │
+│─────────────────────────│     │─────────────────────────│   │
+│ character_id (PK, AUTO) │     │ inventario_id (PK, AUTO)│   │
+│ account_id   (FK) ──────│─┐   │ account_id   (FK) ──────│───┘
+│ nome                     │ │   │ item_id      (FK) ──────│───┐
+│ genere                   │ │   │ quantita                 │   │
+│ colore_occhi             │ │   │ aggiunto_il              │   │
+│ colore_capelli           │ │   │ UNIQUE(account_id,       │   │
+│ colore_pelle             │ │   │        item_id)          │   │
+│ livello_stress           │ │   └─────────────────────────┘   │
+│ creato_il                │ │                                  │
+│ UNIQUE(account_id, nome) │ │   ┌─────────────────────────┐   │
+└─────────────────────────┘ │   │         items             │   │
+                             │   │─────────────────────────│   │
+                             │   │ item_id    (PK, AUTO)   │◄──┘
+                             │   │ nome                     │
+                             │   │ categoria_id (FK) ──────│───┐
+                             │   │ colore_id    (FK) ──────│─┐ │
+                             │   │ prezzo                   │ │ │
+                             │   └─────────────────────────┘ │ │
+                             │                                │ │
+                             │   ┌─────────────────────────┐  │ │
+                             │   │        colore            │  │ │
+                             │   │─────────────────────────│  │ │
+                             │   │ colore_id  (PK, AUTO)   │◄─┘ │
+                             │   │ (nome, hex, ecc.)        │    │
+                             │   └─────────────────────────┘    │
+                             │                                   │
+                             │   ┌─────────────────────────┐    │
+                             │   │       categoria          │    │
+                             │   │─────────────────────────│    │
+                             │   │ categoria_id (PK, AUTO) │◄───┘
+                             │   │ (nome, descrizione)      │
+                             │   └─────────────────────────┘
+                             │
+                             │   ┌─────────────────────────┐
+                             │   │         shop             │
+                             │   │─────────────────────────│
+                             │   │ shop_id    (PK, AUTO)   │
+                             │   │ account_id (FK) ────────│─── → accounts
+                             │   │ item_id    (FK) ────────│─── → items
+                             │   │ acquistato_il            │
+                             │   └─────────────────────────┘
+
+Legenda:
+  PK = PRIMARY KEY       FK = FOREIGN KEY
+  AUTO = AUTOINCREMENT   1:N = relazione uno-a-molti
+  ──► = direzione della foreign key (da figlio a genitore)
+```
+
+**Come leggere il diagramma**: le frecce partono dalla tabella "figlia" e puntano alla tabella "genitore". Ad esempio, `characters.account_id` → `accounts.account_id` significa che ogni personaggio appartiene a un account.
+
+---
+
+## Troubleshooting Database
+
+Errori comuni che potreste incontrare durante le correzioni e come risolverli.
+
+### "database is locked"
+
+**Quando capita**: Se il gioco e' aperto mentre usate DB Browser, o se due processi provano a scrivere contemporaneamente.
+
+**Soluzione**:
+1. **Chiudete il gioco** (Godot) prima di aprire il database con DB Browser
+2. Se il problema persiste, cercate file `.db-wal` e `.db-shm` nella stessa cartella del `.db` — sono file temporanei di WAL mode. Chiudete tutti i programmi che usano il DB, poi riaprite
+3. Come ultima risorsa: riavviate il computer (rilascia tutti i lock)
+
+```sql
+-- Verificate se ci sono transazioni aperte (in DB Browser)
+PRAGMA journal_mode;
+-- Se restituisce "wal", e' normale
+-- Se restituisce "delete", il WAL mode non e' attivo (problema di configurazione)
+```
+
+### "FOREIGN KEY constraint failed"
+
+**Quando capita**: State provando a inserire un record figlio senza che il genitore esista. Per esempio, inserire un personaggio con `account_id = 5` quando l'account 5 non esiste.
+
+**Soluzione**:
+1. **Verificate che il genitore esista**:
+   ```sql
+   -- Prima di inserire un personaggio, verificate che l'account esista
+   SELECT * FROM accounts WHERE account_id = 1;
+   -- Se non restituisce righe, create prima l'account
+   ```
+2. **Verificate che le FK siano attive** (devono essere abilitate ad ogni connessione):
+   ```sql
+   PRAGMA foreign_keys;
+   -- Deve restituire 1. Se restituisce 0:
+   PRAGMA foreign_keys = ON;
+   ```
+
+### "UNIQUE constraint failed"
+
+**Quando capita**: State provando a inserire un record duplicato dove c'e' un vincolo UNIQUE. Per esempio, due personaggi con lo stesso nome nello stesso account.
+
+**Soluzione**:
+1. **Verificate i dati esistenti**:
+   ```sql
+   -- Cercate duplicati nella tabella characters
+   SELECT account_id, nome, COUNT(*) as duplicati
+   FROM characters
+   GROUP BY account_id, nome
+   HAVING COUNT(*) > 1;
+   ```
+2. **Se ci sono duplicati, rimuovete quelli in eccesso** (tenete il piu' recente):
+   ```sql
+   -- Mostra tutti i personaggi per decidere quale tenere
+   SELECT character_id, account_id, nome, creato_il FROM characters
+   ORDER BY account_id, nome, creato_il DESC;
+   ```
+
+### "table already exists" vs schema vecchio
+
+**Quando capita**: Avete cambiato lo schema nel codice ma il database gia' esistente ha ancora il vecchio schema. `CREATE TABLE IF NOT EXISTS` non modifica tabelle esistenti.
+
+**Soluzione**:
+- **Opzione rapida**: Eliminate il file `cozy_room.db` (e `.db-wal`, `.db-shm`), riavviate il gioco
+- **Opzione sicura**: Usate la migrazione (vedi Task 1, Passo 5) per preservare i dati
+
+### I dati non appaiono dopo le modifiche
+
+**Quando capita**: Avete inserito dati con DB Browser ma il gioco non li vede (o viceversa).
+
+**Soluzione**:
+1. **DB Browser non salva automaticamente**: Cliccate "Write Changes" (Ctrl+Shift+S) in DB Browser
+2. **Il gioco ha una cache in memoria**: Riavviate il gioco dopo modifiche con DB Browser
+3. **WAL mode**: I dati scritti dal gioco sono nel file `.db-wal` fino al prossimo checkpoint. DB Browser potrebbe non leggerli. Chiudete il gioco → i dati vengono scritti nel `.db` principale
+
+---
+
+## Backup del Database Prima delle Modifiche
+
+**Regola d'oro**: SEMPRE fare un backup prima di modificare lo schema del database.
+
+### Procedura Backup Manuale
+
+```text
+1. Chiudete il gioco (Godot deve essere chiuso!)
+
+2. Navigate alla cartella del database:
+   Windows:  %APPDATA%\Godot\app_userdata\MiniCozyRoom\
+   Linux:    ~/.local/share/godot/app_userdata/MiniCozyRoom/
+   macOS:    ~/Library/Application Support/Godot/app_userdata/MiniCozyRoom/
+
+3. Copiate TUTTI e tre i file (se esistono):
+   - cozy_room.db        ← il database principale
+   - cozy_room.db-wal    ← il journal WAL (contiene scritture recenti)
+   - cozy_room.db-shm    ← la shared memory map
+
+4. Incollateli in una cartella "backup_YYYY-MM-DD" (es. backup_2026-04-01)
+
+5. Solo ORA potete procedere con le modifiche
+```
+
+**Se qualcosa va storto**:
+1. Chiudete il gioco
+2. Eliminate i file `cozy_room.db`, `.db-wal`, `.db-shm`
+3. Copiate i file dal backup nella stessa cartella
+4. Riavviate il gioco — tornerete allo stato precedente
+
+### Backup Veloce da Terminale (Opzionale)
+
+```bash
+# Linux/macOS — copiate e incollate nel terminale
+DB_DIR="$HOME/.local/share/godot/app_userdata/MiniCozyRoom"
+BACKUP="$DB_DIR/backup_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP"
+cp "$DB_DIR"/cozy_room.db* "$BACKUP/" 2>/dev/null
+echo "Backup salvato in: $BACKUP"
+```
+
+---
+
+## Transazioni: Raggruppare Operazioni Correlate
+
+### Cos'e' una Transazione?
+
+Immaginate di trasferire denaro dal conto A al conto B. Servono due operazioni:
+1. Togliere dal conto A
+2. Aggiungere al conto B
+
+Se il sistema si blocca dopo il passo 1 ma prima del passo 2, i soldi sono spariti! Una **transazione** garantisce che **o entrambe le operazioni riescono, o nessuna delle due viene applicata**.
+
+### Il Pattern BEGIN / COMMIT / ROLLBACK
+
+```sql
+-- INIZIO transazione: da qui in poi, nulla e' definitivo
+BEGIN TRANSACTION;
+
+-- Operazione 1
+UPDATE accounts SET coins = coins - 50 WHERE account_id = 1;
+
+-- Operazione 2
+INSERT INTO inventario (account_id, item_id, quantita) VALUES (1, 5, 1);
+
+-- Se tutto e' andato bene:
+COMMIT;  -- Conferma tutte le operazioni — ora sono definitive
+
+-- Se qualcosa e' andato storto:
+-- ROLLBACK;  -- Annulla TUTTO — come se non fosse successo nulla
+```
+
+### Quando Usare le Transazioni
+
+- **Migrazione schema** (Task 1, Passo 5): rinominare tabella + creare nuova + copiare dati — se una fallisce, devono fallire tutte
+- **Seed data** (Task 4): inserire 14 categorie + 10 colori + 1 account — se una fallisce, meglio riprovare da zero
+- **Acquisto oggetto**: togliere monete + aggiungere all'inventario — atomico
+
+### Transazioni in GDScript
+
+Nel nostro codice, le transazioni si implementano cosi':
+
+```gdscript
+func _purchase_item(account_id: int, item_id: int, price: int) -> bool:
+    # Inizio transazione
+    _execute("BEGIN TRANSACTION;")
+
+    # Operazione 1: togli le monete
+    var debit_ok := _execute_bound(
+        "UPDATE accounts SET coins = coins - ? WHERE account_id = ? AND coins >= ?;",
+        [price, account_id, price]
+    )
+
+    if not debit_ok:
+        _execute("ROLLBACK;")  # Annulla tutto
+        return false
+
+    # Operazione 2: aggiungi all'inventario
+    var insert_ok := _execute_bound(
+        "INSERT INTO inventario (account_id, item_id) VALUES (?, ?)"
+        + " ON CONFLICT(account_id, item_id) DO UPDATE SET quantita = quantita + 1;",
+        [account_id, item_id]
+    )
+
+    if not insert_ok:
+        _execute("ROLLBACK;")  # Annulla tutto (anche il debit)
+        return false
+
+    # Tutto ok — confermiamo
+    _execute("COMMIT;")
+    return true
+```
+
+---
+
+## Task 6 Espanso: Schema Supabase con SQL PostgreSQL
+
+Se decidi di affrontare il Task 6 (allineamento Supabase), ecco il SQL completo da inserire in `data/supabase_migration.sql`. Ricorda che PostgreSQL ha una sintassi leggermente diversa da SQLite.
+
+### SQL di Migrazione Completo
+
+```sql
+-- ============================================================
+-- Mini Cozy Room — Schema Supabase (PostgreSQL)
+-- Allineato con le correzioni SQLite (Task 1-3)
+-- ============================================================
+
+-- Tabella accounts (con coins e capacita')
+CREATE TABLE IF NOT EXISTS accounts (
+    account_id SERIAL PRIMARY KEY,
+    auth_uid TEXT UNIQUE,
+    data_di_iscrizione DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_di_nascita TEXT NOT NULL DEFAULT '',
+    mail TEXT NOT NULL DEFAULT '',
+    coins INTEGER DEFAULT 0,
+    inventario_capacita INTEGER DEFAULT 50
+);
+
+-- Tabella characters (con character_id separato)
+CREATE TABLE IF NOT EXISTS characters (
+    character_id SERIAL PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
+    nome TEXT DEFAULT '',
+    genere INTEGER DEFAULT 1,
+    colore_occhi INTEGER DEFAULT 0,
+    colore_capelli INTEGER DEFAULT 0,
+    colore_pelle INTEGER DEFAULT 0,
+    livello_stress INTEGER DEFAULT 0,
+    creato_il TIMESTAMP DEFAULT NOW(),
+    UNIQUE(account_id, nome)
+);
+
+-- Tabella categoria
+CREATE TABLE IF NOT EXISTS categoria (
+    categoria_id SERIAL PRIMARY KEY,
+    nome TEXT DEFAULT ''
+);
+
+-- Tabella colore
+CREATE TABLE IF NOT EXISTS colore (
+    colore_id SERIAL PRIMARY KEY,
+    nome TEXT DEFAULT '',
+    hex TEXT DEFAULT ''
+);
+
+-- Tabella items
+CREATE TABLE IF NOT EXISTS items (
+    item_id SERIAL PRIMARY KEY,
+    nome TEXT DEFAULT '',
+    categoria_id INTEGER REFERENCES categoria(categoria_id),
+    colore_id INTEGER REFERENCES colore(colore_id),
+    prezzo INTEGER DEFAULT 0
+);
+
+-- Tabella inventario (senza coins/capacita, con quantita)
+CREATE TABLE IF NOT EXISTS inventario (
+    inventario_id SERIAL PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL REFERENCES items(item_id),
+    quantita INTEGER DEFAULT 1,
+    aggiunto_il TIMESTAMP DEFAULT NOW(),
+    UNIQUE(account_id, item_id)
+);
+
+-- Tabella shop
+CREATE TABLE IF NOT EXISTS shop (
+    shop_id SERIAL PRIMARY KEY,
+    account_id INTEGER REFERENCES accounts(account_id) ON DELETE CASCADE,
+    item_id INTEGER REFERENCES items(item_id),
+    acquistato_il TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Row Level Security (RLS) — Facoltativo
+
+Supabase usa RLS per controllare chi puo' leggere/scrivere i dati. Ogni utente vede solo i propri dati:
+
+```sql
+-- Abilitiamo RLS su tutte le tabelle con dati utente
+ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE characters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventario ENABLE ROW LEVEL SECURITY;
+
+-- Policy: ogni utente vede solo il proprio account
+CREATE POLICY "Users see own account"
+    ON accounts FOR SELECT
+    USING (auth_uid = auth.uid()::text);
+
+-- Policy: ogni utente vede solo i propri personaggi
+CREATE POLICY "Users see own characters"
+    ON characters FOR SELECT
+    USING (account_id IN (
+        SELECT account_id FROM accounts WHERE auth_uid = auth.uid()::text
+    ));
+
+-- Policy: ogni utente vede solo il proprio inventario
+CREATE POLICY "Users see own inventory"
+    ON inventario FOR SELECT
+    USING (account_id IN (
+        SELECT account_id FROM accounts WHERE auth_uid = auth.uid()::text
+    ));
+```
+
+**Nota**: RLS e' un argomento avanzato. Se non vi e' chiaro, saltatelo — il gioco funziona anche senza.
+
+---
+
 ## Risorse Utili
 
 - **Tutorial SQLite**: https://www.sqlitetutorial.net/
 - **DB Browser for SQLite**: https://sqlitebrowser.org/
 - **Documentazione godot-sqlite**: https://github.com/2shady4u/godot-sqlite
 - **Riferimento SQL**: https://www.w3schools.com/sql/
+- **PostgreSQL vs SQLite**: https://www.sqlite.org/different.html
+- **Supabase Docs (Row Level Security)**: https://supabase.com/docs/guides/auth/row-level-security
 
 ---
 
