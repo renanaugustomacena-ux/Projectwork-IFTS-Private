@@ -20,6 +20,10 @@ signal volume_changed(bus_name: String, volume: float)
 
 # Decoration mode
 signal decoration_mode_changed(active: bool)
+signal decoration_selected(item_id: String)
+signal decoration_deselected
+signal decoration_rotated(item_id: String, rotation_deg: float)
+signal decoration_scaled(item_id: String, new_scale: float)
 
 # UI signals
 signal panel_opened(panel_name: String)

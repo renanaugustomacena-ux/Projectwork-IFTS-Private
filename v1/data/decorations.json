@@ -18,6 +18,15 @@
 		{"id": "bed_3", "name": "Platform Bed", "category": "beds", "sprite_path": "res://assets/sprites/rooms/Individuals/Bed_3.png", "placement_type": "floor", "item_scale": 3.0},
 		{"id": "bed_4", "name": "Wooden Bed", "category": "beds", "sprite_path": "res://assets/sprites/rooms/Individuals/Bed_4.png", "placement_type": "floor", "item_scale": 3.0},
 
+		{"id": "bed_black_1", "name": "Black Bed 1", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_black1.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "bed_black_2", "name": "Black Bed 2", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_black2.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "bed_cyan_1", "name": "Cyan Bed 1", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_cyan1.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "bed_cyan_2", "name": "Cyan Bed 2", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_cyan2.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "bed_olive_1", "name": "Olive Bed 1", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_olive1.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "bed_olive_2", "name": "Olive Bed 2", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_olive2.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "bed_violet_1", "name": "Violet Bed 1", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_violet1.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "bed_violet_2", "name": "Violet Bed 2", "category": "beds", "sprite_path": "res://assets/room/bed/sprite_bed_violet2.png", "placement_type": "floor", "item_scale": 3.0},
+
 		{"id": "desk_1", "name": "Wooden Desk", "category": "desks", "sprite_path": "res://assets/sprites/rooms/Individuals/Desk_1.png", "placement_type": "floor", "item_scale": 3.0},
 		{"id": "desk_2", "name": "Modern Desk", "category": "desks", "sprite_path": "res://assets/sprites/rooms/Individuals/Desk_2.png", "placement_type": "floor", "item_scale": 3.0},
 		{"id": "desk_3", "name": "Compact Desk", "category": "desks", "sprite_path": "res://assets/sprites/rooms/Individuals/Desk_3.png", "placement_type": "floor", "item_scale": 3.0},
@@ -81,6 +90,10 @@
 		{"id": "room_window_2", "name": "Medium Window", "category": "room_elements", "sprite_path": "res://assets/room/window2.png", "placement_type": "wall", "item_scale": 3.0},
 		{"id": "room_window_3", "name": "Large Window", "category": "room_elements", "sprite_path": "res://assets/room/window3.png", "placement_type": "wall", "item_scale": 3.0},
 
-		{"id": "pet_cat_void", "name": "Void Cat", "category": "pets", "sprite_path": "res://assets/pets/cat_void_simple.png", "placement_type": "floor", "item_scale": 4.0}
+		{"id": "pet_cat_void", "name": "Void Cat", "category": "pets", "sprite_path": "res://assets/pets/cat_void_simple.png", "placement_type": "floor", "item_scale": 4.0},
+
+		{"id": "floor_mess_1", "name": "Floor Mess 1", "category": "accessories", "sprite_path": "res://assets/room/mess/floor_mess1.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "floor_mess_2", "name": "Floor Mess 2", "category": "accessories", "sprite_path": "res://assets/room/mess/floor_mess2.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "floor_mess_3", "name": "Floor Mess 3", "category": "accessories", "sprite_path": "res://assets/room/mess/floor_mess3.png", "placement_type": "floor", "item_scale": 3.0}
 	]
 }
