@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://uufc8r5qr7pa"]
+
+[ext_resource type="Texture2D" uid="uid://cv5hfbq1fmecf" path="res://assets/room/room.png" id="1_36trf"]
+[ext_resource type="Texture2D" uid="uid://cmc57uawy772k" path="res://assets/menu/loading/background.png" id="1_ffxv4"]
+[ext_resource type="PackedScene" uid="uid://cdvaygbvu8ubt" path="res://scenes/room/windows/window3.tscn" id="7_tk5fv"]
+[ext_resource type="PackedScene" uid="uid://81djoh30as2n" path="res://scenes/room/door.tscn" id="8_w68ji"]
+
+[node name="room" type="StaticBody2D" unique_id=1648951168]
+
+[node name="Background" type="Sprite2D" parent="." unique_id=1781629417]
+texture = ExtResource("1_ffxv4")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=183385469]
+zoom = Vector2(3.6, 3.6)
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="." unique_id=1376329003]
+build_mode = 1
+polygon = PackedVector2Array(0, -26, -83, 14, -83, 30, 0, 71, 84, 30, 84, 13)
+
+[node name="room" type="Sprite2D" parent="." unique_id=683385401]
+texture = ExtResource("1_36trf")
+
+[node name="window3" parent="." unique_id=1522180996 instance=ExtResource("7_tk5fv")]
+position = Vector2(40, -23)
+
+[node name="door" parent="." unique_id=1148667855 instance=ExtResource("8_w68ji")]
+position = Vector2(-68, 9)
