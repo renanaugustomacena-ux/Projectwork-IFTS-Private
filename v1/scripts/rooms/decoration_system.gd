@@ -3,7 +3,7 @@
 extends Sprite2D
 
 const DRAG_THRESHOLD := 5.0
-const SCALE_STEPS := [0.5, 1.0, 1.5]
+const SCALE_STEPS := [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
 
 var item_id: String = ""
 var base_item_scale: float = 1.0
@@ -12,17 +12,18 @@ var _is_dragging: bool = false
 var _drag_offset: Vector2 = Vector2.ZERO
 var _click_start_pos: Vector2 = Vector2.ZERO
 var _mouse_pressed: bool = false
+var _popup_layer: CanvasLayer = null
 var _popup: PanelContainer = null
 
 static var _active_popup_owner: Sprite2D = null
 
 
 func _ready() -> void:
-	set_process_input(true)
+	set_process_unhandled_input(true)
 	base_item_scale = scale.x
 
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
 		if mouse.button_index == MOUSE_BUTTON_LEFT:
@@ -33,7 +34,6 @@ func _input(event: InputEvent) -> void:
 					_drag_offset = global_position - _click_start_pos
 					get_viewport().set_input_as_handled()
 				else:
-					# Clicked elsewhere — dismiss popup
 					if _popup != null:
 						_dismiss_popup()
 			else:
@@ -43,7 +43,6 @@ func _input(event: InputEvent) -> void:
 						_is_dragging = false
 						_save_position()
 					else:
-						# Was a click, not a drag — show popup
 						_toggle_popup()
 
 	elif event is InputEventMouseMotion and _mouse_pressed:
@@ -70,7 +69,6 @@ func _toggle_popup() -> void:
 	if _popup != null:
 		_dismiss_popup()
 		return
-	# Dismiss any other decoration's popup
 	if _active_popup_owner != null and _active_popup_owner != self:
 		if is_instance_valid(_active_popup_owner):
 			_active_popup_owner._dismiss_popup()
@@ -79,8 +77,12 @@ func _toggle_popup() -> void:
 
 
 func _show_popup() -> void:
+	# Use a CanvasLayer so the popup buttons (Controls) receive proper GUI input
+	_popup_layer = CanvasLayer.new()
+	_popup_layer.layer = 100
+	get_tree().root.add_child(_popup_layer)
+
 	_popup = PanelContainer.new()
-	_popup.z_index = 50
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 2)
@@ -93,6 +95,14 @@ func _show_popup() -> void:
 	rotate_btn.custom_minimum_size = Vector2(28, 28)
 	rotate_btn.pressed.connect(_on_rotate)
 	hbox.add_child(rotate_btn)
+
+	# Flip button (perspective)
+	var flip_btn := Button.new()
+	flip_btn.text = "F"
+	flip_btn.tooltip_text = "Flip"
+	flip_btn.custom_minimum_size = Vector2(28, 28)
+	flip_btn.pressed.connect(_on_flip)
+	hbox.add_child(flip_btn)
 
 	# Scale button
 	var scale_btn := Button.new()
@@ -114,21 +124,23 @@ func _show_popup() -> void:
 		delete_btn.pressed.connect(_on_delete)
 		hbox.add_child(delete_btn)
 
-	# Position popup above the decoration center
+	# Convert decoration position to screen coordinates for the CanvasLayer
+	var screen_pos := get_canvas_transform() * global_position
 	var tex_size := texture.get_size() * scale if texture else Vector2.ZERO
+	var canvas_scale := get_canvas_transform().get_scale()
 	_popup.position = Vector2(
-		global_position.x + tex_size.x * 0.5 - 50,
-		global_position.y - 36
+		screen_pos.x + tex_size.x * canvas_scale.x * 0.5 - 50,
+		screen_pos.y - 36
 	)
 
-	# Add to the decorations container (sibling of this sprite)
-	get_parent().add_child(_popup)
+	_popup_layer.add_child(_popup)
 	SignalBus.decoration_selected.emit(item_id)
 
 
 func _dismiss_popup() -> void:
-	if _popup != null and is_instance_valid(_popup):
-		_popup.queue_free()
+	if _popup_layer != null and is_instance_valid(_popup_layer):
+		_popup_layer.queue_free()
+	_popup_layer = null
 	_popup = null
 	if _active_popup_owner == self:
 		_active_popup_owner = null
@@ -141,8 +153,12 @@ func _on_rotate() -> void:
 	SignalBus.decoration_rotated.emit(item_id, rotation_degrees)
 
 
+func _on_flip() -> void:
+	flip_h = not flip_h
+	_save_flip()
+
+
 func _on_scale() -> void:
-	# Cycle through scale steps relative to base_item_scale
 	var current_mult := scale.x / base_item_scale
 	var next_mult := SCALE_STEPS[0]
 	for i in range(SCALE_STEPS.size()):
@@ -183,6 +199,15 @@ func _save_rotation() -> void:
 		var deco: Dictionary = SaveManager.decorations[i]
 		if deco.get("item_id", "") == item_id:
 			deco["rotation"] = rotation_degrees
+			SignalBus.save_requested.emit()
+			return
+
+
+func _save_flip() -> void:
+	for i in range(SaveManager.decorations.size()):
+		var deco: Dictionary = SaveManager.decorations[i]
+		if deco.get("item_id", "") == item_id:
+			deco["flip_h"] = flip_h
 			SignalBus.save_requested.emit()
 			return
 

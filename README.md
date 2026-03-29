@@ -1,14 +1,12 @@
 # Projectwork — Mini Cozy Room
 
-> **⚠️ ATTENZIONE COLLEGHI: Work in Progress — Semplificazione in Corso**
-> Ciao a tutti! Vi ricordo che il progetto è un work in progress.
-> - **Documentazione:** Abbiamo tutta la documentazione necessaria all'interno delle cartelle `v1/study` e `v1/guide`. Dobbiamo tutti leggere e mantenere aggiornati questi documenti man mano che proseguiamo con i lavori.
-> - **Semplificazione Codebase:** Stiamo attivamente lavorando per rendere il codice meno avanzato e più accessibile, **senza perdere funzionalità**. Alcuni sistemi nel codebase sono **placeholder** o **over-engineered** rispetto alle necessità reali del gioco. Se trovate qualcosa di ridondante o troppo complesso, è probabilmente intenzionale e in fase di revisione. Consultate la sezione [Stato dei Sistemi](#stato-dei-sistemi) qui sotto.
-> - **Eventuali Errori:** Potrebbero esserci dei lievi errori al momento perché il codice generato automaticamente non è sempre perfetto. Tuttavia, abbiamo guide per correggere tutto e ottimi consigli per il lavoro futuro.
-> - **Struttura Repository:** Il repository è ora ben strutturato, più facile su cui lavorare e organizzato appositamente per lavorare in team con voi.
-> - **Branch Renan:** Il branch *Renan* contiene già tutto ciò che potete trovare nel branch *main* più piccolo.
+> **Work in Progress — Fase 4 (Supabase) in preparazione**
+> Il progetto e' in sviluppo attivo. Il sistema account locale (username + password) e' funzionante.
+> Prossimo passo: integrazione Supabase per cloud sync cross-device.
+> - **Documentazione:** Tutta la documentazione e' nelle cartelle `v1/study` e `v1/guide`.
+> - **Branch Renan:** Contiene tutto cio' che trovate nel branch *main* piu' le ultime modifiche.
 
-Desktop companion 2D realizzato con **Godot 4.5** (GDScript, GL Compatibility renderer).
+Desktop companion 2D realizzato con **Godot 4.6** (GDScript, GL Compatibility renderer).
 
 Un ambiente digitale rilassante che combina stanze pixel art personalizzabili, musica lo-fi
 e un personaggio interattivo. Pensato per restare aperto in background durante studio o lavoro.
@@ -19,18 +17,15 @@ e un personaggio interattivo. Pensato per restare aperto in background durante s
 
 ```bash
 # 1. Clona il repository
-git clone https://github.com/ZroGP/Projectwork-IFTS.git
-cd Projectwork-IFTS
+git clone https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private.git
+cd Projectwork-IFTS-Private
 
-# 2. Checkout del branch di sviluppo
-git checkout Renan
-
-# 3. Apri il progetto in Godot Engine 4.5
+# 2. Apri il progetto in Godot Engine 4.6
 #    Import -> seleziona v1/project.godot -> Play (F5)
 ```
 
 > **Nota:** Il gioco funziona completamente offline con JSON + SQLite.
-> SupabaseClient e' stato rimosso (marzo 2026).
+> Integrazione Supabase per cloud sync prevista nella Fase 4.
 
 ## Struttura Repository
 
@@ -40,11 +35,11 @@ git checkout Renan
 │   ├── ci.yml             # gdlint + gdformat (solo lint)
 │   └── build.yml          # Export Windows (.exe) + HTML5
 ├── v1/                    # Codice sorgente del progetto Godot
-│   ├── addons/            # Plugin (godot-sqlite v4.7)
+│   ├── addons/            # Plugin (godot-sqlite v4.7, virtual_joystick)
 │   ├── assets/            # 1400+ asset (sprite, audio, UI, sfondi)
 │   ├── data/              # Cataloghi JSON + schema SQL
-│   ├── scenes/            # 8 scene Godot (.tscn)
-│   ├── scripts/           # 21 script GDScript
+│   ├── scenes/            # Scene Godot (.tscn)
+│   ├── scripts/           # Script GDScript
 │   └── tests/             # Test unitari (attualmente vuota)
 └── README.md              # Questo file
 ```
@@ -54,33 +49,38 @@ git checkout Renan
 | Documento | Percorso | Contenuto |
 |-----------|----------|-----------|
 | Documentazione Tecnica | [v1/README.md](v1/README.md) | Architettura, autoload, scene tree, contenuti, sviluppo |
-| Schema Database | [v1/data/README.md](v1/data/README.md) | JSON/SQLite, 7 tabelle, migrazioni |
-| Plugin e Addon | [v1/addons/README.md](v1/addons/README.md) | godot-sqlite GDExtension v4.7, piattaforme supportate |
+| Schema Database | [v1/data/README.md](v1/data/README.md) | JSON/SQLite, tabelle, migrazioni |
+| Plugin e Addon | [v1/addons/README.md](v1/addons/README.md) | godot-sqlite GDExtension v4.7, virtual joystick |
 | Asset Grafici e Audio | [v1/assets/README.md](v1/assets/README.md) | 1.422 file: sprite, audio, sfondi, UI, licenze |
-| Scene Godot | [v1/scenes/README.md](v1/scenes/README.md) | 8 scene .tscn, struttura nodi, flusso tra scene |
-| Script GDScript | [v1/scripts/README.md](v1/scripts/README.md) | 21 script, autoload, 20 segnali, moduli |
-| Test Unitari | [v1/tests/README.md](v1/tests/README.md) | Attualmente vuota (test rimossi, GdUnit4 non installato) |
+| Scene Godot | [v1/scenes/README.md](v1/scenes/README.md) | Scene .tscn, struttura nodi, flusso tra scene |
+| Script GDScript | [v1/scripts/README.md](v1/scripts/README.md) | Script, autoload, segnali, moduli |
+| Test Unitari | [v1/tests/README.md](v1/tests/README.md) | Attualmente vuota (GdUnit4 non installato) |
 
 ## Stato dei Sistemi
 
-> **Nota per il team:** Il codebase attuale contiene sistemi avanzati che sono stati sviluppati
-> come base solida ma che possono essere **semplificati o sostituiti** senza impattare
-> il funzionamento del gioco. Ecco la situazione attuale:
-
 | Sistema | File | Stato | Note |
 |---------|------|-------|------|
-| ~~**SupabaseClient**~~ | ~~`supabase_client.gd`~~ | **RIMOSSO** (27 Marzo 2026) | Client REST rimosso — 515 righe di codice morto (zero chiamanti). |
-| **LocalDatabase** | `local_database.gd` | Over-engineered / Semplificabile | 7 tabelle SQLite. Il salvataggio JSON tramite SaveManager e' sufficiente per tutte le funzionalita' attuali. Puo' essere ridotto a 2-3 tabelle o rimosso. |
-| **SaveManager** | `save_manager.gd` | Funzionante / Semplificabile | Sistema di migrazione v1→v2→v3→v4, backup, auto-save. Il sistema di migrazione versioni e' eccessivo per lo stato attuale — un singolo formato senza backward compatibility basterebbe. |
-| **Logger** | `logger.gd` | Funzionante / Opzionale | Log strutturati JSON Lines con rotazione file, livello enterprise. Funziona bene ma e' molto piu' di quanto serve per un gioco cozy. |
-| **PerformanceManager** | `performance_manager.gd` | Funzionante / Essenziale | FPS cap dinamico. Leggero e utile, da mantenere. |
-| **AudioManager** | `audio_manager.gd` | Funzionante / Essenziale | Musica auto-play con crossfade. Da mantenere. |
-| **GameManager** | `game_manager.gd` | Funzionante / Essenziale | Caricamento cataloghi JSON. Da mantenere. |
-| **SignalBus** | `signal_bus.gd` | Funzionante / Essenziale | Bus eventi globale. Pattern architetturale fondamentale, da mantenere. |
+| **AuthManager** | `auth_manager.gd` | Funzionante | Autenticazione locale: guest, username+password. Stubs per Supabase (Fase 4). |
+| **LocalDatabase** | `local_database.gd` | Funzionante | 9 tabelle SQLite (accounts con password_hash, characters, rooms, sync_queue, ecc.) |
+| **SaveManager** | `save_manager.gd` | Funzionante | JSON v5.0.0, migrazione automatica v1→v5, auto-save 60s, backup |
+| **SignalBus** | `signal_bus.gd` | Funzionante / Essenziale | 31 segnali: room, character, audio, decoration, UI, save, auth, sync |
+| **GameManager** | `game_manager.gd` | Funzionante / Essenziale | Caricamento cataloghi JSON, stato di gioco |
+| **AudioManager** | `audio_manager.gd` | Funzionante / Essenziale | Musica auto-play con crossfade |
+| **PerformanceManager** | `performance_manager.gd` | Funzionante / Essenziale | FPS cap dinamico (60/15) |
+| **Logger** | `logger.gd` | Funzionante / Opzionale | Log strutturati JSON Lines |
 
-**In sintesi:** I sistemi contrassegnati come "Placeholder" o "Over-engineered" funzionano correttamente
-ma sono piu' complessi del necessario. Se durante il vostro lavoro li trovate ridondanti o confusi,
-potete proporre semplificazioni. L'obiettivo e' mantenere il codice accessibile a tutto il team.
+## Funzionalita' Implementate
+
+- Stanza pixel art personalizzabile con 3 temi colore
+- 69 decorazioni in 11 categorie (drag-and-drop)
+- Interazione decorazioni: click → popup con Rotate/Flip/Scale (+ Delete in edit mode)
+- Decorazioni impilabili e con 7 livelli di scala (0.25x → 3x)
+- Personaggio controllabile (WASD/frecce) con animazioni 8 direzioni
+- Sistema account locale: guest mode, registrazione username+password
+- Profilo utente con gestione account (elimina personaggio/account)
+- Musica lo-fi auto-play con crossfade
+- Salvataggio automatico JSON + SQLite
+- Auth screen con login/registrazione/guest all'avvio
 
 ## Contributori
 

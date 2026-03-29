@@ -1,10 +1,8 @@
 # Mini Cozy Room — Documentazione Tecnica
 
-> **⚠️ Nota: Semplificazione Completata (Marzo 2026)**
-> Il codebase e' stato semplificato: SupabaseClient rimosso (codice morto, zero chiamanti),
-> CI/CD ridotta a un solo job lint. Il gioco funziona esclusivamente offline con JSON + SQLite.
-> Alcuni sistemi restano piu' complessi del necessario (Logger, SaveManager migrations) ma
-> funzionano e non richiedono modifiche.
+> **Work in Progress — Fase 4 (Supabase) in preparazione**
+> Il sistema account locale (username + password) e' funzionante.
+> Prossimo passo: integrazione Supabase per cloud sync cross-device.
 
 ## Descrizione
 
@@ -12,7 +10,7 @@ Mini Cozy Room e un desktop companion 2D che combina stanze pixel art
 personalizzabili, musica lo-fi e un personaggio interattivo. Pensato per restare
 aperto in background come ambiente digitale rilassante.
 
-**Tecnologie**: Godot 4.5, GDScript, GL Compatibility renderer, SQLite (godot-sqlite v4.7)
+**Tecnologie**: Godot 4.6, GDScript, GL Compatibility renderer, SQLite (godot-sqlite v4.7)
 
 **Viewport**: 1280x720, stretch mode `canvas_items`, trasparenza per-pixel abilitata
 
@@ -20,15 +18,15 @@ aperto in background come ambiente digitale rilassante.
 
 ## Requisiti
 
-- **Godot Engine 4.5** (GL Compatibility renderer)
+- **Godot Engine 4.6** (GL Compatibility renderer)
 - **Git** (per clonare il repository)
 
 ## Architettura
 
 ### Pattern Principali
 
-- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (20 segnali)
-- **Offline-only**: il salvataggio locale (JSON + SQLite) gestisce tutti i dati
+- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (31 segnali)
+- **Account locale**: username + password con SHA-256, guest mode disponibile
 - **Catalog-driven**: contenuti (stanze, decorazioni, personaggi, tracce) caricati da JSON
 - **Desktop companion**: FPS cap dinamico (60 fps in focus, 15 fps in background)
 
@@ -38,13 +36,14 @@ Caricati automaticamente in questo ordine da `project.godot`:
 
 | # | Autoload | Script | Responsabilita |
 |---|----------|--------|----------------|
-| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (20 segnali, disaccoppiamento moduli) |
+| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (31 segnali, disaccoppiamento moduli) |
 | 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID |
-| 3 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON |
-| 4 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v4.0.0 (auto-save 60s) |
-| 5 | `LocalDatabase` | local_database.gd | Database SQLite locale (WAL mode, 7 tabelle) |
-| 6 | `AudioManager` | audio_manager.gd | Riproduzione musica lo-fi con crossfade e import esterno |
-| 7 | `PerformanceManager` | performance_manager.gd | FPS cap dinamico (60/15) |
+| 3 | `LocalDatabase` | local_database.gd | Database SQLite locale (WAL mode, 9 tabelle) |
+| 4 | `AuthManager` | auth_manager.gd | Autenticazione locale: guest, username+password |
+| 5 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON |
+| 6 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v5.0.0 (auto-save 60s) |
+| 7 | `AudioManager` | audio_manager.gd | Riproduzione musica lo-fi con crossfade e import esterno |
+| 8 | `PerformanceManager` | performance_manager.gd | FPS cap dinamico (60/15) |
 
 ### Scene Tree — Stanza di Gioco
 
@@ -55,16 +54,21 @@ Main (Node2D)
 ├── Baseboard (ColorRect, 2px divisore)
 ├── Room (Node2D, room_base.gd)
 │   ├── Decorations (Node2D)
-│   ├── Character (CharacterBody2D, istanza da male-old-character.tscn)
+│   ├── Character (CharacterBody2D, collision layers 1+2)
 │   └── RoomBounds (StaticBody2D, CollisionPolygon2D isometrico)
 ├── UILayer (CanvasLayer, layer=10)
 │   ├── DropZone (Control, full rect)
 │   └── HUD (HBoxContainer)
 │       ├── DecoButton
-│       └── SettingsButton
+│       ├── SettingsButton
+│       └── ProfileButton
 ├── PanelManager (Node, creato programmaticamente)
 └── AudioStreams (Node)
 ```
+
+Nota: Le decorazioni piazzate hanno un popup su CanvasLayer dedicato (layer 100)
+con bottoni R (Rotate), F (Flip), S (Scale), X (Delete). Le collisioni decorazioni
+usano layer 2 (separato da room walls su layer 1).
 
 ### Scene Tree — Menu Principale
 
@@ -73,6 +77,7 @@ MainMenu (Node2D)
 ├── ForestBackground (Node2D, window_background.gd)
 ├── MenuCharacter (Node2D, menu_character.gd)
 ├── LoadingScreen (ColorRect, fade in/out)
+├── AuthScreen (Control, overlay z_index=100, auth_screen.gd)
 └── UILayer (CanvasLayer)
     └── ButtonContainer (VBoxContainer)
         ├── NuovaPartitaBtn
@@ -91,33 +96,34 @@ v1/
 │   ├── audio/music/           #   2 tracce Mixkit (WAV)
 │   ├── backgrounds/           #   Sfondi foresta (Free Pixel Art Forest)
 │   ├── charachters/           #   3 set sprite (female, male, old) — solo old attivo
-│   ├── menu/                  #   Asset menu (sfondo, sprite pad)
+│   ├── menu/                  #   Asset menu (sfondo, bottoni, loading, UI)
 │   ├── pets/                  #   Animali (Void Cat)
-│   ├── room/                  #   Elementi stanza (porte, finestre)
+│   ├── room/                  #   Elementi stanza (porte, finestre, letti, mess)
 │   ├── sprites/               #   Decorazioni + stanze
 │   │   ├── decorations/       #     Indoor Plants Pack (SoppyCraft)
 │   │   └── rooms/             #     Isometric Kitchen + Room Builder
 │   └── ui/                    #   Kenney Pixel UI Pack + tema cozy
 ├── data/                      # Cataloghi JSON + schema SQL
 │   ├── characters.json        #   1 personaggio giocabile (male_old)
-│   ├── decorations.json       #   58 decorazioni in 11 categorie
+│   ├── decorations.json       #   69 decorazioni in 11 categorie
 │   ├── rooms.json             #   1 stanza con 3 temi colore
 │   ├── tracks.json            #   2 tracce musicali
 │   └── README.md              #   Documentazione schema database
-├── scenes/                    # 8 scene Godot (.tscn)
+├── scenes/                    # Scene Godot (.tscn)
 │   ├── main/                  #   main.tscn (stanza di gioco)
 │   ├── menu/                  #   main_menu.tscn (menu principale)
-│   ├── ui/                    #   2 pannelli (deco, settings)
+│   ├── ui/                    #   3 pannelli (deco, settings, profile)
 │   ├── male-character.tscn    #   Scena personaggio maschile old (CharacterBody2D)
 │   ├── female-character.tscn  #   Scena personaggio femminile (non attiva)
 │   └── cat_void.tscn          #   Animale domestico
-├── scripts/                   # 21 script GDScript
-│   ├── autoload/              #   6 singleton (signal_bus, logger, game_manager, audio_manager, ...)
-│   ├── menu/                  #   Menu principale + personaggio walk-in
+├── scripts/                   # 24 script GDScript (+ 3 reference)
+│   ├── autoload/              #   7 singleton (signal_bus, logger, local_database, auth_manager, ...)
+│   ├── menu/                  #   Menu principale, auth screen, personaggio walk-in
 │   ├── rooms/                 #   Stanza, decorazioni, sfondo, movimento personaggio
 │   ├── systems/               #   Performance manager
-│   ├── ui/                    #   Panel manager + 2 pannelli + drop zone
+│   ├── ui/                    #   Panel manager + 3 pannelli + drop zone
 │   ├── utils/                 #   Constants, helpers
+│   ├── _reference/            #   Script ZroGP (solo riferimento, non attivi)
 │   └── main.gd                #   Controller scena principale
 └── tests/unit/                # Test unitari (attualmente vuota — GdUnit4 non installato)
 ```
@@ -128,9 +134,9 @@ v1/
 |----------|--------|-------------|
 | `addons/` | [README](addons/README.md) | Plugin godot-sqlite GDExtension v4.7, piattaforme binarie |
 | `assets/` | [README](assets/README.md) | 1.422 asset: sprite, audio, sfondi, UI, licenze |
-| `data/` | [README](data/README.md) | Schema database JSON/SQLite, 7 tabelle |
-| `scenes/` | [README](scenes/README.md) | 8 scene Godot (.tscn), struttura nodi, flusso |
-| `scripts/` | [README](scripts/README.md) | 21 script GDScript, autoload, 20 segnali, moduli |
+| `data/` | [README](data/README.md) | Schema database JSON/SQLite, 9 tabelle |
+| `scenes/` | [README](scenes/README.md) | Scene Godot (.tscn), struttura nodi, flusso |
+| `scripts/` | [README](scripts/README.md) | 24 script GDScript, autoload, 31 segnali, moduli |
 | `tests/` | [README](tests/README.md) | Attualmente vuota (test rimossi, GdUnit4 non installato) |
 
 ## Contenuti di Gioco
@@ -146,21 +152,24 @@ definite come palette nei temi. L'utente puo' scegliere tra 3 temi colore per
 personalizzare l'ambiente. Gli oggetti vengono piazzati tramite drag-and-drop
 dal pannello Decorazioni in modalita' creativa libera.
 
-### Decorazioni (58 oggetti, 11 categorie)
+### Decorazioni (69 oggetti, 11 categorie)
 
 | Categoria | Oggetti | Scala | Posizionamento |
 |-----------|---------|-------|----------------|
-| Beds | 4 | 3x | floor |
+| Beds | 12 | 3x | floor |
 | Desks | 4 | 3x | floor |
 | Chairs | 4 | 3x | floor |
 | Wardrobes | 4 | 3x | floor |
 | Windows | 2 | 3x | wall |
 | Wall Decor | 1 | 3x | wall |
-| Potted Plants | 14 | 6x | floor |
+| Potted Plants | 15 | 6x | floor |
 | Plants | 14 | 6x | any |
-| Accessories | 5 | 6x | floor |
+| Accessories | 8 | 6x | floor |
 | Room Elements | 4 | 3x | floor |
 | Pets | 1 | 4x | floor |
+
+Interazione decorazioni piazzate: click → popup con Rotate (90 gradi), Flip (specchia),
+Scale (7 livelli: 0.25x → 3x), Delete (in edit mode). Le decorazioni sono impilabili.
 
 ### Personaggio
 
@@ -187,15 +196,16 @@ per la musica (nessun pulsante Music nel HUD). Le tracce si alternano in shuffle
 
 ### Schema Locale (JSON)
 
-Il file `user://save_data.json` (v4.0.0) contiene:
+Il file `user://save_data.json` (v5.0.0) contiene:
 
+- `account` — auth_uid, account_id
 - `settings` — lingua, volume, modalita display
-- `room` — stanza corrente, tema, decorazioni piazzate
+- `room` — stanza corrente, tema, decorazioni piazzate (con flip_h, rotation, item_scale)
 - `character` — ID personaggio, outfit, dati personalizzazione
 - `music` — traccia corrente, modalita playlist, ambience attive
 - `inventory` — coins, capacita, oggetti posseduti
 
-Migrazione automatica: v1.0.0 → v2.0.0 → v3.0.0 → v4.0.0
+Migrazione automatica: v1.0.0 → v2.0.0 → v3.0.0 → v4.0.0 → v5.0.0
 
 ### Database Locale (SQLite)
 
@@ -214,7 +224,7 @@ La pipeline GitHub Actions e definita in `.github/workflows/`:
 | `ci.yml` | Push su `Renan`, PR su `main` | Lint (gdlint + gdformat) |
 | `build.yml` | Push su `main`, tag `v*` | Export Windows (.exe), Export HTML5 |
 
-Container di build: `barichello/godot-ci:4.5`
+Container di build: `barichello/godot-ci:4.6`
 
 ## Sviluppo
 
@@ -251,47 +261,32 @@ Container di build: `barichello/godot-ci:4.5`
 | 5 | Catalogo Decorazioni e Polish UI | In Corso |
 | 6 | Polish e Rilascio | Pianificata |
 
-## Stato Semplificazione (aggiornato 29 Marzo 2026)
+## Sistema Account
 
-Il progetto e' stato semplificato rimuovendo il codice non necessario:
+Il gioco supporta autenticazione locale con username + password (SHA-256 hash con salt).
 
-- **SupabaseClient rimosso** — 515 righe di codice morto (zero chiamanti nel codebase)
-- **CI/CD semplificata** — da 3 pipeline (lint + test + security + database) a 1 solo job lint
-- **EnvLoader rimosso** — usato solo da SupabaseClient
-- **Segnali auth rimossi** — 3 segnali orfani eliminati da SignalBus (restano 20)
-- **shop_panel e music_panel rimossi** — funzionalita' non necessarie
-- **Test rimossi** — dipendevano da GdUnit4 (non installato)
-- **Asset cucina rimossi** — kitchen_appliances, kitchen_furniture, kitchen_accessories eliminati
-- **male_black_shirt rimosso** — dal catalogo characters.json (personaggio incompleto)
-- **Schema DB corretto** — C3 (PK characters) e C4 (normalizzazione inventario) completati
+| Modalita | Descrizione |
+|----------|-------------|
+| **Guest** | Gioca senza account, dati salvati localmente |
+| **Registrato** | Username + password, dati persistenti nel DB locale |
 
-### Sistemi ancora piu' complessi del necessario (ma funzionanti)
+Flusso: Auth Screen all'avvio → Login / Registrazione / Guest → Gameplay.
+Il profilo utente e' accessibile dal bottone Profilo nell'HUD (gestione account, elimina personaggio/account).
 
-| Sistema | Nota |
-|---------|------|
-| **Logger** (220 righe) | Log strutturati JSONL con rotazione file. Funziona, non richiede modifiche. |
-| **SaveManager** (327 righe) | Catena migrazione v1→v4. Funziona, non richiede modifiche. |
+### Collision Layers
 
-> **Per i colleghi:** Concentratevi sulle vostre task principali.
-> I sistemi complessi funzionano e non vanno toccati.
-
-## Problemi Noti
-
-| # | Problema | Dettaglio |
-|---|---------|-----------|
-| 1 | **Confini movimento personaggio** | Il personaggio puo' ancora uscire dai limiti del pavimento isometrico. Il CollisionPolygon2D (build_mode SEGMENTS) necessita di calibrazione/verifica per bloccare correttamente il CharacterBody2D all'interno della forma del pavimento. |
-| 2 | **Popup decorazioni piazzate** | Cliccando su una decorazione piazzata nella stanza, non appare nessun popup per eliminare o ruotare l'oggetto. Attualmente il sistema supporta solo right-click per rimuovere. |
+| Layer | Uso |
+|-------|-----|
+| 1 | Room walls (StaticBody2D confini stanza) |
+| 2 | Decorazioni (StaticBody2D, disabilitate in edit mode per il personaggio) |
 
 ## Prossimi Sviluppi
 
-| # | Task | Assegnato a | Priorita | Descrizione |
-|---|------|-------------|----------|-------------|
-| 1 | Calibrazione confini movimento | Mohamed / Giovanni | Alta | Calibrare i punti del CollisionPolygon2D in Godot Editor per seguire la forma del pavimento isometrico |
-| 2 | Popup interazione decorazioni | Mohamed / Giovanni | Media | Click su decorazione piazzata → popup con pulsanti Elimina / Ruota / Ridimensiona |
-| 3 | Rotazione decorazioni | Mohamed / Giovanni | Media | Aggiungere rotazione (90 gradi) alle decorazioni piazzate |
-| 4 | Ridimensionamento decorazioni | Mohamed / Giovanni | Media | Aggiungere scaling alle decorazioni piazzate |
-
-Guida dettagliata per Mohamed e Giovanni: [GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md)
+| # | Task | Priorita | Descrizione |
+|---|------|----------|-------------|
+| 1 | Integrazione Supabase (Fase 4) | Alta | Auth online, cloud sync cross-device |
+| 2 | Cloud Sync (Fase 5) | Alta | Sincronizzazione bidirezionale con conflict resolution |
+| 3 | Calibrazione confini movimento | Media | Calibrare CollisionPolygon2D per il pavimento isometrico |
 
 ## Asset e Licenze
 

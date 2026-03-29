@@ -1,8 +1,14 @@
-## AuthScreen — Full-screen overlay for first-launch welcome.
-## Phase 2: guest-only. Phase 4 will add login/register forms.
+## AuthScreen — Full-screen overlay for login, register, or guest play.
 extends Control
 
 signal auth_completed
+
+var _username_input: LineEdit = null
+var _password_input: LineEdit = null
+var _confirm_input: LineEdit = null
+var _error_label: Label = null
+var _login_form: VBoxContainer = null
+var _register_form: VBoxContainer = null
 
 
 func _ready() -> void:
@@ -21,7 +27,7 @@ func _build_ui() -> void:
 	add_child(center)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(300, 0)
+	panel.custom_minimum_size = Vector2(320, 0)
 	center.add_child(panel)
 
 	var margin := MarginContainer.new()
@@ -32,7 +38,7 @@ func _build_ui() -> void:
 	panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 12)
 	margin.add_child(vbox)
 
 	# Title
@@ -50,29 +56,157 @@ func _build_ui() -> void:
 	subtitle.modulate.a = 0.6
 	vbox.add_child(subtitle)
 
-	# Spacer
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8)
-	vbox.add_child(spacer)
+	# Error label (hidden by default)
+	_error_label = Label.new()
+	_error_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_error_label.add_theme_font_size_override("font_size", 11)
+	_error_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+	_error_label.visible = false
+	_error_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(_error_label)
 
-	# Play button (primary action)
-	var play_btn := Button.new()
-	play_btn.text = "Play"
-	play_btn.custom_minimum_size = Vector2(0, 48)
-	play_btn.pressed.connect(_on_play_pressed)
-	vbox.add_child(play_btn)
+	# Login form
+	_login_form = VBoxContainer.new()
+	_login_form.add_theme_constant_override("separation", 8)
+	vbox.add_child(_login_form)
+	_build_login_form(_login_form)
 
-	# Future: login hint (disabled until Supabase)
-	var login_hint := Label.new()
-	login_hint.text = "Account sync coming soon"
-	login_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	login_hint.add_theme_font_size_override("font_size", 10)
-	login_hint.modulate.a = 0.35
-	vbox.add_child(login_hint)
+	# Register form (hidden by default)
+	_register_form = VBoxContainer.new()
+	_register_form.add_theme_constant_override("separation", 8)
+	_register_form.visible = false
+	vbox.add_child(_register_form)
+	_build_register_form(_register_form)
+
+	# Separator
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	# Guest play button
+	var guest_btn := Button.new()
+	guest_btn.text = "Play as Guest"
+	guest_btn.custom_minimum_size = Vector2(0, 40)
+	guest_btn.pressed.connect(_on_guest_pressed)
+	vbox.add_child(guest_btn)
 
 
-func _on_play_pressed() -> void:
+func _build_login_form(container: VBoxContainer) -> void:
+	_username_input = LineEdit.new()
+	_username_input.placeholder_text = "Username"
+	_username_input.custom_minimum_size = Vector2(0, 36)
+	container.add_child(_username_input)
+
+	_password_input = LineEdit.new()
+	_password_input.placeholder_text = "Password"
+	_password_input.secret = true
+	_password_input.custom_minimum_size = Vector2(0, 36)
+	_password_input.text_submitted.connect(func(_t: String) -> void: _on_login_pressed())
+	container.add_child(_password_input)
+
+	var login_btn := Button.new()
+	login_btn.text = "Login"
+	login_btn.custom_minimum_size = Vector2(0, 42)
+	login_btn.pressed.connect(_on_login_pressed)
+	container.add_child(login_btn)
+
+	var switch_btn := Button.new()
+	switch_btn.text = "Don't have an account? Register"
+	switch_btn.flat = true
+	switch_btn.add_theme_font_size_override("font_size", 11)
+	switch_btn.pressed.connect(_show_register)
+	container.add_child(switch_btn)
+
+
+func _build_register_form(container: VBoxContainer) -> void:
+	var reg_user := LineEdit.new()
+	reg_user.placeholder_text = "Choose a username"
+	reg_user.custom_minimum_size = Vector2(0, 36)
+	reg_user.name = "RegUsername"
+	container.add_child(reg_user)
+
+	var reg_pass := LineEdit.new()
+	reg_pass.placeholder_text = "Choose a password"
+	reg_pass.secret = true
+	reg_pass.custom_minimum_size = Vector2(0, 36)
+	reg_pass.name = "RegPassword"
+	container.add_child(reg_pass)
+
+	_confirm_input = LineEdit.new()
+	_confirm_input.placeholder_text = "Confirm password"
+	_confirm_input.secret = true
+	_confirm_input.custom_minimum_size = Vector2(0, 36)
+	_confirm_input.text_submitted.connect(func(_t: String) -> void: _on_register_pressed())
+	container.add_child(_confirm_input)
+
+	var reg_btn := Button.new()
+	reg_btn.text = "Register"
+	reg_btn.custom_minimum_size = Vector2(0, 42)
+	reg_btn.pressed.connect(_on_register_pressed)
+	container.add_child(reg_btn)
+
+	var switch_btn := Button.new()
+	switch_btn.text = "Already have an account? Login"
+	switch_btn.flat = true
+	switch_btn.add_theme_font_size_override("font_size", 11)
+	switch_btn.pressed.connect(_show_login)
+	container.add_child(switch_btn)
+
+
+func _show_register() -> void:
+	_login_form.visible = false
+	_register_form.visible = true
+	_error_label.visible = false
+
+
+func _show_login() -> void:
+	_register_form.visible = false
+	_login_form.visible = true
+	_error_label.visible = false
+
+
+func _on_login_pressed() -> void:
+	var username := _username_input.text.strip_edges()
+	var password := _password_input.text
+	if username.is_empty() or password.is_empty():
+		_show_error("Please enter username and password")
+		return
+	var result := AuthManager.login(username, password)
+	if result.has("error"):
+		_show_error(result["error"])
+		return
+	_finish()
+
+
+func _on_register_pressed() -> void:
+	var reg_user: LineEdit = _register_form.get_node("RegUsername")
+	var reg_pass: LineEdit = _register_form.get_node("RegPassword")
+	var username := reg_user.text.strip_edges()
+	var password := reg_pass.text
+	var confirm := _confirm_input.text
+	if username.is_empty() or password.is_empty():
+		_show_error("Please fill in all fields")
+		return
+	if password != confirm:
+		_show_error("Passwords don't match")
+		return
+	var result := AuthManager.register(username, password)
+	if result.has("error"):
+		_show_error(result["error"])
+		return
+	_finish()
+
+
+func _on_guest_pressed() -> void:
 	AuthManager.play_as_guest()
+	_finish()
+
+
+func _show_error(msg: String) -> void:
+	_error_label.text = msg
+	_error_label.visible = true
+
+
+func _finish() -> void:
 	var tween := create_tween()
 	tween.tween_property(
 		self, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION

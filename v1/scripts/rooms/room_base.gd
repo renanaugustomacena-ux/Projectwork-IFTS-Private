@@ -53,6 +53,7 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 		"position": Helpers.vec2_to_array(pos),
 		"item_scale": item_scale,
 		"rotation": 0.0,
+		"flip_h": false,
 	})
 	SignalBus.save_requested.emit()
 
@@ -69,14 +70,15 @@ func _reload_decorations() -> void:
 		var pos: Array = deco_data.get("position", [0, 0])
 		var item_scale: float = deco_data.get("item_scale", 1.0)
 		var rot: float = deco_data.get("rotation", 0.0)
+		var flipped: bool = deco_data.get("flip_h", false)
 		_spawn_decoration(
-			item_id, Helpers.array_to_vec2(pos), item_scale, rot
+			item_id, Helpers.array_to_vec2(pos), item_scale, rot, flipped
 		)
 
 
 func _spawn_decoration(
 	item_id: String, pos: Vector2, item_scale: float,
-	rot: float = 0.0
+	rot: float = 0.0, flipped: bool = false
 ) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
@@ -96,6 +98,7 @@ func _spawn_decoration(
 	sprite.scale = Vector2(item_scale, item_scale)
 	sprite.position = pos
 	sprite.rotation_degrees = rot
+	sprite.flip_h = flipped
 	sprite.name = item_id
 
 	if DecorationScript:
@@ -103,8 +106,11 @@ func _spawn_decoration(
 		sprite.item_id = item_id
 		sprite.base_item_scale = item_scale
 
-	# Add collision so the character cannot walk through decorations
+	# Add collision so the character cannot walk through decorations.
+	# Layer 2 = decorations (separate from room walls on layer 1).
 	var body := StaticBody2D.new()
+	body.collision_layer = 2
+	body.collision_mask = 0
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
 	rect.size = texture.get_size()
