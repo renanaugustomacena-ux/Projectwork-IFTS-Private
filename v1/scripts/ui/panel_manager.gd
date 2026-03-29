@@ -6,6 +6,7 @@ extends Node
 const PANEL_SCENES: Dictionary = {
 	"deco": "res://scenes/ui/deco_panel.tscn",
 	"settings": "res://scenes/ui/settings_panel.tscn",
+	"profile": "res://scenes/ui/profile_panel.tscn",
 }
 
 var _ui_layer: CanvasLayer = null

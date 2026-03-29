@@ -40,6 +40,11 @@ const FPS_UNFOCUSED := 15
 const PANEL_TWEEN_DURATION := 0.3
 const FADE_DURATION := 0.5
 
+# Auth
+const AUTH_MIN_PASSWORD_LENGTH := 6
+const AUTH_GUEST_UID := "local"
+const AUTH_GUEST_EMAIL := "offline@local"
+
 # Viewport resolution
 const VIEWPORT_WIDTH := 1280
 const VIEWPORT_HEIGHT := 720

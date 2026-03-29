@@ -40,3 +40,14 @@ signal save_to_database_requested(data: Dictionary)
 
 # Settings signals
 signal language_changed(lang_code: String)
+
+# Auth lifecycle
+signal auth_state_changed(state: int)
+signal auth_error(message: String)
+signal account_created(account_id: int)
+signal account_deleted
+signal character_deleted
+
+# Cloud sync
+signal sync_started
+signal sync_completed(success: bool)
