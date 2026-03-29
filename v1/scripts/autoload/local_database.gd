@@ -34,10 +34,15 @@ func is_open() -> bool:
 func _on_save_requested(data: Dictionary) -> void:
 	if not _is_open:
 		return
-	var account := get_account_by_auth_uid("local")
+	var auth_uid: String = Constants.AUTH_GUEST_UID
+	if AuthManager.current_auth_uid != "":
+		auth_uid = AuthManager.current_auth_uid
+	var account := get_account_by_auth_uid(auth_uid)
 	var account_id: int
 	if account.is_empty():
-		account_id = upsert_account("local", "offline@local", "")
+		account_id = upsert_account(
+			auth_uid, Constants.AUTH_GUEST_EMAIL, ""
+		)
 	else:
 		account_id = account.get("account_id", -1)
 	if account_id < 0:
@@ -87,8 +92,10 @@ func _create_tables() -> void:
 			+ "data_di_iscrizione TEXT NOT NULL DEFAULT (date('now')),"
 			+ "data_di_nascita TEXT NOT NULL DEFAULT '',"
 			+ "mail TEXT NOT NULL DEFAULT '',"
+			+ "display_name TEXT DEFAULT '',"
 			+ "coins INTEGER DEFAULT 0,"
-			+ "inventario_capacita INTEGER DEFAULT 50"
+			+ "inventario_capacita INTEGER DEFAULT 50,"
+			+ "updated_at TEXT DEFAULT (datetime('now'))"
 			+ ");"
 		)
 	)
@@ -145,20 +152,59 @@ func _create_tables() -> void:
 		)
 	)
 
+	_execute(
+		(
+			"CREATE TABLE IF NOT EXISTS rooms ("
+			+ "room_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "character_id INTEGER NOT NULL REFERENCES characters(character_id) ON DELETE CASCADE,"
+			+ "room_type TEXT NOT NULL DEFAULT 'cozy_studio',"
+			+ "theme TEXT NOT NULL DEFAULT 'modern',"
+			+ "decorations TEXT DEFAULT '[]',"
+			+ "updated_at TEXT DEFAULT (datetime('now'))"
+			+ ");"
+		)
+	)
+
+	_execute(
+		(
+			"CREATE TABLE IF NOT EXISTS sync_queue ("
+			+ "queue_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "table_name TEXT NOT NULL,"
+			+ "operation TEXT NOT NULL,"
+			+ "payload TEXT NOT NULL,"
+			+ "created_at TEXT DEFAULT (datetime('now')),"
+			+ "retry_count INTEGER DEFAULT 0"
+			+ ");"
+		)
+	)
+
 
 func _migrate_schema() -> void:
+	# Migration 1: characters table without character_id column
 	var rows := _select(
 		"SELECT sql FROM sqlite_master WHERE type='table' AND name='characters';", []
 	)
-	if rows.is_empty():
-		return
-	var schema: String = rows[0].get("sql", "")
-	if "character_id" in schema:
-		return
-	AppLogger.info("LocalDatabase", "Migrating database to new schema")
-	_execute("DROP TABLE IF EXISTS characters;")
-	_execute("DROP TABLE IF EXISTS inventario;")
-	_create_tables()
+	if not rows.is_empty():
+		var schema: String = rows[0].get("sql", "")
+		if "character_id" not in schema:
+			AppLogger.info("LocalDatabase", "Migrating characters to new schema")
+			_execute("DROP TABLE IF EXISTS characters;")
+			_execute("DROP TABLE IF EXISTS inventario;")
+			_create_tables()
+
+	# Migration 2: add columns to accounts if missing
+	var acc_rows := _select(
+		"SELECT sql FROM sqlite_master WHERE type='table' AND name='accounts';", []
+	)
+	if not acc_rows.is_empty():
+		var acc_schema: String = acc_rows[0].get("sql", "")
+		if "display_name" not in acc_schema:
+			_execute("ALTER TABLE accounts ADD COLUMN display_name TEXT DEFAULT '';")
+		if "updated_at" not in acc_schema:
+			_execute(
+				"ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT (datetime('now'));"
+			)
+
 	AppLogger.info("LocalDatabase", "Schema migration completed")
 
 
@@ -330,6 +376,111 @@ func get_all_colors() -> Array:
 
 func get_all_categories() -> Array:
 	return _select("SELECT * FROM categoria;", [])
+
+
+# ---- Account: delete + auth_uid update ----
+
+
+func delete_account(account_id: int) -> bool:
+	return _execute_bound(
+		"DELETE FROM accounts WHERE account_id = ?;", [account_id]
+	)
+
+
+func delete_character(account_id: int) -> bool:
+	return _execute_bound(
+		"DELETE FROM characters WHERE account_id = ?;",
+		[account_id]
+	)
+
+
+func update_auth_uid(account_id: int, new_auth_uid: String) -> bool:
+	return _execute_bound(
+		"UPDATE accounts SET auth_uid = ? WHERE account_id = ?;",
+		[new_auth_uid, account_id]
+	)
+
+
+# ---- CRUD: Rooms ----
+
+
+func get_room(character_id: int) -> Dictionary:
+	var rows := _select(
+		"SELECT * FROM rooms WHERE character_id = ?;",
+		[character_id]
+	)
+	if rows.is_empty():
+		return {}
+	return rows[0]
+
+
+func upsert_room(character_id: int, data: Dictionary) -> bool:
+	var existing := get_room(character_id)
+	var decorations_json: String = JSON.stringify(
+		data.get("decorations", [])
+	)
+	if not existing.is_empty():
+		return _execute_bound(
+			(
+				"UPDATE rooms SET room_type = ?, theme = ?,"
+				+ " decorations = ?, updated_at = datetime('now')"
+				+ " WHERE character_id = ?;"
+			),
+			[
+				data.get("room_type", "cozy_studio"),
+				data.get("theme", "modern"),
+				decorations_json,
+				character_id,
+			]
+		)
+	return _execute_bound(
+		(
+			"INSERT INTO rooms"
+			+ " (character_id, room_type, theme, decorations)"
+			+ " VALUES (?, ?, ?, ?);"
+		),
+		[
+			character_id,
+			data.get("room_type", "cozy_studio"),
+			data.get("theme", "modern"),
+			decorations_json,
+		]
+	)
+
+
+func delete_room(character_id: int) -> bool:
+	return _execute_bound(
+		"DELETE FROM rooms WHERE character_id = ?;",
+		[character_id]
+	)
+
+
+# ---- CRUD: Sync Queue ----
+
+
+func enqueue_sync(
+	table_name: String, operation: String, payload: Dictionary
+) -> bool:
+	return _execute_bound(
+		(
+			"INSERT INTO sync_queue"
+			+ " (table_name, operation, payload)"
+			+ " VALUES (?, ?, ?);"
+		),
+		[table_name, operation, JSON.stringify(payload)]
+	)
+
+
+func get_pending_sync() -> Array:
+	return _select(
+		"SELECT * FROM sync_queue ORDER BY created_at ASC;", []
+	)
+
+
+func clear_sync_item(queue_id: int) -> bool:
+	return _execute_bound(
+		"DELETE FROM sync_queue WHERE queue_id = ?;", [queue_id]
+	)
 
 
 # ---- Internal helpers ----

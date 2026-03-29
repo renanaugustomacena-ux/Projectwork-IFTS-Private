@@ -75,6 +75,12 @@ custom_minimum_size = Vector2(200, 44)
 size_flags_horizontal = 4
 text = "Opzioni"
 
+[node name="ProfiloBtn" type="Button" parent="UILayer/ButtonContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 44)
+size_flags_horizontal = 4
+text = "Profilo"
+
 [node name="EsciBtn" type="Button" parent="UILayer/ButtonContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(200, 44)

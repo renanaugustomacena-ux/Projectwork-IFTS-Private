@@ -30,6 +30,7 @@ func _wire_hud_buttons() -> void:
 	var button_map := {
 		"DecoButton": "deco",
 		"SettingsButton": "settings",
+		"ProfileButton": "profile",
 	}
 
 	for button_name: String in button_map:
