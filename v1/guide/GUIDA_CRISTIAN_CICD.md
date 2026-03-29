@@ -1,6 +1,6 @@
 # Guida Operativa — Cristian Marino (CI/CD & Documentation Lead)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 25 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 29 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.7, 6.8, 9.3, 11 Fase 5, 14
@@ -34,10 +34,12 @@ Prima di iniziare, e' fondamentale capire cosa stiamo facendo e perche'.
 
 La nostra pipeline CI/CD fa esattamente questo:
 1. **Lint** — Controlla che il codice sia scritto in modo ordinato (come un correttore di bozze)
-2. **Test** — Verifica che il codice funzioni correttamente (come un collaudatore)
-3. **Security Scan** — Cerca problemi di sicurezza (come un guardiano)
 
-Ogni volta che qualcuno fa un `git push`, questi 3 controlli partono automaticamente su GitHub. Se uno di essi fallisce, vedrete un segno rosso (X) nella pagina del repository su GitHub. Se tutti passano, vedrete un segno verde (✓).
+> **Nota (29 Marzo 2026)**: La pipeline originale prevedeva anche Test (GdUnit4) e Security Scan,
+> ma sono stati rimossi durante la semplificazione. Attualmente resta solo il job **Lint** (gdlint + gdformat).
+> Test e security scan potranno essere reintrodotti nella Fase 5 del piano di stabilizzazione.
+
+Ogni volta che qualcuno fa un `git push`, questo controllo parte automaticamente su GitHub. Se fallisce, vedrete un segno rosso (X) nella pagina del repository su GitHub. Se passa, vedrete un segno verde (✓).
 
 ---
 

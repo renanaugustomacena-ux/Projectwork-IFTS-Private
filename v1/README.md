@@ -27,7 +27,7 @@ aperto in background come ambiente digitale rilassante.
 
 ### Pattern Principali
 
-- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (18 segnali)
+- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (20 segnali)
 - **Offline-only**: il salvataggio locale (JSON + SQLite) gestisce tutti i dati
 - **Catalog-driven**: contenuti (stanze, decorazioni, personaggi, tracce) caricati da JSON
 - **Desktop companion**: FPS cap dinamico (60 fps in focus, 15 fps in background)
@@ -38,7 +38,7 @@ Caricati automaticamente in questo ordine da `project.godot`:
 
 | # | Autoload | Script | Responsabilita |
 |---|----------|--------|----------------|
-| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (18 segnali, disaccoppiamento moduli) |
+| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (20 segnali, disaccoppiamento moduli) |
 | 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID |
 | 3 | `GameManager` | game_manager.gd | Stato di gioco, caricamento cataloghi JSON |
 | 4 | `SaveManager` | save_manager.gd | Salvataggio locale JSON v4.0.0 (auto-save 60s) |
@@ -90,7 +90,7 @@ v1/
 ├── assets/                    # Asset grafici e audio (1400+ file)
 │   ├── audio/music/           #   2 tracce Mixkit (WAV)
 │   ├── backgrounds/           #   Sfondi foresta (Free Pixel Art Forest)
-│   ├── charachters/           #   3 personaggi (female, male, old)
+│   ├── charachters/           #   3 set sprite (female, male, old) — solo old attivo
 │   ├── menu/                  #   Asset menu (sfondo, sprite pad)
 │   ├── pets/                  #   Animali (Void Cat)
 │   ├── room/                  #   Elementi stanza (porte, finestre)
@@ -99,31 +99,27 @@ v1/
 │   │   └── rooms/             #     Isometric Kitchen + Room Builder
 │   └── ui/                    #   Kenney Pixel UI Pack + tema cozy
 ├── data/                      # Cataloghi JSON + schema SQL
-│   ├── characters.json        #   3 personaggi giocabili
-│   ├── decorations.json       #   118 decorazioni in 14 categorie
+│   ├── characters.json        #   1 personaggio giocabile (male_old)
+│   ├── decorations.json       #   58 decorazioni in 11 categorie
 │   ├── rooms.json             #   1 stanza con 3 temi colore
 │   ├── tracks.json            #   2 tracce musicali
 │   └── README.md              #   Documentazione schema database
 ├── scenes/                    # 8 scene Godot (.tscn)
 │   ├── main/                  #   main.tscn (stanza di gioco)
 │   ├── menu/                  #   main_menu.tscn (menu principale)
-│   ├── ui/                    #   3 pannelli (music, deco, settings)
-│   ├── male-character.tscn    #   Scena personaggio maschile (CharacterBody2D)
-│   ├── female-character.tscn  #   Scena personaggio femminile (CharacterBody2D)
+│   ├── ui/                    #   2 pannelli (deco, settings)
+│   ├── male-character.tscn    #   Scena personaggio maschile old (CharacterBody2D)
+│   ├── female-character.tscn  #   Scena personaggio femminile (non attiva)
 │   └── cat_void.tscn          #   Animale domestico
-├── scripts/                   # 25 script GDScript
-│   ├── autoload/              #   7 singleton (signal_bus, logger, game_manager, audio_manager, ...)
+├── scripts/                   # 21 script GDScript
+│   ├── autoload/              #   6 singleton (signal_bus, logger, game_manager, audio_manager, ...)
 │   ├── menu/                  #   Menu principale + personaggio walk-in
 │   ├── rooms/                 #   Stanza, decorazioni, sfondo, movimento personaggio
 │   ├── systems/               #   Performance manager
-│   ├── ui/                    #   Panel manager + 3 pannelli + drop zone
+│   ├── ui/                    #   Panel manager + 2 pannelli + drop zone
 │   ├── utils/                 #   Constants, helpers
 │   └── main.gd                #   Controller scena principale
-└── tests/unit/                # 4 test unitari (GdUnit4)
-    ├── test_helpers.gd
-    ├── test_logger.gd
-    ├── test_save_manager.gd
-    └── test_save_manager_state.gd
+└── tests/unit/                # Test unitari (attualmente vuota — GdUnit4 non installato)
 ```
 
 ### Documentazione per Cartella
@@ -134,8 +130,8 @@ v1/
 | `assets/` | [README](assets/README.md) | 1.422 asset: sprite, audio, sfondi, UI, licenze |
 | `data/` | [README](data/README.md) | Schema database JSON/SQLite, 7 tabelle |
 | `scenes/` | [README](scenes/README.md) | 8 scene Godot (.tscn), struttura nodi, flusso |
-| `scripts/` | [README](scripts/README.md) | 25 script GDScript, autoload, 20 segnali, moduli |
-| `tests/` | [README](tests/README.md) | 4 test unitari GdUnit4, copertura moduli |
+| `scripts/` | [README](scripts/README.md) | 21 script GDScript, autoload, 20 segnali, moduli |
+| `tests/` | [README](tests/README.md) | Attualmente vuota (test rimossi, GdUnit4 non installato) |
 
 ## Contenuti di Gioco
 
@@ -150,7 +146,7 @@ definite come palette nei temi. L'utente puo' scegliere tra 3 temi colore per
 personalizzare l'ambiente. Gli oggetti vengono piazzati tramite drag-and-drop
 dal pannello Decorazioni in modalita' creativa libera.
 
-### Decorazioni (118 oggetti, 14 categorie)
+### Decorazioni (58 oggetti, 11 categorie)
 
 | Categoria | Oggetti | Scala | Posizionamento |
 |-----------|---------|-------|----------------|
@@ -165,9 +161,6 @@ dal pannello Decorazioni in modalita' creativa libera.
 | Accessories | 5 | 6x | floor |
 | Room Elements | 4 | 3x | floor |
 | Pets | 1 | 4x | floor |
-| Kitchen Appliances | 11 | 3x | floor |
-| Kitchen Furniture | varies | 3x | floor |
-| Kitchen Accessories | varies | 3x | floor |
 
 ### Personaggio
 
@@ -258,14 +251,19 @@ Container di build: `barichello/godot-ci:4.5`
 | 5 | Catalogo Decorazioni e Polish UI | In Corso |
 | 6 | Polish e Rilascio | Pianificata |
 
-## Stato Semplificazione (aggiornato 27 Marzo 2026)
+## Stato Semplificazione (aggiornato 29 Marzo 2026)
 
 Il progetto e' stato semplificato rimuovendo il codice non necessario:
 
 - **SupabaseClient rimosso** — 515 righe di codice morto (zero chiamanti nel codebase)
 - **CI/CD semplificata** — da 3 pipeline (lint + test + security + database) a 1 solo job lint
 - **EnvLoader rimosso** — usato solo da SupabaseClient
-- **Segnali auth rimossi** — 3 segnali orfani eliminati da SignalBus
+- **Segnali auth rimossi** — 3 segnali orfani eliminati da SignalBus (restano 20)
+- **shop_panel e music_panel rimossi** — funzionalita' non necessarie
+- **Test rimossi** — dipendevano da GdUnit4 (non installato)
+- **Asset cucina rimossi** — kitchen_appliances, kitchen_furniture, kitchen_accessories eliminati
+- **male_black_shirt rimosso** — dal catalogo characters.json (personaggio incompleto)
+- **Schema DB corretto** — C3 (PK characters) e C4 (normalizzazione inventario) completati
 
 ### Sistemi ancora piu' complessi del necessario (ma funzionanti)
 

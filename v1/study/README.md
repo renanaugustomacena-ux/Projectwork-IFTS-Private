@@ -30,7 +30,7 @@ Termini specifici di Mini Cozy Room che troverete nei documenti e nel codice:
 |---------|-------------|
 | **SignalBus** | Autoload che fa da "centralino" per tutti i segnali globali del gioco. Ogni comunicazione tra sistemi passa da qui |
 | **Catalog-Driven** | Approccio in cui il contenuto del gioco (stanze, decorazioni, personaggi) e' definito in file JSON, non nel codice |
-| **Offline-First** | Il gioco funziona completamente senza internet. Supabase e' opzionale e degrada gracefully |
+| **Offline-Only** | Il gioco funziona completamente offline con JSON + SQLite. SupabaseClient e' stato rimosso (marzo 2026) |
 | **Desktop Companion** | Genere di applicazione progettata per restare aperta a lungo in sottofondo, con consumo minimo di risorse |
 | **WAL (Write-Ahead Logging)** | Modalita' di SQLite che scrive prima in un journal (.db-wal) e poi nel database. Piu' sicuro e veloce |
 | **Dirty Flag** | Flag booleano che indica "ci sono modifiche non salvate". SaveManager salva solo quando il flag e' attivo |
@@ -39,7 +39,7 @@ Termini specifici di Mini Cozy Room che troverete nei documenti e nel codice:
 | **_exit_tree()** | Funzione callback di Godot chiamata quando un nodo sta per essere rimosso dall'albero. Usata per pulizia risorse |
 | **queue_free()** | Metodo Godot per distruggere un nodo alla fine del frame corrente (non immediatamente) |
 | **Autoload** | Script caricato automaticamente da Godot all'avvio del gioco, accessibile ovunque come singleton globale |
-| **GdUnit4** | Framework di testing per Godot 4. Usato per i test unitari del progetto |
+| **GdUnit4** | Framework di testing per Godot 4. Non installato — i test sono stati rimossi (marzo 2026) |
 | **gdlint / gdformat** | Strumenti di linting e formattazione automatica per GDScript. Eseguiti nella pipeline CI |
 | **PanelManager** | Classe che gestisce il ciclo di vita di tutti i pannelli UI (apertura, chiusura, animazioni) |
 | **Snap to Grid** | Le decorazioni si posizionano su una griglia di 64px. `Helpers.snap_to_grid()` arrotonda la posizione |
@@ -55,8 +55,7 @@ Termini specifici di Mini Cozy Room che troverete nei documenti e nel codice:
 4. SaveManager      ← usa SignalBus, GameManager
 5. LocalDatabase    ← usa SignalBus, AppLogger
 6. AudioManager     ← usa SignalBus, GameManager, SaveManager
-7. SupabaseClient   ← usa SignalBus, AppLogger (opzionale)
-8. PerformanceManager ← usa SignalBus, SaveManager
+7. PerformanceManager ← usa SignalBus, SaveManager
 ```
 
 ### Domini dei Segnali SignalBus
@@ -81,7 +80,7 @@ Codice:
   v1/scripts/autoload/       — Singleton (SignalBus, GameManager, SaveManager, ecc.)
   v1/scripts/rooms/          — Logica stanza, decorazioni, personaggi, sfondo
   v1/scripts/ui/             — Pannelli UI, PanelManager, drop zone
-  v1/scripts/utils/          — Constants, Helpers, EnvLoader
+  v1/scripts/utils/          — Constants, Helpers
 
 Dati:
   v1/data/characters.json    — Catalogo personaggi (sprite, animazioni)
@@ -95,7 +94,7 @@ Scene:
   v1/scenes/ui/              — Scene dei pannelli UI (.tscn)
 
 Test:
-  v1/tests/unit/             — Test GdUnit4
+  v1/tests/unit/             — Test unitari (attualmente vuota)
 ```
 
 ## Mappa Documenti ↔ Argomenti d'Esame

@@ -331,8 +331,8 @@ v1/                              <-- Cartella principale del progetto Godot
 │
 ├── data/                        <-- File di dati (JSON e SQL)
 │   ├── characters.json          <-- Catalogo personaggi (animazioni, sprite)
-│   ├── decorations.json         <-- Catalogo decorazioni (118 oggetti)
-│   ├── rooms.json               <-- Catalogo stanze (4 stanze, 10 temi)
+│   ├── decorations.json         <-- Catalogo decorazioni (58 oggetti in 11 categorie)
+│   ├── rooms.json               <-- Catalogo stanze (1 stanza, 3 temi)
 │   ├── tracks.json              <-- Catalogo tracce musicali
 │   └── README.md                <-- Documentazione schema database
 │
@@ -343,7 +343,7 @@ v1/                              <-- Cartella principale del progetto Godot
 │
 ├── scripts/                     <-- Codice GDScript — la logica del gioco
 │   ├── autoload/                <-- Singleton (caricati automaticamente all'avvio)
-│   │   ├── signal_bus.gd        <-- Bus dei segnali (21 segnali globali)
+│   │   ├── signal_bus.gd        <-- Bus dei segnali (20 segnali globali)
 │   │   ├── logger.gd            <-- Sistema di logging
 │   │   ├── game_manager.gd      <-- Stato di gioco, cataloghi
 │   │   ├── save_manager.gd      <-- Salvataggio/caricamento dati
@@ -357,12 +357,7 @@ v1/                              <-- Cartella principale del progetto Godot
 │   └── utils/                   <-- Costanti e helper
 │       └── constants.gd         <-- Costanti globali (nomi stanze, personaggi, FPS)
 │
-├── tests/unit/                  <-- Test unitari (GdUnit4)
-│   ├── test_helpers.gd
-│   ├── test_logger.gd
-│   ├── test_save_manager.gd
-│   ├── test_save_manager_state.gd
-│   └── test_shop_panel.gd
+├── tests/unit/                  <-- Test unitari (attualmente vuota — test rimossi, GdUnit4 non installato)
 │
 ├── guide/                       <-- Guide operative per il team (QUESTA cartella)
 │
@@ -388,18 +383,22 @@ v1/                              <-- Cartella principale del progetto Godot
 
 ## 7. Come Eseguire i Test
 
+> **Nota (29 Marzo 2026)**: I test unitari sono stati rimossi dal progetto perche' dipendevano
+> dal plugin GdUnit4 (non installato). La cartella `tests/unit/` e' attualmente vuota.
+> I test dovranno essere ricreati da zero come parte della Fase 5 del piano di stabilizzazione.
+
 ### 7.1 Cos'e' un Test
 
 Un test e' un piccolo programma che verifica che il codice funzioni correttamente. Immaginate di costruire un ponte: prima di aprirlo al traffico, lo testate con dei pesi. I test del software fanno la stessa cosa: verificano che ogni componente faccia quello che deve fare.
 
 ### 7.2 Il Nostro Framework: GdUnit4
 
-Usiamo **GdUnit4**, un framework di testing per Godot. I file di test si trovano in `tests/unit/` e hanno il prefisso `test_`.
+Useremo **GdUnit4**, un framework di testing per Godot. I file di test andranno in `tests/unit/` con il prefisso `test_`.
 
 ### 7.3 Eseguire i Test da Godot
 
 1. Aprite il progetto in Godot
-2. Installate il plugin GdUnit4 (se non e' gia' installato):
+2. Installate il plugin GdUnit4:
    - Menu **AssetLib** (in alto al centro) -> Cercate "GdUnit4" -> Install
 3. Dopo l'installazione, apparira' un pannello **GdUnit** nella parte inferiore
 4. Cliccate **"Run All Tests"** per eseguire tutti i test

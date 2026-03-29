@@ -1,6 +1,6 @@
 # Guida Operativa — Elia Zoccatelli (Database Support)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 27 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 29 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.4, 8, 11 Fase 1.4 e 3, 12
@@ -30,7 +30,7 @@
 | C1 | _on_save_requested() ignorava l'inventario | CORRETTO | Renan |
 | A17 | Diagnostica apertura database insufficiente | CORRETTO | Renan |
 | A18 | Seed data per tabelle vuote | DA FARE | Elia |
-| — | Allineamento schema Supabase | DA FARE (bassa priorita') | Elia |
+| — | ~~Allineamento schema Supabase~~ | **CANCELLATO** — SupabaseClient rimosso | — |
 
 ## Task Rimanenti per Elia
 
@@ -38,9 +38,9 @@
 |---|----------------|-----------------|-----------|---------------|
 | 1 | Studiare le correzioni effettuate (leggi la sezione sotto) | `scripts/autoload/local_database.gd` | ALTO | 30 min |
 | 2 | Aggiungere seed data per account locale | `scripts/autoload/local_database.gd` | MEDIO | 20 min |
-| 3 | Allineare schema Supabase con le modifiche | `data/supabase_migration.sql` | BASSO | 30 min |
+| ~~3~~ | ~~Allineare schema Supabase con le modifiche~~ | ~~`data/supabase_migration.sql`~~ | — | — | **CANCELLATO** (SupabaseClient rimosso) |
 
-**Tempo totale stimato**: circa 1.5 ore
+**Tempo totale stimato**: circa **50 minuti** (Task 1 + Task 2)
 
 ---
 
