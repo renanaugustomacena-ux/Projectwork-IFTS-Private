@@ -60,6 +60,7 @@ func _on_nuova_partita() -> void:
 	if _transitioning:
 		return
 	_transitioning = true
+	SaveManager.reset_character_data()
 	_transition_to_scene(GAMEPLAY_SCENE)
 
 

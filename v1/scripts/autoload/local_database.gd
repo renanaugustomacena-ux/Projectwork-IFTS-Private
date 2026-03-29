@@ -93,6 +93,7 @@ func _create_tables() -> void:
 			+ "data_di_nascita TEXT NOT NULL DEFAULT '',"
 			+ "mail TEXT NOT NULL DEFAULT '',"
 			+ "display_name TEXT DEFAULT '',"
+			+ "password_hash TEXT DEFAULT '',"
 			+ "coins INTEGER DEFAULT 0,"
 			+ "inventario_capacita INTEGER DEFAULT 50,"
 			+ "updated_at TEXT DEFAULT (datetime('now'))"
@@ -204,6 +205,8 @@ func _migrate_schema() -> void:
 			_execute(
 				"ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT (datetime('now'));"
 			)
+		if "password_hash" not in acc_schema:
+			_execute("ALTER TABLE accounts ADD COLUMN password_hash TEXT DEFAULT '';")
 
 	AppLogger.info("LocalDatabase", "Schema migration completed")
 
@@ -235,6 +238,33 @@ func upsert_account(auth_uid: String, mail: String, data_di_nascita: String = ""
 
 	_execute_bound(
 		"INSERT INTO accounts (auth_uid, mail, data_di_nascita) VALUES (?, ?, ?);", [auth_uid, mail, data_di_nascita]
+	)
+	var rows := _select("SELECT last_insert_rowid() as id;", [])
+	if rows.is_empty():
+		return -1
+	return rows[0].get("id", -1)
+
+
+func get_account_by_username(username: String) -> Dictionary:
+	var rows := _select(
+		"SELECT * FROM accounts WHERE display_name = ? AND auth_uid != ?;",
+		[username, Constants.AUTH_GUEST_UID]
+	)
+	if rows.is_empty():
+		return {}
+	return rows[0]
+
+
+func create_account(
+	username: String, password_hash: String
+) -> int:
+	var auth_uid := "user_%s" % username.to_lower()
+	_execute_bound(
+		(
+			"INSERT INTO accounts (auth_uid, display_name, password_hash)"
+			+ " VALUES (?, ?, ?);"
+		),
+		[auth_uid, username, password_hash]
 	)
 	var rows := _select("SELECT last_insert_rowid() as id;", [])
 	if rows.is_empty():

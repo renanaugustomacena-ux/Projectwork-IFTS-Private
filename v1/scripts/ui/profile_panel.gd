@@ -44,7 +44,7 @@ func _build_ui() -> void:
 	vbox.add_child(info_label)
 
 	_account_type_label = _create_info_row(vbox, "Type")
-	_email_label = _create_info_row(vbox, "Email")
+	_email_label = _create_info_row(vbox, "User")
 	_coins_label = _create_info_row(vbox, "Coins")
 
 	# Separator
@@ -127,10 +127,7 @@ func _update_info() -> void:
 		_email_label.text = "—"
 	elif AuthManager.auth_state == AuthManager.AuthState.AUTHENTICATED:
 		_account_type_label.text = "Registered"
-		var account := LocalDatabase.get_account(
-			AuthManager.current_account_id
-		)
-		_email_label.text = account.get("mail", "—")
+		_email_label.text = AuthManager.current_username
 	else:
 		_account_type_label.text = "Not logged in"
 		_email_label.text = "—"

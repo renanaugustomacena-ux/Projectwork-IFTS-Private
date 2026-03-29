@@ -10,6 +10,20 @@ var _last_anim: String = ""
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
 
+func _ready() -> void:
+	# Collide with room walls (layer 1) and decorations (layer 2)
+	collision_mask = 3
+	SignalBus.decoration_mode_changed.connect(_on_decoration_mode_changed)
+
+
+func _on_decoration_mode_changed(active: bool) -> void:
+	if active:
+		# In edit mode, ignore decoration collisions so dragging doesn't push us
+		collision_mask = 1
+	else:
+		collision_mask = 3
+
+
 func _physics_process(_delta: float) -> void:
 	var direction := Input.get_vector(
 		"ui_left", "ui_right", "ui_up", "ui_down"
