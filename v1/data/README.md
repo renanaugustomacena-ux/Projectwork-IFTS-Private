@@ -7,6 +7,12 @@
 
 Documentazione dello schema dati utilizzato dal progetto (SQLite via godot-sqlite v4.7 + JSON).
 
+> **Nota (29 Marzo 2026)**: Lo schema characters e' stato corretto (C3: `character_id` come PK
+> al posto di `account_id`, permettendo multipli personaggi per account).
+> Lo schema inventario e' stato normalizzato (C4: `coins` e `capacita` spostati in `accounts`).
+> Le tabelle sotto riflettono il design originale — per lo schema corretto, vedere
+> `scripts/autoload/local_database.gd`.
+
 ## Panoramica
 
 Il sistema adotta un approccio **offline-only** con doppia persistenza locale:

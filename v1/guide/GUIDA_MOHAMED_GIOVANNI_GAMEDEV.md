@@ -1,6 +1,6 @@
 # Guida Operativa Completa — Mohamed & Giovanni (Game Assets, Core Logic & Design Lead)
 
-**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 27 Marzo 2026)
+**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 29 Marzo 2026)
 **Prerequisito**: Leggete prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il vostro ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
@@ -10,11 +10,12 @@
 > I vostri task riguardano la parte di gameplay e UI, che e' la parte **essenziale**.
 > Le correzioni proposte in questa guida restano valide al 100%.
 
-> **Nota sulle modifiche recenti (25 Marzo 2026)**:
+> **Nota sulle modifiche recenti (25-29 Marzo 2026)**:
 > - Il pannello musica (`music_panel.gd` e `music_panel.tscn`) e' stato **eliminato**. La musica ora parte automaticamente senza controlli utente.
 > - Gli asset della cucina (kitchen_appliances, kitchen_furniture, kitchen_accessories) sono stati **eliminati** da `decorations.json` e dalla cartella sprites.
 > - Lo shop panel (`shop_panel.gd`) **non esiste** nel progetto.
 > - I test unitari (cartella `tests/`) sono stati rimossi perche' dipendevano da GdUnit4 (non installato).
+> - **male_black_shirt** e' stato rimosso dal catalogo `characters.json` (29 Mar). Le 3 costanti orfane in `constants.gd` (righe 13-16) restano da rimuovere (Task 2).
 
 ---
 

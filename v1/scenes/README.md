@@ -1,6 +1,6 @@
 # Mini Cozy Room — Scene Godot
 
-Questa cartella contiene tutte le **9 scene Godot** (.tscn) del progetto. Le scene
+Questa cartella contiene le **scene Godot** (.tscn) del progetto. Le scene
 definiscono le gerarchie di nodi, la composizione dei componenti e il layout dell'interfaccia.
 
 ## Struttura
@@ -13,10 +13,9 @@ scenes/
 │   └── main_menu.tscn         # Menu principale (scena di avvio)
 ├── ui/
 │   ├── deco_panel.tscn        # Pannello decorazioni (drag-and-drop)
-│   ├── settings_panel.tscn    # Pannello impostazioni
-│   └── shop_panel.tscn        # Pannello negozio
-├── male-character.tscn        # Personaggio maschile (CharacterBody2D)
-├── female-character.tscn      # Personaggio femminile (CharacterBody2D)
+│   └── settings_panel.tscn    # Pannello impostazioni
+├── male-character.tscn        # Personaggio maschile old (CharacterBody2D)
+├── female-character.tscn      # Personaggio femminile (non attiva)
 └── cat_void.tscn              # Animale domestico (Void Cat)
 ```
 
@@ -42,8 +41,7 @@ Main (Node2D)
 │   ├── DropZone (Control, full rect)
 │   └── HUD (HBoxContainer)
 │       ├── DecoButton
-│       ├── SettingsButton
-│       └── ShopButton
+│       └── SettingsButton
 ├── PanelManager (Node, creato programmaticamente)
 └── AudioStreams (Node)
 ```
@@ -72,7 +70,7 @@ MainMenu (Node2D)
 
 ### ui/*.tscn — Pannelli UI
 
-I 3 pannelli sono `PanelContainer` istanziati dinamicamente da `PanelManager`.
+I 2 pannelli attivi sono `PanelContainer` istanziati dinamicamente da `PanelManager`.
 Funzionano in mutua esclusione (un solo pannello aperto alla volta),
 con animazione fade-in/fade-out (0.3s tween) e chiusura con Escape.
 
@@ -80,7 +78,6 @@ con animazione fade-in/fade-out (0.3s tween) e chiusura con Escape.
 |-------|--------|----------|
 | `deco_panel.tscn` | `scripts/ui/deco_panel.gd` | Catalogo decorazioni per categoria, drag-and-drop |
 | `settings_panel.tscn` | `scripts/ui/settings_panel.gd` | Volume, lingua, display mode |
-| `shop_panel.tscn` | `scripts/ui/shop_panel.gd` | Browser negozio, acquisti, coins |
 
 ### male-character.tscn / female-character.tscn — Personaggi
 
@@ -105,6 +102,6 @@ Scena del Void Cat, posizionabile come decorazione nella stanza.
 
 ## Vedi Anche
 
-- [README Script](../scripts/README.md) — I 26 script GDScript attaccati alle scene
+- [README Script](../scripts/README.md) — I 21 script GDScript attaccati alle scene
 - [README Tecnico](../README.md) — Architettura completa e scene tree dettagliati
 - [README Asset](../assets/README.md) — Sprite e risorse grafiche usate dalle scene

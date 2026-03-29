@@ -4,7 +4,7 @@
 > funziona esclusivamente offline. Logger e SaveManager sono piu' complessi del necessario
 > ma funzionano correttamente e non richiedono modifiche.
 
-Questa cartella contiene tutti i **24 script GDScript** del progetto, organizzati in
+Questa cartella contiene tutti i **21 script GDScript** del progetto, organizzati in
 6 sottocartelle piu il controller principale `main.gd`.
 
 L'architettura e **signal-driven**: tutta la comunicazione tra moduli passa per
@@ -21,7 +21,7 @@ L'architettura e **signal-driven**: tutta la comunicazione tra moduli passa per
 ```
 scripts/
 ├── autoload/                     # 6 singleton caricati automaticamente
-│   ├── signal_bus.gd             # Bus eventi globale (18 segnali)
+│   ├── signal_bus.gd             # Bus eventi globale (20 segnali)
 │   ├── logger.gd                 # Logging strutturato con correlation ID
 │   ├── game_manager.gd           # Stato di gioco, caricamento cataloghi JSON
 │   ├── save_manager.gd           # Salvataggio JSON v4.0.0 + auto-save 60s
@@ -42,7 +42,6 @@ scripts/
 │   ├── panel_manager.gd          # Lifecycle pannelli, mutua esclusione, Escape
 │   ├── deco_panel.gd             # Pannello catalogo decorazioni
 │   ├── settings_panel.gd         # Pannello impostazioni (volume, lingua, display)
-│   ├── shop_panel.gd             # Pannello negozio e inventario
 │   └── drop_zone.gd              # Drop zone per posizionamento decorazioni
 ├── utils/                        # Utilita condivise
 │   ├── constants.gd              # Costanti globali (class_name Constants)
@@ -56,7 +55,7 @@ Caricati automaticamente in ordine da `project.godot`:
 
 | # | Nome | Script | Responsabilita |
 |---|------|--------|----------------|
-| 1 | `SignalBus` | autoload/signal_bus.gd | Bus eventi globale (18 segnali, disaccoppiamento moduli) |
+| 1 | `SignalBus` | autoload/signal_bus.gd | Bus eventi globale (20 segnali, disaccoppiamento moduli) |
 | 2 | `AppLogger` | autoload/logger.gd | Logging strutturato con correlation ID e rotazione file |
 | 3 | `GameManager` | autoload/game_manager.gd | Stato di gioco, caricamento cataloghi JSON (rooms, decorations, characters, tracks) |
 | 4 | `SaveManager` | autoload/save_manager.gd | Salvataggio locale JSON v4.0.0 con auto-save ogni 60s, migrazione automatica |
@@ -66,7 +65,7 @@ Caricati automaticamente in ordine da `project.godot`:
 
 > **Nota:** PerformanceManager si trova in `systems/`, non in `autoload/`, ma e comunque caricato come singleton.
 
-## SignalBus — Segnali (18)
+## SignalBus — Segnali (20)
 
 | Categoria | Segnale | Parametri |
 |-----------|---------|-----------|
@@ -127,7 +126,6 @@ Per dettagli sull'architettura e le responsabilita di ciascuno, consulta il
   mutua esclusione (un solo pannello aperto), animazioni tween (0.3s), chiusura con Escape.
 - **deco_panel.gd** — Browser catalogo decorazioni con filtro per categoria.
 - **settings_panel.gd** — Impostazioni: volume master/music/sfx, lingua, display mode.
-- **shop_panel.gd** — Browser negozio, acquisto oggetti, gestione coins e inventario.
 - **drop_zone.gd** — Control full-rect che rileva il drop di decorazioni sulla stanza.
 
 ### utils/
@@ -140,6 +138,6 @@ Per dettagli sull'architettura e le responsabilita di ciascuno, consulta il
 ## Vedi Anche
 
 - [README Tecnico](../README.md) — Architettura, scene tree, contenuti di gioco
-- [README Scene](../scenes/README.md) — Le 9 scene .tscn che utilizzano questi script
-- [README Test](../tests/README.md) — I 5 test unitari che verificano questi moduli
+- [README Scene](../scenes/README.md) — Le scene .tscn che utilizzano questi script
+- [README Test](../tests/README.md) — Test unitari (attualmente vuota)
 - [README Database](../data/README.md) — Schema dati usato da LocalDatabase e SaveManager

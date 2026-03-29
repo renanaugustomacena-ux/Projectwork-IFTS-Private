@@ -1,8 +1,10 @@
 # Guide Operative per il Team — Mini Cozy Room
 
-> **⚠️ Aggiornamento 27 Marzo 2026**
-> SupabaseClient e' stato rimosso (codice morto). CI/CD semplificata a un solo job lint.
+> **⚠️ Aggiornamento 29 Marzo 2026**
+> SupabaseClient rimosso (codice morto). CI/CD semplificata a un solo job lint.
 > Il gioco funziona esclusivamente offline con JSON + SQLite.
+> **C3/C4** (schema DB characters + inventario) **completati** da Renan (27 Mar).
+> **shop_panel.gd** e **music_panel.gd** rimossi. **male_black_shirt** rimosso dal catalogo JSON.
 > Le correzioni proposte nelle guide restano valide sia come esercizio che come miglioramento.
 
 Questa cartella contiene le guide operative personalizzate per ogni membro del team.
@@ -21,8 +23,8 @@ Dopo aver completato il setup, aprite la vostra guida personale:
 | Guida | Per Chi | Contenuto |
 |-------|---------|-----------|
 | [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian Marino** | Pipeline CI/CD, linting test, Logger, PerformanceManager, configurazione test |
-| [GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md](GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | **Mohamed & Giovanni** | Correzione characters.json, aggiunta `_exit_tree()` a 12 script, fix UI panels, tracks.json |
-| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia Zoccatelli** | Ridisegno schema database, foreign keys, seed data, allineamento Supabase |
+| [GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md](GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | **Mohamed & Giovanni** | Correzione characters.json, costanti orfane, `_exit_tree()` per ~6 script, race condition, null check |
+| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia Zoccatelli** | Verifica schema DB (gia' corretto), seed data, foreign keys |
 
 ## Relazione con l'Audit Report
 
@@ -39,7 +41,7 @@ Seguite questo ordine per evitare conflitti e lavoro inutile:
 SETTIMANA 1 — Fondamenta (tutti lavorano in parallelo)
 │
 ├── Cristian: Task 1-2 (CI branch + lint test)     ← SUBITO, sblocca validazione push
-├── Elia: Task 1-3 (schema DB characters + inventario + FK)  ← SUBITO, sblocca test DB
+├── Elia: Task 1 (verifica schema DB — GIA' CORRETTO) + Task 2-3 (seed data, FK)  ← verificare
 └── Mohamed/Giovanni: Task 1-2 (typo sprite + costanti)      ← SUBITO, sblocca gameplay test
 │
 SETTIMANA 2 — Correzioni Core
@@ -50,9 +52,9 @@ SETTIMANA 2 — Correzioni Core
 │
 SETTIMANA 3 — Pulizia e Lifecycle
 │
-├── Mohamed/Giovanni: Task 6-7 (_exit_tree per 6 script + null check)  ← il task piu' grande
+├── Mohamed/Giovanni: Task 6-7 (_exit_tree per ~6 script + null check)  ← il task piu' grande
 ├── Cristian: Task 5 (_exit_tree PerformanceManager)
-└── Elia: Task 6 (allineamento Supabase — opzionale)
+└── Elia: (nessun task rimanente — disponibile per supporto)
 │
 SETTIMANA 4 — Integrazione e Verifica
 │
@@ -62,9 +64,9 @@ SETTIMANA 4 — Integrazione e Verifica
 
 **Dipendenze critiche**:
 
-- Cristian Task 6 (test nella CI) → dipende dai file test creati da Mohamed/Giovanni/Elia
+- Cristian Task 6 (test nella CI) → dipende dai file test creati da Mohamed/Giovanni/Elia (attualmente non ci sono test)
 - Mohamed/Giovanni Task 6 (_exit_tree) → puo' iniziare solo dopo aver capito i segnali (Task 3-5)
-- Elia Task 3 (FK item_id) → dipende da Elia Task 2 (ristrutturazione inventario)
+- Elia: schema DB gia' corretto (C3/C4 completati 27 Mar) — verificare solo seed data
 
 ---
 
@@ -92,7 +94,7 @@ Non deve essere perfetto — deve essere stabile, senza crash, e con le funziona
 
 | Periodo | Obiettivo | Chi | Ore Stimate |
 | ------- | --------- | --- | ----------- |
-| **28 Mar - 4 Apr** | Setup ambiente + task CRITICI (CI, schema DB, typo sprite) | Tutti | 4-6h ciascuno |
+| **28 Mar - 4 Apr** | Setup ambiente + task CRITICI (CI, typo sprite — schema DB gia' fatto) | Tutti | 3-4h ciascuno |
 | **5 Apr - 11 Apr** | Correzioni core (array, race condition, Logger, seed data) | Tutti | 3-4h ciascuno |
 | **12 Apr - 18 Apr** | Pulizia lifecycle (_exit_tree), null check, test manuale | Tutti | 3-5h ciascuno |
 | **19 Apr - 22 Apr** | Test finale, fix urgenti, documentazione, preparazione presentazione | Tutti | 2-3h ciascuno |
@@ -111,9 +113,9 @@ Quando tutti i task sono completati, verificate **insieme** che tutto funzioni:
 INTEGRITA' DATI (Elia + Mohamed/Giovanni)
 - [ ] characters.json: nessun typo nei percorsi sprite
 - [ ] constants.gd: solo costanti per personaggi esistenti
-- [ ] Database: schema characters con character_id PRIMARY KEY
-- [ ] Database: schema inventario senza coins/capacita duplicati
-- [ ] Database: foreign keys attive e funzionanti
+- [x] Database: schema characters con character_id PRIMARY KEY (GIA' FATTO 27 Mar)
+- [x] Database: schema inventario senza coins/capacita duplicati (GIA' FATTO 27 Mar)
+- [x] Database: foreign keys attive e funzionanti (GIA' FATTO 27 Mar)
 - [ ] Database: seed data presente (14 categorie, 10 colori, 1 account)
 
 STABILITA' E LIFECYCLE (Mohamed/Giovanni + Cristian)
@@ -125,8 +127,8 @@ STABILITA' E LIFECYCLE (Mohamed/Giovanni + Cristian)
 
 PIPELINE CI/CD (Cristian)
 - [ ] CI attiva su branch Renan (non piu' proto)
-- [ ] gdlint + gdformat controllano anche v1/tests/
-- [ ] Tutti i test passano nella pipeline (verde su GitHub Actions)
+- [ ] gdlint + gdformat controllano anche v1/tests/ (attualmente nessun test presente)
+- [ ] Tutti i test passano nella pipeline (attualmente nessun test — da creare)
 - [ ] Logger: session ID univoci, buffer non perso
 
 GIOCO FUNZIONANTE (TUTTI)
@@ -152,4 +154,4 @@ GIOCO FUNZIONANTE (TUTTI)
 ---
 
 *Queste guide fanno parte del progetto Mini Cozy Room — Audit Pre-Rilascio.*
-*Ultimo aggiornamento: 27 Marzo 2026*
+*Ultimo aggiornamento: 29 Marzo 2026*

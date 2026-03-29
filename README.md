@@ -29,23 +29,23 @@ git checkout Renan
 #    Import -> seleziona v1/project.godot -> Play (F5)
 ```
 
-> **Nota:** Il gioco funziona completamente offline. La sincronizzazione cloud
-> (Supabase) e opzionale e degrada in modo trasparente se non configurata.
+> **Nota:** Il gioco funziona completamente offline con JSON + SQLite.
+> SupabaseClient e' stato rimosso (marzo 2026).
 
 ## Struttura Repository
 
 ```
 .
-├── .github/workflows/     # CI/CD (lint, test, security, export)
-│   ├── ci.yml             # gdlint + gdformat + GdUnit4 + security scan
+├── .github/workflows/     # CI/CD (lint + export)
+│   ├── ci.yml             # gdlint + gdformat (solo lint)
 │   └── build.yml          # Export Windows (.exe) + HTML5
 ├── v1/                    # Codice sorgente del progetto Godot
 │   ├── addons/            # Plugin (godot-sqlite v4.7)
 │   ├── assets/            # 1400+ asset (sprite, audio, UI, sfondi)
 │   ├── data/              # Cataloghi JSON + schema SQL
 │   ├── scenes/            # 8 scene Godot (.tscn)
-│   ├── scripts/           # 25 script GDScript
-│   └── tests/             # 4 test unitari (GdUnit4)
+│   ├── scripts/           # 21 script GDScript
+│   └── tests/             # Test unitari (attualmente vuota)
 └── README.md              # Questo file
 ```
 
@@ -54,12 +54,12 @@ git checkout Renan
 | Documento | Percorso | Contenuto |
 |-----------|----------|-----------|
 | Documentazione Tecnica | [v1/README.md](v1/README.md) | Architettura, autoload, scene tree, contenuti, sviluppo |
-| Schema Database | [v1/data/README.md](v1/data/README.md) | JSON/SQLite/Supabase, 7 tabelle, RLS, migrazioni |
+| Schema Database | [v1/data/README.md](v1/data/README.md) | JSON/SQLite, 7 tabelle, migrazioni |
 | Plugin e Addon | [v1/addons/README.md](v1/addons/README.md) | godot-sqlite GDExtension v4.7, piattaforme supportate |
 | Asset Grafici e Audio | [v1/assets/README.md](v1/assets/README.md) | 1.422 file: sprite, audio, sfondi, UI, licenze |
 | Scene Godot | [v1/scenes/README.md](v1/scenes/README.md) | 8 scene .tscn, struttura nodi, flusso tra scene |
-| Script GDScript | [v1/scripts/README.md](v1/scripts/README.md) | 25 script, autoload, 20 segnali, moduli |
-| Test Unitari | [v1/tests/README.md](v1/tests/README.md) | 4 test GdUnit4, copertura moduli |
+| Script GDScript | [v1/scripts/README.md](v1/scripts/README.md) | 21 script, autoload, 20 segnali, moduli |
+| Test Unitari | [v1/tests/README.md](v1/tests/README.md) | Attualmente vuota (test rimossi, GdUnit4 non installato) |
 
 ## Stato dei Sistemi
 
@@ -69,8 +69,8 @@ git checkout Renan
 
 | Sistema | File | Stato | Note |
 |---------|------|-------|------|
-| **SupabaseClient** | `supabase_client.gd` | Placeholder / Sostituibile | Client REST completo con autenticazione e pool HTTP. Il gioco funziona completamente offline — questo modulo puo' essere sostituito con uno stub o rimosso. |
-| **LocalDatabase** | `local_database.gd` | Over-engineered / Semplificabile | 7 tabelle SQLite che replicano Supabase. Il salvataggio JSON tramite SaveManager e' sufficiente per tutte le funzionalita' attuali. Puo' essere ridotto a 2-3 tabelle o rimosso. |
+| ~~**SupabaseClient**~~ | ~~`supabase_client.gd`~~ | **RIMOSSO** (27 Marzo 2026) | Client REST rimosso — 515 righe di codice morto (zero chiamanti). |
+| **LocalDatabase** | `local_database.gd` | Over-engineered / Semplificabile | 7 tabelle SQLite. Il salvataggio JSON tramite SaveManager e' sufficiente per tutte le funzionalita' attuali. Puo' essere ridotto a 2-3 tabelle o rimosso. |
 | **SaveManager** | `save_manager.gd` | Funzionante / Semplificabile | Sistema di migrazione v1→v2→v3→v4, backup, auto-save. Il sistema di migrazione versioni e' eccessivo per lo stato attuale — un singolo formato senza backward compatibility basterebbe. |
 | **Logger** | `logger.gd` | Funzionante / Opzionale | Log strutturati JSON Lines con rotazione file, livello enterprise. Funziona bene ma e' molto piu' di quanto serve per un gioco cozy. |
 | **PerformanceManager** | `performance_manager.gd` | Funzionante / Essenziale | FPS cap dinamico. Leggero e utile, da mantenere. |

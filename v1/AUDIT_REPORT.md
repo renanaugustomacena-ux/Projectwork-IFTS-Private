@@ -1,9 +1,9 @@
 # Audit Completo e Piano di Stabilizzazione — Mini Cozy Room
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 24 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 29 Marzo 2026)
 **Versione Progetto**: Godot 4.5 | GDScript | GL Compatibility
 **Autore**: Renan Augusto Macena
-**Ambito**: Analisi completa di 25 script, 8 scene, 5 file dati, 4 test, 3 workflow CI
+**Ambito**: Analisi completa di 21 script, 8 scene, 4 file dati, 0 test, 2 workflow CI
 
 > **Nota sull'Aggiornamento del 24 Marzo 2026**: Dopo la prima stesura dell'audit, il codebase e' stato
 > parzialmente corretto. Questo aggiornamento riflette lo stato attuale: i problemi risolti sono marcati
@@ -25,6 +25,20 @@
 > Le correzioni proposte in questo audit restano valide, ma i colleghi dovrebbero sapere che
 > i sistemi piu' complessi sono candidati alla semplificazione. Se una correzione riguarda un
 > sistema che verra' poi semplificato, ha comunque valore come esercizio didattico.
+
+> **Aggiornamento 29 Marzo 2026 — Allineamento Post-Semplificazione**:
+> Questo aggiornamento riflette lo stato del codebase dopo le seguenti modifiche strutturali:
+>
+> - **SupabaseClient**: completamente rimosso (file .gd eliminato, zero riferimenti residui)
+> - **CI/CD**: semplificata da 3 pipeline a 2 (ci.yml solo lint, build.yml invariato, database-ci.yml rimosso)
+> - **Test**: tutti i file test rimossi (GdUnit4 non installato). Copertura attuale: 0%
+> - **shop_panel e music_panel**: rimossi dal progetto (semplificazione design)
+> - **env_loader.gd**: rimosso (non piu' necessario senza Supabase)
+> - **Schema database (C3, C4)**: corretti — `characters` ora usa `character_id` come PK, `inventario` ristrutturato con FK e ON DELETE CASCADE
+> - **male_black_shirt (C7)**: rimosso dal catalogo characters.json (costante orfana in constants.gd ancora presente)
+>
+> **Numeri aggiornati**: 21 script, 8 scene, 4 file dati, 0 test, 2 workflow CI,
+> 7 autoload (6 + PerformanceManager), 20 segnali, 1 stanza (3 temi), 58 decorazioni (11 categorie), 1 personaggio.
 
 ---
 
@@ -51,10 +65,10 @@
 
 **Capitoli di riferimento per il proprio lavoro**:
 
-- **Sezione 9.3** — CI/CD: aggiungere linting dei file test con gdformat, migliorare parsing regex nello schema database-ci.yml
+- **Sezione 9.3** — CI/CD: linting file test con gdformat (GIA' FATTO), CI semplificata a 2 workflow (ci.yml lint + build.yml)
 - **Sezione 6.7** — Logger: flush sincrono che blocca il game thread, log persi se file non disponibile, session ID con possibili collisioni (problemi A12, A13)
 - **Sezione 6.8** — PerformanceManager: posizione finestra non persistita prima dello shutdown (problema A14)
-- **Sezione 11, Fase 5** — Copertura test: configurare i nuovi test nel workflow CI, verificare che i 6 nuovi file test vengano eseguiti nella pipeline
+- **Sezione 11, Fase 5** — Copertura test: configurare eventuali nuovi test nel workflow CI (attualmente non ci sono test nel progetto)
 - **Sezione 14** — Mantenere aggiornati i riferimenti e la documentazione tecnica del progetto
 
 ---
@@ -65,12 +79,12 @@
 
 **Capitoli di riferimento per il proprio lavoro**:
 
-- **Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx`, completare o rimuovere personaggio `male_black_shirt` incompleto (problemi C6, C7)
+- **Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx` (problema C6). `male_black_shirt` rimosso dal catalogo JSON (C7 risolto per rimozione); resta costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd riga 16
 - **Sezione 7.7** — room_base.gd: aggiungere `_exit_tree()`, correggere race condition swap personaggio (problema A3)
 - **Sezione 7.8** — decoration_system.gd: correggere rimozione duplicati item_id, aggiungere `_exit_tree()` (problema A15)
 - **Sezione 7.9** — character_controller.gd: aggiungere null check su `_anim`, validare nomi animazione prima di `play()`
 - **Sezione 7.11** — window_background.gd: correggere mismatch dimensione array layers/factors (problema C5)
-- **Sezione 7.1-7.5** — Tutti i pannelli UI: aggiungere `_exit_tree()` con disconnessione segnali, correggere memory leak drag preview e FileDialog (problemi A1, A2, A6, A7)
+- **Sezione 7.1, 7.3, 7.5** — Pannelli UI attivi (panel_manager, deco_panel, settings_panel): aggiungere `_exit_tree()` con disconnessione segnali, correggere memory leak drag preview (problemi A1, A7). ~~shop_panel e music_panel rimossi dal progetto~~
 - **Sezione 7.6** — drop_zone.gd: correggere cast Texture2D unsafe (problema A16)
 - **Sezione 8, tracks.json** — Espandere catalogo musicale con tracce lo-fi e ambience
 
@@ -82,10 +96,10 @@
 
 **Capitoli di riferimento per il proprio lavoro**:
 
-- **Sezione 6.4** — local_database.gd: ridisegnare tabella `characters` (rimuovere account_id come PK), ristrutturare tabella `inventario` (spostare coins/capacita in accounts), aggiungere foreign key item_id (problemi C3, C4)
-- **Sezione 6.4** — local_database.gd: propagare errori apertura database, aggiungere seed data per tabelle vuote, creare funzione `delete_inventory_item()` (problemi A17, A18)
-- **Sezione 8, supabase_migration.sql** — Allineare schema PostgreSQL con le modifiche SQLite
-- **Sezione 11, Fase 1.4** — Implementare le istruzioni dettagliate per la correzione dello schema (istruzioni C3 e C4 nella Sezione 12)
+- ~~**Sezione 6.4** — local_database.gd: ridisegnare tabella `characters`, ristrutturare tabella `inventario`~~ **COMPLETATO** (27 Marzo 2026) — `characters` ora usa `character_id` come PK con AUTOINCREMENT, `inventario` ristrutturato con FK `account_id` e ON DELETE CASCADE (problemi C3, C4 risolti)
+- **Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote (problema A18 — ancora aperto)
+- ~~**Sezione 8, supabase_migration.sql** — Allineare schema PostgreSQL~~ **Non piu' necessario** (SupabaseClient rimosso)
+- ~~**Sezione 11, Fase 1.4** — Istruzioni C3 e C4~~ **GIA' COMPLETATO**
 - **Sezione 11, Fase 3** — Validazione struttura dati: aggiungere `_validate_save_data()` in SaveManager, safety su version comparison (problema A8)
 
 ---
@@ -238,7 +252,7 @@ Un **Autoload** (detto anche **Singleton**) e' uno script che viene caricato aut
 
 **Analogia**: Pensate a un servizio di emergenza come il 112. Non importa dove vi troviate in citta', potete sempre chiamare il 112 e qualcuno rispondera'. Non dovete cercarlo o crearlo: e' sempre li', pronto. Allo stesso modo, `AudioManager` (un autoload) e' sempre disponibile per riprodurre musica, da qualsiasi punto del gioco.
 
-Nel progetto ci sono 8 autoload: `SignalBus`, `GameManager`, `SaveManager`, `LocalDatabase`, `AudioManager`, `SupabaseClient`, `AppLogger`, `PerformanceManager`.
+Nel progetto ci sono 7 componenti principali (6 autoload + PerformanceManager): `SignalBus`, `GameManager`, `SaveManager`, `LocalDatabase`, `AudioManager`, `AppLogger`, `PerformanceManager`.
 
 ---
 
@@ -256,7 +270,7 @@ Questo e' un pattern molto potente perche' permette ai nodi di comunicare **senz
 
 Il **SignalBus** e' un autoload speciale che funziona come un "hub centrale" per tutti i segnali del gioco. Invece di far comunicare direttamente i nodi tra loro, tutti passano attraverso il SignalBus.
 
-**Analogia**: Pensate alla centralina di un ufficio postale. Invece di consegnare le lettere a mano porta a porta (comunicazione diretta tra nodi), tutti depositano le lettere all'ufficio postale (SignalBus) che si occupa di instradarle al destinatario giusto. In questo progetto il SignalBus gestisce 21 segnali diversi.
+**Analogia**: Pensate alla centralina di un ufficio postale. Invece di consegnare le lettere a mano porta a porta (comunicazione diretta tra nodi), tutti depositano le lettere all'ufficio postale (SignalBus) che si occupa di instradarle al destinatario giusto. In questo progetto il SignalBus gestisce 20 segnali diversi.
 
 ---
 
@@ -621,10 +635,9 @@ L'**export** e' il processo di compilazione del gioco per una piattaforma specif
 
 **Analogia**: E' come avere un assistente instancabile che, ogni volta che scrivete una pagina del vostro libro, la rilegge, controlla la grammatica, verifica i riferimenti, e prepara una copia pulita. Se trova errori, vi avvisa subito.
 
-Nel progetto Mini Cozy Room, ci sono 3 workflow CI:
-- `ci.yml`: controlla lo stile del codice e esegue i test
+Nel progetto Mini Cozy Room, ci sono 2 workflow CI:
+- `ci.yml`: controlla lo stile del codice (solo lint — gdlint + gdformat)
 - `build.yml`: compila il gioco per Windows e HTML5
-- `database-ci.yml`: verifica il database SQLite e PostgreSQL
 
 ---
 
@@ -777,8 +790,8 @@ Lo **stack tecnologico** e' l'insieme di tecnologie usate per costruire il proge
 | **GL Compatibility** | Renderer grafico | Compatibile con la piu' ampia gamma di hardware, ideale per un'app desktop leggera |
 | **JSON** | Formato dati testuale | Per i cataloghi (stanze, decorazioni, personaggi, tracce musicali) |
 | **SQLite** | Database leggero in file singolo | Per il backup dei dati di salvataggio, come fallback |
-| **Supabase** | Backend cloud (opzionale) | Per sincronizzazione dati online — non obbligatorio, il gioco funziona anche offline |
-| **GdUnit4** | Framework di testing | Per i test automatizzati del codice |
+| ~~**Supabase**~~ | ~~Backend cloud~~ | **RIMOSSO** (27 Marzo 2026) — Il gioco funziona esclusivamente offline con JSON + SQLite |
+| **GdUnit4** | Framework di testing | Non installato — i file test sono stati rimossi. I test potranno essere reintrodotti in futuro |
 | **GitHub Actions** | CI/CD | Per eseguire test e compilazione automaticamente ad ogni commit |
 
 ### Architettura del Progetto
@@ -787,7 +800,7 @@ L'architettura di Mini Cozy Room si basa su un pattern chiamato **Signal-Driven 
 
 #### L'Analogia dell'Ufficio Postale
 
-Immaginate il progetto come un condominio con 8 uffici (gli 8 autoload). Ogni ufficio ha un compito specifico:
+Immaginate il progetto come un condominio con 7 uffici (i 7 componenti principali: 6 autoload + PerformanceManager). Ogni ufficio ha un compito specifico:
 
 | Ufficio (Autoload) | Compito |
 |---------------------|---------|
@@ -796,7 +809,7 @@ Immaginate il progetto come un condominio con 8 uffici (gli 8 autoload). Ogni uf
 | **SaveManager** | L'archivista — gestisce il salvataggio e caricamento dei dati |
 | **LocalDatabase** | Il database locale — gestisce la copia SQLite dei dati |
 | **AudioManager** | Il tecnico audio — gestisce musica e suoni |
-| **SupabaseClient** | L'addetto alle comunicazioni esterne — gestisce la connessione al cloud |
+| ~~**SupabaseClient**~~ | ~~L'addetto alle comunicazioni esterne~~ — **RIMOSSO** (27 Marzo 2026) |
 | **AppLogger** | Il segretario — registra tutto quello che succede (log) |
 | **PerformanceManager** | Il tecnico della manutenzione — ottimizza le prestazioni |
 
@@ -806,7 +819,7 @@ In un'architettura signal-driven ideale, questi uffici **non si parlano direttam
 
 #### Il SignalBus — Il Cuore delle Comunicazioni
 
-Il SignalBus gestisce attualmente **21 segnali** diversi. Ogni segnale rappresenta un tipo di "messaggio" che puo' essere inviato:
+Il SignalBus gestisce attualmente **20 segnali** diversi. Ogni segnale rappresenta un tipo di "messaggio" che puo' essere inviato:
 
 - `room_changed`: la stanza e' stata cambiata
 - `decoration_placed`: una decorazione e' stata piazzata
@@ -820,22 +833,21 @@ L'ordine in cui gli autoload vengono caricati e' **fondamentale** perche' alcuni
 
 1. **SignalBus** — caricato per primo perche' tutti gli altri lo usano per comunicare
 2. **AppLogger** — caricato presto perche' gli altri lo usano per registrare messaggi
-3. **LocalDatabase** — deve essere pronto prima del SaveManager
+3. **GameManager** — coordina lo stato del gioco e carica i cataloghi
 4. **SaveManager** — dipende da LocalDatabase per il backup
-5. **GameManager** — dipende da SaveManager per caricare lo stato del gioco
+5. **LocalDatabase** — gestisce la persistenza SQLite
 6. **AudioManager** — dipende da GameManager per sapere quali tracce caricare
-7. **SupabaseClient** — ultimo perche' e' opzionale
-8. **PerformanceManager** — ultimo perche' gestisce solo ottimizzazioni
+7. **PerformanceManager** — ultimo perche' gestisce solo ottimizzazioni (in `scripts/systems/`)
 
 **Perche' l'ordine conta**: Se il SaveManager prova a usare il LocalDatabase prima che quest'ultimo sia stato caricato, il gioco crasha. E' come cercare di usare il telefono prima che sia stato acceso.
 
 ### Contenuti del Gioco
 
 Il gioco include:
-- **4 stanze** con temi diversi e colori personalizzabili
-- **118 decorazioni** in 14 categorie (mobili, cucina, piante, ecc.)
-- **3 personaggi** giocabili con animazioni
-- **2 tracce musicali** (tema pioggia) + sistema di importazione tracce esterne
+- **1 stanza** (cozy_studio) con **3 temi** colore (modern, natural, pink)
+- **58 decorazioni** in 11 categorie (letti, scrivanie, sedie, armadi, piante, ecc.)
+- **1 personaggio** giocabile (male_old) con animazioni in 8 direzioni
+- **2 tracce musicali** (tema pioggia)
 - **FPS dinamico**: 60 FPS quando il gioco e' in primo piano, 15 FPS quando e' in background (per risparmiare risorse del computer)
 
 ---
@@ -850,7 +862,7 @@ Pensate a questo processo come alla visita medica completa di cui abbiamo parlat
 
 ### Aree di Competenza Analizzate
 
-Per ogni area, abbiamo usato come riferimento i documenti di studio del progetto (cartella `study/`):
+Per ogni area, abbiamo usato come riferimento i documenti di studio del progetto (cartella `study/`) e le guide operative (cartella `guide/`):
 
 | Area Analizzata | Documento di Riferimento | Cosa Abbiamo Cercato |
 |-----------------|--------------------------|----------------------|
@@ -885,11 +897,11 @@ Gli **autoload** (vedi glossario) sono gli script che formano la "spina dorsale"
 
 Poiche' gli autoload sono sempre attivi e accessibili da qualsiasi punto del gioco, un bug in un autoload ha un impatto potenzialmente **globale**: puo' causare problemi ovunque.
 
-In Mini Cozy Room ci sono 8 autoload. Li analizziamo uno per uno.
+In Mini Cozy Room ci sono 6 autoload (piu' PerformanceManager come sistema caricato all'avvio). Li analizziamo uno per uno.
 
 ---
 
-### 6.1 signal_bus.gd (42 righe, 0 funzioni, 21 segnali)
+### 6.1 signal_bus.gd (42 righe, 0 funzioni, 20 segnali)
 
 **Cosa fa questo file**: E' il "centralino telefonico" del gioco (vedi glossario: SignalBus). Contiene solo dichiarazioni di segnali, senza nessuna logica. Quando un componente del gioco vuole comunicare qualcosa (ad esempio "la stanza e' cambiata"), lo fa attraverso questo file.
 
@@ -980,18 +992,9 @@ Capire i problemi di questo file richiede una conoscenza base dei database. Brev
 > che SupabaseClient aveva zero chiamanti nel codebase (codice morto). Il gioco funziona
 > esclusivamente offline con JSON + SQLite.
 
-~~**Cosa fa questo file**: Gestisce la comunicazione con **Supabase**, un servizio cloud che permette di sincronizzare i dati del gioco online.~~
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | CRITICO | Token autenticazione salvati come JSON plaintext in `user://auth.cfg` — vulnerabilita' sicurezza | 289-297 | I token di autenticazione (le "chiavi" che permettono al gioco di accedere all'account Supabase dell'utente) vengono salvati come testo in chiaro in un file. Chiunque abbia accesso al computer potrebbe leggere questi token e impersonare l'utente. E' come scrivere la password di casa su un biglietto attaccato alla porta. La soluzione e' usare un sistema di cifratura o il keyring del sistema operativo. |
-| 2 | ALTO | Pool HTTP cresce senza limiti — per sessioni lunghe, memory leak | 337-348 | Il client Supabase crea connessioni HTTP per comunicare col server. Queste connessioni vengono accumulate in un "pool" (collezione riutilizzabile), ma il pool non ha un limite massimo. Durante sessioni di gioco molto lunghe, il numero di connessioni cresce continuamente senza mai diminuire, consumando sempre piu' memoria. |
-| 3 | ALTO | Nessun timeout effettivo sulle richieste HTTP — request puo' bloccarsi indefinitamente | 332 | Quando il gioco invia una richiesta al server Supabase, non c'e' un limite di tempo per la risposta. Se il server non risponde (perche' e' offline o la connessione e' caduta), la richiesta resta in attesa per sempre, potenzialmente bloccando il gioco. |
-| 4 | ALTO | Token refresh race condition: se token scade durante una richiesta, token stale potrebbe essere inviato | 265, 316-318 | I token di autenticazione hanno una scadenza. Se un token scade proprio mentre una richiesta e' in corso, la richiesta viene inviata con un token scaduto (stale) e fallisce. Non c'e' un meccanismo per rigenerare il token e ritentare automaticamente. |
-| 5 | MEDIO | `sign_up()` e `sign_in_email()` non validano email/password vuoti | 77-109 | Le funzioni di registrazione e login non controllano che l'utente abbia effettivamente inserito email e password. Una richiesta con campi vuoti viene inviata al server, che la rifiutera', ma questo spreca una chiamata di rete e genera un messaggio di errore meno chiaro per l'utente. |
-| 6 | MEDIO | `query_params` passato direttamente in URL senza encoding — potenziale injection | 157, 182, 194 | I parametri delle query al database vengono inseriti direttamente nell'URL senza essere "encoded" (convertiti in formato sicuro per URL). Caratteri speciali nei parametri potrebbero essere interpretati come comandi, causando comportamenti imprevisti. |
-| 7 | MEDIO | Schema errori inconsistente tra funzioni diverse | 77-200 | Ogni funzione gestisce gli errori in modo diverso: alcune ritornano un dizionario con un campo "error", altre ritornano `null`, altre emettono segnali. Questa inconsistenza rende difficile per il codice chiamante gestire gli errori in modo uniforme. |
-| 8 | MEDIO | Nessun meccanismo di retry per richieste fallite | 357-371 | Se una richiesta al server fallisce (timeout, errore di rete), il codice non prova a ripeterla. In un contesto di rete, dove errori temporanei sono comuni, un meccanismo di retry automatico e' una best practice fondamentale. |
+> L'analisi completa originale (8 problemi: 1 CRITICO, 4 ALTI, 3 MEDI) e' disponibile nella versione
+> del 24 Marzo 2026 di questo documento. Tutti i problemi relativi a SupabaseClient (A10, A11, AR11)
+> sono da considerarsi **risolti per rimozione**.
 
 ---
 
@@ -1044,16 +1047,12 @@ Questi script sono quelli piu' "visibili" all'utente: un bug qui si manifesta co
 
 ---
 
-### 7.2 shop_panel.gd (~160 righe)
+### 7.2 shop_panel.gd — RIMOSSO (24 Marzo 2026)
 
-**Cosa fa questo file**: Gestisce il pannello del negozio, dove l'utente puo' sfogliare e acquistare decorazioni per la propria stanza. Mostra le decorazioni organizzate per categoria, con preview (anteprima) e la possibilita' di trascinare gli oggetti nella stanza (drag-and-drop).
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Preview drag non pulito — memory leak con operazioni drag ripetute | 143-152 | Ogni volta che l'utente inizia a trascinare un oggetto, il codice crea un'immagine di anteprima (preview) che segue il mouse. Ma quando il drag termina, questa anteprima non viene distrutta. Dopo molti drag-and-drop, centinaia di preview invisibili si accumulano in memoria. E' come se ogni volta che prendete un libro dallo scaffale, una fotocopia apparisse e non venisse mai buttata. |
-| 2 | ALTO | Nessun `_exit_tree()` — connessioni segnali bottoni non disconnesse | — | I bottoni del negozio (categorie, acquisto) sono connessi a funzioni del pannello. Quando il pannello viene chiuso e distrutto, queste connessioni restano attive, causando potenziali crash e memory leak. |
-| 3 | MEDIO | `header.text.substr(2)` assume prefisso esatto — fragile se testo modificato | 163 | Il codice estrae il nome della categoria dal testo dell'header saltando i primi 2 caratteri. Se qualcuno cambia il formato del testo (per esempio aggiungendo un'emoji all'inizio), questo codice si rompe. E' un approccio "fragile" perche' dipende da un'assunzione non documentata. |
-| 4 | MEDIO | Nessuna gestione errori per dati catalogo corrotti (campi mancanti) | 96-104 | Quando il pannello mostra le decorazioni, non controlla che i dati nel catalogo siano completi. Se un campo manca (per esempio, il prezzo di un oggetto), il codice crasha o mostra dati sbagliati. |
+> **Questo file e' stato eliminato dal progetto** come parte della semplificazione del design
+> (rimosso il concetto di "negozio" separato — le decorazioni si gestiscono direttamente dal
+> deco_panel). I problemi A6 (memory leak drag preview) e relativi non sono piu' applicabili
+> a questo file. Il memory leak drag preview in deco_panel (A7) resta aperto.
 
 ---
 
@@ -1069,16 +1068,11 @@ Questi script sono quelli piu' "visibili" all'utente: un bug qui si manifesta co
 
 ---
 
-### 7.4 music_panel.gd (~260 righe)
+### 7.4 music_panel.gd — RIMOSSO (25 Marzo 2026)
 
-**Cosa fa questo file**: Gestisce il pannello musicale, dove l'utente puo' controllare la riproduzione, cambiare traccia, importare nuova musica dal proprio computer, e regolare il volume. E' come il pannello di controllo di un lettore musicale.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | CRITICO | `FileDialog` creato e aggiunto alla scena ma MAI rimosso — memory leak accumulativo | 236-244 | Ogni volta che l'utente clicca "Importa Musica", il codice crea un nuovo FileDialog (la finestra per scegliere il file). Ma il FileDialog precedente non viene mai distrutto. Se l'utente clicca "Importa" 100 volte, ci sono 100 FileDialog in memoria. Questo e' un **memory leak grave e accumulativo**: piu' si usa la funzione, piu' memoria viene consumata, finche' il gioco non rallenta o crasha. |
-| 2 | ALTO | Solo 2 segnali disconnessi in `_exit_tree()` su ~10 connessi | 252-256 | La funzione di pulizia disconnette solo 2 dei circa 10 segnali che erano stati connessi. Gli altri 8 restano attivi, puntando a un nodo che non esiste piu'. |
-| 3 | MEDIO | `AudioManager.tracks[index]` senza bounds check | 163 | Accesso alla lista delle tracce senza verificare che l'indice sia valido. Se non ci sono tracce, crash. |
-| 4 | MEDIO | Nessuna validazione campi metadata traccia ("title", "artist") | 163 | I metadati delle tracce (titolo, artista) non vengono verificati. Se mancano, il pannello mostra dati vuoti o sbagliati. |
+> **Questo file e' stato eliminato dal progetto.** La musica viene ora gestita direttamente
+> dall'AudioManager senza interfaccia utente dedicata. I problemi A2 (FileDialog memory leak)
+> e A22 (`_exit_tree()` incompleto) non sono piu' applicabili.
 
 ---
 
@@ -1211,7 +1205,7 @@ Questi script sono quelli piu' "visibili" all'utente: un bug qui si manifesta co
 | 2 | constants.gd | BASSO | Nessuna costante `GRID_CELL_SIZE` — hardcoded come 64 in piu' file | La dimensione della griglia e' un "numero magico" (un valore numerico senza nome) ripetuto in piu' punti del codice. Se va cambiato, bisogna cercarlo e modificarlo ovunque. |
 | 3 | helpers.gd | MEDIO | `array_to_vec2()` non valida tipo contenuto — valori non numerici causano errore float() | La funzione converte un array in un vettore 2D ma non controlla che i valori siano numeri. Se l'array contiene testo, la conversione a float crasha. |
 | 4 | helpers.gd | BASSO | Mancano type hints espliciti sui return delle funzioni | Le funzioni non dichiarano il tipo del valore che restituiscono, rendendo il codice meno leggibile e piu' soggetto a errori. |
-| 5 | env_loader.gd | MEDIO | `get_value()` ricarica file config ad ogni chiamata — inefficiente (riga 47) | Ogni volta che viene richiesto un valore, il file di configurazione viene riletto da disco. Se il valore viene richiesto spesso (per esempio in un loop), questo causa letture disco ripetute e inutili. La soluzione e' caricare il file una volta sola e tenere i valori in memoria. |
+| 5 | ~~env_loader.gd~~ | ~~MEDIO~~ | ~~`get_value()` ricarica file config ad ogni chiamata~~ | **RIMOSSO** — File eliminato con la rimozione di SupabaseClient (27 Marzo 2026) |
 
 ---
 
@@ -1246,13 +1240,11 @@ I file JSON contengono i "cataloghi" del gioco: le liste di stanze, decorazioni,
 
 #### rooms.json — BUONO
 
-Il catalogo delle stanze contiene 4 stanze con temi multipli, colori esadecimali validi, e ID consistenti. Nessun problema trovato.
+Il catalogo delle stanze contiene 1 stanza (cozy_studio) con 3 temi colore (modern, natural, pink), colori esadecimali validi, e ID consistenti. Nessun problema trovato.
 
 #### decorations.json — BUONO
 
-Il catalogo delle decorazioni contiene 118 decorazioni in 14 categorie (136 items totali inclusa la cucina). Tutti i percorsi sprite sono stati verificati come esistenti nel filesystem.
-
-**Nota**: La scala delle decorazioni da cucina (0.3-0.7) e' diversa da quella dei mobili (3.0). Questo e' intenzionale: le decorazioni da cucina sono piu' piccole per la prospettiva isometrica.
+Il catalogo delle decorazioni contiene 58 decorazioni in 11 categorie (letti, scrivanie, sedie, armadi, finestre, piante, accessori, elementi stanza, pet). Tutti i percorsi sprite sono stati verificati come esistenti nel filesystem.
 
 #### characters.json — PROBLEMI CRITICI
 
@@ -1261,7 +1253,7 @@ Questo file contiene i dati dei personaggi giocabili (sprite di animazione, meta
 | # | Severita' | Problema | Spiegazione |
 |---|-----------|----------|-------------|
 | 1 | CRITICO | Typo nel percorso sprite: `male_walk_down_side_sxt.png` dovrebbe essere `male_walk_down_side_sx.png` (riga 49) | C'e' un errore di battitura nel nome del file: "sxt" invece di "sx". Il file corretto esiste sul disco ma il JSON punta al file sbagliato. Quando il gioco tenta di caricare questa animazione, non trova il file e crasha. E' un errore di un singolo carattere che causa un crash completo. |
-| 2 | CRITICO | `male_black_shirt` ha SOLO animazione `idle_down` — crash se richieste altre animazioni | Il personaggio "male_black_shirt" e' incompleto: ha solo l'animazione di stallo verso il basso. Ma il gioco si aspetta che ogni personaggio abbia tutte le animazioni (camminata in tutte le direzioni, interazione, rotazione). Quando l'utente seleziona questo personaggio e prova a camminare, il gioco cerca un'animazione che non esiste e crasha. |
+| 2 | ~~CRITICO~~ | ~~`male_black_shirt` ha SOLO animazione `idle_down`~~ | **RISOLTO per rimozione** (29 Marzo 2026) — Il personaggio `male_black_shirt` e' stato rimosso dal catalogo characters.json. Resta la costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd (riga 16), che andrebbe rimossa. |
 | 3 | MEDIO | Directory `charachters` e' un typo (dovrebbe essere `characters`) — presente in tutto il progetto | Il nome della cartella degli asset dei personaggi ha un errore di battitura: "charachters" invece di "characters". Questo errore e' presente in tutto il progetto (JSON, codice, percorsi file). Non causa crash perche' il typo e' consistente (tutti usano la versione sbagliata), ma e' confondente e dovrebbe essere corretto. |
 
 #### tracks.json — MINORE
@@ -1270,11 +1262,11 @@ Il catalogo delle tracce musicali contiene solo 2 tracce a tema pioggia, meno di
 
 ---
 
-### 8.3 Supabase Migration SQL — BUONO
+### 8.3 Supabase Migration SQL — NON PIU' RILEVANTE (27 Marzo 2026)
 
-Il file di migrazione SQL per Supabase definisce 7 tabelle con Row Level Security (RLS) policies, foreign keys, e cascading deletes. La struttura e' corretta dal punto di vista tecnico.
-
-**Nota**: I nomi delle colonne sono un mix di italiano e inglese (per esempio, `creato_il` ma `account_id`). Per coerenza, sarebbe meglio scegliere una lingua e usarla consistentemente.
+> SupabaseClient e' stato rimosso dal progetto. Il file `supabase_migration.sql` non e' piu'
+> utilizzato. Lo schema PostgreSQL non e' piu' necessario poiche' il gioco funziona esclusivamente
+> con JSON + SQLite locale.
 
 ---
 
@@ -1290,44 +1282,33 @@ La CI/CD (vedi glossario) automatizza l'esecuzione dei test ad ogni commit, gara
 
 ### 9.1 Copertura Test
 
-Il progetto ha attualmente 5 file di test con un totale di 48 test unitari:
+Il progetto **non ha attualmente file di test**. I 5 file di test originali (test_helpers.gd, test_logger.gd, test_save_manager.gd, test_save_manager_state.gd, test_shop_panel.gd — per un totale di 48 test unitari) sono stati rimossi perche' dipendevano da GdUnit4 (non installato nel progetto). Rimane solo un file orfano `test_shop_panel.gd.uid` nella cartella `tests/unit/`.
 
-| File Test | Modulo Testato | # Test | Copertura | Spiegazione |
-|-----------|---------------|--------|-----------|-------------|
-| test_helpers.gd | Helpers utility | 10 | BUONA — vec2, clamp, format, snap | Testa le funzioni di utilita' generiche: conversione di coordinate, limitazione di valori, formattazione stringhe |
-| test_logger.gd | AppLogger | 11 | BUONA — session ID, livelli, path | Testa il sistema di logging: generazione ID sessione, corretto funzionamento dei livelli di log, percorsi file |
-| test_save_manager.gd | SaveManager schema | 12 | BUONA — settings, music state | Testa la struttura dei dati di salvataggio: impostazioni, stato musicale |
-| test_save_manager_state.gd | SaveManager state | 9 | BUONA — decorations, character, inventory | Testa lo stato del gioco: decorazioni, personaggio, inventario |
-| test_shop_panel.gd | ShopPanel | 6 | DEBOLE — solo catalogo e segnali | Testa solo il caricamento del catalogo e l'emissione dei segnali, ma non il drag-and-drop ne' il ciclo di vita del pannello |
+**Copertura attuale: 0%**
 
-**Copertura stimata: 15-20%**
-
-Questo significa che solo il 15-20% del codice del progetto e' coperto da test automatizzati. L'obiettivo minimo per un rilascio sicuro e' del 50%.
+La creazione di una suite di test rimane un obiettivo importante per la stabilita' del progetto. I file test suggeriti nella Fase 5 del Piano di Stabilizzazione (Sezione 11) restano validi come roadmap per la reintroduzione dei test.
 
 ### 9.2 Aree NON Testate
 
-Queste aree del progetto non hanno alcun test automatizzato:
+Attualmente **nessuna area** del progetto e' coperta da test automatizzati (tutti i file test sono stati rimossi). Le aree ad alto rischio che beneficerebbero maggiormente di test sono:
 
 | Area | Rischio | Spiegazione |
 |------|---------|-------------|
-| AudioManager | ALTO | Il sistema audio (crossfade, playlist, ambience) non ha test. Bug nell'audio possono causare crash, memory leak, e esperienza utente degradata |
-| LocalDatabase | ALTO | Le operazioni CRUD (Create, Read, Update, Delete) e l'integrita' dello schema non sono testate. Bug qui causano perdita o corruzione di dati |
-| GameManager | MEDIO | La gestione dello stato e il caricamento dei cataloghi non sono testati |
-| UI Panels (4) | ALTO | Il ciclo di vita dei pannelli, il drag-and-drop, e le interazioni utente non sono testate. Qui si trovano molti dei memory leak scoperti |
+| AudioManager | ALTO | Il sistema audio (crossfade, playlist, ambience) non ha test |
+| LocalDatabase | ALTO | Le operazioni CRUD e l'integrita' dello schema non sono testate |
+| SaveManager | ALTO | Il salvataggio, caricamento e migrazione dati non sono testati |
+| UI Panels (3) | ALTO | Il ciclo di vita dei pannelli e il drag-and-drop non sono testati |
 | Room Logic | ALTO | Il piazzamento delle decorazioni e il cambio di personaggio non sono testati |
-| Scene Loading | MEDIO | L'istanziazione delle scene e le transizioni non sono testate |
-| Supabase Client | MEDIO | Il flusso di autenticazione e la gestione HTTP non sono testati |
-| Performance Manager | BASSO | Il capping degli FPS e il salvataggio della posizione finestra non sono testati |
+| GameManager | MEDIO | La gestione dello stato e il caricamento dei cataloghi non sono testati |
 
 ### 9.3 CI/CD
 
-Il progetto utilizza 3 workflow GitHub Actions:
+Il progetto utilizza 2 workflow GitHub Actions (semplificato da 3 il 25 Marzo 2026 — `database-ci.yml` rimosso):
 
-| Workflow | Stato | Problemi |
-|----------|-------|----------|
-| ci.yml (lint + test + security) | BUONO | I file di test non sono lintati da gdformat (cioe', il formattatore controlla gli script ma non i test) |
+| Workflow | Stato | Note |
+|----------|-------|------|
+| ci.yml (lint only) | BUONO | Semplificato: solo gdlint + gdformat su `v1/scripts/` e `v1/tests/`. Job test e security-scan rimossi. Branch aggiornato a `Renan` |
 | build.yml (Windows + HTML5) | BUONO | Manca code signing per il file .exe (l'eseguibile Windows non e' firmato, il che potrebbe generare avvisi di sicurezza) |
-| database-ci.yml (SQLite + PostgreSQL) | ECCELLENTE | Il parsing tramite regex e' un po' fragile ma funzionale |
 
 ---
 
@@ -1335,64 +1316,64 @@ Il progetto utilizza 3 workflow GitHub Actions:
 
 Questa sezione presenta tutti i problemi trovati, organizzati per severita' e con un identificatore univoco (C1, A1, AR1...) per riferirsi ad essi facilmente nelle sezioni successive.
 
-### CRITICO (7 problemi) — Priorita' Immediata
+### CRITICO (7 problemi originali — 5 corretti, 1 aperto, 1 risolto per rimozione) — Priorita' Immediata
 
 Questi problemi devono essere risolti **prima di qualsiasi rilascio**. Causano perdita di dati, crash irrecuperabili, o vulnerabilita' di sicurezza.
 
-| # | File | Problema | Impatto |
-|---|------|----------|---------|
-| C1 | save_manager.gd:115 | Inventario MAI salvato su SQLite | Perdita dati su fallback DB |
-| C2 | save_manager.gd:92 | Backup copy senza error checking | Nessun backup se copia fallisce |
-| C3 | local_database.gd:101 | Characters PK impedisce multipli personaggi | Design schema rotto |
-| C4 | local_database.gd:89 | Inventory schema confuso (coins per item) | Dati incoerenti |
-| C5 | window_background.gd:33 | Array mismatch _layers vs _parallax_factors | Crash out-of-bounds |
-| C6 | characters.json:49 | Typo percorso sprite "sxt" -> "sx" | Crash caricamento animazione |
-| C7 | characters.json | male_black_shirt incompleto | Crash cambio animazione |
+| # | File | Problema | Impatto | Stato |
+|---|------|----------|---------|-------|
+| C1 | save_manager.gd:115 | Inventario MAI salvato su SQLite | Perdita dati su fallback DB | **CORRETTO** |
+| C2 | save_manager.gd:92 | Backup copy senza error checking | Nessun backup se copia fallisce | **CORRETTO** |
+| C3 | local_database.gd:101 | Characters PK impedisce multipli personaggi | Design schema rotto | **CORRETTO** (27 Mar) |
+| C4 | local_database.gd:89 | Inventory schema confuso (coins per item) | Dati incoerenti | **CORRETTO** (27 Mar) |
+| C5 | window_background.gd:33 | Array mismatch _layers vs _parallax_factors | Crash out-of-bounds | **CORRETTO** |
+| C6 | characters.json:49 | Typo percorso sprite "sxt" -> "sx" | Crash caricamento animazione | **APERTO** |
+| C7 | characters.json | male_black_shirt incompleto | Crash cambio animazione | **Risolto per rimozione** |
 
-**C1 — Inventario MAI salvato su SQLite**: La funzione `_save_to_sqlite()` nel SaveManager salva i dati del personaggio sul database SQLite ma dimentica completamente l'inventario. Il database SQLite serve come backup in caso il file JSON principale si corrompa. Se questo succede, l'utente perde tutti i suoi oggetti. Pensate a una banca che fa il backup dei conti correnti ma dimentica di copiare i depositi a risparmio.
+**C1 — Inventario MAI salvato su SQLite** — **CORRETTO**: La funzione `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con sia `character_data` che `inventory_data`.
 
-**C2 — Backup copy senza error checking**: Quando il gioco salva, prima crea una copia di backup del salvataggio precedente. Ma il codice non verifica se la copia e' andata a buon fine. Se il disco e' pieno o ci sono problemi di permessi, la copia fallisce silenziosamente e l'utente pensa di avere un backup quando non ce l'ha.
+**C2 — Backup copy senza error checking** — **CORRETTO**: Il backup ora verifica il risultato di `DirAccess.copy_absolute()` e logga l'errore con `AppLogger.error` se la copia fallisce.
 
-**C3 — Characters PK impedisce multipli personaggi**: La tabella `characters` nel database usa `account_id` come PRIMARY KEY. Poiche' la chiave primaria deve essere unica, ogni account puo' avere un solo personaggio. Ma il gioco e' progettato per supportare piu' personaggi per account.
+**C3 — Characters PK impedisce multipli personaggi** — **CORRETTO** (27 Marzo 2026): La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE.
 
-**C4 — Inventory schema confuso**: Nella tabella `inventario`, i campi `coins` (monete) e `capacita` (capacita' zaino) sono associati a ogni singolo oggetto invece che all'account. Questo non ha senso logico e causa dati incoerenti.
+**C4 — Inventory schema confuso** — **CORRETTO** (27 Marzo 2026): I campi `coins` e `inventario_capacita` sono stati spostati nella tabella `accounts`. La tabella `inventario` e' stata ristrutturata con FK `account_id` e ON DELETE CASCADE.
 
-**C5 — Array mismatch window_background.gd**: Se il caricamento di un layer dello sfondo fallisce, gli array `_layers` e `_parallax_factors` finiscono con dimensioni diverse. Quando il codice itera su di essi usando lo stesso indice, si verifica un crash per accesso fuori dai limiti.
+**C5 — Array mismatch window_background.gd** — **CORRETTO**: Il codice attuale allinea correttamente gli array con `continue` su `tex == null`.
 
-**C6 — Typo percorso sprite characters.json**: Un errore di battitura nel nome del file (`sxt` invece di `sx`) impedisce il caricamento di un'animazione, causando un crash quando il giocatore tenta di muoversi con il personaggio `male_old`.
+**C6 — Typo percorso sprite characters.json** — **ANCORA APERTO**: L'errore di battitura `sxt` (invece di `sx`) in characters.json riga 23 non e' ancora stato corretto. Causa crash al caricamento dell'animazione del personaggio `male_old`.
 
-**C7 — male_black_shirt incompleto**: Il personaggio `male_black_shirt` ha solo l'animazione `idle_down`. Ogni altro tentativo di animazione (camminata, interazione) crasha perche' le animazioni richieste non esistono.
+**C7 — male_black_shirt incompleto** — **RISOLTO per rimozione**: Il personaggio `male_black_shirt` e' stato rimosso dal catalogo characters.json. Resta la costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd (riga 16), insieme ad altre 2 costanti orfane (`CHAR_FEMALE_RED_SHIRT`, `CHAR_MALE_YELLOW_SHIRT`), che andrebbero rimosse.
 
 ---
 
-### ALTO (18 problemi) — Prossimo Sprint
+### ALTO (18 problemi originali — 8 corretti/rimossi, 10 aperti) — Prossimo Sprint
 
 Questi problemi non causano perdita di dati immediata, ma degradano l'esperienza utente con memory leak, crash intermittenti, e feature rotte.
 
-| # | File | Problema |
-|---|------|----------|
-| A1 | 12 script | Mancanza `_exit_tree()` in: panel_manager, shop_panel, deco_panel, settings_panel, room_base, decoration_system, room_grid, main_menu, menu_character, main, music_panel (parziale), character_controller |
-| A2 | music_panel.gd:236 | FileDialog memory leak accumulativo |
-| A3 | room_base.gd:35 | Race condition swap personaggio |
-| A4 | audio_manager.gd:240 | Memory leak player ambience |
-| A5 | audio_manager.gd:82 | Crash su lista tracce vuota |
-| A6 | shop_panel.gd:143 | Memory leak drag preview |
-| A7 | deco_panel.gd:157 | Memory leak drag preview |
-| A8 | save_manager.gd:275 | Version comparison rotta per non-numeric |
-| A9 | save_manager.gd:245 | Migrazione v3 verso v4 non valida struttura |
-| A10 | supabase_client.gd:289 | Token auth plaintext |
-| A11 | supabase_client.gd:337 | HTTP pool crescita illimitata |
-| A12 | logger.gd:121 | Flush sincrono blocca game thread |
-| A13 | logger.gd:125 | Log persi se file non disponibile |
-| A14 | performance_manager.gd:54 | Posizione finestra non persistita prima di shutdown |
-| A15 | decoration_system.gd:64 | Rimozione duplicati item_id rotta |
-| A16 | drop_zone.gd:17 | Cast Texture2D unsafe |
-| A17 | local_database.gd:48 | Tabelle seed vuote |
-| A18 | local_database.gd:35 | Errore apertura DB non propagato |
+| # | File | Problema | Stato |
+|---|------|----------|-------|
+| A1 | ~10 script | Mancanza `_exit_tree()` in: panel_manager, deco_panel, settings_panel, room_base, decoration_system, room_grid, main_menu, menu_character, main, character_controller | **APERTO** |
+| A2 | ~~music_panel.gd~~ | ~~FileDialog memory leak accumulativo~~ | **Rimosso** (file eliminato) |
+| A3 | room_base.gd:35 | Race condition swap personaggio | **APERTO** |
+| A4 | audio_manager.gd:240 | Memory leak player ambience | **CORRETTO** |
+| A5 | audio_manager.gd:82 | Crash su lista tracce vuota | **CORRETTO** |
+| A6 | ~~shop_panel.gd~~ | ~~Memory leak drag preview~~ | **Rimosso** (file eliminato) |
+| A7 | deco_panel.gd:157 | Memory leak drag preview | **APERTO** |
+| A8 | save_manager.gd:275 | Version comparison rotta per non-numeric | **CORRETTO** |
+| A9 | save_manager.gd:245 | Migrazione v3 verso v4 non valida struttura | **CORRETTO** |
+| A10 | ~~supabase_client.gd~~ | ~~Token auth plaintext~~ | **Rimosso** (file eliminato) |
+| A11 | ~~supabase_client.gd~~ | ~~HTTP pool crescita illimitata~~ | **Rimosso** (file eliminato) |
+| A12 | logger.gd:121 | Flush sincrono blocca game thread | **APERTO** |
+| A13 | logger.gd:125 | Log persi se file non disponibile | **APERTO** |
+| A14 | performance_manager.gd:54 | Posizione finestra non persistita prima di shutdown | **APERTO** |
+| A15 | decoration_system.gd:64 | Rimozione duplicati item_id rotta | **APERTO** |
+| A16 | drop_zone.gd:17 | Cast Texture2D unsafe | **APERTO** |
+| A17 | local_database.gd:48 | Tabelle seed vuote | **CORRETTO** (diagnostica DB migliorata) |
+| A18 | local_database.gd:35 | Errore apertura DB non propagato | **APERTO** |
 
-**A1 — Mancanza _exit_tree()**: Questo e' il problema piu' diffuso nel progetto. 12 script su 26 non implementano correttamente la funzione di pulizia `_exit_tree()`. Questo significa che quando questi nodi vengono distrutti (per esempio al cambio scena), le connessioni ai segnali restano attive, i timer continuano a scattare, e i tween continuano a funzionare — tutto puntando a nodi che non esistono piu'. Ogni volta che l'utente cambia stanza o chiude un pannello, queste "connessioni fantasma" si accumulano, consumando memoria e rischiando crash. Pensate a dei telefoni che continuano a squillare in uffici dove non lavora piu' nessuno.
+**A1 — Mancanza _exit_tree()**: Questo e' il problema piu' diffuso nel progetto. ~10 script non implementano correttamente la funzione di pulizia `_exit_tree()` (ridotto da 12 dopo la rimozione di shop_panel e music_panel). Quando questi nodi vengono distrutti, le connessioni ai segnali restano attive, i timer continuano a scattare, e i tween continuano a funzionare — tutto puntando a nodi che non esistono piu'.
 
-**A2 — FileDialog memory leak**: Ogni click su "Importa Musica" crea un nuovo FileDialog senza distruggere il precedente. 100 click = 100 FileDialog in memoria.
+**A2 — FileDialog memory leak** — **RISOLTO per rimozione**: music_panel.gd e' stato eliminato dal progetto.
 
 **A3 — Race condition swap personaggio**: Quando si cambia personaggio, il vecchio viene eliminato con `queue_free()` (che agisce a fine frame) ma il nuovo viene aggiunto immediatamente, creando un conflitto temporaneo.
 
@@ -1400,15 +1381,15 @@ Questi problemi non causano perdita di dati immediata, ma degradano l'esperienza
 
 **A5 — Crash su lista tracce vuota**: Se non ci sono tracce musicali caricate, il tentativo di riprodurre causa un crash per accesso a un array vuoto.
 
-**A6 e A7 — Memory leak drag preview**: Sia nel negozio che nel pannello decorazioni, le anteprime di trascinamento non vengono distrutte.
+**A6 — Memory leak drag preview shop_panel** — **RISOLTO per rimozione**: shop_panel.gd eliminato. **A7** (stesso problema in deco_panel.gd) resta aperto.
 
 **A8 — Version comparison rotta**: La comparazione delle versioni funziona solo con numeri puri (come "3" o "4"). Versioni come "1.0.0-beta" causano crash.
 
 **A9 — Migrazione non valida**: La migrazione dalla versione 3 alla 4 del salvataggio non verifica l'integrita' dei dati dell'inventario.
 
-**A10 — Token auth plaintext**: I token di autenticazione Supabase sono salvati in testo chiaro, leggibili da chiunque acceda al computer.
+**A10 — Token auth plaintext** — **RISOLTO per rimozione**: supabase_client.gd eliminato dal progetto.
 
-**A11 — HTTP pool illimitata**: Le connessioni HTTP al server Supabase crescono senza limite durante sessioni lunghe.
+**A11 — HTTP pool illimitata** — **RISOLTO per rimozione**: supabase_client.gd eliminato dal progetto.
 
 **A12 — Flush sincrono**: La scrittura dei log su disco blocca il gioco, causando "stutter" (piccoli scatti) visibili.
 
@@ -1420,13 +1401,13 @@ Questi problemi non causano perdita di dati immediata, ma degradano l'esperienza
 
 **A16 — Cast Texture2D unsafe**: Il caricamento delle texture non gestisce il caso in cui la risorsa caricata non sia una texture.
 
-**A17 — Tabelle seed vuote**: Le tabelle di lookup (colore, categoria, shop) sono create senza dati iniziali.
+**A17 — Tabelle seed vuote** — **CORRETTO** (27 Marzo 2026): Diagnostica database migliorata con informazioni OS, directory e verifica FK.
 
-**A18 — Errore DB non propagato**: Se il database non si apre, il chiamante non lo sa.
+**A18 — Errore DB non propagato**: Se il database non si apre, il chiamante non lo sa. Ancora aperto.
 
 ---
 
-### ARCHITETTURALE (11 violazioni)
+### ARCHITETTURALE (11 violazioni originali — 7 corrette/rimosse, 4 aperte)
 
 Queste non sono bug che causano crash, ma problemi nella struttura del codice che rendono il progetto difficile da mantenere, testare, e far evolvere. Pensate a fondamenta leggermente storte: la casa sta in piedi, ma aggiungere un piano sara' rischioso.
 
@@ -1442,11 +1423,11 @@ Queste non sono bug che causano crash, ma problemi nella struttura del codice ch
 | AR8 | Autoloads | Nessuna validazione dipendenze cross-autoload in _ready() | Nessun autoload verifica che i suoi autoload dipendenti siano gia' disponibili prima di usarli. Se l'ordine di caricamento cambia, il gioco crasha. |
 | AR9 | Tutti i manager | Nessuna propagazione errori (tutto silenzioso) | Quando qualcosa va storto in un manager, l'errore viene ingoiato silenziosamente. I manager che dipendono da quel risultato non sanno che c'e' stato un problema. |
 | AR10 | local_database.gd | Nessun sistema migrazione schema | Non esiste un sistema strutturato per aggiornare lo schema del database quando il gioco viene aggiornato. Ogni modifica richiede interventi manuali in piu' punti del codice. |
-| AR11 | supabase_client.gd | Schema errori inconsistente tra funzioni | Ogni funzione gestisce e ritorna errori in modo diverso, rendendo impossibile un trattamento uniforme degli errori da parte del codice chiamante. |
+| AR11 | ~~supabase_client.gd~~ | ~~Schema errori inconsistente tra funzioni~~ | **RISOLTO per rimozione** — supabase_client.gd eliminato dal progetto (27 Marzo 2026) |
 
 ---
 
-### 10.1 Aggiornamento Post-Correzione (24 Marzo 2026)
+### 10.1 Aggiornamento Post-Correzione (24 Marzo 2026, aggiornato 29 Marzo 2026)
 
 Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni applicate al codebase. I problemi sono classificati come **CORRETTO** (risolto nel codice attuale), **PARZIALMENTE CORRETTO** (migliorato ma non completamente risolto), o **APERTO** (non ancora affrontato). Vengono inoltre aggiunti nuovi problemi scoperti durante la ri-analisi.
 
@@ -1461,31 +1442,32 @@ Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni a
 |---|-------|------|
 | C1 | **CORRETTO** | `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con **sia** `character_data` **che** `inventory_data` (riga 135-139). L'approccio signal-driven e' corretto e allineato con l'architettura. |
 | C2 | **CORRETTO** | Il backup ora verifica il risultato di `DirAccess.copy_absolute()` e logga l'errore con `AppLogger.error` se la copia fallisce (righe 114-116). Il salvataggio principale prosegue comunque. |
-| C3 | APERTO | La tabella `characters` usa ancora `account_id` come PRIMARY KEY. **Assegnato a Elia.** |
-| C4 | APERTO | Lo schema `inventario` ha ancora `coins` e `capacita` per ogni item. **Assegnato a Elia.** |
+| C3 | **CORRETTO** (27 Mar) | La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE. Completato da Renan. |
+| C4 | **CORRETTO** (27 Mar) | `coins` e `inventario_capacita` spostati nella tabella `accounts`. Tabella `inventario` ristrutturata con FK `account_id` e ON DELETE CASCADE. Completato da Renan. |
 | C5 | **CORRETTO** | Il codice attuale di `window_background.gd` (righe 37-49) gia' allinea correttamente gli array: quando `tex == null`, il `continue` salta **sia** `_layers.append()` **che** `_parallax_factors.append()`. Gli array sono sempre della stessa dimensione. |
 | C6 | APERTO | Il typo `sxt` in `characters.json` non e' ancora stato corretto. **Assegnato a Mohamed/Giovanni.** |
-| C7 | APERTO | `male_black_shirt` e' ancora incompleto nel catalogo. **Assegnato a Mohamed/Giovanni.** |
+| C7 | **RISOLTO per rimozione** | `male_black_shirt` rimosso dal catalogo characters.json. Costante orfana `CHAR_MALE_BLACK_SHIRT` ancora presente in constants.gd riga 16. |
 
 #### Problemi ALTI — Stato Aggiornato
 
 | # | Stato | Note |
 |---|-------|------|
-| A1 | APERTO | I 12 script mancano ancora di `_exit_tree()` correttamente implementato. **Assegnato a Mohamed/Giovanni (UI/scene scripts) e Cristian (logger, performance_manager).** |
-| A2 | APERTO | `music_panel.gd` crea ancora un nuovo `FileDialog` ad ogni click (riga 236-244). **Assegnato a Mohamed/Giovanni.** |
+| A1 | APERTO | ~10 script mancano ancora di `_exit_tree()` correttamente implementato (ridotto da 12 dopo rimozione shop_panel e music_panel). **Assegnato a Mohamed/Giovanni (UI/scene scripts) e Cristian (logger, performance_manager).** |
+| A2 | **RISOLTO per rimozione** | `music_panel.gd` eliminato dal progetto. Problema non piu' applicabile. |
 | A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. **Assegnato a Mohamed/Giovanni.** |
 | A4 | **CORRETTO** | `AudioManager._exit_tree()` ora pulisce tutti gli ambience player con `stop()` e `queue_free()`, e `_stop_ambience()` verifica `is_instance_valid()` prima della distruzione. |
 | A5 | **CORRETTO** | `play()`, `next_track()` e `previous_track()` verificano tutti `tracks.is_empty()` prima dell'accesso. |
-| A6 | **PARZIALMENTE CORRETTO** | `shop_panel.gd` rimosso (shop eliminato dal design). Il memory leak drag preview in `deco_panel.gd` resta aperto. **Assegnato a Mohamed/Giovanni.** |
+| A6 | **RISOLTO per rimozione** | `shop_panel.gd` rimosso dal progetto. Il memory leak drag preview in `deco_panel.gd` (A7) resta aperto. **Assegnato a Mohamed/Giovanni.** |
 | A8 | **CORRETTO** | `_compare_versions()` ora usa `split(".")`, gestisce versioni a lunghezza variabile, e usa `is_valid_int()` prima del cast (righe 310-321). Gestisce correttamente formati come "1.0.0-beta". |
 | A9 | **CORRETTO** | La migrazione v3→v4 ora valida la struttura dell'inventario: verifica la presenza delle chiavi `coins` e `items`, gestisce `items` non-Array, e logga un warning con reset dei dati corrotti (righe 280-296). |
-| A10 | **CORRETTO** | I token di autenticazione sono ora salvati con `ConfigFile.save_encrypted_pass()` usando una chiave derivata da `OS.get_unique_id()` e l'anon key. Esiste anche migrazione automatica dal vecchio formato plaintext (`_try_restore_legacy_session()`). |
-| A11 | **CORRETTO** | Il pool HTTP ha ora un limite massimo di `MAX_POOL_SIZE = 8` connessioni. `_get_available_http()` non crea nuove connessioni oltre il limite e attende il rilascio di una connessione esistente. Aggiunto anche `_is_refreshing` flag per prevenire race condition nel token refresh. |
+| A10 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). Il gioco funziona esclusivamente offline. |
+| A11 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). |
 | A12-A13 | APERTO | Flush sincrono del logger e log persi se file non disponibile. **Assegnato a Cristian.** |
 | A14 | APERTO | Posizione finestra non persistita prima dello shutdown. **Assegnato a Cristian.** |
 | A15 | APERTO | Rimozione duplicati item_id rotta in decoration_system.gd. **Assegnato a Mohamed/Giovanni.** |
 | A16 | APERTO | Cast Texture2D unsafe in drop_zone.gd. **Assegnato a Mohamed/Giovanni.** |
-| A17-A18 | APERTO | Tabelle seed vuote e errore apertura DB non propagato. **Assegnato a Elia.** |
+| A17 | **CORRETTO** (27 Mar) | Diagnostica database migliorata con info OS, directory e verifica FK. |
+| A18 | APERTO | Errore apertura DB non propagato. **Assegnato a Elia.** |
 
 #### Violazioni Architetturali — Stato Aggiornato
 
@@ -1496,7 +1478,8 @@ Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni a
 | AR3 | **CORRETTO** | Il SaveManager non chiama piu' direttamente `AudioManager`. Lo stato audio viene sincronizzato tramite `SignalBus.load_completed` e `SignalBus.music_state_updated`. |
 | AR4 | **CORRETTO** | `AudioManager._on_volume_changed()` ora emette `SignalBus.settings_updated.emit()` (riga 307) invece di scrivere direttamente in `SaveManager.settings`. |
 | AR5 | **CORRETTO** | `AudioManager._sync_music_state()` ora emette `SignalBus.music_state_updated.emit()` (righe 332-336) invece di scrivere direttamente in `SaveManager.music_state`. |
-| AR6-AR11 | APERTO | PerformanceManager/settings_panel scrivono ancora direttamente in SaveManager.settings; mancano validazione dipendenze autoload, propagazione errori, sistema migrazione schema DB, schema errori SupabaseClient inconsistente. |
+| AR6-AR10 | APERTO | PerformanceManager/settings_panel scrivono ancora direttamente in SaveManager.settings; mancano validazione dipendenze autoload, propagazione errori, sistema migrazione schema DB. |
+| AR11 | **RISOLTO per rimozione** | supabase_client.gd eliminato dal progetto (27 Marzo 2026). |
 
 #### Nuovi Problemi Scoperti (Ri-Analisi 24 Marzo 2026)
 
@@ -1507,17 +1490,18 @@ La ri-analisi approfondita del codebase, condotta con le conoscenze acquisite da
 | A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena. Le funzioni `_play_intro()`, `_on_walk_in_done()`, `_on_opzioni()`, `_close_settings()` e `_transition_to_scene()` creano tweens con variabili locali senza salvarle come variabili membro. **Soluzione**: Salvare i tween come variabili membro e ucciderli esplicitamente in `_exit_tree()`. | APERTO — **Assegnato a Mohamed/Giovanni.** |
 | A20 | audio_manager.gd | MEDIO | `active_ambience` era un array pubblico mutabile. | **CORRETTO** — Rinominato in `_active_ambience` (privato), aggiunto `get_active_ambience()` getter che ritorna una copia. `music_panel.gd` aggiornato per usare il getter. |
 | A21 | audio_manager.gd | MEDIO | Nessun limite dimensione in `_load_audio_stream()` per file esterni. | **CORRETTO** — Aggiunta costante `MAX_AUDIO_FILE_SIZE = 50 MB` e check prima di `get_buffer()`. File troppo grandi vengono rifiutati con errore. |
-| A22 | music_panel.gd | MEDIO | `_exit_tree()` disconnette solo 2 segnali su 9+ connessi. Le connessioni ai bottoni (prev, play, next, mode, volume, import, ambience toggle) non vengono pulite esplicitamente. | APERTO — **Assegnato a Mohamed/Giovanni.** |
+| A22 | ~~music_panel.gd~~ | ~~MEDIO~~ | ~~`_exit_tree()` disconnette solo 2 segnali su 9+ connessi.~~ | **RISOLTO per rimozione** — music_panel.gd eliminato dal progetto. |
 | A23 | game_manager.gd:74 | BASSO | Variabile `data` non tipizzata nel parsing JSON. | **CORRETTO** — Aggiunto type hint `var data: Variant = json.data`. |
 
-**Riepilogo aggiornato dei conteggi**:
+**Riepilogo aggiornato dei conteggi (29 Marzo 2026)**:
 
 | Stato | CRITICI | ALTI | ARCHITETTURALI |
 |-------|---------|------|----------------|
-| Corretti | 3 (C1, C2, C5) | 7 (A4, A5, A8, A9, A10, A11, A20+A21+A23 medi/bassi) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
+| Corretti | 5 (C1, C2, C3, C4, C5) | 5 (A4, A5, A8, A9, A17) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
+| Risolti per rimozione | 1 (C7) | 4 (A2, A6, A10, A11) + A22 medio | 1 (AR11) |
 | Nuovi trovati | 0 | 1 (A19) | 0 |
-| Ancora aperti (CRITICI) | 4 (C3, C4, C6, C7) | — | — |
-| Ancora aperti (ALTI) | — | 9 (A1, A2, A3, A6, A7, A12, A13, A14, A15, A16, A17, A18, A19) | 5 (AR6-AR11 meno AR8 gia' coperto) |
+| Ancora aperti (CRITICI) | 1 (C6) + costanti orfane | — | — |
+| Ancora aperti (ALTI) | — | 8 (A1, A3, A7, A12, A13, A14, A15, A16, A18, A19) | 4 (AR6, AR7, AR8, AR9, AR10) |
 
 ---
 
@@ -1797,7 +1781,7 @@ Pensate a una festa. Se 10 persone arrivano a una festa (connettono segnali) e s
 
 #### 2.1 Aggiungere `_exit_tree()` a tutti gli script
 
-**Script da correggere** (12 in totale): panel_manager, shop_panel, deco_panel, settings_panel, room_base, decoration_system, room_grid, main_menu, menu_character, main, music_panel (parziale), character_controller.
+**Script da correggere** (~10 in totale, ridotto da 12 dopo rimozione di shop_panel e music_panel): panel_manager, deco_panel, settings_panel, room_base, decoration_system, room_grid, main_menu, menu_character, main, character_controller.
 
 Per ogni script, il processo e' lo stesso:
 
@@ -1833,9 +1817,12 @@ func _exit_tree() -> void:
 
 **Come verificare**: Dopo aver applicato la correzione, aprite e chiudete il pannello (o cambiate scena) 100 volte. Se il Profiler di Godot non mostra aumento costante di memoria, la correzione funziona.
 
-#### 2.2 Correggere music_panel.gd FileDialog
+#### 2.2 ~~Correggere music_panel.gd FileDialog~~ — NON PIU' APPLICABILE
 
-**Obiettivo**: Creare il FileDialog una sola volta e riutilizzarlo, invece di crearne uno nuovo ad ogni click.
+> **music_panel.gd e' stato rimosso dal progetto.** L'istruzione seguente e' mantenuta per
+> riferimento didattico come esempio di pattern corretto per la gestione di FileDialog.
+
+**Obiettivo (didattico)**: Creare il FileDialog una sola volta e riutilizzarlo, invece di crearne uno nuovo ad ogni click.
 
 Prima (codice problematico):
 ```gdscript
@@ -2337,36 +2324,11 @@ func test_mutual_exclusion() -> void:
     assert_true(PanelManager.is_open("music"))
 ```
 
-#### 5.5 Espandere test ShopPanel
+#### 5.5 ~~Espandere test ShopPanel~~ — NON PIU' APPLICABILE
 
-Aggiungere i seguenti test al file `tests/unit/test_shop_panel.gd` esistente:
-
-```gdscript
-# Nuovi test da aggiungere a test_shop_panel.gd
-
-# Test: il filtro per categoria funziona
-func test_category_filtering() -> void:
-    # Selezioniamo la categoria "cucina"
-    shop_panel._on_category_selected("cucina")
-    # Verifichiamo che vengano mostrati solo oggetti della cucina
-    for item in shop_panel._displayed_items:
-        assert_eq(item["category"], "cucina")
-
-# Test: il conteggio degli oggetti e' corretto
-func test_item_count_matches_catalog() -> void:
-    var catalog = GameManager.get_decoration_catalog()
-    var total_displayed = shop_panel._displayed_items.size()
-    # Il numero di oggetti mostrati deve corrispondere al catalogo
-    assert_eq(total_displayed, catalog.size())
-
-# Test: i dati del drag sono integri
-func test_drag_data_integrity() -> void:
-    var drag_data = shop_panel._get_drag_data_for_item("lamp_01")
-    # I dati di drag devono contenere le informazioni necessarie
-    assert_true(drag_data.has("item_id"))
-    assert_true(drag_data.has("sprite_path"))
-    assert_true(drag_data.has("preview"))
-```
+> **shop_panel.gd e test_shop_panel.gd sono stati rimossi dal progetto.** Questa sezione e'
+> mantenuta per riferimento storico. I test per il pannello decorazioni (deco_panel.gd) dovranno
+> essere creati da zero quando la suite di test verra' reintrodotta.
 
 ---
 
@@ -2380,7 +2342,7 @@ Questa sezione fornisce istruzioni passo per passo, in stile tutorial, per le co
 
 ---
 
-### C1 — Inventario non salvato su SQLite
+### C1 — Inventario non salvato su SQLite — GIA' CORRETTO
 
 **File da modificare**: `scripts/autoload/save_manager.gd`
 
@@ -2432,7 +2394,7 @@ func _save_to_sqlite() -> void:
 
 ---
 
-### C2 — Backup senza error checking
+### C2 — Backup senza error checking — GIA' CORRETTO
 
 **File da modificare**: `scripts/autoload/save_manager.gd`
 
@@ -2475,7 +2437,7 @@ else:
 
 ---
 
-### C3 — Characters PRIMARY KEY impedisce multipli personaggi
+### C3 — Characters PRIMARY KEY impedisce multipli personaggi — GIA' CORRETTO (27 Marzo 2026)
 
 **File da modificare**: `scripts/autoload/local_database.gd`
 
@@ -2533,7 +2495,7 @@ CREATE TABLE IF NOT EXISTS characters (
 
 ---
 
-### C4 — Inventory schema confuso
+### C4 — Inventory schema confuso — GIA' CORRETTO (27 Marzo 2026)
 
 **File da modificare**: `scripts/autoload/local_database.gd`
 
@@ -2580,7 +2542,7 @@ CREATE TABLE IF NOT EXISTS inventario (
 
 ---
 
-### C5 — Array mismatch window_background.gd
+### C5 — Array mismatch window_background.gd — GIA' CORRETTO
 
 **File da modificare**: `scripts/rooms/window_background.gd`
 
@@ -2614,7 +2576,12 @@ Le istruzioni dettagliate per questa correzione sono gia' state fornite nella Fa
 
 ---
 
-### C7 — male_black_shirt incompleto
+### C7 — male_black_shirt incompleto — RISOLTO PER RIMOZIONE
+
+> Il personaggio `male_black_shirt` e' stato rimosso dal catalogo characters.json. Restano le
+> costanti orfane in constants.gd (righe 13-16: `CHAR_FEMALE_RED_SHIRT`, `CHAR_MALE_YELLOW_SHIRT`,
+> `CHAR_MALE_BLACK_SHIRT`) che andrebbero rimosse. L'istruzione seguente e' mantenuta per
+> riferimento didattico.
 
 **File da modificare**: `data/characters.json` e/o `scripts/rooms/character_controller.gd`
 
@@ -2654,7 +2621,7 @@ func _play_animation(anim_name: String) -> void:
 
 ### A1 — Template _exit_tree() per tutti gli script
 
-**Obiettivo**: Aggiungere la funzione di pulizia a 12 script.
+**Obiettivo**: Aggiungere la funzione di pulizia a ~10 script (ridotto da 12 dopo rimozione di shop_panel e music_panel).
 
 Per ogni script, il procedimento e':
 
@@ -2695,20 +2662,18 @@ func _exit_tree() -> void:
         _tween.kill()
 ```
 
-**Elenco completo degli script da correggere**, con i segnali da disconnettere (verificate aprendo ogni file):
+**Elenco completo degli script da correggere** (~10, aggiornato dopo rimozione di shop_panel e music_panel):
 
 1. **panel_manager.gd**: input handler
-2. **shop_panel.gd**: segnali bottoni categorie e acquisto
-3. **deco_panel.gd**: segnali bottoni (stub vuoto da completare)
-4. **settings_panel.gd**: 4 segnali slider + 1 segnale option (stub vuoto da completare)
-5. **room_base.gd**: 3 segnali SignalBus
-6. **decoration_system.gd**: input handler
-7. **room_grid.gd**: segnale `decoration_mode_changed`
-8. **main_menu.gd**: tween + eventuali pannelli aperti
-9. **menu_character.gd**: timer frame
-10. **main.gd**: segnale `room_changed`
-11. **music_panel.gd**: completare i restanti ~8 segnali non disconnessi
-12. **character_controller.gd**: nessun segnale ma aggiungere null check su `_anim`
+2. **deco_panel.gd**: segnali bottoni (stub vuoto da completare)
+3. **settings_panel.gd**: 4 segnali slider + 1 segnale option (stub vuoto da completare)
+4. **room_base.gd**: 3 segnali SignalBus
+5. **decoration_system.gd**: input handler
+6. **room_grid.gd**: segnale `decoration_mode_changed`
+7. **main_menu.gd**: tween + eventuali pannelli aperti
+8. **menu_character.gd**: timer frame
+9. **main.gd**: segnale `room_changed`
+10. **character_controller.gd**: nessun segnale ma aggiungere null check su `_anim`
 
 **Come verificare**:
 1. Aprite il Profiler di Godot (menu Debug -> Profiler)
@@ -2719,14 +2684,11 @@ func _exit_tree() -> void:
 
 ---
 
-### A2 — FileDialog memory leak music_panel.gd
+### A2 — ~~FileDialog memory leak music_panel.gd~~ — NON PIU' APPLICABILE
 
-Le istruzioni dettagliate per questa correzione sono gia' state fornite nella Fase 2, Sezione 2.2 del Piano di Stabilizzazione. Il principio chiave e': creare il FileDialog una sola volta come variabile membro della classe, riutilizzarlo ad ogni click, e distruggerlo in `_exit_tree()`.
-
-**Come verificare**:
-1. Aprite il pannello musica
-2. Cliccate "Importa" 20 volte (chiudendo il FileDialog ogni volta)
-3. Controllate il Profiler: deve esserci UN SOLO FileDialog in memoria, non 20
+> **music_panel.gd e' stato rimosso dal progetto** (25 Marzo 2026). Questa correzione non e' piu'
+> necessaria. Le istruzioni nella Sezione 2.2 del Piano di Stabilizzazione restano come
+> riferimento didattico.
 
 ---
 
@@ -2791,9 +2753,8 @@ Per una verifica completa, eseguite i test in questo ordine:
 
 1. **Lint**: `gdlint v1/scripts/` — Verifica lo stile del codice (naming, struttura)
 2. **Format**: `gdformat --check v1/scripts/` — Verifica la formattazione (indentazione, spazi)
-3. **Test esistenti**: Eseguite i 5 file di test esistenti (48 test totali)
-4. **Nuovi test**: Eseguite i 6 nuovi file di test
-5. **Test manuale**: Giocate una sessione completa: menu -> stanza -> piazza decorazioni -> cambia personaggio -> ascolta musica -> salva -> chiudi -> riapri -> verifica che tutto sia stato salvato correttamente
+3. **Test automatizzati**: Attualmente non ci sono file di test nel progetto (rimossi). Quando verranno reintrodotti, eseguirli qui
+4. **Test manuale**: Giocate una sessione completa: menu -> stanza -> piazza decorazioni -> cambia personaggio -> ascolta musica -> salva -> chiudi -> riapri -> verifica che tutto sia stato salvato correttamente
 
 ---
 
@@ -2822,6 +2783,17 @@ Il team ha a disposizione **5 documenti di studio** completi nella cartella [`st
 
 **Ordine di lettura consigliato**: [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) → [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) → [ISOMETRIC_GAMES.md](study/ISOMETRIC_GAMES.md) → [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) → [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md)
 
+### Guide Operative per il Team
+
+Sono inoltre disponibili **4 guide operative** nella cartella [`guide/`](guide/), create per tradurre le analisi di questo audit in istruzioni passo-passo per ogni membro del team:
+
+| Guida | Per Chi | Contenuto |
+|-------|---------|-----------|
+| [SETUP_AMBIENTE.md](guide/SETUP_AMBIENTE.md) | Tutti | Configurazione ambiente di sviluppo (Godot, Git, VS Code) |
+| [GUIDA_CRISTIAN_CICD.md](guide/GUIDA_CRISTIAN_CICD.md) | Cristian Marino | CI/CD, Logger, PerformanceManager |
+| [GUIDA_ELIA_DATABASE.md](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Schema database, FK, seed data |
+| [GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | Mohamed & Giovanni | Gameplay, UI, asset, `_exit_tree()` |
+
 ### Documentazione Ufficiale Godot
 
 - **Documentazione Godot 4**: https://docs.godotengine.org/en/stable/
@@ -2835,22 +2807,27 @@ Il team ha a disposizione **5 documenti di studio** completi nella cartella [`st
 
 ## 15. Riepilogo Statistico
 
-| Categoria | Audit Iniziale (21 Mar) | Aggiornamento (24 Mar) |
-|-----------|------------------------|------------------------|
-| File analizzati | 48 (26 script + 9 scene + 5 dati + 5 test + 3 CI) | Invariato |
-| Righe di codice analizzate | ~3500 (solo script GDScript) | Invariato |
-| Problemi CRITICI | 7 | 5 aperti, **2 corretti** (C1, C2) |
-| Problemi ALTI | 18 | 17 aperti, **2 corretti** (A8, A9), **1 nuovo** (A19) |
-| Violazioni architetturali | 11 | 10 aperti, **1 parzialmente corretto** (AR2) |
-| Nuovi problemi MEDI | — | **3 nuovi** (A20, A21, A22) |
-| Nuovi problemi BASSI | — | **1 nuovo** (A23) |
-| Problemi MEDI totali | 30+ | 33+ |
-| Problemi BASSI totali | 8 | 9 |
-| Copertura test attuale | ~15-20% | Invariata |
-| Copertura test target | 50%+ | 50%+ |
-| Fasi di stabilizzazione | 5 | 5 |
-| Nuovi file test necessari | 6 | 6 |
-| Documenti di studio disponibili | 0 | **5** (in `study/`) |
+| Categoria | Audit Iniziale (21 Mar) | Aggiornamento (24 Mar) | Aggiornamento (29 Mar) |
+|-----------|------------------------|------------------------|------------------------|
+| File analizzati | 48 (26 script + 9 scene + 5 dati + 5 test + 3 CI) | Invariato | **35** (21 script + 8 scene + 4 dati + 0 test + 2 CI) |
+| Righe di codice analizzate | ~3500 (solo script GDScript) | Invariato | ~3000 (script ridotti per rimozioni) |
+| Autoload / Componenti | 8 | Invariato | **7** (6 autoload + PerformanceManager) |
+| Segnali SignalBus | 21 | Invariato | **20** |
+| Stanze / Temi | 4 stanze, 10 temi | Invariato | **1 stanza** (cozy_studio), **3 temi** |
+| Decorazioni | 118 in 14 categorie | Invariato | **58 in 11 categorie** |
+| Personaggi | 3 | Invariato | **1** (male_old) |
+| Problemi CRITICI | 7 | 5 aperti, **2 corretti** (C1, C2) | **2 aperti** (C6, C7 costante), **5 corretti** |
+| Problemi ALTI | 18 | 17 aperti, **2 corretti** (A8, A9), **1 nuovo** (A19) | **~8 aperti**, 5 corretti, **5 risolti per rimozione** |
+| Violazioni architetturali | 11 | 10 aperti, **1 parzialmente corretto** (AR2) | **~4 aperti**, 1 parz. corretto, **1 risolto per rimozione** (AR11) |
+| Nuovi problemi MEDI | — | **3 nuovi** (A20, A21, A22) | A22 **risolto per rimozione** (music_panel) |
+| Nuovi problemi BASSI | — | **1 nuovo** (A23) | Invariato |
+| Problemi MEDI totali | 30+ | 33+ | ~30 |
+| Problemi BASSI totali | 8 | 9 | 9 |
+| Copertura test attuale | ~15-20% | Invariata | **0%** (test rimossi, GdUnit4 non installato) |
+| Copertura test target | 50%+ | 50%+ | 50%+ |
+| Fasi di stabilizzazione | 5 | 5 | 5 |
+| Nuovi file test necessari | 6 | 6 | 6 (da creare da zero) |
+| Documenti di studio disponibili | 0 | **5** (in `study/`) | 5 (in `study/`) + **4 guide** (in `guide/`) |
 
 ---
 
@@ -2871,8 +2848,8 @@ Per facilitare il lavoro di ogni membro del team, sono state create guide operat
 |-------|---------|-----------|
 | [Setup Ambiente](guide/SETUP_AMBIENTE.md) | Tutti | Installazione Godot, Git, VS Code, clonazione repo, workflow Git |
 | [Guida CI/CD](guide/GUIDA_CRISTIAN_CICD.md) | Cristian Marino | Linting test, Logger flush e session ID, PerformanceManager, configurazione test CI |
-| [Guida Game Dev](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | Mohamed & Giovanni | characters.json, `_exit_tree()` per 7 script, FileDialog fix, race condition, null check |
-| [Guida Database](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Schema characters e inventario, foreign keys, seed data, Supabase |
+| [Guida Game Dev](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | Mohamed & Giovanni | characters.json, `_exit_tree()` per ~6 script, costanti orfane, race condition, null check |
+| [Guida Database](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Verifica schema DB (gia' corretto), seed data, foreign keys |
 
 Le guide si trovano nella cartella [`guide/`](guide/) e sono pensate come versione operativa (il "come fare") di questo audit report (il "cosa fare e perche'").
 
@@ -3135,17 +3112,17 @@ Questa sezione traduce la classificazione dei problemi (Sezione 10) in una **mat
 
 | ID | Problema | Probab. | Impatto | Sforzo | Priorita' | Assegnato | Note |
 |----|----------|---------|---------|--------|-----------|-----------|------|
-| C3 | PK characters impedisce multipli PG | Alta | Critico | M | **P1** | Elia | Blocca il design multi-personaggio |
-| C4 | Schema inventario confuso | Media | Alto | M | **P1** | Elia | Dati inconsistenti, FK rotte |
-| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | **P1** | Mohamed/Giovanni | Crash immediato con male_old |
-| C7 | male_black_shirt incompleto | Media | Critico | S | **P1** | Mohamed/Giovanni | Crash al cambio animazione |
+| C3 | PK characters impedisce multipli PG | Alta | Critico | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
+| C4 | Schema inventario confuso | Media | Alto | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
+| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | **P1** | Mohamed/Giovanni | APERTO — crash immediato con male_old |
+| C7 | male_black_shirt incompleto | Media | Critico | S | ~~P1~~ | Mohamed/Giovanni | **RISOLTO** per rimozione dal catalogo JSON. Costante orfana in constants.gd ancora da rimuovere |
 
 ### 18.3 Matrice Problemi ALTI
 
 | ID | Problema | Probab. | Impatto | Sforzo | Priorita' | Assegnato |
 |----|----------|---------|---------|--------|-----------|-----------|
-| A1 | _exit_tree() mancante (12 script) | Alta | Alto | L | **P2** | Mohamed/Giovanni + Cristian |
-| A2 | FileDialog memory leak | Media | Medio | S | **P2** | Mohamed/Giovanni |
+| A1 | _exit_tree() mancante (~10 script) | Alta | Alto | L | **P2** | Mohamed/Giovanni + Cristian |
+| A2 | FileDialog memory leak | — | — | — | — | — | **RISOLTO per rimozione** (shop_panel/music_panel rimossi) |
 | A3 | Race condition swap personaggio | Media | Alto | M | **P2** | Mohamed/Giovanni |
 | A6 | Memory leak drag preview deco_panel | Media | Medio | S | **P2** | Mohamed/Giovanni |
 | A12 | Logger flush sincrono | Bassa | Medio | M | **P3** | Cristian |
@@ -3153,10 +3130,10 @@ Questa sezione traduce la classificazione dei problemi (Sezione 10) in una **mat
 | A14 | Posizione finestra non persistita | Media | Basso | S | **P3** | Cristian |
 | A15 | Rimozione duplicati item_id | Bassa | Medio | S | **P3** | Mohamed/Giovanni |
 | A16 | Cast Texture2D unsafe | Bassa | Alto | S | **P3** | Mohamed/Giovanni |
-| A17 | Tabelle seed vuote | Alta | Medio | M | **P2** | Elia |
+| A17 | Tabelle seed vuote | Alta | Medio | M | ~~P2~~ | Elia | **CORRETTO** (diagnostica DB migliorata) |
 | A18 | Errore DB non propagato | Bassa | Medio | S | **P3** | Elia |
 | A19 | Tween orfani main_menu | Media | Medio | M | **P2** | Mohamed/Giovanni |
-| A22 | music_panel _exit_tree incompleto | Media | Medio | S | **P2** | Mohamed/Giovanni |
+| A22 | music_panel _exit_tree incompleto | — | — | — | — | — | **RISOLTO per rimozione** (music_panel rimosso) |
 
 ### 18.4 Regola Decisionale
 
@@ -3184,18 +3161,20 @@ Questa tabella presenta una stima realistica delle ore necessarie per completare
 
 | Fase | Descrizione | Elia | Mohamed/Giov. | Cristian | Renan | Totale Fase |
 |------|-------------|------|---------------|----------|-------|-------------|
-| **Fase 1** | Integrita' Dati (CRITICO) | 3h | 1.5h | — | 1h (review) | **5.5h** |
-| **Fase 2** | Memoria e Lifecycle (ALTO) | — | 5h | 1.5h | 1h (review) | **7.5h** |
+| **Fase 1** | Integrita' Dati (CRITICO) | ~~3h~~ 0.5h | 1.5h | — | ~~1h~~ 0h | **2h** |
+| **Fase 2** | Memoria e Lifecycle (ALTO) | — | 4h | 1.5h | 1h (review) | **6.5h** |
 | **Fase 3** | Errori e Validazione (MEDIO) | 1h | 2h | 2h | 1h (review) | **6h** |
 | **Fase 4** | Allineamento Architettura | — | 1h | 1h | 3h | **5h** |
 | **Fase 5** | Copertura Test | 1h | 2h | 3h | 1h (review) | **7h** |
-| **Totale** | | **5h** | **11.5h** | **7.5h** | **7h** | **31h** |
+| **Totale** | | **2.5h** | **10.5h** | **7.5h** | **6h** | **~26.5h** |
+
+> **Nota (29 Marzo 2026)**: Le ore della Fase 1 sono state ridotte significativamente: C3/C4 (schema DB) gia' corretti da Renan, C7 risolto per rimozione. Rimangono C6 (typo sprite) e costanti orfane. Fase 2 ridotta: shop_panel e music_panel rimossi, ~10 script invece di 12.
 
 ### 19.2 Distribuzione Settimanale (Scadenza 22 Aprile 2026)
 
 | Settimana | Date | Obiettivo | Ore/persona stimate |
 |-----------|------|-----------|---------------------|
-| Settimana 1 | 28 Mar - 4 Apr | Fase 1 completa (P1) + inizio Fase 2 | 4-6h |
+| Settimana 1 | 28 Mar - 4 Apr | Fase 1 completa (P1 — largamente gia' completata) + inizio Fase 2 | 3-4h |
 | Settimana 2 | 5 Apr - 11 Apr | Fase 2 completa (P2) + inizio Fase 3 | 3-5h |
 | Settimana 3 | 12 Apr - 18 Apr | Fase 3 + Fase 4 + inizio Fase 5 | 3-4h |
 | Settimana 4 | 19 Apr - 22 Apr | Fase 5 + test finale + fix urgenti | 2-3h |
@@ -3207,12 +3186,12 @@ Questa tabella presenta una stima realistica delle ore necessarie per completare
 ```text
 Fase 1 (Integrita' Dati)
   │
-  ├── C3/C4 (Elia: schema DB) ──────────────┐
-  ├── C6/C7 (Mohamed/Giov: characters.json)──┤
+  ├── C3/C4 (Elia: schema DB) ── GIA' CORRETTO
+  ├── C6 (Mohamed/Giov: typo characters.json)┐
   │                                           ▼
   │                                    Fase 2 (Lifecycle)
   │                                      │
-  │                                      ├── A1 (_exit_tree 12 script)
+  │                                      ├── A1 (_exit_tree ~10 script)
   │                                      ├── A3 (race condition)
   │                                      ├── A19 (tween orfani)
   │                                      │
@@ -3282,10 +3261,10 @@ Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. U
 
 | File | Modifiche | Chi |
 |------|-----------|-----|
-| `scripts/autoload/local_database.gd` | Schema characters (PK), schema inventario, FK, seed data, diagnostica apertura | Elia |
-| `data/characters.json` | Fix typo sprite "sxt"→"sx", completare/rimuovere male_black_shirt | Mohamed/Giovanni |
-| `scripts/utils/constants.gd` | Rimuovere costanti per personaggi rimossi | Mohamed/Giovanni |
-| `data/supabase_migration.sql` | Allineamento schema PostgreSQL (opzionale) | Elia |
+| `scripts/autoload/local_database.gd` | ~~Schema characters (PK), schema inventario, FK~~ **GIA' CORRETTO** (27 Mar). Rimane: seed data | Elia |
+| `data/characters.json` | Fix typo sprite "sxt"→"sx" (C6 — ancora aperto) | Mohamed/Giovanni |
+| `scripts/utils/constants.gd` | Rimuovere 3 costanti orfane (CHAR_FEMALE_RED_SHIRT, CHAR_MALE_YELLOW_SHIRT, CHAR_MALE_BLACK_SHIRT) | Mohamed/Giovanni |
+| ~~`data/supabase_migration.sql`~~ | ~~Allineamento schema PostgreSQL~~ **NON NECESSARIO** — SupabaseClient rimosso | — |
 
 ### Fase 2 — Memoria e Lifecycle
 
@@ -3294,7 +3273,7 @@ Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. U
 | `scripts/ui/panel_manager.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
 | `scripts/ui/deco_panel.gd` | _exit_tree() + fix memory leak drag preview | Mohamed/Giovanni |
 | `scripts/ui/settings_panel.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
-| `scripts/ui/music_panel.gd` | Fix FileDialog leak + _exit_tree() completo (9 segnali) | Mohamed/Giovanni |
+| ~~`scripts/ui/music_panel.gd`~~ | ~~Fix FileDialog leak + _exit_tree()~~ **RIMOSSO** (25 Mar 2026) | — |
 | `scripts/rooms/room_base.gd` | _exit_tree() + fix race condition swap (call_deferred) | Mohamed/Giovanni |
 | `scripts/rooms/decoration_system.gd` | _exit_tree() + fix rimozione duplicati | Mohamed/Giovanni |
 | `scripts/rooms/room_grid.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
@@ -3322,7 +3301,7 @@ Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. U
 | `scripts/ui/settings_panel.gd` | Comunicazione via SignalBus (AR7) | Renan |
 | `scripts/autoload/signal_bus.gd` | Eventuali nuovi segnali per AR6-AR7 | Renan |
 | `scripts/autoload/local_database.gd` | Sistema migrazione schema (AR10) | Renan |
-| `scripts/autoload/supabase_client.gd` | Schema errori consistente (AR11) | Renan |
+| ~~`scripts/autoload/supabase_client.gd`~~ | ~~Schema errori consistente (AR11)~~ **RIMOSSO** (27 Mar 2026) | — |
 
 ### Fase 5 — Copertura Test
 

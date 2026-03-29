@@ -9,7 +9,7 @@ Lo stile grafico e **pixel art**, importato con texture filter Nearest (no smoot
 |----------|-----------|------|---------|
 | `audio/music/` | 2 tracce ambient lo-fi (Mixkit) | 4 | WAV + .import |
 | `backgrounds/` | Sfondi foresta parallasse (Eder Muniz) | 39 | PNG + PSD |
-| `charachters/` | 3 personaggi (female, male, old) | 84 | PNG + Aseprite |
+| `charachters/` | 3 set sprite (female, male, old) — solo **old** attivo nel gioco | 84 | PNG + Aseprite |
 | `menu/` | Sprite menu e UI character | 15 | PNG + Aseprite |
 | `pets/` | Animale domestico (Void Cat) | 3 | PNG + Aseprite |
 | `room/` | Elementi stanza (porte, finestre) | 13 | PNG + Aseprite |
@@ -65,7 +65,7 @@ Include formati PNG (esportati), PSD (sorgenti) e preview.
 > **Nota:** Il nome della cartella contiene un typo storico ("charachters" invece di "characters").
 > Non rinominare per non invalidare i percorsi risorsa nel progetto.
 
-3 personaggi giocabili con spritesheet e sorgenti Aseprite:
+3 set di sprite per personaggi (solo **Ragazzo Classico / male_old** e' attivamente usato nel gioco):
 
 | Personaggio | Cartella | Animazioni |
 |-------------|----------|-----------|
