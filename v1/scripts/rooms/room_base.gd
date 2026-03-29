@@ -48,17 +48,12 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 		return
 	var item_scale: float = item_data.get("item_scale", 1.0)
 	_spawn_decoration(item_id, pos, item_scale)
-	(
-		SaveManager
-		. decorations
-		. append(
-			{
-				"item_id": item_id,
-				"position": Helpers.vec2_to_array(pos),
-				"item_scale": item_scale,
-			}
-		)
-	)
+	SaveManager.decorations.append({
+		"item_id": item_id,
+		"position": Helpers.vec2_to_array(pos),
+		"item_scale": item_scale,
+		"rotation": 0.0,
+	})
 	SignalBus.save_requested.emit()
 
 
@@ -73,10 +68,16 @@ func _reload_decorations() -> void:
 			continue
 		var pos: Array = deco_data.get("position", [0, 0])
 		var item_scale: float = deco_data.get("item_scale", 1.0)
-		_spawn_decoration(item_id, Helpers.array_to_vec2(pos), item_scale)
+		var rot: float = deco_data.get("rotation", 0.0)
+		_spawn_decoration(
+			item_id, Helpers.array_to_vec2(pos), item_scale, rot
+		)
 
 
-func _spawn_decoration(item_id: String, pos: Vector2, item_scale: float) -> void:
+func _spawn_decoration(
+	item_id: String, pos: Vector2, item_scale: float,
+	rot: float = 0.0
+) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
 		return
@@ -94,11 +95,13 @@ func _spawn_decoration(item_id: String, pos: Vector2, item_scale: float) -> void
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.scale = Vector2(item_scale, item_scale)
 	sprite.position = pos
+	sprite.rotation_degrees = rot
 	sprite.name = item_id
 
 	if DecorationScript:
 		sprite.set_script(DecorationScript)
 		sprite.item_id = item_id
+		sprite.base_item_scale = item_scale
 
 	# Add collision so the character cannot walk through decorations
 	var body := StaticBody2D.new()
