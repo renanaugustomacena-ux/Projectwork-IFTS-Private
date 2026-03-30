@@ -782,6 +782,8 @@ Task nuovi per Elia:
 
 ## Risorse Utili
 
+- **README Asset Menu/UI**: [`assets/menu/README.md`](../assets/menu/README.md) — Bottoni, loading screen, joystick, come modificarli
+- **README Asset (root)**: [`assets/README.md`](../assets/README.md) — Mappa completa origini e licenze di tutti gli asset
 - **Tutorial SQLite**: https://www.sqlitetutorial.net/
 - **DB Browser for SQLite**: https://sqlitebrowser.org/
 - **Documentazione godot-sqlite**: https://github.com/2shady4u/godot-sqlite
