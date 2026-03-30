@@ -47,10 +47,12 @@ func _on_save_requested(data: Dictionary) -> void:
 		account_id = account.get("account_id", -1)
 	if account_id < 0:
 		return
+	_execute("BEGIN TRANSACTION;")
 	if data.has("character") and data["character"] is Dictionary:
 		upsert_character(account_id, data["character"])
 	if data.has("inventory") and data["inventory"] is Dictionary:
 		_save_inventory(account_id, data["inventory"])
+	_execute("COMMIT;")
 
 
 func close() -> void:
