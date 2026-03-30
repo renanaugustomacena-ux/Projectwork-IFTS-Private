@@ -94,8 +94,6 @@ main ─────────────────────────
   │     │
   │     └── (periodically merge Renan → main for releases)
   │
-  ├── Mohamed ─── Mohamed's work
-  ├── Giovanni ── Giovanni's work
   ├── Cristian ── Cristian's work
   └── Elia ────── Elia's work
 ```

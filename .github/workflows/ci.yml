@@ -1,7 +1,7 @@
 # Pipeline CI — Lint GDScript
 #
 # Documentazione:
-# Eseguita su ogni push al branch Renan e su ogni PR verso main.
+# Eseguita su ogni push al branch main e su ogni PR verso main.
 # Un solo job: linting e verifica formattazione GDScript.
 
 name: ci
@@ -13,7 +13,7 @@ on:
     paths:
       - "v1/**"
   push:
-    branches: [Renan]
+    branches: [main]
     paths:
       - "v1/**"
   workflow_dispatch:

@@ -44,7 +44,7 @@
 > Audit approfondito di tutti gli script che interagiscono con il layer persistenza
 > (local_database.gd, save_manager.gd, auth_manager.gd, profile_panel.gd, room_base.gd,
 > decoration_system.gd, main_menu.gd, auth_screen.gd, settings_panel.gd).
-> Trovati **6 nuovi problemi** (A24-A29), di cui 4 assegnati a Elia e 2 a Mohamed/Giovanni.
+> Trovati **6 nuovi problemi** (A24-A29), di cui 4 assegnati a Elia e 2 a Renan.
 >
 > Modifiche recenti al codebase:
 > - **SaveManager**: ora usa **atomic writes** (scrivi su temp → backup esistente → rinomina)
@@ -60,15 +60,24 @@
 
 ## Team di Progetto
 
-### Renan Augusto Macena — System Architect & Project Supervisor
+### Renan Augusto Macena — System Architect, Gameplay & Project Supervisor
 
-**Ruolo**: Architettura generale del progetto, sviluppo delle parti piu' complesse del backend, integrazione del lavoro di tutti i membri del team, e responsabile del delivery finale del progetto.
+**Ruolo**: Architettura generale del progetto, sviluppo backend, gameplay/UI/asset, integrazione del lavoro di tutti i membri del team, e responsabile del delivery finale del progetto.
 
 **Capitoli di riferimento per il proprio lavoro**:
 
 - **Sezione 6.3** — SaveManager: correggere race condition auto-save, backup senza error checking, inventario non salvato su SQLite (problemi C1, C2, C3)
 - **Sezione 6.5** — AudioManager: bounds check tracce vuote, memory leak ambience, crossfade tween safety (problemi A4, A5)
 - **Sezione 6.6** — ~~SupabaseClient~~ **RIMOSSO** (27 Marzo 2026): intero autoload eliminato dal progetto (codice morto, zero chiamanti). Problemi A10, A11 non piu' applicabili.
+- **Sezione 7.7** — room_base.gd: aggiungere `_exit_tree()`, correggere race condition swap personaggio (problema A3)
+- **Sezione 7.8** — decoration_system.gd: correggere rimozione duplicati item_id, aggiungere `_exit_tree()` (problema A15)
+- **Sezione 7.9** — character_controller.gd: aggiungere null check su `_anim`, validare nomi animazione prima di `play()`
+- **Sezione 7.11** — window_background.gd: correggere mismatch dimensione array layers/factors (problema C5)
+- **Sezione 7.1, 7.3, 7.5** — Pannelli UI attivi (panel_manager, deco_panel, settings_panel): aggiungere `_exit_tree()` con disconnessione segnali, correggere memory leak drag preview (problemi A1, A7)
+- **Sezione 7.6** — drop_zone.gd: correggere cast Texture2D unsafe (problema A16)
+- **Sezione 8, tracks.json** — Espandere catalogo musicale con tracce lo-fi e ambience
+- **Sezione 10.1, A28** — room_base.gd: clampare posizione decorazioni al viewport (problema A28)
+- **Sezione 10.1, A29** — main_menu.gd: null check dopo `scene.instantiate()` (problema A29)
 - **Sezione 11, Fase 4** — Allineamento architetturale: eliminare coupling diretto tra singleton, introdurre nuovi segnali `settings_updated`, `music_state_updated`, `save_to_database_requested` (violazioni AR1-AR11)
 - **Sezione 11, Fase 1** — Integrità dati: coordinare la correzione di tutti i problemi critici C1-C7
 - **Sezione 11, Fase 5** — Supervisione della copertura test e verifica finale pre-delivery
@@ -89,32 +98,19 @@
 
 ---
 
-### Mohamed & Giovanni — Game Assets, Core Logic & Design Lead
-
-**Ruolo**: Creazione e gestione di tutti gli asset grafici e sonori del gioco, implementazione delle logiche interne del videogioco (decorazioni, personaggi, interazioni, gameplay), e design delle meccaniche di gioco.
-
-**Capitoli di riferimento per il proprio lavoro**:
-
-- **Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx` (problema C6). `male_black_shirt` rimosso dal catalogo JSON (C7 risolto per rimozione); resta costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd riga 16
-- **Sezione 7.7** — room_base.gd: aggiungere `_exit_tree()`, correggere race condition swap personaggio (problema A3)
-- **Sezione 7.8** — decoration_system.gd: correggere rimozione duplicati item_id, aggiungere `_exit_tree()` (problema A15)
-- **Sezione 7.9** — character_controller.gd: aggiungere null check su `_anim`, validare nomi animazione prima di `play()`
-- **Sezione 7.11** — window_background.gd: correggere mismatch dimensione array layers/factors (problema C5)
-- **Sezione 7.1, 7.3, 7.5** — Pannelli UI attivi (panel_manager, deco_panel, settings_panel): aggiungere `_exit_tree()` con disconnessione segnali, correggere memory leak drag preview (problemi A1, A7). ~~shop_panel e music_panel rimossi dal progetto~~
-- **Sezione 7.6** — drop_zone.gd: correggere cast Texture2D unsafe (problema A16)
-- **Sezione 8, tracks.json** — Espandere catalogo musicale con tracce lo-fi e ambience
-
 ---
 
 ### Elia Zoccatelli — Database Support
 
-**Ruolo**: Assistenza sullo sviluppo e la manutenzione del layer database (SQLite locale, schema Supabase, migrazione dati, query e persistenza).
+**Ruolo**: Assistenza sullo sviluppo e la manutenzione del layer database (SQLite locale, schema Supabase, migrazione dati, query e persistenza). Anche responsabile di task semplici di integrita' dati (typo, costanti).
 
 **Capitoli di riferimento per il proprio lavoro**:
 
 - ~~**Sezione 6.4** — local_database.gd: ridisegnare tabella `characters`, ristrutturare tabella `inventario`~~ **COMPLETATO** (27 Marzo 2026) — problemi C3, C4 risolti
 - ~~**Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote~~ **COMPLETATO** (29 Marzo 2026) — A18 risolto (diagnostica DB migliorata)
 - ~~**Sezione 11, Fase 1.4** — Istruzioni C3 e C4~~ **GIA' COMPLETATO**
+- **Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx` (problema C6 — **APERTO**)
+- **Sezione 8, constants.gd** — Rimuovere costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd riga 16 (problema C7 costante residua — **APERTO**)
 - **Sezione 10.1, A24** — local_database.gd: aggiungere ROLLBACK se upsert_character o _save_inventory falliscono (problema A24 — **APERTO**)
 - **Sezione 10.1, A25** — local_database.gd: cambiare `_save_inventory()` per ritornare `bool` e propagare errori (problema A25 — **APERTO**)
 - **Sezione 10.1, A26** — auth_manager.gd: verificare `LocalDatabase.is_open()` in `_set_state()` (problema A26 — **APERTO**)
@@ -1464,27 +1460,27 @@ Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni a
 | C3 | **CORRETTO** (27 Mar) | La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE. Completato da Renan. |
 | C4 | **CORRETTO** (27 Mar) | `coins` e `inventario_capacita` spostati nella tabella `accounts`. Tabella `inventario` ristrutturata con FK `account_id` e ON DELETE CASCADE. Completato da Renan. |
 | C5 | **CORRETTO** | Il codice attuale di `window_background.gd` (righe 37-49) gia' allinea correttamente gli array: quando `tex == null`, il `continue` salta **sia** `_layers.append()` **che** `_parallax_factors.append()`. Gli array sono sempre della stessa dimensione. |
-| C6 | APERTO | Il typo `sxt` in `characters.json` non e' ancora stato corretto. **Assegnato a Mohamed/Giovanni.** |
+| C6 | APERTO | Il typo `sxt` in `characters.json` non e' ancora stato corretto. **Assegnato a Elia.** |
 | C7 | **RISOLTO per rimozione** | `male_black_shirt` rimosso dal catalogo characters.json. Costante orfana `CHAR_MALE_BLACK_SHIRT` ancora presente in constants.gd riga 16. |
 
 #### Problemi ALTI — Stato Aggiornato
 
 | # | Stato | Note |
 |---|-------|------|
-| A1 | APERTO | ~10 script mancano ancora di `_exit_tree()` correttamente implementato (ridotto da 12 dopo rimozione shop_panel e music_panel). **Assegnato a Mohamed/Giovanni (UI/scene scripts) e Cristian (logger, performance_manager).** |
+| A1 | APERTO | ~10 script mancano ancora di `_exit_tree()` correttamente implementato (ridotto da 12 dopo rimozione shop_panel e music_panel). **Assegnato a Renan (UI/scene scripts) e Cristian (logger, performance_manager).** |
 | A2 | **RISOLTO per rimozione** | `music_panel.gd` eliminato dal progetto. Problema non piu' applicabile. |
-| A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. **Assegnato a Mohamed/Giovanni.** |
+| A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. **Assegnato a Renan.** |
 | A4 | **CORRETTO** | `AudioManager._exit_tree()` ora pulisce tutti gli ambience player con `stop()` e `queue_free()`, e `_stop_ambience()` verifica `is_instance_valid()` prima della distruzione. |
 | A5 | **CORRETTO** | `play()`, `next_track()` e `previous_track()` verificano tutti `tracks.is_empty()` prima dell'accesso. |
-| A6 | **RISOLTO per rimozione** | `shop_panel.gd` rimosso dal progetto. Il memory leak drag preview in `deco_panel.gd` (A7) resta aperto. **Assegnato a Mohamed/Giovanni.** |
+| A6 | **RISOLTO per rimozione** | `shop_panel.gd` rimosso dal progetto. Il memory leak drag preview in `deco_panel.gd` (A7) resta aperto. **Assegnato a Renan.** |
 | A8 | **CORRETTO** | `_compare_versions()` ora usa `split(".")`, gestisce versioni a lunghezza variabile, e usa `is_valid_int()` prima del cast (righe 310-321). Gestisce correttamente formati come "1.0.0-beta". |
 | A9 | **CORRETTO** | La migrazione v3→v4 ora valida la struttura dell'inventario: verifica la presenza delle chiavi `coins` e `items`, gestisce `items` non-Array, e logga un warning con reset dei dati corrotti (righe 280-296). |
 | A10 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). Il gioco funziona esclusivamente offline. |
 | A11 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). |
 | A12-A13 | APERTO | Flush sincrono del logger e log persi se file non disponibile. **Assegnato a Cristian.** |
 | A14 | APERTO | Posizione finestra non persistita prima dello shutdown. **Assegnato a Cristian.** |
-| A15 | APERTO | Rimozione duplicati item_id rotta in decoration_system.gd. **Assegnato a Mohamed/Giovanni.** |
-| A16 | APERTO | Cast Texture2D unsafe in drop_zone.gd. **Assegnato a Mohamed/Giovanni.** |
+| A15 | APERTO | Rimozione duplicati item_id rotta in decoration_system.gd. **Assegnato a Renan.** |
+| A16 | APERTO | Cast Texture2D unsafe in drop_zone.gd. **Assegnato a Renan.** |
 | A17 | **CORRETTO** (27 Mar) | Diagnostica database migliorata con info OS, directory e verifica FK. |
 | A18 | APERTO | Errore apertura DB non propagato. **Assegnato a Elia.** |
 
@@ -1506,7 +1502,7 @@ La ri-analisi approfondita del codebase, condotta con le conoscenze acquisite da
 
 | # | File | Severita' | Problema | Stato |
 |---|------|-----------|----------|-------|
-| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena. Le funzioni `_play_intro()`, `_on_walk_in_done()`, `_on_opzioni()`, `_close_settings()` e `_transition_to_scene()` creano tweens con variabili locali senza salvarle come variabili membro. **Soluzione**: Salvare i tween come variabili membro e ucciderli esplicitamente in `_exit_tree()`. | APERTO — **Assegnato a Mohamed/Giovanni.** |
+| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena. Le funzioni `_play_intro()`, `_on_walk_in_done()`, `_on_opzioni()`, `_close_settings()` e `_transition_to_scene()` creano tweens con variabili locali senza salvarle come variabili membro. **Soluzione**: Salvare i tween come variabili membro e ucciderli esplicitamente in `_exit_tree()`. | APERTO — **Assegnato a Renan.** |
 | A20 | audio_manager.gd | MEDIO | `active_ambience` era un array pubblico mutabile. | **CORRETTO** — Rinominato in `_active_ambience` (privato), aggiunto `get_active_ambience()` getter che ritorna una copia. `music_panel.gd` aggiornato per usare il getter. |
 | A21 | audio_manager.gd | MEDIO | Nessun limite dimensione in `_load_audio_stream()` per file esterni. | **CORRETTO** — Aggiunta costante `MAX_AUDIO_FILE_SIZE = 50 MB` e check prima di `get_buffer()`. File troppo grandi vengono rifiutati con errore. |
 | A22 | ~~music_panel.gd~~ | ~~MEDIO~~ | ~~`_exit_tree()` disconnette solo 2 segnali su 9+ connessi.~~ | **RISOLTO per rimozione** — music_panel.gd eliminato dal progetto. |
@@ -1522,8 +1518,8 @@ Audit approfondito focalizzato su: transazioni SQLite, propagazione errori, vali
 | A25 | local_database.gd:361 | ALTO | `_save_inventory()` ritorna `void` — non propaga errori alla transazione chiamante. Dovrebbe ritornare `bool` per consentire il ROLLBACK in `_on_save_requested()`. La funzione esegue DELETE + loop INSERT: se un INSERT fallisce, l'inventario e' parzialmente perso. | APERTO — **Assegnato a Elia** |
 | A26 | auth_manager.gd:104-107 | MEDIO | `_set_state()` chiama `LocalDatabase.get_character(current_account_id)` senza verificare `LocalDatabase.is_open()`. Se il database non e' stato aperto (errore inizializzazione), causa crash `Invalid call ... in base 'Nil'`. | APERTO — **Assegnato a Elia** |
 | A27 | auth_manager.gd:52-54 | MEDIO | `register()` chiama `LocalDatabase.create_account()` ma non verifica il ritorno (`account_id`) prima di chiamare `get_account()`. Se `create_account()` ritorna `-1` (fallimento), `get_account(-1)` ritorna dizionario vuoto, e `_set_state()` viene chiamato con dati invalidi. | APERTO — **Assegnato a Elia** |
-| A28 | room_base.gd:61-76 | MEDIO | Quando le decorazioni vengono ricaricate da `SaveManager.decorations`, la posizione non viene clampata ai limiti del viewport. Se la finestra viene ridimensionata, decorazioni salvate ai bordi possono finire fuori schermo e diventare irraggiungibili. | APERTO — **Assegnato a Mohamed/Giovanni** |
-| A29 | main_menu.gd:84 | MEDIO | Dopo `scene.instantiate() as Control`, non c'e' null check sull'`auth_screen` risultante. Se l'instanziamento fallisce, la successiva `.auth_completed.connect()` causa crash. Stesso pattern presente per profile_panel (riga 107). | APERTO — **Assegnato a Mohamed/Giovanni** |
+| A28 | room_base.gd:61-76 | MEDIO | Quando le decorazioni vengono ricaricate da `SaveManager.decorations`, la posizione non viene clampata ai limiti del viewport. Se la finestra viene ridimensionata, decorazioni salvate ai bordi possono finire fuori schermo e diventare irraggiungibili. | APERTO — **Assegnato a Renan** |
+| A29 | main_menu.gd:84 | MEDIO | Dopo `scene.instantiate() as Control`, non c'e' null check sull'`auth_screen` risultante. Se l'instanziamento fallisce, la successiva `.auth_completed.connect()` causa crash. Stesso pattern presente per profile_panel (riga 107). | APERTO — **Assegnato a Renan** |
 
 **A24 — Transaction senza ROLLBACK**: Il pattern corretto e':
 ```gdscript
@@ -2856,7 +2852,7 @@ Sono inoltre disponibili **4 guide operative** nella cartella [`guide/`](guide/)
 | [SETUP_AMBIENTE.md](guide/SETUP_AMBIENTE.md) | Tutti | Configurazione ambiente di sviluppo (Godot, Git, VS Code) |
 | [GUIDA_CRISTIAN_CICD.md](guide/GUIDA_CRISTIAN_CICD.md) | Cristian Marino | CI/CD, Logger, PerformanceManager |
 | [GUIDA_ELIA_DATABASE.md](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Schema database, FK, seed data |
-| [GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | Mohamed & Giovanni | Gameplay, UI, asset, `_exit_tree()` |
+| [GUIDA_RENAN_GAMEPLAY_UI.md](guide/GUIDA_RENAN_GAMEPLAY_UI.md) | Renan Augusto Macena | Gameplay, UI, asset, `_exit_tree()` |
 
 ### Documentazione Ufficiale Godot
 
@@ -2912,7 +2908,7 @@ Per facilitare il lavoro di ogni membro del team, sono state create guide operat
 |-------|---------|-----------|
 | [Setup Ambiente](guide/SETUP_AMBIENTE.md) | Tutti | Installazione Godot, Git, VS Code, clonazione repo, workflow Git |
 | [Guida CI/CD](guide/GUIDA_CRISTIAN_CICD.md) | Cristian Marino | Linting test, Logger flush e session ID, PerformanceManager, configurazione test CI |
-| [Guida Game Dev](guide/GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | Mohamed & Giovanni | characters.json, `_exit_tree()` per ~6 script, costanti orfane, race condition, null check |
+| [Guida Gameplay/UI](guide/GUIDA_RENAN_GAMEPLAY_UI.md) | Renan Augusto Macena | characters.json, `_exit_tree()` per ~6 script, costanti orfane, race condition, null check |
 | [Guida Database](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Verifica schema DB (gia' corretto), seed data, foreign keys |
 
 Le guide si trovano nella cartella [`guide/`](guide/) e sono pensate come versione operativa (il "come fare") di questo audit report (il "cosa fare e perche'").
@@ -3178,25 +3174,25 @@ Questa sezione traduce la classificazione dei problemi (Sezione 10) in una **mat
 |----|----------|---------|---------|--------|-----------|-----------|------|
 | C3 | PK characters impedisce multipli PG | Alta | Critico | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
 | C4 | Schema inventario confuso | Media | Alto | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
-| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | **P1** | Mohamed/Giovanni | APERTO — crash immediato con male_old |
-| C7 | male_black_shirt incompleto | Media | Critico | S | ~~P1~~ | Mohamed/Giovanni | **RISOLTO** per rimozione dal catalogo JSON. Costante orfana in constants.gd ancora da rimuovere |
+| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | **P1** | Elia | APERTO — crash immediato con male_old |
+| C7 | male_black_shirt incompleto | Media | Critico | S | ~~P1~~ | Elia | **RISOLTO** per rimozione dal catalogo JSON. Costante orfana in constants.gd ancora da rimuovere |
 
 ### 18.3 Matrice Problemi ALTI
 
 | ID | Problema | Probab. | Impatto | Sforzo | Priorita' | Assegnato |
 |----|----------|---------|---------|--------|-----------|-----------|
-| A1 | _exit_tree() mancante (~10 script) | Alta | Alto | L | **P2** | Mohamed/Giovanni + Cristian |
+| A1 | _exit_tree() mancante (~10 script) | Alta | Alto | L | **P2** | Renan + Cristian |
 | A2 | FileDialog memory leak | — | — | — | — | — | **RISOLTO per rimozione** (shop_panel/music_panel rimossi) |
-| A3 | Race condition swap personaggio | Media | Alto | M | **P2** | Mohamed/Giovanni |
-| A6 | Memory leak drag preview deco_panel | Media | Medio | S | **P2** | Mohamed/Giovanni |
+| A3 | Race condition swap personaggio | Media | Alto | M | **P2** | Renan |
+| A6 | Memory leak drag preview deco_panel | Media | Medio | S | **P2** | Renan |
 | A12 | Logger flush sincrono | Bassa | Medio | M | **P3** | Cristian |
 | A13 | Log persi se file non disponibile | Bassa | Basso | M | **P3** | Cristian |
 | A14 | Posizione finestra non persistita | Media | Basso | S | **P3** | Cristian |
-| A15 | Rimozione duplicati item_id | Bassa | Medio | S | **P3** | Mohamed/Giovanni |
-| A16 | Cast Texture2D unsafe | Bassa | Alto | S | **P3** | Mohamed/Giovanni |
+| A15 | Rimozione duplicati item_id | Bassa | Medio | S | **P3** | Renan |
+| A16 | Cast Texture2D unsafe | Bassa | Alto | S | **P3** | Renan |
 | A17 | Tabelle seed vuote | Alta | Medio | M | ~~P2~~ | Elia | **CORRETTO** (diagnostica DB migliorata) |
 | A18 | Errore DB non propagato | Bassa | Medio | S | **P3** | Elia |
-| A19 | Tween orfani main_menu | Media | Medio | M | **P2** | Mohamed/Giovanni |
+| A19 | Tween orfani main_menu | Media | Medio | M | **P2** | Renan |
 | A22 | music_panel _exit_tree incompleto | — | — | — | — | — | **RISOLTO per rimozione** (music_panel rimosso) |
 
 ### 18.4 Regola Decisionale
@@ -3223,16 +3219,16 @@ Questa tabella presenta una stima realistica delle ore necessarie per completare
 
 ### 19.1 Stima per Fase e Responsabile
 
-| Fase | Descrizione | Elia | Mohamed/Giov. | Cristian | Renan | Totale Fase |
-|------|-------------|------|---------------|----------|-------|-------------|
-| **Fase 1** | Integrita' Dati (CRITICO) | ~~3h~~ 0.5h | 1.5h | — | ~~1h~~ 0h | **2h** |
-| **Fase 2** | Memoria e Lifecycle (ALTO) | — | 4h | 1.5h | 1h (review) | **6.5h** |
-| **Fase 3** | Errori e Validazione (MEDIO) | 1h | 2h | 2h | 1h (review) | **6h** |
-| **Fase 4** | Allineamento Architettura | — | 1h | 1h | 3h | **5h** |
-| **Fase 5** | Copertura Test | 1h | 2h | 3h | 1h (review) | **7h** |
-| **Totale** | | **2.5h** | **10.5h** | **7.5h** | **6h** | **~26.5h** |
+| Fase | Descrizione | Elia | Cristian | Renan | Totale Fase |
+|------|-------------|------|----------|-------|-------------|
+| **Fase 1** | Integrita' Dati (CRITICO) | ~~3h~~ 0.5h + 0.5h (C6/C7) | — | ~~1h~~ 0h | **1h** |
+| **Fase 2** | Memoria e Lifecycle (ALTO) | — | 1.5h | 5h | **6.5h** |
+| **Fase 3** | Errori e Validazione (MEDIO) | 1h | 2h | 3h | **6h** |
+| **Fase 4** | Allineamento Architettura | — | 1h | 4h | **5h** |
+| **Fase 5** | Copertura Test | 1h | 3h | 3h | **7h** |
+| **Totale** | | **3h** | **7.5h** | **15h** | **~25.5h** |
 
-> **Nota (29 Marzo 2026)**: Le ore della Fase 1 sono state ridotte significativamente: C3/C4 (schema DB) gia' corretti da Renan, C7 risolto per rimozione. Rimangono C6 (typo sprite) e costanti orfane. Fase 2 ridotta: shop_panel e music_panel rimossi, ~10 script invece di 12.
+> **Nota (30 Marzo 2026)**: Team ridotto a 3 persone (Renan, Cristian, Elia). Le ore di Mohamed/Giovanni sono state redistribuite a Renan (gameplay/UI) e a Elia (task semplici C6/C7). C3/C4 gia' corretti, C7 risolto per rimozione. Fase 2 ridotta: shop_panel e music_panel rimossi.
 
 ### 19.2 Distribuzione Settimanale (Scadenza 22 Aprile 2026)
 
@@ -3251,7 +3247,7 @@ Questa tabella presenta una stima realistica delle ore necessarie per completare
 Fase 1 (Integrita' Dati)
   │
   ├── C3/C4 (Elia: schema DB) ── GIA' CORRETTO
-  ├── C6 (Mohamed/Giov: typo characters.json)┐
+  ├── C6 (Elia: typo characters.json)────────┐
   │                                           ▼
   │                                    Fase 2 (Lifecycle)
   │                                      │
@@ -3326,25 +3322,25 @@ Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. U
 | File | Modifiche | Chi |
 |------|-----------|-----|
 | `scripts/autoload/local_database.gd` | ~~Schema characters (PK), schema inventario, FK~~ **GIA' CORRETTO** (27 Mar). Rimane: seed data | Elia |
-| `data/characters.json` | Fix typo sprite "sxt"→"sx" (C6 — ancora aperto) | Mohamed/Giovanni |
-| `scripts/utils/constants.gd` | Rimuovere 3 costanti orfane (CHAR_FEMALE_RED_SHIRT, CHAR_MALE_YELLOW_SHIRT, CHAR_MALE_BLACK_SHIRT) | Mohamed/Giovanni |
+| `data/characters.json` | Fix typo sprite "sxt"→"sx" (C6 — ancora aperto) | Elia |
+| `scripts/utils/constants.gd` | Rimuovere 3 costanti orfane (CHAR_FEMALE_RED_SHIRT, CHAR_MALE_YELLOW_SHIRT, CHAR_MALE_BLACK_SHIRT) | Elia |
 | ~~`data/supabase_migration.sql`~~ | ~~Allineamento schema PostgreSQL~~ **NON NECESSARIO** — SupabaseClient rimosso | — |
 
 ### Fase 2 — Memoria e Lifecycle
 
 | File | Modifiche | Chi |
 |------|-----------|-----|
-| `scripts/ui/panel_manager.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
-| `scripts/ui/deco_panel.gd` | _exit_tree() + fix memory leak drag preview | Mohamed/Giovanni |
-| `scripts/ui/settings_panel.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
+| `scripts/ui/panel_manager.gd` | Aggiunta _exit_tree() | Renan |
+| `scripts/ui/deco_panel.gd` | _exit_tree() + fix memory leak drag preview | Renan |
+| `scripts/ui/settings_panel.gd` | Aggiunta _exit_tree() | Renan |
 | ~~`scripts/ui/music_panel.gd`~~ | ~~Fix FileDialog leak + _exit_tree()~~ **RIMOSSO** (25 Mar 2026) | — |
-| `scripts/rooms/room_base.gd` | _exit_tree() + fix race condition swap (call_deferred) | Mohamed/Giovanni |
-| `scripts/rooms/decoration_system.gd` | _exit_tree() + fix rimozione duplicati | Mohamed/Giovanni |
-| `scripts/rooms/room_grid.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
-| `scripts/rooms/character_controller.gd` | null check _anim + validazione nomi animazione | Mohamed/Giovanni |
-| `scripts/menu/main_menu.gd` | _exit_tree() + fix tween orfani (A19) | Mohamed/Giovanni |
-| `scripts/menu/menu_character.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
-| `scripts/main.gd` | Aggiunta _exit_tree() | Mohamed/Giovanni |
+| `scripts/rooms/room_base.gd` | _exit_tree() + fix race condition swap (call_deferred) | Renan |
+| `scripts/rooms/decoration_system.gd` | _exit_tree() + fix rimozione duplicati | Renan |
+| `scripts/rooms/room_grid.gd` | Aggiunta _exit_tree() | Renan |
+| `scripts/rooms/character_controller.gd` | null check _anim + validazione nomi animazione | Renan |
+| `scripts/menu/main_menu.gd` | _exit_tree() + fix tween orfani (A19) | Renan |
+| `scripts/menu/menu_character.gd` | Aggiunta _exit_tree() | Renan |
+| `scripts/main.gd` | Aggiunta _exit_tree() | Renan |
 | `scripts/autoload/logger.gd` | Fix flush sincrono + log persi | Cristian |
 | `systems/performance_manager.gd` | _exit_tree() + persistenza posizione finestra | Cristian |
 
@@ -3353,8 +3349,8 @@ Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. U
 | File | Modifiche | Chi |
 |------|-----------|-----|
 | `scripts/autoload/save_manager.gd` | _validate_save_data(), safety version comparison | Elia (supporto) |
-| `scripts/rooms/decoration_system.gd` | Fix rimozione duplicati item_id (A15) | Mohamed/Giovanni |
-| `scripts/ui/drop_zone.gd` | Cast Texture2D safe (A16) | Mohamed/Giovanni |
+| `scripts/rooms/decoration_system.gd` | Fix rimozione duplicati item_id (A15) | Renan |
+| `scripts/ui/drop_zone.gd` | Cast Texture2D safe (A16) | Renan |
 | `scripts/autoload/logger.gd` | Fallback se file log non disponibile (A13) | Cristian |
 
 ### Fase 4 — Allineamento Architetturale
@@ -3374,9 +3370,9 @@ Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. U
 | `tests/unit/test_local_database.gd` | Test schema, FK, seed data | Elia |
 | `tests/unit/test_save_manager.gd` | Test save/load, migrazione, backup | Cristian |
 | `tests/unit/test_signal_bus.gd` | Test emissione/ricezione segnali | Cristian |
-| `tests/unit/test_audio_manager.gd` | Test bounds check, crossfade | Mohamed/Giovanni |
-| `tests/unit/test_decoration_system.gd` | Test posizionamento, rimozione | Mohamed/Giovanni |
-| `tests/unit/test_game_manager.gd` | Test caricamento cataloghi | Mohamed/Giovanni |
+| `tests/unit/test_audio_manager.gd` | Test bounds check, crossfade | Renan |
+| `tests/unit/test_decoration_system.gd` | Test posizionamento, rimozione | Renan |
+| `tests/unit/test_game_manager.gd` | Test caricamento cataloghi | Renan |
 | `.github/workflows/*.yml` | Aggiunta test nella pipeline CI | Cristian |
 
 ### Potenziali Conflitti Git
@@ -3385,7 +3381,7 @@ Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. U
 FILE AD ALTO RISCHIO CONFLITTO (modificati da piu' persone):
 - scripts/autoload/local_database.gd  → Elia (schema) + Renan (migrazione)
 - systems/performance_manager.gd      → Cristian (_exit_tree) + Renan (SignalBus)
-- scripts/ui/settings_panel.gd        → Mohamed/Giov. (_exit_tree) + Renan (SignalBus)
+- scripts/ui/settings_panel.gd        → Renan (_exit_tree + SignalBus)
 
 STRATEGIA: Completare prima le modifiche lifecycle (Fase 2), poi quelle
 architetturali (Fase 4). Non lavorare sullo stesso file in parallelo.

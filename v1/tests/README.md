@@ -28,9 +28,9 @@ Secondo il piano di stabilizzazione, i seguenti test dovranno essere creati:
 | `test_local_database.gd` | Schema, FK, seed data | Elia |
 | `test_save_manager.gd` | Save/load, migrazione, backup | Cristian |
 | `test_signal_bus.gd` | Emissione/ricezione segnali | Cristian |
-| `test_audio_manager.gd` | Bounds check, crossfade | Mohamed/Giovanni |
-| `test_decoration_system.gd` | Posizionamento, rimozione | Mohamed/Giovanni |
-| `test_game_manager.gd` | Caricamento cataloghi | Mohamed/Giovanni |
+| `test_audio_manager.gd` | Bounds check, crossfade | Renan |
+| `test_decoration_system.gd` | Posizionamento, rimozione | Renan |
+| `test_game_manager.gd` | Caricamento cataloghi | Renan |
 
 ## Framework
 

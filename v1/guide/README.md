@@ -22,8 +22,8 @@ Dopo aver completato il setup, aprite la vostra guida personale:
 
 | Guida | Per Chi | Contenuto |
 |-------|---------|-----------|
-| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian Marino** | Pipeline CI/CD, linting test, Logger, PerformanceManager, configurazione test |
-| [GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md](GUIDA_MOHAMED_GIOVANNI_GAMEDEV.md) | **Mohamed & Giovanni** | Correzione characters.json, costanti orfane, `_exit_tree()` per ~6 script, race condition, null check |
+| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian Marino** | Pipeline CI/CD, Logger, PerformanceManager, ricerca asset personaggio e grafici |
+| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan Augusto Macena** | Correzione characters.json, costanti orfane, `_exit_tree()` per ~6 script, race condition, null check |
 | [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia Zoccatelli** | Verifica schema DB (gia' corretto), seed data, foreign keys |
 
 ## Relazione con l'Audit Report
@@ -41,18 +41,18 @@ Seguite questo ordine per evitare conflitti e lavoro inutile:
 SETTIMANA 1 — Fondamenta (tutti lavorano in parallelo)
 │
 ├── Cristian: Task 1-2 (CI branch + lint test)     ← SUBITO, sblocca validazione push
-├── Elia: Task 1 (verifica schema DB — GIA' CORRETTO) + Task 2-3 (seed data, FK)  ← verificare
-└── Mohamed/Giovanni: Task 1-2 (typo sprite + costanti)      ← SUBITO, sblocca gameplay test
+├── Elia: Task 1 (verifica schema DB — GIA' CORRETTO) + Task 2-3 (seed data, FK) + C6/C7  ← verificare
+└── Renan: Task 1-2 (gameplay fix + _exit_tree)      ← SUBITO, sblocca gameplay test
 │
 SETTIMANA 2 — Correzioni Core
 │
-├── Mohamed/Giovanni: Task 3-5 (array mismatch, race condition, texture cast)
+├── Renan: Task 3-5 (array mismatch, race condition, texture cast)
 ├── Cristian: Task 3-4 (Logger session ID + buffer)
 └── Elia: Task 4-5 (seed data + errori DB)
 │
 SETTIMANA 3 — Pulizia e Lifecycle
 │
-├── Mohamed/Giovanni: Task 6-7 (_exit_tree per ~6 script + null check)  ← il task piu' grande
+├── Renan: Task 6-7 (_exit_tree per ~6 script + null check)  ← il task piu' grande
 ├── Cristian: Task 5 (_exit_tree PerformanceManager)
 └── Elia: (nessun task rimanente — disponibile per supporto)
 │
@@ -64,8 +64,8 @@ SETTIMANA 4 — Integrazione e Verifica
 
 **Dipendenze critiche**:
 
-- Cristian Task 6 (test nella CI) → dipende dai file test creati da Mohamed/Giovanni/Elia (attualmente non ci sono test)
-- Mohamed/Giovanni Task 6 (_exit_tree) → puo' iniziare solo dopo aver capito i segnali (Task 3-5)
+- Cristian Task 6 (test nella CI) → dipende dai file test creati da Renan/Elia (attualmente non ci sono test)
+- Renan Task 6 (_exit_tree) → puo' iniziare solo dopo aver capito i segnali (Task 3-5)
 - Elia: schema DB gia' corretto (C3/C4 completati 27 Mar) — verificare solo seed data
 
 ---
@@ -76,7 +76,7 @@ SETTIMANA 4 — Integrazione e Verifica
 |----------------|----------------|------|
 | Non riesco a configurare l'ambiente | Renan | Messaggio nel gruppo Teams/WhatsApp con screenshot dell'errore |
 | Conflitto Git (merge conflict) | Renan o Cristian | Messaggio + output di `git status` e `git diff` |
-| Godot non apre la scena / crash | Mohamed o Giovanni | Messaggio + pannello Output di Godot (screenshot) |
+| Godot non apre la scena / crash | Renan | Messaggio + pannello Output di Godot (screenshot) |
 | Dubbio su schema database / SQL | Elia o Renan | Messaggio con la query che non funziona + errore |
 | Non capisco cosa devo fare in un task | Renan | Messaggio citando il numero del task e la riga che non capite |
 | Ho rotto qualcosa e non so come annullare | **Renan SUBITO** | NON fate `git reset --hard`. Chiedete prima |
@@ -110,7 +110,7 @@ Non deve essere perfetto — deve essere stabile, senza crash, e con le funziona
 Quando tutti i task sono completati, verificate **insieme** che tutto funzioni:
 
 ```text
-INTEGRITA' DATI (Elia + Mohamed/Giovanni)
+INTEGRITA' DATI (Elia + Renan)
 - [ ] characters.json: nessun typo nei percorsi sprite
 - [ ] constants.gd: solo costanti per personaggi esistenti
 - [x] Database: schema characters con character_id PRIMARY KEY (GIA' FATTO 27 Mar)
@@ -118,7 +118,7 @@ INTEGRITA' DATI (Elia + Mohamed/Giovanni)
 - [x] Database: foreign keys attive e funzionanti (GIA' FATTO 27 Mar)
 - [ ] Database: seed data presente (14 categorie, 10 colori, 1 account)
 
-STABILITA' E LIFECYCLE (Mohamed/Giovanni + Cristian)
+STABILITA' E LIFECYCLE (Renan + Cristian)
 - [ ] _exit_tree() presente in tutti e 7 gli script indicati
 - [ ] Nessun memory leak (Profiler stabile dopo 10 cicli menu->stanza->menu)
 - [ ] Nessun crash dopo 5 minuti di gioco continuo
@@ -126,7 +126,7 @@ STABILITA' E LIFECYCLE (Mohamed/Giovanni + Cristian)
 - [ ] Null check su AnimatedSprite2D e Texture2D
 
 PIPELINE CI/CD (Cristian)
-- [ ] CI attiva su branch Renan (non piu' proto)
+- [ ] CI attiva su branch main
 - [ ] gdlint + gdformat controllano anche v1/tests/ (attualmente nessun test presente)
 - [ ] Tutti i test passano nella pipeline (attualmente nessun test — da creare)
 - [ ] Logger: session ID univoci, buffer non perso
@@ -154,4 +154,4 @@ GIOCO FUNZIONANTE (TUTTI)
 ---
 
 *Queste guide fanno parte del progetto Mini Cozy Room — Audit Pre-Rilascio.*
-*Ultimo aggiornamento: 29 Marzo 2026*
+*Ultimo aggiornamento: 30 Marzo 2026*
