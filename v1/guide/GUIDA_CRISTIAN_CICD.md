@@ -566,6 +566,10 @@ Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
 
 Il gioco ha bisogno di un **nuovo personaggio** per sostituire quello attuale (`male_old`). Devi trovare (o creare) sprite pixel art in stile coerente con il gioco, e prepararli nel formato corretto che il progetto si aspetta.
 
+> **Documentazione dettagliata**: consulta [`assets/charachters/README.md`](../assets/charachters/README.md)
+> per la struttura completa dei file, il formato sprite, le 8 direzioni e le istruzioni
+> passo-passo per sostituire o aggiungere un personaggio.
+
 ### Come Funziona il Personaggio nel Progetto
 
 Il nostro personaggio usa **sprite sheet** — immagini PNG che contengono piu' frame di animazione uno accanto all'altro, come una striscia di fotogrammi di un film.
@@ -910,6 +914,8 @@ Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare 
 
 ## Risorse Utili
 
+- **README Asset Personaggi**: [`assets/charachters/README.md`](../assets/charachters/README.md) — Formato sprite, 8 direzioni, come sostituire il personaggio, come aggiungerne uno nuovo
+- **README Asset (root)**: [`assets/README.md`](../assets/README.md) — Mappa completa origini e licenze di tutti gli asset
 - **Documentazione GitHub Actions**: <https://docs.github.com/en/actions>
 - **Documentazione gdtoolkit**: <https://github.com/Scony/godot-gdscript-toolkit>
 - **Riferimento YAML**: <https://yaml.org/spec/> (per il file ci.yml)
