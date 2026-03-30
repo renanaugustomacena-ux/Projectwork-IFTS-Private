@@ -1,15 +1,16 @@
 # Guida Operativa — Cristian Marino (CI/CD & Documentation Lead)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 29 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 30 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.7, 6.8, 9.3, 11 Fase 5, 14
 
-> **⚠️ Nota Aggiornamento (27 Marzo 2026)**:
+> **⚠️ Nota Aggiornamento (30 Marzo 2026)**:
 > La CI/CD e' stata semplificata: rimossi il job test (GdUnit4 non installato), il job
 > security-scan e l'intera pipeline database-ci.yml. Resta solo il job lint (gdlint + gdformat)
-> con branch aggiornato a Renan e path v1/tests/ incluso. I Task 1 e 2 sono gia' stati completati.
-> Restano da fare i Task 3-5 (Logger e PerformanceManager) e il Task 6 (documentazione).
+> con branch aggiornato a **main** e path v1/tests/ incluso. I Task 1 e 2 sono gia' stati completati.
+> Restano da fare i Task 3-5 (Logger e PerformanceManager), il Task 6 (documentazione),
+> e i **nuovi Task 7-8** (ricerca asset personaggio + asset grafici).
 
 ---
 
@@ -18,11 +19,13 @@
 | # | Cosa Devi Fare | File Principale | Sezione Audit | Priorita' | Tempo Stimato | Stato |
 |---|----------------|-----------------|---------------|-----------|---------------|-------|
 | 1 | ~~Aggiungere linting dei file test nella CI~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
-| 2 | ~~Aggiornare branch CI da "proto" a "Renan"~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
+| 2 | ~~Aggiornare branch CI da "proto" a "main"~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
 | 3 | Correggere Logger: session ID con possibili collisioni | `scripts/autoload/logger.gd` | 6.7, A13 | MEDIO | 30 min | DA FARE |
 | 4 | Correggere Logger: log persi se file non disponibile | `scripts/autoload/logger.gd` | 6.7, A12 | MEDIO | 20 min | DA FARE |
 | 5 | Aggiungere `_exit_tree()` al PerformanceManager | `scripts/systems/performance_manager.gd` | 6.8, A14 | ALTO | 20 min | DA FARE |
 | 6 | Aggiornare documentazione e riferimenti | Vari README | 14 | BASSO | 1 ora | DA FARE |
+| 7 | **Trovare/creare nuovo personaggio pixel art** | `assets/charachters/male/old/` | — | **ALTO** | 2-3 ore | DA FARE |
+| 8 | **Trovare/creare asset grafici aggiuntivi** (loading screen, ecc.) | `assets/` | — | MEDIO | 1-2 ore | DA FARE |
 
 ---
 
@@ -121,12 +124,12 @@ Se `gdformat --check` non produce errori, sei a posto.
 ```bash
 git add .github/workflows/ci.yml
 git commit -m "ci: aggiunto linting dei file test nella pipeline"
-git push origin Renan
+git push origin main
 ```
 
 ### Come Verificare
 
-1. Vai su https://github.com/ZroGP/Projectwork-IFTS
+1. Vai su https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private
 2. Clicca sulla tab **"Actions"** in alto
 3. Dovresti vedere il tuo workflow in esecuzione (cerchio giallo)
 4. Aspetta che finisca — se diventa verde (✓), il linting dei test e' stato aggiunto con successo
@@ -139,14 +142,14 @@ git push origin Renan
 
 ---
 
-## Task 2: Aggiornare Branch CI da "proto" a "Renan"
+## Task 2: Aggiornare Branch CI da "proto" a "main"
 
 **Tempo stimato**: 10 minuti
 **Priorita'**: ALTO
 
 ### Cosa C'e' da Fare
 
-Il file `ci.yml` attualmente fa riferimento al branch `proto`, ma il nostro branch di sviluppo attivo e' `Renan`. Se non aggiorniamo questo riferimento, la pipeline CI non si attivera' quando fate push sul branch `Renan`.
+Il file `ci.yml` originariamente faceva riferimento al branch `proto`. Il branch di sviluppo attivo e' ora `main`. Se non aggiorniamo questo riferimento, la pipeline CI non si attivera' quando si fa push sul branch `main`.
 
 ### Passo 1: Apri il File
 
@@ -155,13 +158,13 @@ Apri `.github/workflows/ci.yml` in VS Code (potrebbe essere gia' aperto dal task
 ### Passo 2: Trova e Sostituisci
 
 Usa `Ctrl+H` (Cerca e Sostituisci) in VS Code:
-- **Cerca**: `proto`
-- **Sostituisci con**: `Renan`
+- **Cerca**: `proto` (o `Renan` se gia' aggiornato)
+- **Sostituisci con**: `main`
 
-Ci sono 3 occorrenze da sostituire:
-1. Riga 4: nel commento `"Eseguita su ogni push al branch proto"` → `"Eseguita su ogni push al branch Renan"`
-2. Riga 13: `branches: [main, proto]` → `branches: [main, Renan]`
-3. Riga 17: `branches: [proto]` → `branches: [Renan]`
+Le occorrenze da verificare:
+1. Riga 4: nel commento `"Eseguita su ogni push al branch main"`
+2. Riga 13: `branches: [main]`
+3. Riga 17: `branches: [main]`
 
 ### Passo 3: Verifica il Risultato
 
@@ -170,11 +173,11 @@ Dopo la sostituzione, le righe 11-19 dovrebbero apparire cosi':
 ```yaml
 on:
   pull_request:
-    branches: [main, Renan]
+    branches: [main]
     paths:
       - "v1/**"
   push:
-    branches: [Renan]
+    branches: [main]
     paths:
       - "v1/**"
   workflow_dispatch:
@@ -184,16 +187,16 @@ on:
 
 ```bash
 git add .github/workflows/ci.yml
-git commit -m "ci: aggiornato branch di riferimento da proto a Renan"
-git push origin Renan
+git commit -m "ci: aggiornato branch di riferimento da proto a main"
+git push origin main
 ```
 
 **Nota**: Se hai completato anche il Task 1, puoi fare un unico commit per entrambe le modifiche:
 
 ```bash
 git add .github/workflows/ci.yml
-git commit -m "ci: aggiornato branch a Renan e aggiunto linting test"
-git push origin Renan
+git commit -m "ci: aggiornato branch a main e aggiunto linting test"
+git push origin main
 ```
 
 ---
@@ -291,7 +294,7 @@ func _generate_session_id() -> String:
 ```bash
 git add scripts/autoload/logger.gd
 git commit -m "fix: migliorata generazione session ID per prevenire collisioni"
-git push origin Renan
+git push origin main
 ```
 
 ### Come Verificare
@@ -386,7 +389,7 @@ func _flush_buffer() -> void:
 ```bash
 git add scripts/autoload/logger.gd
 git commit -m "fix: logger mantiene ultimi 100 messaggi quando file non disponibile"
-git push origin Renan
+git push origin main
 ```
 
 ### Come Verificare
@@ -467,7 +470,7 @@ func _exit_tree() -> void:
 ```bash
 git add scripts/systems/performance_manager.gd
 git commit -m "fix: aggiunto _exit_tree() a PerformanceManager per disconnessione segnali"
-git push origin Renan
+git push origin main
 ```
 
 ### Come Verificare
@@ -524,11 +527,13 @@ Usa questa checklist per verificare di aver completato tutto. Spunta ogni voce m
 
 ```
 - [x] CI/CD: gdlint e gdformat includono v1/tests/ (GIA' FATTO)
-- [x] CI/CD: branch aggiornato da "proto" a "Renan" (GIA' FATTO)
+- [x] CI/CD: branch aggiornato da "proto" a "main" (GIA' FATTO)
 - [ ] Logger: session ID usa Crypto per casualita' sicura
 - [ ] Logger: buffer mantiene ultimi 100 messaggi se file non disponibile
 - [ ] PerformanceManager: _exit_tree() disconnette 3 segnali
 - [ ] Documentazione: README e riferimenti aggiornati
+- [ ] Personaggio: trovato/creato nuovo sprite set 16x16 con 8 direzioni
+- [ ] Asset grafici: trovati/creati asset aggiuntivi (loading screen, ecc.)
 ```
 
 ---
@@ -540,13 +545,310 @@ Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
 | Task | Puoi Iniziare Subito? | Dipendenze |
 | ---- | --------------------- | ---------- |
 | ~~Task 1 (lint test nella CI)~~ | — | GIA' FATTO |
-| ~~Task 2 (branch proto → Renan)~~ | — | GIA' FATTO |
+| ~~Task 2 (branch proto → main)~~ | — | GIA' FATTO |
 | Task 3 (Logger session ID) | **SI'** | Nessuna |
 | Task 4 (Logger buffer) | **SI'** | Nessuna |
 | Task 5 (PerformanceManager _exit_tree) | **SI'** | Nessuna |
 | Task 6 (aggiornare documentazione) | **NO** | Dipende dal completamento di tutti gli altri task |
+| Task 7 (nuovo personaggio pixel art) | **SI'** | Nessuna — puo' essere fatto in parallelo |
+| Task 8 (asset grafici aggiuntivi) | **SI'** | Nessuna — puo' essere fatto in parallelo |
 
 **Suggerimento**: inizia subito con Task 3-5, poi passa al Task 6 quando tutti hanno finito.
+
+---
+
+## Task 7: Trovare/Creare Nuovo Personaggio Pixel Art
+
+**Tempo stimato**: 2-3 ore
+**Priorita'**: ALTO
+
+### Obiettivo
+
+Il gioco ha bisogno di un **nuovo personaggio** per sostituire quello attuale (`male_old`). Devi trovare (o creare) sprite pixel art in stile coerente con il gioco, e prepararli nel formato corretto che il progetto si aspetta.
+
+### Come Funziona il Personaggio nel Progetto
+
+Il nostro personaggio usa **sprite sheet** — immagini PNG che contengono piu' frame di animazione uno accanto all'altro, come una striscia di fotogrammi di un film.
+
+**Formato attuale**: Ogni PNG e' una striscia orizzontale di **4 frame**, ciascuno di **32x32 pixel**. L'immagine totale e' **128x32 pixel**.
+
+```text
+Esempio: male_idle_down.png (128 x 32 pixel)
+
+┌────────┬────────┬────────┬────────┐
+│ Frame 1│ Frame 2│ Frame 3│ Frame 4│   ← 4 fotogrammi di idle
+│ 32x32  │ 32x32  │ 32x32  │ 32x32  │      guardando in basso
+└────────┴────────┴────────┴────────┘
+      128 pixel di larghezza totale
+```
+
+### Le 8 Direzioni
+
+Il personaggio deve avere **8 direzioni** di vista (come una bussola):
+
+```text
+        up
+   up_side  up_side_sx
+  side              side_sx
+   down_side  down_side_sx
+       down
+```
+
+**Nota**: `_sx` (sinistra) e' spesso lo stesso sprite di destra ma specchiato orizzontalmente.
+
+### File Necessari — Cosa Devi Preparare
+
+Per ogni animazione, servono **8 file PNG** (uno per direzione). Totale: **27 file PNG**.
+
+```text
+male_idle/
+├── male_idle_down.png           (128x32, 4 frame)
+├── male_idle_down_side.png      (128x32, 4 frame)
+├── male_idle_down_side_sx.png   (128x32, 4 frame)
+├── male_idle_side.png           (128x32, 4 frame)
+├── male_idle_side_sx.png        (128x32, 4 frame)
+├── male_idle_up.png             (128x32, 4 frame)
+├── male_idle_up_side.png        (128x32, 4 frame)
+└── male_idle_up_side_sx.png     (128x32, 4 frame)
+
+male_walk/
+├── male_walk_down.png           (128x32, 4 frame)
+├── male_walk_down_side.png      (128x32, 4 frame)
+├── male_walk_down_side_sx.png   (128x32, 4 frame) ← NOTA: il file attuale ha un typo "sxt"
+├── male_walk_side.png           (128x32, 4 frame)
+├── male_walk_side_sx.png        (128x32, 4 frame)
+├── male_walk_up.png             (128x32, 4 frame)
+├── male_walk_up_side.png        (128x32, 4 frame)
+└── male_walk_up_side_sx.png     (128x32, 4 frame)
+
+male_interact/
+├── (stessa struttura di idle — 8 file)
+
+male_rotate/
+└── male_rotate.png              (256x32, 8 frame — tutte le direzioni in un unico file)
+```
+
+### Dove Trovare Sprite Gratuiti
+
+Ecco i migliori siti per trovare pixel art character sprite gratuiti. Cerca sprite che siano:
+- **16x16 pixel** di base (poi verranno scalati 4x nel gioco → 64x64 su schermo)
+- Stile **top-down** (vista dall'alto, non laterale)
+- Con animazioni **idle** (fermo) e **walk** (cammina)
+- Licenza che permetta uso in progetti accademici
+
+**Siti consigliati**:
+
+1. **itch.io** (il migliore per pixel art gratuiti):
+   - Vai su https://itch.io/game-assets/free/tag-pixel-art/tag-top-down
+   - Cerca: "16x16 character", "top-down character spritesheet"
+   - Filtra per "Free" e controlla la licenza
+   - Esempi di buoni risultati: pack di personaggi con idle/walk in 4-8 direzioni
+
+2. **OpenGameArt.org**:
+   - Vai su https://opengameart.org/
+   - Cerca: "16x16 character top down"
+   - Filtra per licenza CC0 o CC-BY (uso libero)
+
+3. **Kenney.nl**:
+   - Vai su https://kenney.nl/assets
+   - Cerca nella sezione "2D Characters"
+   - Tutti gli asset di Kenney sono CC0 (dominio pubblico)
+
+### Come Valutare uno Sprite Pack
+
+Quando trovi un pack che ti piace, verifica:
+
+| Criterio | Cosa cercare | Perche' |
+|----------|-------------|---------|
+| Dimensione frame | 16x16 o 32x32 pixel | Deve essere simile al nostro stile |
+| Direzioni | Almeno 4 (meglio 8) | Servono per il movimento isometrico |
+| Animazioni | Almeno idle + walk | Il minimo per il gioco (interact e rotate sono bonus) |
+| Stile | Pixel art cozy/carino | Deve essere coerente con le stanze |
+| Licenza | CC0, CC-BY, o "free for any use" | Per evitare problemi legali |
+
+### Come Preparare gli Sprite con Aseprite (o LibreSprite)
+
+Se trovi uno sprite pack che ha bisogno di essere adattato, o vuoi modificare sprite esistenti, usa **Aseprite** (a pagamento, ~20€) oppure **LibreSprite** (gratuito, fork open-source di Aseprite).
+
+**Installazione LibreSprite** (gratuito):
+```bash
+# Su Ubuntu/Linux:
+sudo apt install libresprite
+
+# Su Windows: scarica da https://libresprite.github.io/
+```
+
+#### Passo 1: Aprire il file Aseprite sorgente
+
+I file sorgente del personaggio attuale sono nella cartella:
+```
+v1/assets/charachters/male/old/
+├── 16x16 Idle.aseprite      ← file sorgente Aseprite con TUTTE le direzioni
+├── 16x16 Walk.aseprite
+├── 16x16 Interact.aseprite
+└── 16x16 Rotate.aseprite
+```
+
+Per aprire: `File → Open → seleziona il file .aseprite`
+
+Vedrai tutti i frame dell'animazione nella timeline in basso. Ogni tag (etichetta colorata) corrisponde a una direzione (down, side, up, ecc.).
+
+#### Passo 2: Capire la struttura del file Aseprite
+
+```text
+Timeline in Aseprite:
+
+Frame: |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  | ...
+Tag:   |←── idle_down ──→|←── idle_side ──→|←── idle_up ──→|
+       |  4 frame          |  4 frame         |  4 frame       |
+```
+
+Ogni "tag" contiene 4 frame di una direzione specifica.
+
+#### Passo 3: Esportare i PNG
+
+Per esportare una singola direzione come sprite strip:
+
+1. Seleziona i frame della direzione (es. frame 1-4 per `idle_down`)
+2. `File → Export Sprite Sheet`
+3. Impostazioni:
+   - **Layout**: `Horizontal Strip` (tutti i frame in riga)
+   - **Sheet Type**: `Packed` → seleziona `By Rows`
+   - **Columns**: `4` (o quanti sono i frame)
+   - **Trim**: disattivato
+   - **Size**: lascia la dimensione originale (32x32 per frame)
+4. Salva come `male_idle_down.png`
+5. Ripeti per ogni direzione
+
+**Risultato**: un file PNG 128x32 pixel con 4 frame uno accanto all'altro.
+
+#### Passo 4: Creare le versioni specchiate (_sx)
+
+Le direzioni `_sx` (sinistra) sono lo specchio di quelle destre:
+- `side_sx` = `side` specchiato orizzontalmente
+- `down_side_sx` = `down_side` specchiato
+- `up_side_sx` = `up_side` specchiato
+
+Per specchiare in Aseprite/LibreSprite:
+1. Apri il PNG della versione destra
+2. `Edit → Flip Horizontal` (o `Shift+H`)
+3. `File → Export` → salva con suffisso `_sx`
+
+### Come Sostituire gli Sprite nel Progetto
+
+Quando hai tutti i file PNG pronti:
+
+1. **Metti i nuovi PNG** nelle cartelle corrette:
+```bash
+# I file vanno nelle stesse cartelle dei file attuali
+v1/assets/charachters/male/old/male_idle/      ← 8 file PNG idle
+v1/assets/charachters/male/old/male_walk/       ← 8 file PNG walk
+v1/assets/charachters/male/old/male_interact/   ← 8 file PNG interact (o copia idle se non hai interact)
+v1/assets/charachters/male/old/male_rotate/     ← 1 file PNG rotate (256x32, 8 frame)
+```
+
+2. **I nomi dei file devono essere IDENTICI** a quelli attuali:
+   - `male_idle_down.png`, `male_idle_side.png`, ecc.
+   - Se un nome e' diverso, il gioco non trovera' lo sprite e crashera'
+
+3. **Le dimensioni devono essere IDENTICHE**:
+   - idle/walk/interact: `128 x 32 pixel` (4 frame di 32x32)
+   - rotate: `256 x 32 pixel` (8 frame di 32x32)
+
+4. **Salva anche il file Aseprite sorgente** (opzionale ma consigliato):
+   - Mettilo nella stessa cartella `male/old/` con un nome tipo `16x16 Idle.aseprite`
+   - Cosi' chiunque potra' modificare l'animazione in futuro
+
+5. **Testa nel gioco**:
+   - Apri il progetto in Godot (v1/project.godot)
+   - Premi F5 per avviare
+   - Il personaggio deve muoversi con le nuove animazioni
+   - Controlla tutte le 8 direzioni muovendoti con WASD
+
+### Se Non Trovi Sprite con 8 Direzioni
+
+Molti pack gratuiti hanno solo **4 direzioni** (down, up, side-left, side-right). In questo caso:
+
+1. Usa la stessa sprite per le direzioni diagonali:
+   - `down_side` = stessa di `side`
+   - `up_side` = stessa di `side`
+2. Specchia per ottenere `_sx`:
+   - `side_sx` = `side` specchiato
+   - `down_side_sx` = `down_side` specchiato
+   - `up_side_sx` = `up_side` specchiato
+
+### Commit
+
+```bash
+git add v1/assets/charachters/male/old/
+git commit -m "asset: sostituito personaggio male_old con nuovo sprite set"
+git push origin main
+```
+
+---
+
+## Task 8: Trovare/Creare Asset Grafici Aggiuntivi
+
+**Tempo stimato**: 1-2 ore
+**Priorita'**: MEDIO
+
+### Obiettivo
+
+Il gioco puo' essere migliorato con asset grafici aggiuntivi. Ecco cosa puoi cercare:
+
+### 8.1 Loading Screen
+
+Una schermata di caricamento da mostrare all'avvio del gioco. Deve essere:
+- Pixel art coerente con lo stile del gioco
+- Dimensione: **1280 x 720 pixel** (la risoluzione del gioco)
+- Contenuto suggerito: il logo del gioco, una barra di caricamento, un personaggio
+
+**Dove cercare**:
+- Crea uno sfondo semplice in Aseprite/LibreSprite: sfondo colorato + testo "Mini Cozy Room" + icona
+- Oppure cerca "pixel art loading screen" su itch.io
+
+**Dove mettere il file**:
+```
+v1/assets/sprites/loading/loading_screen.png
+```
+
+### 8.2 Nuove Decorazioni
+
+Se trovi set di mobili/oggetti cozy in pixel art:
+- Devono avere sfondo **trasparente** (PNG con alpha)
+- Dimensione consigliata: **16x16** o **32x32** base
+- Stile: pixel art top-down (vista dall'alto)
+
+**Dove cercare**: itch.io → "pixel art furniture", "cozy room assets", "interior tileset"
+
+**Dove mettere i file**: `v1/assets/sprites/decorations/[categoria]/`
+
+### 8.3 Icone UI
+
+Se trovi set di icone pixel art per interfaccia:
+- Pulsanti, frecce, cuori, stelle
+- Dimensione: 16x16 o 32x32
+- Stile coerente
+
+**Dove mettere i file**: `v1/assets/ui/icons/`
+
+### Come Valutare la Qualita' degli Asset
+
+| Aspetto | Buono | Cattivo |
+|---------|-------|---------|
+| Risoluzione | Pixel-perfect a 16x16 o 32x32 | Immagini HD ridimensionate male |
+| Sfondo | Trasparente (PNG con alpha) | Sfondo bianco/colorato |
+| Stile | Coerente con il gioco (cozy pixel art) | Stile troppo diverso (horror, realistico) |
+| Palette | Colori caldi e accoglienti | Neon o troppo saturi |
+| Licenza | CC0, CC-BY, free for use | Non specificata o restrictive |
+
+### Commit
+
+```bash
+git add v1/assets/
+git commit -m "asset: aggiunti nuovi asset grafici"
+git push origin main
+```
 
 ---
 
@@ -585,7 +887,7 @@ Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
 
 Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare i log:
 
-1. Andate su <https://github.com/ZroGP/Projectwork-IFTS>
+1. Andate su <https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private>
 2. Cliccate la tab **"Actions"** in alto
 3. Vedrete una lista di workflow runs. Cliccate su quello che vi interessa (il piu' recente in alto)
 4. Nella pagina del run, vedrete il job **"lint"**. Cliccate sul job fallito

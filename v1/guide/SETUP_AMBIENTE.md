@@ -102,10 +102,10 @@ git clone https://github.com/ZroGP/Projectwork-IFTS.git
 # Entrate nella cartella del progetto appena scaricata
 cd Projectwork-IFTS
 
-# Spostatevi sul branch di sviluppo "Renan"
+# Spostatevi sul branch di sviluppo "main"
 # Un branch e' come una "versione parallela" del progetto
-# Il branch "Renan" e' quello dove facciamo le modifiche attive
-git checkout Renan
+# Il branch "main" e' quello dove facciamo le modifiche attive
+git checkout main
 ```
 
 ### 2.2 Verifica
@@ -242,7 +242,7 @@ cd ~/Documenti/Projectwork-IFTS
 
 # 2. Scaricate le ultime modifiche dal repository remoto
 #    "pull" = "tirare giu'" le modifiche fatte dagli altri
-git pull origin Renan
+git pull origin main
 ```
 
 Se vedete `Already up to date.`, significa che non ci sono nuove modifiche. Perfetto, potete iniziare a lavorare!
@@ -271,20 +271,20 @@ git commit -m "fix: corretto typo percorso sprite in characters.json"
 
 # 4. Inviate le modifiche al repository remoto
 #    "push" = "spingere su" le vostre modifiche per condividerle col team
-git push origin Renan
+git push origin main
 ```
 
 ### 5.4 Cheat Sheet Git — Le 8 Operazioni Fondamentali
 
 | Comando | Cosa Fa | Quando Usarlo |
 |---------|---------|---------------|
-| `git pull origin Renan` | Scarica le modifiche degli altri | **Sempre** prima di iniziare a lavorare |
+| `git pull origin main` | Scarica le modifiche degli altri | **Sempre** prima di iniziare a lavorare |
 | `git status` | Mostra i file modificati | Per vedere cosa avete cambiato |
 | `git diff` | Mostra le modifiche riga per riga | Per rivedere le vostre modifiche prima del commit |
 | `git add nome_file.gd` | Prepara un file per il commit | Dopo aver modificato un file |
 | `git add .` | Prepara TUTTI i file modificati | Se volete committare tutto |
 | `git commit -m "messaggio"` | Salva una fotografia dei file preparati | Dopo aver preparato i file |
-| `git push origin Renan` | Invia i commit al server GitHub | Dopo uno o piu' commit |
+| `git push origin main` | Invia i commit al server GitHub | Dopo uno o piu' commit |
 | `git log --oneline -10` | Mostra gli ultimi 10 commit | Per vedere la storia recente |
 
 ### 5.5 Formato dei Messaggi di Commit
@@ -443,12 +443,12 @@ godot --path v1 --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --add "res://t
 ```bash
 # Opzione A: Salvate le vostre modifiche, scaricate quelle remote, poi ri-applicate le vostre
 git stash              # "nasconde" le vostre modifiche temporaneamente
-git pull origin Renan  # scarica le modifiche remote
+git pull origin main  # scarica le modifiche remote
 git stash pop          # ri-applica le vostre modifiche sopra quelle remote
 
 # Opzione B: Se le vostre modifiche non sono importanti e volete scartarle
 git checkout -- .      # ATTENZIONE: cancella TUTTE le vostre modifiche non committate!
-git pull origin Renan
+git pull origin main
 ```
 
 ### Problema: "git pull dice 'Merge conflict'"
@@ -473,7 +473,7 @@ git pull origin Renan
    ```bash
    git add nome_file_con_conflitto.gd
    git commit -m "fix: risolto merge conflict in nome_file.gd"
-   git push origin Renan
+   git push origin main
    ```
 
 ### Problema: "VS Code non riconosce la sintassi GDScript"
@@ -510,7 +510,7 @@ git diff
 
 **Soluzione**:
 1. Verificate che la cartella `v1/addons/godot-sqlite/` esista e contenga file `.gdextension` e le librerie native (`.dll`, `.so`, `.dylib`)
-2. Se manca, ripetete il `git pull origin Renan` — i file binari sono nel repository
+2. Se manca, ripetete il `git pull origin main` — i file binari sono nel repository
 3. In Godot, andate in **Project** → **Project Settings** → **Plugins** e verificate che il plugin sia attivato
 4. Se il plugin non appare nella lista, chiudete e riaprite Godot
 
@@ -617,7 +617,7 @@ Se non volete usare SSH, potete creare un token personale.
 | ------ | ----- | --------- |
 | `Permission denied (publickey)` | Chiave SSH non configurata o non aggiunta a GitHub | Seguite i passi sopra per SSH |
 | `fatal: Authentication failed` | Password/token errato o scaduto | Rigenerate il PAT o verificate la chiave SSH |
-| `remote: Repository not found` | Non avete accesso al repository | Chiedete a Giovanni (ZroGP) di aggiungervi come collaboratori |
+| `remote: Repository not found` | Non avete accesso al repository | Chiedete a Renan di aggiungervi come collaboratori |
 | `Could not read from remote repository` | URL del remote errato | Verificate con `git remote -v` e correggete con `git remote set-url origin URL` |
 
 ---

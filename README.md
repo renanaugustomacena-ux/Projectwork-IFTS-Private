@@ -86,10 +86,8 @@ cd Projectwork-IFTS-Private
 
 | Nome | Ruolo |
 |------|-------|
-| **Renan Augusto Macena** | System Architect & Project Supervisor |
+| **Renan Augusto Macena** | System Architect, Gameplay & Project Supervisor |
 | **Cristian Marino** | CI/CD & Documentation Lead |
-| **Mohamed** | Game Assets, Core Logic & Design Lead |
-| **Giovanni** | Game Assets, Core Logic & Design Lead |
 | **Elia Zoccatelli** | Database Support |
 
 ## Licenza
