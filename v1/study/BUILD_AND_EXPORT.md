@@ -1191,5 +1191,330 @@ npx http-server -p 8000 --cors -c-1 \
 
 ---
 
+## 16. Inno Setup — Installer Windows Professionale
+
+### Cos'e' Inno Setup
+
+Inno Setup e' un tool gratuito per creare installer `.exe` per Windows. Trasforma
+il gioco esportato da Godot in un installer professionale con:
+- Wizard di installazione (schermata licenza, scelta cartella, progresso)
+- Shortcut su Desktop e Start Menu
+- Disinstallazione pulita dal Pannello di Controllo
+- Compressione LZMA2 (riduce dimensione)
+
+### Pre-requisiti
+
+```
+Per compilare su Windows:
+  1. Scaricate Inno Setup da https://jrsoftware.org/isinfo.php
+  2. Installate (include il compilatore ISCC.exe)
+  3. Aprite il file .iss con Inno Setup Compiler
+  4. Compile → il file Setup_MiniCozyRoom.exe viene generato
+
+Per compilare su Linux (CI/CD):
+  1. Installate WINE: sudo apt install wine
+  2. Scaricate Inno Setup e installatelo con: wine innosetup-6.x.x.exe
+  3. Compilate: wine ~/.wine/drive_c/.../ISCC.exe MiniCozyRoom.iss
+```
+
+### Script Inno Setup per Mini Cozy Room
+
+```iss
+; Mini Cozy Room — Inno Setup Script
+; Genera un installer professionale per Windows
+
+[Setup]
+AppName=Mini Cozy Room
+AppVersion=1.0.0
+AppPublisher=IFTS Projectwork Team
+AppPublisherURL=https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private
+DefaultDirName={autopf}\MiniCozyRoom
+DefaultGroupName=Mini Cozy Room
+OutputDir=installer_output
+OutputBaseFilename=Setup_MiniCozyRoom_v1.0.0
+SetupIconFile=icon.ico
+Compression=lzma2
+SolidCompression=yes
+PrivilegesRequired=lowest
+; PrivilegesRequired=lowest → l'utente NON ha bisogno di permessi admin
+; Il gioco si installa nella cartella utente (AppData o Program Files)
+
+[Languages]
+Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "Crea un'icona sul Desktop"; \
+  GroupDescription: "Icone aggiuntive:"; Flags: unchecked
+
+[Files]
+; Tutti i file dalla cartella di export Godot
+Source: "export\windows\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+
+[Icons]
+; Shortcut nel menu Start
+Name: "{group}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"
+; Shortcut opzionale sul Desktop
+Name: "{autodesktop}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"; \
+  Tasks: desktopicon
+
+[Run]
+; Opzione "Avvia Mini Cozy Room" alla fine dell'installazione
+Filename: "{app}\MiniCozyRoom.exe"; \
+  Description: "Avvia Mini Cozy Room"; \
+  Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+; Pulisci file generati a runtime (save, database, log)
+Type: filesandordirs; Name: "{app}\*.log"
+```
+
+### Note sull'Icona
+
+```
+L'installer richiede un file .ico per l'icona di setup.
+Per convertire un PNG in ICO:
+
+Online: https://icoconvert.com/ (gratuito)
+CLI: convert icon.png -resize 256x256 icon.ico (ImageMagick)
+Godot: Esporta gia' l'icona nel .exe se configurata in Project Settings
+
+Il file .ico deve contenere risoluzioni multiple:
+  16x16, 32x32, 48x48, 64x64, 128x128, 256x256
+```
+
+### Code Signing (Opzionale ma Raccomandato)
+
+```
+PROBLEMA: Windows SmartScreen blocca eseguibili non firmati con un avviso
+"Windows ha protetto il tuo PC" → scoraggia gli utenti.
+
+SOLUZIONI:
+1. Certificato a pagamento (~$200-400/anno)
+   - Comodo, DigiCert, Sectigo
+   - Firma con: signtool sign /f cert.pfx /p password MiniCozyRoom.exe
+
+2. Self-signed (gratuito, NON elimina l'avviso ma lo riduce)
+   - openssl + osslsigncode
+   - Utile solo per sviluppo/testing
+
+3. Distribuire via itch.io
+   - Il launcher itch gestisce la trust chain
+   - L'avviso SmartScreen non appare
+
+Per il nostro progetto scolastico: opzione 3 (itch.io) e' la migliore.
+```
+
+---
+
+## 17. Export Android — APK e AAB
+
+### Differenza APK vs AAB
+
+```
+APK (Android Package):
+  - File singolo installabile direttamente
+  - Sideloading: copia sul telefono e installa
+  - Test locale: adb install MiniCozyRoom.apk
+  - Non ottimizzato per dimensione (contiene tutti gli asset)
+
+AAB (Android App Bundle):
+  - Formato richiesto dal Google Play Store
+  - Google genera APK ottimizzati per ogni dispositivo
+  - Non installabile direttamente (solo via Play Store)
+  - Dimensione finale piu' piccola per l'utente
+
+Per noi:
+  - Sviluppo/test: APK (piu' semplice)
+  - Distribuzione Play Store: AAB
+```
+
+### Pre-requisiti
+
+```
+1. JDK 17 (Java Development Kit)
+   Ubuntu/Debian:
+     sudo apt install openjdk-17-jdk
+   Verifica:
+     java -version → deve mostrare "17.x.x"
+
+   IMPORTANTE: NON usare JDK 21+ (Godot non e' ancora compatibile)
+
+2. Android SDK (via Android Studio o standalone)
+   Metodo consigliato: installare Android Studio
+     - Scaricate da https://developer.android.com/studio
+     - Durante l'installazione, selezionate:
+       - Android SDK Platform-Tools
+       - Android SDK Build-Tools
+       - Android SDK Platform (API 34+)
+     - Nota il percorso SDK (es: ~/Android/Sdk)
+
+   Metodo standalone (senza Android Studio):
+     - Scaricate Command Line Tools da developer.android.com
+     - sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+
+3. Export Templates Godot
+   In Godot: Editor → Manage Export Templates → Download
+
+4. Configurazione in Godot
+   Editor → Editor Settings → Export → Android:
+     - Java SDK Path: /usr/lib/jvm/java-17-openjdk-amd64
+     - Android SDK Path: ~/Android/Sdk
+```
+
+### Creazione Keystore
+
+```bash
+# Debug keystore (per test locali — NON per distribuzione)
+keytool -keyalg RSA -genkeypair -alias androiddebugkey \
+  -keypass android -keystore debug.keystore -storepass android \
+  -dname "CN=Android Debug,O=Android,C=US" -validity 9999
+
+# Release keystore (per distribuzione — CONSERVARE AL SICURO!)
+keytool -v -genkey -keystore minicozyroom-release.keystore \
+  -alias minicozyroom -keyalg RSA -keysize 2048 -validity 10000
+
+# Vi chiedera':
+#   - Password keystore (scegliete una sicura, NON perdetela)
+#   - Nome, organizzazione, citta', paese
+#   - Password chiave (puo' essere uguale alla keystore password)
+```
+
+```
+IMPORTANTE — Sicurezza Keystore:
+  - Il release keystore identifica la vostra app per sempre
+  - Se lo perdete, NON potete aggiornare l'app sul Play Store
+  - NON committatelo nel repository Git
+  - Salvate una copia in un luogo sicuro (USB, cloud privato)
+  - Aggiungete *.keystore al .gitignore
+```
+
+### Configurazione Export Preset
+
+```
+In Godot: Project → Export → Add → Android
+
+Impostazioni chiave:
+  - Package → Unique Name: com.ifts.minicozyroom
+  - Package → Name: Mini Cozy Room
+  - Version → Code: 1 (incrementare ad ogni release)
+  - Version → Name: 1.0.0
+  - Architectures → arm64-v8a: ON (dispositivi moderni)
+  - Architectures → armeabi-v7a: OFF (vecchi, non necessario)
+  - Keystore → Debug: percorso al debug.keystore
+  - Keystore → Release: percorso al release keystore
+  - Permissions → Internet: ON (per Supabase, fase 4)
+
+Filtri risorse:
+  - Assicuratevi che *.json, *.gdextension siano inclusi
+  - I binari .so per Android sono gia' nel nostro addon godot-sqlite
+```
+
+### godot-sqlite su Android
+
+```
+Il nostro plugin godot-sqlite include gia' i binari Android:
+
+  addons/godot-sqlite/bin/
+  ├── libgdsqlite.android.template_debug.arm64.so
+  └── libgdsqlite.android.template_release.arm64.so
+
+Il file .gdextension referenzia automaticamente questi binari.
+Il database path user:// funziona su Android senza modifiche:
+  user:// → /data/data/com.ifts.minicozyroom/files/
+
+NON serve nessun permesso WRITE_EXTERNAL_STORAGE:
+  il database e' nella cartella interna dell'app (sandboxed).
+```
+
+### Test su Dispositivo
+
+```
+Via USB (il metodo piu' veloce):
+  1. Attivate "Opzioni sviluppatore" sul telefono
+     (Impostazioni → Info telefono → tocca 7 volte su "Numero build")
+  2. Attivate "Debug USB"
+  3. Collegate il telefono via USB
+  4. In Godot: Project → Export → Android → Export Project
+  5. Selezionate il dispositivo nella lista
+  6. Il gioco si installa e si avvia automaticamente
+
+Via APK (senza cavo):
+  1. Esportate come APK
+  2. Copiate il file .apk sul telefono (email, cloud, USB)
+  3. Aprite il file → "Installa da fonti sconosciute" → Installa
+
+Via Emulatore:
+  1. Android Studio → AVD Manager → Create Virtual Device
+  2. Scegliete un dispositivo (es: Pixel 7, API 34)
+  3. Esportate il gioco
+  4. adb install -r MiniCozyRoom.apk
+```
+
+---
+
+## 18. Checklist Pre-Release Professionale
+
+### Preparazione
+
+```
+[ ] Versioning
+    - Version string nel project.godot (es: 1.0.0)
+    - Version code Android incrementato
+    - SAVE_VERSION in save_manager.gd allineato
+
+[ ] Icona e Branding
+    - Icona applicazione in project.godot (boot/splash)
+    - Icona .ico per Windows (256x256 embedded)
+    - Icona adaptive per Android (foreground + background)
+    - Nome applicazione corretto su tutte le piattaforme
+
+[ ] Ottimizzazione Build
+    - Audio: tracce musicali in OGG Vorbis (non WAV)
+    - Texture: Lossless per pixel art, Nearest filter
+    - Feature stripping: 3D disabilitato, XR disabilitato
+    - Export mode: Release (non Debug) per distribuzione
+
+[ ] Sicurezza
+    - export_presets.cfg nel .gitignore (contiene password keystore)
+    - *.keystore nel .gitignore
+    - Nessuna service_role key Supabase nel codice client
+    - Password hash con salt (non in chiaro)
+
+[ ] Legale
+    - File LICENZE/CREDITS in-game con tutti gli asset usati
+    - Licenze asset rispettate (crediti, no redistribuzione)
+    - Privacy Policy se raccogliete dati utente (email, Supabase)
+    - GDPR: opzione per cancellare account e tutti i dati
+
+[ ] Test Pre-Release
+    - [ ] Windows: gioco si avvia, salva, carica, non crasha
+    - [ ] Android: gioco si avvia, touch funziona, salva funziona
+    - [ ] Web: gioco si carica, SQLite fallback a JSON
+    - [ ] Save migration: carica save vecchio → migra correttamente
+    - [ ] Fresh install: primo avvio → guest mode → tutto funziona
+    - [ ] Uninstall + reinstall: dati utente preservati? (dipende dalla scelta)
+```
+
+### Dimensione Build Stimata
+
+```
+Componente               Dimensione stimata
+─────────                ──────────────────
+Godot runtime (.exe)     ~45 MB (Windows)
+                         ~25 MB (Android, ARM64)
+                         ~15 MB (Web, WASM)
+Asset grafici (PCK)      ~15-25 MB (dipende da compressione)
+Audio (se OGG)           ~2-4 MB (2 tracce)
+godot-sqlite (.dll/.so)  ~3-5 MB
+───────────────────────────────────────────
+Totale Windows           ~65-80 MB
+Totale Android APK       ~45-55 MB
+Totale Web               ~25-40 MB
+Installer (LZMA2)        ~35-45 MB (compresso)
+```
+
+---
+
 *Study document for Mini Cozy Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*

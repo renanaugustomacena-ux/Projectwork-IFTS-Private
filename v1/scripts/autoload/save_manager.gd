@@ -3,6 +3,7 @@
 extends Node
 
 const SAVE_PATH := "user://save_data.json"
+const TEMP_PATH := "user://save_data.tmp.json"
 const BACKUP_PATH := "user://save_data.backup.json"
 const SAVE_VERSION := "5.0.0"
 const AUTO_SAVE_INTERVAL := 60.0
@@ -112,6 +113,16 @@ func save_game() -> void:
 		"inventory": inventory_data,
 	}
 
+	# Atomic write: write to temp file first, then rename
+	var json_string := JSON.stringify(save_data, "\t")
+	var file := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
+	if file == null:
+		push_error("SaveManager: cannot write temp file (error: %s)" % FileAccess.get_open_error())
+		_is_saving = false
+		return
+	file.store_string(json_string)
+	file.close()
+
 	# Backup existing save before overwrite
 	if FileAccess.file_exists(SAVE_PATH):
 		var src := ProjectSettings.globalize_path(SAVE_PATH)
@@ -120,15 +131,17 @@ func save_game() -> void:
 		if err != OK:
 			AppLogger.error("SaveManager", "Backup fallito", {"errore": err, "src": src, "dst": dst})
 
-	# Primary: save to JSON file (always works offline)
-	var json_string := JSON.stringify(save_data, "\t")
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("SaveManager: cannot write save file (error: %s)" % FileAccess.get_open_error())
-		_is_saving = false
-		return
-	file.store_string(json_string)
-	file.close()
+	# Rename temp → primary (atomic operation)
+	var rename_err := DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(TEMP_PATH),
+		ProjectSettings.globalize_path(SAVE_PATH)
+	)
+	if rename_err != OK:
+		AppLogger.error("SaveManager", "Rename fallito, copia temp → save", {"errore": rename_err})
+		DirAccess.copy_absolute(
+			ProjectSettings.globalize_path(TEMP_PATH),
+			ProjectSettings.globalize_path(SAVE_PATH)
+		)
 
 	# Secondary: persist character and inventory to SQLite
 	_save_to_sqlite()
