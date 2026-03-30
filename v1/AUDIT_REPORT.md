@@ -40,6 +40,22 @@
 > **Numeri aggiornati**: 21 script, 8 scene, 4 file dati, 0 test, 2 workflow CI,
 > 7 autoload (6 + PerformanceManager), 20 segnali, 1 stanza (3 temi), 58 decorazioni (11 categorie), 1 personaggio.
 
+> **Aggiornamento 30 Marzo 2026 — Audit Deep Refresh**:
+> Audit approfondito di tutti gli script che interagiscono con il layer persistenza
+> (local_database.gd, save_manager.gd, auth_manager.gd, profile_panel.gd, room_base.gd,
+> decoration_system.gd, main_menu.gd, auth_screen.gd, settings_panel.gd).
+> Trovati **6 nuovi problemi** (A24-A29), di cui 4 assegnati a Elia e 2 a Mohamed/Giovanni.
+>
+> Modifiche recenti al codebase:
+> - **SaveManager**: ora usa **atomic writes** (scrivi su temp → backup esistente → rinomina)
+> - **LocalDatabase**: ora usa **transazioni** (BEGIN/COMMIT) per operazioni batch in `_on_save_requested()`
+> - **Godot 4.5.2**: richiesto per godot-sqlite GDExtension (`compatibility_minimum = "4.5"`)
+> - **extension_list.cfg**: rimossi riferimenti a gdterm e py4godot (addon non usati)
+> - **Supabase**: verra' **reintegrato** nella Fase 4 — Elia prepara il progetto PostgreSQL + RLS
+>
+> **Numeri aggiornati**: 8 autoload (SignalBus, AppLogger, LocalDatabase, AuthManager, GameManager,
+> SaveManager, AudioManager, PerformanceManager), 31 segnali, 69 decorazioni (11 categorie).
+
 ---
 
 ## Team di Progetto
@@ -96,11 +112,14 @@
 
 **Capitoli di riferimento per il proprio lavoro**:
 
-- ~~**Sezione 6.4** — local_database.gd: ridisegnare tabella `characters`, ristrutturare tabella `inventario`~~ **COMPLETATO** (27 Marzo 2026) — `characters` ora usa `character_id` come PK con AUTOINCREMENT, `inventario` ristrutturato con FK `account_id` e ON DELETE CASCADE (problemi C3, C4 risolti)
-- **Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote (problema A18 — ancora aperto)
-- ~~**Sezione 8, supabase_migration.sql** — Allineare schema PostgreSQL~~ **Non piu' necessario** (SupabaseClient rimosso)
+- ~~**Sezione 6.4** — local_database.gd: ridisegnare tabella `characters`, ristrutturare tabella `inventario`~~ **COMPLETATO** (27 Marzo 2026) — problemi C3, C4 risolti
+- ~~**Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote~~ **COMPLETATO** (29 Marzo 2026) — A18 risolto (diagnostica DB migliorata)
 - ~~**Sezione 11, Fase 1.4** — Istruzioni C3 e C4~~ **GIA' COMPLETATO**
-- **Sezione 11, Fase 3** — Validazione struttura dati: aggiungere `_validate_save_data()` in SaveManager, safety su version comparison (problema A8)
+- **Sezione 10.1, A24** — local_database.gd: aggiungere ROLLBACK se upsert_character o _save_inventory falliscono (problema A24 — **APERTO**)
+- **Sezione 10.1, A25** — local_database.gd: cambiare `_save_inventory()` per ritornare `bool` e propagare errori (problema A25 — **APERTO**)
+- **Sezione 10.1, A26** — auth_manager.gd: verificare `LocalDatabase.is_open()` in `_set_state()` (problema A26 — **APERTO**)
+- **Sezione 10.1, A27** — auth_manager.gd: validare ritorno di `create_account()` in `register()` (problema A27 — **APERTO**)
+- **Fase 4 — Supabase**: preparare progetto Supabase (tabelle PostgreSQL, RLS policies). Il client GDScript lo implementa Renan. Vedere `guide/GUIDA_ELIA_DATABASE.md` per istruzioni dettagliate.
 
 ---
 
@@ -1332,7 +1351,7 @@ Questi problemi devono essere risolti **prima di qualsiasi rilascio**. Causano p
 
 **C1 — Inventario MAI salvato su SQLite** — **CORRETTO**: La funzione `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con sia `character_data` che `inventory_data`.
 
-**C2 — Backup copy senza error checking** — **CORRETTO**: Il backup ora verifica il risultato di `DirAccess.copy_absolute()` e logga l'errore con `AppLogger.error` se la copia fallisce.
+**C2 — Backup copy senza error checking** — **CORRETTO** (migliorato 29 Mar): SaveManager ora usa **atomic writes**: scrive su file temporaneo (`save_data.tmp.json`), poi backup dell'esistente su `save_data.backup.json`, poi rinomina temp → primary. Se rename fallisce, fallback su copy. Il backup verifica il risultato di `DirAccess.copy_absolute()` e logga con `AppLogger.error`.
 
 **C3 — Characters PK impedisce multipli personaggi** — **CORRETTO** (27 Marzo 2026): La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE.
 
@@ -1441,7 +1460,7 @@ Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni a
 | # | Stato | Note |
 |---|-------|------|
 | C1 | **CORRETTO** | `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con **sia** `character_data` **che** `inventory_data` (riga 135-139). L'approccio signal-driven e' corretto e allineato con l'architettura. |
-| C2 | **CORRETTO** | Il backup ora verifica il risultato di `DirAccess.copy_absolute()` e logga l'errore con `AppLogger.error` se la copia fallisce (righe 114-116). Il salvataggio principale prosegue comunque. |
+| C2 | **CORRETTO** (migliorato 29 Mar) | SaveManager ora usa **atomic writes**: temp file → backup → rename. Se rename fallisce, fallback copy. Backup verifica risultato con `AppLogger.error`. |
 | C3 | **CORRETTO** (27 Mar) | La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE. Completato da Renan. |
 | C4 | **CORRETTO** (27 Mar) | `coins` e `inventario_capacita` spostati nella tabella `accounts`. Tabella `inventario` ristrutturata con FK `account_id` e ON DELETE CASCADE. Completato da Renan. |
 | C5 | **CORRETTO** | Il codice attuale di `window_background.gd` (righe 37-49) gia' allinea correttamente gli array: quando `tex == null`, il `continue` salta **sia** `_layers.append()` **che** `_parallax_factors.append()`. Gli array sono sempre della stessa dimensione. |
@@ -1493,15 +1512,60 @@ La ri-analisi approfondita del codebase, condotta con le conoscenze acquisite da
 | A22 | ~~music_panel.gd~~ | ~~MEDIO~~ | ~~`_exit_tree()` disconnette solo 2 segnali su 9+ connessi.~~ | **RISOLTO per rimozione** — music_panel.gd eliminato dal progetto. |
 | A23 | game_manager.gd:74 | BASSO | Variabile `data` non tipizzata nel parsing JSON. | **CORRETTO** — Aggiunto type hint `var data: Variant = json.data`. |
 
-**Riepilogo aggiornato dei conteggi (29 Marzo 2026)**:
+#### Nuovi Problemi Scoperti (Deep Audit 30 Marzo 2026)
 
-| Stato | CRITICI | ALTI | ARCHITETTURALI |
-|-------|---------|------|----------------|
-| Corretti | 5 (C1, C2, C3, C4, C5) | 5 (A4, A5, A8, A9, A17) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
-| Risolti per rimozione | 1 (C7) | 4 (A2, A6, A10, A11) + A22 medio | 1 (AR11) |
-| Nuovi trovati | 0 | 1 (A19) | 0 |
+Audit approfondito focalizzato su: transazioni SQLite, propagazione errori, validazione dati, null safety negli script che interagiscono con il layer persistenza.
+
+| # | File | Severita' | Problema | Stato |
+|---|------|-----------|----------|-------|
+| A24 | local_database.gd:50-55 | ALTO | Transazione senza ROLLBACK: `_on_save_requested()` esegue `BEGIN TRANSACTION` e `COMMIT`, ma se `upsert_character()` o `_save_inventory()` falliscono, il COMMIT viene eseguito comunque lasciando dati parziali. Manca un percorso `ROLLBACK` sugli errori. | APERTO — **Assegnato a Elia** |
+| A25 | local_database.gd:361 | ALTO | `_save_inventory()` ritorna `void` — non propaga errori alla transazione chiamante. Dovrebbe ritornare `bool` per consentire il ROLLBACK in `_on_save_requested()`. La funzione esegue DELETE + loop INSERT: se un INSERT fallisce, l'inventario e' parzialmente perso. | APERTO — **Assegnato a Elia** |
+| A26 | auth_manager.gd:104-107 | MEDIO | `_set_state()` chiama `LocalDatabase.get_character(current_account_id)` senza verificare `LocalDatabase.is_open()`. Se il database non e' stato aperto (errore inizializzazione), causa crash `Invalid call ... in base 'Nil'`. | APERTO — **Assegnato a Elia** |
+| A27 | auth_manager.gd:52-54 | MEDIO | `register()` chiama `LocalDatabase.create_account()` ma non verifica il ritorno (`account_id`) prima di chiamare `get_account()`. Se `create_account()` ritorna `-1` (fallimento), `get_account(-1)` ritorna dizionario vuoto, e `_set_state()` viene chiamato con dati invalidi. | APERTO — **Assegnato a Elia** |
+| A28 | room_base.gd:61-76 | MEDIO | Quando le decorazioni vengono ricaricate da `SaveManager.decorations`, la posizione non viene clampata ai limiti del viewport. Se la finestra viene ridimensionata, decorazioni salvate ai bordi possono finire fuori schermo e diventare irraggiungibili. | APERTO — **Assegnato a Mohamed/Giovanni** |
+| A29 | main_menu.gd:84 | MEDIO | Dopo `scene.instantiate() as Control`, non c'e' null check sull'`auth_screen` risultante. Se l'instanziamento fallisce, la successiva `.auth_completed.connect()` causa crash. Stesso pattern presente per profile_panel (riga 107). | APERTO — **Assegnato a Mohamed/Giovanni** |
+
+**A24 — Transaction senza ROLLBACK**: Il pattern corretto e':
+```gdscript
+_execute("BEGIN TRANSACTION;")
+var success := true
+if data.has("character") and data["character"] is Dictionary:
+    if not upsert_character(account_id, data["character"]):
+        success = false
+if success and data.has("inventory") and data["inventory"] is Dictionary:
+    if not _save_inventory(account_id, data["inventory"]):
+        success = false
+if success:
+    _execute("COMMIT;")
+else:
+    _execute("ROLLBACK;")
+    AppLogger.error("LocalDatabase", "Transaction rolled back", {"account_id": account_id})
+```
+
+**A25 — _save_inventory() void**: Cambiare la signature da `func _save_inventory(...) -> void:` a `func _save_inventory(...) -> bool:` e ritornare `false` se un qualsiasi `_execute_bound()` fallisce.
+
+**A26 — _set_state() no check DB**: Aggiungere `and LocalDatabase != null and LocalDatabase.is_open()` alla condizione che chiama `get_character()`.
+
+**A27 — register() no validation**: Aggiungere `if account_id < 0: return {"error": "Failed to create account"}` dopo `create_account()` e prima di `get_account()`.
+
+**A28 — Decorazioni fuori viewport**: Dopo il caricamento della posizione, clampare con `Vector2(clampf(pos.x, 0, viewport_w), clampf(pos.y, 0, viewport_h))`.
+
+**A29 — Null check instantiate**: Aggiungere `if auth_screen == null: push_error(...); _play_intro(); return` dopo `scene.instantiate()`.
+
+---
+
+**Riepilogo aggiornato dei conteggi (30 Marzo 2026)**:
+
+| Stato | CRITICI | ALTI/MEDI | ARCHITETTURALI |
+|-------|---------|-----------|----------------|
+| Corretti | 5 (C1, C2, C3, C4, C5) | 8 (A4, A5, A8, A9, A17, A20, A21, A23) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
+| Risolti per rimozione | 1 (C7) | 4 (A2, A6, A10, A11) + A22 | 1 (AR11) |
+| Nuovi trovati (30 Mar) | 0 | 6 (A24, A25, A26, A27, A28, A29) | 0 |
 | Ancora aperti (CRITICI) | 1 (C6) + costanti orfane | — | — |
-| Ancora aperti (ALTI) | — | 8 (A1, A3, A7, A12, A13, A14, A15, A16, A18, A19) | 4 (AR6, AR7, AR8, AR9, AR10) |
+| Ancora aperti (ALTI) | — | A1, A3, A7, A12-A16, A18-A19, A24-A25 (12) | 4 (AR6-AR10) |
+| Ancora aperti (MEDI) | — | A26, A27, A28, A29 (4) | — |
+
+**Totale problemi catalogati**: 40 (7 critici + 29 alti/medi + 11 architetturali) di cui: risolti risolvere 19, in  **aperti 16**, rimossi 5.
 
 ---
 
