@@ -159,7 +159,7 @@ func _set_state(new_state: int, account: Dictionary) -> void:
 	current_account_id = account.get("account_id", -1)
 	current_auth_uid = account.get("auth_uid", "")
 	current_username = account.get("display_name", "")
-	if current_account_id >= 0:
+	if current_account_id >= 0 and LocalDatabase.is_open():
 		has_character = not LocalDatabase.get_character(
 			current_account_id
 		).is_empty()
