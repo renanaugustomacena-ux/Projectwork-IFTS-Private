@@ -132,4 +132,19 @@ func _on_language_selected(index: int) -> void:
 
 
 func _exit_tree() -> void:
-	pass
+	if _master_slider and _master_slider.value_changed.is_connected(
+		_on_master_changed
+	):
+		_master_slider.value_changed.disconnect(_on_master_changed)
+	if _music_slider and _music_slider.value_changed.is_connected(
+		_on_music_changed
+	):
+		_music_slider.value_changed.disconnect(_on_music_changed)
+	if _ambience_slider and _ambience_slider.value_changed.is_connected(
+		_on_ambience_changed
+	):
+		_ambience_slider.value_changed.disconnect(_on_ambience_changed)
+	if _language_option and _language_option.item_selected.is_connected(
+		_on_language_selected
+	):
+		_language_option.item_selected.disconnect(_on_language_selected)

@@ -38,7 +38,7 @@ func _on_character_changed(character_id: String) -> void:
 	new_char.name = "Character"
 	new_char.position = old_pos
 	new_char.scale = old_scale
-	add_child(new_char)
+	call_deferred("add_child", new_char)
 	character_node = new_char
 
 
@@ -120,6 +120,15 @@ func _spawn_decoration(
 	sprite.add_child(body)
 
 	decorations_container.add_child(sprite)
+
+
+func _exit_tree() -> void:
+	if SignalBus.character_changed.is_connected(_on_character_changed):
+		SignalBus.character_changed.disconnect(_on_character_changed)
+	if SignalBus.decoration_placed.is_connected(_on_decoration_placed):
+		SignalBus.decoration_placed.disconnect(_on_decoration_placed)
+	if SignalBus.load_completed.is_connected(_on_load_completed):
+		SignalBus.load_completed.disconnect(_on_load_completed)
 
 
 func _find_item_data(item_id: String) -> Dictionary:

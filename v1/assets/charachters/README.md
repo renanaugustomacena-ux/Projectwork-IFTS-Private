@@ -61,7 +61,7 @@ charachters/
         ├── male_walk/               # 8 strip direzionali
         │   ├── male_walk_down.png
         │   ├── male_walk_down_side.png
-        │   ├── male_walk_down_side_sxt.png  # ⚠ TYPO: "sxt" invece di "sx"
+        │   ├── male_walk_down_side_sx.png   # Corretto (era "sxt", fixato)
         │   ├── male_walk_side.png
         │   ├── male_walk_side_sx.png
         │   ├── male_walk_up.png
@@ -121,11 +121,10 @@ Per ogni animazione servono 8 file PNG (uno per direzione):
 
 **Totale per personaggio completo**: 25 file PNG + 4 file Aseprite sorgente
 
-### Typo Noto
+### Typo Corretto
 
-Il file `male_walk_down_side_sxt.png` ha un typo nel nome ("sxt" invece di "sx").
-Il percorso in `characters.json` corrisponde al typo, quindi **non rinominare il file**
-senza aggiornare anche il JSON.
+Il file `male_walk_down_side_sxt.png` e' stato rinominato in `male_walk_down_side_sx.png`.
+Il percorso in `characters.json` e' stato aggiornato di conseguenza.
 
 ## Come Sostituire il Personaggio
 

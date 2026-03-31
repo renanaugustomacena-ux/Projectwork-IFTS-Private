@@ -5,6 +5,7 @@ extends Node2D
 const GAMEPLAY_SCENE := "res://scenes/main/main.tscn"
 const SETTINGS_SCENE := "res://scenes/ui/settings_panel.tscn"
 const AUTH_SCREEN_SCENE := "res://scenes/menu/auth_screen.tscn"
+const LOADING_SCREEN_SCENE := "res://scenes/menu/loading_screen.tscn"
 const LOADING_PAUSE := 0.4
 
 var _settings_panel: PanelContainer = null
@@ -24,6 +25,7 @@ func _ready() -> void:
 	_button_container.modulate.a = 0.0
 	_loading_screen.visible = true
 	_loading_screen.modulate.a = 1.0
+	_setup_graphical_loading_screen()
 
 	_nuova_btn.pressed.connect(_on_nuova_partita)
 	_carica_btn.pressed.connect(_on_carica_partita)
@@ -41,6 +43,22 @@ func _ready() -> void:
 		_show_auth_screen()
 	else:
 		_play_intro()
+
+
+func _setup_graphical_loading_screen() -> void:
+	var scene := load(LOADING_SCREEN_SCENE) as PackedScene
+	if scene == null:
+		push_warning("MainMenu: loading screen scene not found, using fallback color")
+		return
+	var container := SubViewportContainer.new()
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.stretch = true
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	container.add_child(viewport)
+	viewport.add_child(scene.instantiate())
+	_loading_screen.add_child(container)
 
 
 func _play_intro() -> void:
@@ -147,6 +165,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _settings_panel != null and is_instance_valid(_settings_panel):
 			_close_settings()
 			get_viewport().set_input_as_handled()
+
+
+func _exit_tree() -> void:
+	if _nuova_btn and _nuova_btn.pressed.is_connected(_on_nuova_partita):
+		_nuova_btn.pressed.disconnect(_on_nuova_partita)
+	if _carica_btn and _carica_btn.pressed.is_connected(_on_carica_partita):
+		_carica_btn.pressed.disconnect(_on_carica_partita)
+	if _opzioni_btn and _opzioni_btn.pressed.is_connected(_on_opzioni):
+		_opzioni_btn.pressed.disconnect(_on_opzioni)
+	if _profilo_btn and _profilo_btn.pressed.is_connected(_on_profilo):
+		_profilo_btn.pressed.disconnect(_on_profilo)
+	if _esci_btn and _esci_btn.pressed.is_connected(_on_esci):
+		_esci_btn.pressed.disconnect(_on_esci)
+	if _menu_character and _menu_character.walk_in_completed.is_connected(
+		_on_walk_in_done
+	):
+		_menu_character.walk_in_completed.disconnect(_on_walk_in_done)
 
 
 func _transition_to_scene(scene_path: String) -> void:

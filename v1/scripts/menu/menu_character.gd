@@ -74,3 +74,10 @@ func _on_walk_finished() -> void:
 	if _frame_timer:
 		_frame_timer.stop()
 	walk_in_completed.emit()
+
+
+func _exit_tree() -> void:
+	if _frame_timer and not _frame_timer.is_stopped():
+		_frame_timer.stop()
+	if _frame_timer and _frame_timer.timeout.is_connected(_next_frame):
+		_frame_timer.timeout.disconnect(_next_frame)

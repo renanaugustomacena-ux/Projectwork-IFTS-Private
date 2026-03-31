@@ -47,5 +47,8 @@ func _get_texture_for_item(item_id: String) -> Texture2D:
 		if deco is Dictionary and deco.get("id", "") == item_id:
 			var path: String = deco.get("sprite_path", "")
 			if not path.is_empty():
-				return load(path) as Texture2D
+				var tex := load(path) as Texture2D
+				if tex == null:
+					push_warning("DropZone: texture non trovata: %s" % path)
+				return tex
 	return null

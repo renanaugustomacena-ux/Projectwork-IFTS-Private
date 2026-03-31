@@ -192,4 +192,5 @@ func _update_mode_button() -> void:
 
 
 func _exit_tree() -> void:
-	pass
+	if _mode_button and _mode_button.pressed.is_connected(_on_mode_toggled):
+		_mode_button.pressed.disconnect(_on_mode_toggled)

@@ -20,7 +20,7 @@
 				"walk": {
 					"down": "res://assets/charachters/male/old/male_walk/male_walk_down.png",
 					"down_side": "res://assets/charachters/male/old/male_walk/male_walk_down_side.png",
-					"down_side_sx": "res://assets/charachters/male/old/male_walk/male_walk_down_side_sxt.png",
+					"down_side_sx": "res://assets/charachters/male/old/male_walk/male_walk_down_side_sx.png",
 					"side": "res://assets/charachters/male/old/male_walk/male_walk_side.png",
 					"side_sx": "res://assets/charachters/male/old/male_walk/male_walk_side_sx.png",
 					"up": "res://assets/charachters/male/old/male_walk/male_walk_up.png",
