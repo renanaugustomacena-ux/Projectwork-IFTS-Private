@@ -154,4 +154,4 @@ GIOCO FUNZIONANTE (TUTTI)
 ---
 
 *Queste guide fanno parte del progetto Mini Cozy Room — Audit Pre-Rilascio.*
-*Ultimo aggiornamento: 30 Marzo 2026*
+*Ultimo aggiornamento: 31 Marzo 2026*

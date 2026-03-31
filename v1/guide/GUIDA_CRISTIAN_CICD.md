@@ -1,6 +1,6 @@
 # Guida Operativa — Cristian Marino (CI/CD & Documentation Lead)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 30 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 31 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.7, 6.8, 9.3, 11 Fase 5, 14
