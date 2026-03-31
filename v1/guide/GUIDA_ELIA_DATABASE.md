@@ -28,23 +28,23 @@
 | C1 | _on_save_requested() ignorava l'inventario | **CORRETTO** | Renan (27 Mar) |
 | A17 | Diagnostica apertura database insufficiente | **CORRETTO** | Renan (27 Mar) |
 | A18 | Seed data per tabelle vuote | **CORRETTO** | Renan (29 Mar) |
-| A24 | Transazione senza ROLLBACK in _on_save_requested() | **DA FARE** | Elia |
-| A25 | _save_inventory() ritorna void, errori non propagati | **DA FARE** | Elia |
-| A26 | _set_state() non verifica LocalDatabase.is_open() | **DA FARE** | Elia |
-| A27 | register() non valida ritorno di create_account() | **DA FARE** | Elia |
+| A24 | Transazione senza ROLLBACK in _on_save_requested() | **CORRETTO** | Elia (31 Mar) |
+| A25 | _save_inventory() ritorna void, errori non propagati | **CORRETTO** | Elia (31 Mar) |
+| A26 | _set_state() non verifica LocalDatabase.is_open() | **CORRETTO** | Elia (31 Mar) |
+| A27 | register() non valida ritorno di create_account() | **CORRETTO** | Renan (31 Mar) |
 
-## Task Rimanenti per Elia
+## Task per Elia
 
-| # | Cosa Devi Fare | File Principale | Priorita' | Tempo Stimato |
-|---|----------------|-----------------|-----------|---------------|
-| 1 | Studiare le correzioni effettuate (sezione sotto) | `scripts/autoload/local_database.gd` | ALTO | 20 min |
-| 2 | A24: Aggiungere ROLLBACK alle transazioni | `scripts/autoload/local_database.gd` | ALTO | 15 min |
-| 3 | A25: _save_inventory() ritorna bool | `scripts/autoload/local_database.gd` | ALTO | 10 min |
-| 4 | A26: Check is_open() in _set_state() | `scripts/autoload/auth_manager.gd` | MEDIO | 5 min |
-| 5 | A27: Validare create_account() in register() | `scripts/autoload/auth_manager.gd` | MEDIO | 5 min |
-| 6 | Supabase: Creare progetto, tabelle, RLS | Dashboard Supabase | ALTO | 1.5 ore |
+| # | Cosa Devi Fare | File Principale | Priorita' | Tempo Stimato | Stato |
+|---|----------------|-----------------|-----------|---------------|-------|
+| 1 | ~~Studiare le correzioni effettuate~~ | `scripts/autoload/local_database.gd` | — | — | FATTO (31 Mar) |
+| 2 | ~~A24: Aggiungere ROLLBACK alle transazioni~~ | `scripts/autoload/local_database.gd` | — | — | FATTO (31 Mar) |
+| 3 | ~~A25: _save_inventory() ritorna bool~~ | `scripts/autoload/local_database.gd` | — | — | FATTO (31 Mar) |
+| 4 | ~~A26: Check is_open() in _set_state()~~ | `scripts/autoload/auth_manager.gd` | — | — | FATTO (31 Mar) |
+| 5 | ~~A27: Validare create_account() in register()~~ | `scripts/autoload/auth_manager.gd` | — | — | GIA' FATTO |
+| 6 | Supabase: Creare progetto, tabelle, RLS | Dashboard Supabase | ALTO | 1.5 ore | DA FARE |
 
-**Tempo totale stimato**: circa **2.5 ore** (Task 1-6)
+**Restano**: solo Task 6 (Supabase)
 
 ---
 
@@ -770,10 +770,10 @@ Correzioni gia' fatte (verificare con DB Browser):
 - [ ] Dopo un salvataggio, SELECT * FROM characters restituisce dati
 
 Task nuovi per Elia:
-- [ ] Task 2: ROLLBACK aggiunto alle transazioni (A24)
-- [ ] Task 3: _save_inventory() ritorna bool (A25)
-- [ ] Task 4: Check is_open() in _set_state() (A26)
-- [ ] Task 5: Validazione create_account() in register() (A27)
+- [x] Task 2: ROLLBACK aggiunto alle transazioni (A24) — FATTO 31 Mar
+- [x] Task 3: _save_inventory() ritorna bool (A25) — FATTO 31 Mar
+- [x] Task 4: Check is_open() in _set_state() (A26) — FATTO 31 Mar
+- [x] Task 5: Validazione create_account() in register() (A27) — GIA' FATTO
 - [ ] Task 6: Progetto Supabase creato con tabelle e RLS
 - [ ] Consegnati URL e anon key a Renan
 ```

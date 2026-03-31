@@ -3,9 +3,9 @@
 > **Aggiornamento 31 Marzo 2026**:
 > - **Team**: 3 membri — Renan (Gameplay/UI/Architect), Cristian (CI/CD + Asset), Elia (Database + Supabase)
 > - **Supabase**: reintrodotto come servizio cloud. Elia prepara il progetto, Renan implementa il client
-> - **CI/CD**: branch `main`, job lint unico (gdlint + gdformat). Task 1-2 di Cristian GIA' FATTI
+> - **CI/CD**: pipeline unificata 5 job (lint, JSON, sprites, crossrefs, DB). Task 1-5 di Cristian FATTI
 > - **Asset**: tutti integrati in v1/ (Tasks 8-11 di Renan GIA' FATTI). README creati per ogni sottocartella
-> - **Schema DB**: C3/C4 completati (27 Mar). Restano 4 fix per Elia (A24-A27)
+> - **Schema DB**: C3/C4 completati (27 Mar). A24-A27 completati (31 Mar). Resta solo Supabase
 > - **Branch**: si lavora SOLO su `main`
 
 ---
@@ -40,33 +40,33 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 
 ### Cristian — CI/CD, Logger & Asset
 
-| Ordine | Task | Cosa Fare | Tempo | File |
-|:------:|------|-----------|-------|------|
-| — | Task 1-2 | ~~CI branch + lint test~~ | — | **GIA' FATTO** |
-| 1 | Task 3 | Logger: session ID con `Crypto` (anti-collisione) | 30 min | `scripts/autoload/logger.gd` |
-| 2 | Task 4 | Logger: buffer mantiene ultimi 100 msg se file non disponibile | 20 min | `scripts/autoload/logger.gd` |
-| 3 | Task 5 | `_exit_tree()` al PerformanceManager (3 segnali) | 20 min | `scripts/systems/performance_manager.gd` |
-| 4 | **Task 7** | **Trovare/creare nuovo personaggio pixel art** (8 direzioni, 32x32) | 2-3 ore | `assets/charachters/male/old/` |
-| 5 | Task 8 | Trovare asset grafici aggiuntivi (loading screen, decorazioni, icone) | 1-2 ore | `assets/` |
-| 6 | Task 6 | Aggiornare documentazione (DOPO che tutti finiscono) | 1 ora | Vari README |
+| Ordine | Task | Cosa Fare | Tempo | File | Stato |
+|:------:|------|-----------|-------|------|:-----:|
+| — | Task 1-2 | ~~CI branch + lint test~~ | — | `.github/workflows/ci.yml` | **GIA' FATTO** |
+| — | Task 3 | ~~Logger: session ID con Crypto~~ | — | `scripts/autoload/logger.gd` | **FATTO (31 Mar)** |
+| — | Task 4 | ~~Logger: buffer mantiene ultimi 100 msg~~ | — | `scripts/autoload/logger.gd` | **FATTO (31 Mar)** |
+| — | Task 5 | ~~`_exit_tree()` al PerformanceManager~~ | — | `scripts/systems/performance_manager.gd` | **FATTO (31 Mar)** |
+| — | CI+ | ~~Pipeline unificata 5 job + 4 script Python~~ | — | `ci/`, `.github/workflows/ci.yml` | **FATTO (31 Mar)** |
+| 1 | **Task 7** | **Trovare/creare nuovo personaggio pixel art** (8 direzioni, 32x32) | 2-3 ore | `assets/charachters/male/old/` | DA FARE |
+| 2 | Task 8 | Trovare asset grafici aggiuntivi (loading screen, decorazioni, icone) | 1-2 ore | `assets/` | DA FARE |
+| 3 | Task 6 | Aggiornare documentazione (DOPO che tutti finiscono) | 1 ora | Vari README | DA FARE |
 
-**Puoi iniziare subito** con Task 3-5 e **Task 7** (indipendenti).
-**Task 6** (documentazione): farlo **per ultimo**, dopo che Renan e Elia hanno finito.
+**Task 3-5 completati + CI espansa con 4 validatori Python.** Restano Task 6-8.
 **Guida**: [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md)
 **Riferimento asset personaggio**: [`assets/charachters/README.md`](../assets/charachters/README.md)
 
 ### Elia — Database & Supabase
 
-| Ordine | Task | Cosa Fare | Tempo | File |
-|:------:|------|-----------|-------|------|
-| 1 | Task 1 | Studiare le correzioni gia' fatte da Renan (C3/C4/C1/A17/A18) | 20 min | `scripts/autoload/local_database.gd` |
-| 2 | Task 2 | A24: Aggiungere ROLLBACK alle transazioni | 15 min | `scripts/autoload/local_database.gd` |
-| 3 | Task 3 | A25: `_save_inventory()` ritorna `bool` | 10 min | `scripts/autoload/local_database.gd` |
-| 4 | Task 4 | A26: Check `is_open()` in `_set_state()` | 5 min | `scripts/autoload/auth_manager.gd` |
-| 5 | Task 5 | A27: Validare `create_account()` in `register()` | 5 min | `scripts/autoload/auth_manager.gd` |
-| 6 | **Task 6** | **Supabase**: creare progetto, 3 tabelle, RLS | 1.5 ore | Dashboard Supabase |
+| Ordine | Task | Cosa Fare | Tempo | File | Stato |
+|:------:|------|-----------|-------|------|:-----:|
+| — | Task 1 | ~~Studiare le correzioni gia' fatte~~ | — | `scripts/autoload/local_database.gd` | **FATTO (31 Mar)** |
+| — | Task 2 | ~~A24: ROLLBACK alle transazioni~~ | — | `scripts/autoload/local_database.gd` | **FATTO (31 Mar)** |
+| — | Task 3 | ~~A25: `_save_inventory()` ritorna bool~~ | — | `scripts/autoload/local_database.gd` | **FATTO (31 Mar)** |
+| — | Task 4 | ~~A26: Check `is_open()` in `_set_state()`~~ | — | `scripts/autoload/auth_manager.gd` | **FATTO (31 Mar)** |
+| — | Task 5 | ~~A27: Validare `create_account()` in `register()`~~ | — | `scripts/autoload/auth_manager.gd` | **GIA' FATTO** |
+| 1 | **Task 6** | **Supabase**: creare progetto, 3 tabelle, RLS | 1.5 ore | Dashboard Supabase | DA FARE |
 
-**Puoi iniziare subito**: nessuna dipendenza da Renan o Cristian.
+**Task 1-5 completati.** Resta solo Task 6 (Supabase).
 **Dopo Task 6**: consegnare URL e anon key a Renan per implementazione client.
 **Guida**: [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md)
 **Riferimento asset menu**: [`assets/menu/README.md`](../assets/menu/README.md)
@@ -110,8 +110,8 @@ e `auth_manager.gd`. Coordinarsi per non lavorare sullo stesso file contemporane
 | Guida | Per Chi | Contenuto | Task Rimasti |
 |-------|---------|-----------|:------------:|
 | [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~Bug fix gameplay, `_exit_tree()` x8, popup decorazioni, tween fix, viewport clamp~~ | **0 — TUTTI 18 COMPLETATI** |
-| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | Logger fix, PerformanceManager, **nuovo personaggio**, asset grafici | 6 |
-| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ROLLBACK transazioni, fix auth_manager, **setup Supabase** | 6 |
+| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | ~~Logger fix, PerformanceManager, CI 5 job~~, **nuovo personaggio**, asset grafici, documentazione | 3 |
+| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ~~ROLLBACK, _save_inventory, is_open(), create_account~~, **setup Supabase** | 1 |
 
 ## Relazione con l'Audit Report
 
@@ -161,21 +161,21 @@ INTEGRITA' DATI (Elia + Renan)
 - [x] constants.gd: rimosse 3 costanti orfane (Task 2 Renan — FATTO)
 - [x] Database: schema characters con character_id PRIMARY KEY (GIA' FATTO 27 Mar)
 - [x] Database: schema inventario normalizzato (GIA' FATTO 27 Mar)
-- [ ] Database: transazioni con ROLLBACK su errore (Task 2 Elia)
-- [ ] Database: _save_inventory() propaga errori (Task 3 Elia)
-- [ ] Database: is_open() check prima di query (Task 4 Elia)
-- [ ] Database: create_account() validato in register() (Task 5 Elia)
+- [x] Database: transazioni con ROLLBACK su errore (Task 2 Elia — FATTO 31 Mar)
+- [x] Database: _save_inventory() propaga errori (Task 3 Elia — FATTO 31 Mar)
+- [x] Database: is_open() check prima di query (Task 4 Elia — FATTO 31 Mar)
+- [x] Database: create_account() validato in register() (Task 5 Elia — GIA' FATTO)
 
 STABILITA' E LIFECYCLE (Renan + Cristian)
-- [x] _exit_tree() in 8 script di Renan (Task 6+14 Renan — FATTO). Manca Task 5 Cristian
+- [x] _exit_tree() in 8 script di Renan (Task 6+14 Renan — FATTO) + PerformanceManager (Cristian — FATTO 31 Mar)
 - [ ] Nessun memory leak (Profiler stabile dopo 10 cicli menu->stanza->menu)
 - [x] Race condition swap personaggio risolto con call_deferred (Task 4 Renan — FATTO)
 - [x] Null check su AnimatedSprite2D e Texture2D (Task 5+7+18 Renan — FATTO)
 - [x] Tween orfani in main_menu.gd risolti (Task 16 Renan — FATTO)
 - [x] Decorazioni: riferimento diretto Dictionary, no duplicati (Task 15 Renan — FATTO)
 - [x] Decorazioni: posizioni clampate al viewport al reload (Task 17 Renan — FATTO)
-- [ ] Logger: session ID con Crypto (Task 3 Cristian)
-- [ ] Logger: buffer non perso se file non disponibile (Task 4 Cristian)
+- [x] Logger: session ID con Crypto (Task 3 Cristian — FATTO 31 Mar)
+- [x] Logger: buffer non perso se file non disponibile (Task 4 Cristian — FATTO 31 Mar)
 
 ASSET (Cristian)
 - [x] Asset integrati: joystick, loading screen, bottoni, letti, mobili, piante (GIA' FATTO)
