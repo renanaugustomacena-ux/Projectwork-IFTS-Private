@@ -5,6 +5,7 @@ extends Node
 const SAVE_PATH := "user://save_data.json"
 const TEMP_PATH := "user://save_data.tmp.json"
 const BACKUP_PATH := "user://save_data.backup.json"
+const SECRET_PATH := "user://integrity.key"
 const SAVE_VERSION := "5.0.0"
 const AUTO_SAVE_INTERVAL := 60.0
 
@@ -115,12 +116,17 @@ func save_game() -> void:
 
 	# Atomic write: write to temp file first, then rename
 	var json_string := JSON.stringify(save_data, "\t")
+	var hmac := _compute_hmac(json_string)
+	var wrapper := {"data": json_string, "hmac": hmac}
 	var file := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
 	if file == null:
-		push_error("SaveManager: cannot write temp file (error: %s)" % FileAccess.get_open_error())
+		push_error(
+			"SaveManager: cannot write temp file (error: %s)"
+			% FileAccess.get_open_error()
+		)
 		_is_saving = false
 		return
-	file.store_string(json_string)
+	file.store_string(JSON.stringify(wrapper, "\t"))
 	file.close()
 
 	# Backup existing save before overwrite
@@ -180,44 +186,68 @@ func _load_from_file(path: String) -> Variant:
 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		push_error("SaveManager: cannot read file '%s' (error: %s)" % [path, FileAccess.get_open_error()])
+		AppLogger.error("SaveManager", "Cannot read file",
+			{"path": path})
 		return null
 
-	var json_text := file.get_as_text()
+	var raw_text := file.get_as_text()
 	file.close()
 
 	var json := JSON.new()
-	var parse_result := json.parse(json_text)
+	var parse_result := json.parse(raw_text)
 	if parse_result != OK:
-		push_error(
-			(
-				"SaveManager: JSON parse error in '%s' at line %d: %s"
-				% [path, json.get_error_line(), json.get_error_message()]
-			)
-		)
+		AppLogger.error("SaveManager", "JSON parse error",
+			{"path": path, "line": json.get_error_line()})
 		return null
 
-	var data = json.data
-	if not data is Dictionary:
-		push_error("SaveManager: file '%s' root is not a Dictionary" % path)
+	var wrapper = json.data
+	if not wrapper is Dictionary:
+		AppLogger.error("SaveManager", "Root is not Dictionary",
+			{"path": path})
 		return null
 
-	return data
+	# New HMAC-wrapped format
+	if wrapper.has("hmac") and wrapper.has("data"):
+		var stored_hmac: String = wrapper.get("hmac", "")
+		var json_string: String = wrapper.get("data", "")
+		var expected := _compute_hmac(json_string)
+		if stored_hmac != expected:
+			AppLogger.warn("SaveManager",
+				"HMAC mismatch — save file may be tampered",
+				{"path": path})
+			return null
+		var inner := JSON.new()
+		if inner.parse(json_string) != OK:
+			return null
+		if inner.data is Dictionary:
+			return inner.data
+		return null
+
+	# Legacy format (no HMAC wrapper) — accept but will re-save with HMAC
+	return wrapper
 
 
 func _apply_save_data(data: Dictionary) -> void:
-	# Settings
+	# Settings — validate types match defaults
 	if "settings" in data and data["settings"] is Dictionary:
 		for key in data["settings"]:
 			if key in settings:
-				settings[key] = data["settings"][key]
+				var loaded = data["settings"][key]
+				if typeof(loaded) == typeof(settings[key]):
+					settings[key] = loaded
+				else:
+					AppLogger.warn("SaveManager", "Type mismatch in settings", {"key": key})
+	# Clamp volume ranges
+	settings["master_volume"] = clampf(float(settings.get("master_volume", 0.8)), 0.0, 1.0)
+	settings["music_volume"] = clampf(float(settings.get("music_volume", 0.6)), 0.0, 1.0)
+	settings["ambience_volume"] = clampf(float(settings.get("ambience_volume", 0.4)), 0.0, 1.0)
 
 	# Room state
 	if "room" in data and data["room"] is Dictionary:
 		var room_data: Dictionary = data["room"]
-		if "current_room_id" in room_data:
+		if "current_room_id" in room_data and room_data["current_room_id"] is String:
 			GameManager.current_room_id = room_data["current_room_id"]
-		if "current_theme" in room_data:
+		if "current_theme" in room_data and room_data["current_theme"] is String:
 			GameManager.current_theme = room_data["current_theme"]
 		if "decorations" in room_data and room_data["decorations"] is Array:
 			decorations = room_data["decorations"]
@@ -225,26 +255,36 @@ func _apply_save_data(data: Dictionary) -> void:
 	# Character state
 	if "character" in data and data["character"] is Dictionary:
 		var char_data: Dictionary = data["character"]
-		if "character_id" in char_data:
+		if "character_id" in char_data and char_data["character_id"] is String:
 			GameManager.current_character_id = char_data["character_id"]
-		if "outfit_id" in char_data:
+		if "outfit_id" in char_data and char_data["outfit_id"] is String:
 			GameManager.current_outfit_id = char_data["outfit_id"]
 		if "data" in char_data and char_data["data"] is Dictionary:
 			for key in char_data["data"]:
 				if key in character_data:
-					character_data[key] = char_data["data"][key]
+					var loaded = char_data["data"][key]
+					if typeof(loaded) == typeof(character_data[key]):
+						character_data[key] = loaded
+	# Clamp stress level
+	character_data["livello_stress"] = clampi(int(character_data.get("livello_stress", 0)), 0, 100)
 
 	# Music state
 	if "music" in data and data["music"] is Dictionary:
 		for key in data["music"]:
 			if key in music_state:
-				music_state[key] = data["music"][key]
+				var loaded = data["music"][key]
+				if typeof(loaded) == typeof(music_state[key]):
+					music_state[key] = loaded
 
-	# Inventory data
+	# Inventory data — validate types and clamp values
 	if "inventory" in data and data["inventory"] is Dictionary:
 		for key in data["inventory"]:
 			if key in inventory_data:
-				inventory_data[key] = data["inventory"][key]
+				var loaded = data["inventory"][key]
+				if typeof(loaded) == typeof(inventory_data[key]):
+					inventory_data[key] = loaded
+	inventory_data["coins"] = maxi(int(inventory_data.get("coins", 0)), 0)
+	inventory_data["capacita"] = clampi(int(inventory_data.get("capacita", 50)), 1, 999)
 
 
 func _migrate_save_data(data: Dictionary) -> Dictionary:
@@ -393,6 +433,55 @@ func reset_all() -> void:
 		DirAccess.remove_absolute(
 			ProjectSettings.globalize_path(BACKUP_PATH)
 		)
+
+
+func _get_integrity_key() -> PackedByteArray:
+	if FileAccess.file_exists(SECRET_PATH):
+		var f := FileAccess.open(SECRET_PATH, FileAccess.READ)
+		if f != null:
+			var hex := f.get_as_text().strip_edges()
+			f.close()
+			if hex.length() == 64:
+				return hex.hex_decode()
+	# Generate new key on first run
+	var crypto := Crypto.new()
+	var key := crypto.generate_random_bytes(32)
+	var f := FileAccess.open(SECRET_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_string(key.hex_encode())
+		f.close()
+	return key
+
+
+func _compute_hmac(message: String) -> String:
+	var key := _get_integrity_key()
+	var msg_bytes := message.to_utf8_buffer()
+	# HMAC-SHA256: H((key ^ opad) || H((key ^ ipad) || message))
+	var block_size := 64
+	var padded_key := PackedByteArray()
+	padded_key.resize(block_size)
+	padded_key.fill(0)
+	for i in range(mini(key.size(), block_size)):
+		padded_key[i] = key[i]
+	var ipad := PackedByteArray()
+	ipad.resize(block_size)
+	var opad := PackedByteArray()
+	opad.resize(block_size)
+	for i in range(block_size):
+		ipad[i] = padded_key[i] ^ 0x36
+		opad[i] = padded_key[i] ^ 0x5c
+	var inner_hash := (ipad + msg_bytes).sha256_buffer()
+	var outer_hash := (opad + inner_hash).sha256_buffer()
+	return outer_hash.hex_encode()
+
+
+func _exit_tree() -> void:
+	if SignalBus.save_requested.is_connected(_mark_dirty):
+		SignalBus.save_requested.disconnect(_mark_dirty)
+	if SignalBus.settings_updated.is_connected(_on_settings_updated):
+		SignalBus.settings_updated.disconnect(_on_settings_updated)
+	if SignalBus.music_state_updated.is_connected(_on_music_state_updated):
+		SignalBus.music_state_updated.disconnect(_on_music_state_updated)
 
 
 func _notification(what: int) -> void:

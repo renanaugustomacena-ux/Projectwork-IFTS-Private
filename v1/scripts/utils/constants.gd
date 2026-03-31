@@ -41,6 +41,9 @@ const FADE_DURATION := 0.5
 const AUTH_MIN_PASSWORD_LENGTH := 6
 const AUTH_GUEST_UID := "local"
 const AUTH_GUEST_EMAIL := "offline@local"
+const AUTH_MAX_FAILED_ATTEMPTS := 5
+const AUTH_LOCKOUT_SECONDS := 300  # 5 minutes
+const AUTH_MAX_USERNAME_LENGTH := 50
 
 # Viewport resolution
 const VIEWPORT_WIDTH := 1280

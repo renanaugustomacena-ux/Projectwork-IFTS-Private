@@ -4,13 +4,17 @@ extends Node
 
 enum AuthState { LOGGED_OUT, GUEST, AUTHENTICATED }
 
-const SALT := "MiniCozyRoom2026"
+const _HASH_ITERATIONS := 10000
+const _LEGACY_SALT := "MiniCozyRoom2026"  # Only for migrating old hashes
 
 var auth_state: int = AuthState.LOGGED_OUT
 var current_account_id: int = -1
 var current_auth_uid: String = ""
 var current_username: String = ""
 var has_character: bool = false
+
+var _failed_attempts: int = 0
+var _lockout_until: float = 0.0
 
 
 func _ready() -> void:
@@ -38,11 +42,17 @@ func play_as_guest() -> void:
 
 
 func register(username: String, password: String) -> Dictionary:
-	if username.strip_edges().length() < 3:
+	var clean_name := username.strip_edges()
+	if clean_name.length() < 3:
 		return {"error": "Username must be at least 3 characters"}
-	if password.length() < Constants.AUTH_MIN_PASSWORD_LENGTH:
-		return {"error": "Password must be at least %d characters" % Constants.AUTH_MIN_PASSWORD_LENGTH}
-	var existing := LocalDatabase.get_account_by_username(username.strip_edges())
+	if clean_name.length() > Constants.AUTH_MAX_USERNAME_LENGTH:
+		return {"error": "Username too long (max %d)" \
+			% Constants.AUTH_MAX_USERNAME_LENGTH}
+	var min_pw := Constants.AUTH_MIN_PASSWORD_LENGTH
+	if password.length() < min_pw:
+		return {"error": "Password must be at least %d characters" \
+			% min_pw}
+	var existing := LocalDatabase.get_account_by_username(clean_name)
 	if not existing.is_empty():
 		return {"error": "Username already taken"}
 	var pw_hash := _hash_password(password)
@@ -58,14 +68,58 @@ func register(username: String, password: String) -> Dictionary:
 
 
 func login(username: String, password: String) -> Dictionary:
-	var account := LocalDatabase.get_account_by_username(username.strip_edges())
+	# Rate limiting
+	var now := Time.get_unix_time_from_system()
+	if _failed_attempts >= Constants.AUTH_MAX_FAILED_ATTEMPTS:
+		var remaining := int(_lockout_until - now)
+		if remaining > 0:
+			return {"error": "Too many attempts. Wait %ds" \
+				% remaining}
+		# Lockout expired
+		_failed_attempts = 0
+
+	var account := LocalDatabase.get_account_by_username(
+		username.strip_edges()
+	)
 	if account.is_empty():
-		return {"error": "Username not found"}
-	var pw_hash := _hash_password(password)
-	if account.get("password_hash", "") != pw_hash:
-		return {"error": "Wrong password"}
+		_record_failed_attempt()
+		return {"error": "Invalid credentials"}
+
+	var stored_hash: String = account.get("password_hash", "")
+	var pw_ok := false
+
+	if stored_hash.begins_with("v2:"):
+		# New format: v2:salt_hex:hash_hex
+		var parts := stored_hash.split(":")
+		if parts.size() == 3:
+			var computed := _hash_with_salt(password, parts[1])
+			pw_ok = (computed == parts[2])
+	else:
+		# Legacy format — migrate on success
+		var legacy := (_LEGACY_SALT + password).sha256_text()
+		pw_ok = (stored_hash == legacy)
+		if pw_ok:
+			var new_hash := _hash_password(password)
+			LocalDatabase.update_password_hash(
+				account.get("account_id", -1), new_hash
+			)
+
+	if not pw_ok:
+		_record_failed_attempt()
+		return {"error": "Invalid credentials"}
+
+	_failed_attempts = 0
 	_set_state(AuthState.AUTHENTICATED, account)
 	return {}
+
+
+func _record_failed_attempt() -> void:
+	_failed_attempts += 1
+	if _failed_attempts >= Constants.AUTH_MAX_FAILED_ATTEMPTS:
+		_lockout_until = Time.get_unix_time_from_system() \
+			+ Constants.AUTH_LOCKOUT_SECONDS
+		AppLogger.warn("AuthManager", "Account locked out",
+			{"attempts": _failed_attempts})
 
 
 func is_authenticated() -> bool:
@@ -87,7 +141,11 @@ func delete_character() -> void:
 func delete_account() -> void:
 	if current_account_id < 0:
 		return
-	LocalDatabase.delete_account(current_account_id)
+	AppLogger.info("AuthManager", "Account deleted", {
+		"account_id": current_account_id,
+		"username": current_username,
+	})
+	LocalDatabase.soft_delete_account(current_account_id)
 	_set_state(AuthState.LOGGED_OUT, {})
 	SignalBus.account_deleted.emit()
 
@@ -111,4 +169,17 @@ func _set_state(new_state: int, account: Dictionary) -> void:
 
 
 func _hash_password(password: String) -> String:
-	return (SALT + password).sha256_text()
+	var crypto := Crypto.new()
+	var salt_bytes := crypto.generate_random_bytes(16)
+	var salt_hex := salt_bytes.hex_encode()
+	var hash_hex := _hash_with_salt(password, salt_hex)
+	return "v2:%s:%s" % [salt_hex, hash_hex]
+
+
+func _hash_with_salt(password: String, salt_hex: String) -> String:
+	# PBKDF2-style iterated SHA-256
+	var data := (salt_hex + password).to_utf8_buffer()
+	var result := data.sha256_buffer()
+	for i in range(_HASH_ITERATIONS - 1):
+		result = (result + data).sha256_buffer()
+	return result.hex_encode()

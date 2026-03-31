@@ -208,7 +208,15 @@ func _migrate_schema() -> void:
 				"ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT (datetime('now'));"
 			)
 		if "password_hash" not in acc_schema:
-			_execute("ALTER TABLE accounts ADD COLUMN password_hash TEXT DEFAULT '';")
+			_execute(
+				"ALTER TABLE accounts"
+				+ " ADD COLUMN password_hash TEXT DEFAULT '';"
+			)
+		if "deleted_at" not in acc_schema:
+			_execute(
+				"ALTER TABLE accounts"
+				+ " ADD COLUMN deleted_at TEXT DEFAULT NULL;"
+			)
 
 	AppLogger.info("LocalDatabase", "Schema migration completed")
 
@@ -249,7 +257,9 @@ func upsert_account(auth_uid: String, mail: String, data_di_nascita: String = ""
 
 func get_account_by_username(username: String) -> Dictionary:
 	var rows := _select(
-		"SELECT * FROM accounts WHERE display_name = ? AND auth_uid != ?;",
+		"SELECT * FROM accounts"
+		+ " WHERE display_name = ? AND auth_uid != ?"
+		+ " AND deleted_at IS NULL;",
 		[username, Constants.AUTH_GUEST_UID]
 	)
 	if rows.is_empty():
@@ -415,7 +425,17 @@ func get_all_categories() -> Array:
 
 func delete_account(account_id: int) -> bool:
 	return _execute_bound(
-		"DELETE FROM accounts WHERE account_id = ?;", [account_id]
+		"DELETE FROM accounts WHERE account_id = ?;",
+		[account_id]
+	)
+
+
+func soft_delete_account(account_id: int) -> bool:
+	return _execute_bound(
+		"UPDATE accounts SET deleted_at = datetime('now'),"
+		+ " display_name = '', password_hash = ''"
+		+ " WHERE account_id = ?;",
+		[account_id]
 	)
 
 
@@ -423,6 +443,13 @@ func delete_character(account_id: int) -> bool:
 	return _execute_bound(
 		"DELETE FROM characters WHERE account_id = ?;",
 		[account_id]
+	)
+
+
+func update_password_hash(account_id: int, new_hash: String) -> bool:
+	return _execute_bound(
+		"UPDATE accounts SET password_hash = ? WHERE account_id = ?;",
+		[new_hash, account_id]
 	)
 
 
