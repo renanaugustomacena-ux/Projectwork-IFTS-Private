@@ -48,11 +48,21 @@ func _on_save_requested(data: Dictionary) -> void:
 	if account_id < 0:
 		return
 	_execute("BEGIN TRANSACTION;")
+	var success := true
 	if data.has("character") and data["character"] is Dictionary:
-		upsert_character(account_id, data["character"])
-	if data.has("inventory") and data["inventory"] is Dictionary:
-		_save_inventory(account_id, data["inventory"])
-	_execute("COMMIT;")
+		if not upsert_character(account_id, data["character"]):
+			success = false
+	if success and data.has("inventory") and data["inventory"] is Dictionary:
+		if not _save_inventory(account_id, data["inventory"]):
+			success = false
+	if success:
+		_execute("COMMIT;")
+	else:
+		_execute("ROLLBACK;")
+		AppLogger.error(
+			"LocalDatabase", "Save rolled back",
+			{"account_id": account_id}
+		)
 
 
 func close() -> void:
@@ -368,21 +378,25 @@ func get_coins(account_id: int) -> int:
 	return rows[0].get("coins", 0)
 
 
-func _save_inventory(account_id: int, inv_data: Dictionary) -> void:
+func _save_inventory(account_id: int, inv_data: Dictionary) -> bool:
 	var coins: int = inv_data.get("coins", 0)
 	var capacita: int = inv_data.get("capacita", 50)
-	_execute_bound(
+	if not _execute_bound(
 		"UPDATE accounts SET coins = ?, inventario_capacita = ? WHERE account_id = ?;",
 		[coins, capacita, account_id]
-	)
+	):
+		return false
 	var items: Array = inv_data.get("items", [])
-	_execute_bound("DELETE FROM inventario WHERE account_id = ?;", [account_id])
+	if not _execute_bound("DELETE FROM inventario WHERE account_id = ?;", [account_id]):
+		return false
 	for item in items:
 		if item is Dictionary and item.has("item_id"):
-			_execute_bound(
+			if not _execute_bound(
 				"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);",
 				[account_id, item.get("item_id", 0), item.get("quantita", 1)]
-			)
+			):
+				return false
+	return true
 
 
 # ---- CRUD: Items ----
