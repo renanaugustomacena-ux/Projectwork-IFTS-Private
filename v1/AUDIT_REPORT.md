@@ -1,79 +1,36 @@
 # Audit Completo e Piano di Stabilizzazione — Mini Cozy Room
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 31 Marzo 2026)
-**Versione Progetto**: Godot 4.5 | GDScript | GL Compatibility
+**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 31 Marzo 2026)
+**Versione Progetto**: Godot 4.6 | GDScript | GL Compatibility
 **Autore**: Renan Augusto Macena
 **Ambito**: Analisi completa di 21 script, 8 scene, 4 file dati, 0 test, 2 workflow CI
 
-> **Nota sull'Aggiornamento del 24 Marzo 2026**: Dopo la prima stesura dell'audit, il codebase e' stato
-> parzialmente corretto. Questo aggiornamento riflette lo stato attuale: i problemi risolti sono marcati
-> come **CORRETTO**, i nuovi problemi scoperti durante la ri-analisi sono stati aggiunti, e le istruzioni
-> di correzione sono state arricchite con riferimenti ai documenti di studio del progetto (cartella `study/`).
-> Vedere la Sezione 10.1 per il riepilogo completo delle modifiche.
-
-> **⚠️ Nota sulla Semplificazione del Codebase (25 Marzo 2026)**:
-> E' in corso un lavoro di semplificazione del codebase per renderlo piu' accessibile al team senza
-> perdere funzionalita'. Alcuni sistemi analizzati in questo audit sono **placeholder** o **over-engineered**:
+> **Stato al 31 Marzo 2026**
 >
-> - **SupabaseClient**: E' un placeholder. Il gioco funziona completamente offline; questo modulo
->   puo' essere sostituito con uno stub vuoto o rimosso.
-> - **LocalDatabase**: Over-engineered. Le 7 tabelle SQLite replicano Supabase, ma il salvataggio
->   JSON via SaveManager e' sufficiente. Puo' essere ridotto o rimosso.
-> - **SaveManager**: La catena di migrazione v1→v4 e' eccessiva. Un singolo formato basta.
-> - **Logger**: Funzionante ma enterprise-grade. Opzionale per un gioco cozy.
+> Questo audit e' stato creato il 21 Marzo 2026 e aggiornato progressivamente fino al 31 Marzo.
+> Il codebase ha subito una semplificazione significativa e numerose correzioni. Di seguito il riepilogo.
 >
-> Le correzioni proposte in questo audit restano valide, ma i colleghi dovrebbero sapere che
-> i sistemi piu' complessi sono candidati alla semplificazione. Se una correzione riguarda un
-> sistema che verra' poi semplificato, ha comunque valore come esercizio didattico.
-
-> **Aggiornamento 29 Marzo 2026 — Allineamento Post-Semplificazione**:
-> Questo aggiornamento riflette lo stato del codebase dopo le seguenti modifiche strutturali:
->
-> - **SupabaseClient**: completamente rimosso (file .gd eliminato, zero riferimenti residui)
-> - **CI/CD**: semplificata da 3 pipeline a 2 (ci.yml solo lint, build.yml invariato, database-ci.yml rimosso)
+> **Modifiche strutturali completate**:
+> - **SupabaseClient**: rimosso (27 Mar). Verra' **reintegrato** nella Fase 4 — Elia prepara il progetto PostgreSQL + RLS.
+> - **shop_panel, music_panel, env_loader.gd**: rimossi (semplificazione design)
+> - **CI/CD**: semplificata a 2 pipeline (ci.yml lint + build.yml)
 > - **Test**: tutti i file test rimossi (GdUnit4 non installato). Copertura attuale: 0%
-> - **shop_panel e music_panel**: rimossi dal progetto (semplificazione design)
-> - **env_loader.gd**: rimosso (non piu' necessario senza Supabase)
-> - **Schema database (C3, C4)**: corretti — `characters` ora usa `character_id` come PK, `inventario` ristrutturato con FK e ON DELETE CASCADE
-> - **male_black_shirt (C7)**: rimosso dal catalogo characters.json (costante orfana in constants.gd ancora presente)
+> - **SaveManager**: ora usa atomic writes (temp → backup → rename)
+> - **LocalDatabase**: ora usa transazioni (BEGIN/COMMIT) per operazioni batch
+> - **Schema database (C3, C4)**: corretti — `characters` con `character_id` PK, `inventario` con FK e ON DELETE CASCADE
+> - **Loading screen**: scena grafica integrata via SubViewportContainer
+> - **Asset grafici**: PNG personaggio maschile e stanza aggiornati (31 Mar). Se i boundaries non funzionano, vedere le istruzioni in Sezione 8.4.
 >
-> **Numeri aggiornati**: 21 script, 8 scene, 4 file dati, 0 test, 2 workflow CI,
-> 7 autoload (6 + PerformanceManager), 20 segnali, 1 stanza (3 temi), 58 decorazioni (11 categorie), 1 personaggio.
-
-> **Aggiornamento 30 Marzo 2026 — Audit Deep Refresh**:
-> Audit approfondito di tutti gli script che interagiscono con il layer persistenza
-> (local_database.gd, save_manager.gd, auth_manager.gd, profile_panel.gd, room_base.gd,
-> decoration_system.gd, main_menu.gd, auth_screen.gd, settings_panel.gd).
-> Trovati **6 nuovi problemi** (A24-A29), di cui 4 assegnati a Elia e 2 a Renan.
+> **Problemi risolti da Renan (tutti completati)**:
+> C5, C6, C7, A1, A3, A7 (non applicabile), A15, A16, A19, A28, A29
 >
-> Modifiche recenti al codebase:
-> - **SaveManager**: ora usa **atomic writes** (scrivi su temp → backup esistente → rinomina)
-> - **LocalDatabase**: ora usa **transazioni** (BEGIN/COMMIT) per operazioni batch in `_on_save_requested()`
-> - **Godot 4.5.2**: richiesto per godot-sqlite GDExtension (`compatibility_minimum = "4.5"`)
-> - **extension_list.cfg**: rimossi riferimenti a gdterm e py4godot (addon non usati)
-> - **Supabase**: verra' **reintegrato** nella Fase 4 — Elia prepara il progetto PostgreSQL + RLS
+> **Numeri attuali del progetto**:
+> 7 autoload + PerformanceManager, **31 segnali**, 1 stanza (3 temi), **69 decorazioni** (11 categorie), 1 personaggio.
 >
-> **Numeri aggiornati**: 8 autoload (SignalBus, AppLogger, LocalDatabase, AuthManager, GameManager,
-> SaveManager, AudioManager, PerformanceManager), 31 segnali, 69 decorazioni (11 categorie).
-
-> **Aggiornamento 31 Marzo 2026 — Correzioni Massive Renan**:
-> Completati **tutti i task assegnati a Renan**. Correzioni applicate:
->
-> - **C6**: Typo sprite `sxt` → `sx` corretto (file rinominato + JSON)
-> - **C7**: 3 costanti orfane rimosse da constants.gd
-> - **C5**: Array mismatch window_background.gd corretto (approccio two-pass)
-> - **A1**: `_exit_tree()` aggiunto/completato in **tutti** i 10 script (room_base, main, deco_panel, settings_panel, main_menu, menu_character, character_controller, decoration_system, panel_manager, room_grid)
-> - **A3**: Race condition swap personaggio corretto con `call_deferred`
-> - **A7**: Analisi approfondita: Godot gestisce automaticamente il lifecycle dei drag preview — **non e' un bug**
-> - **A15**: Decorazioni ora usano riferimento diretto al Dictionary di salvataggio (no piu' ricerca per item_id)
-> - **A16**: Null check su caricamento texture in drop_zone.gd con `push_warning`
-> - **A19**: Tween salvati come variabili membro (`_intro_tween`, `_panel_tween`) e killati in `_exit_tree()`
-> - **A28**: Posizione decorazioni clampata al viewport in `_reload_decorations()`
-> - **A29**: Null check dopo `scene.instantiate()` in 3 funzioni di main_menu.gd
-> - **Loading screen**: Scena grafica integrata via SubViewportContainer
->
-> **Problemi Renan ancora aperti**: 0
-> **Problemi totali ancora aperti**: 8 (5 Elia: A18/A24/A25/A26/A27, 3 Cristian: A12/A13/A14)
+> **Problemi ancora aperti: 8** (+ 5 architetturali)
+> - **Elia** (5): A18, A24, A25, A26, A27
+> - **Cristian** (3): A12, A13, A14
+> - **Architetturali** (5): AR6, AR7, AR8, AR9, AR10
 
 ---
 
@@ -126,7 +83,7 @@
 **Capitoli di riferimento per il proprio lavoro**:
 
 - ~~**Sezione 6.4** — local_database.gd: ridisegnare tabella `characters`, ristrutturare tabella `inventario`~~ **COMPLETATO** (27 Marzo 2026) — problemi C3, C4 risolti
-- ~~**Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote~~ **COMPLETATO** (29 Marzo 2026) — A18 risolto (diagnostica DB migliorata)
+- ~~**Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote~~ **COMPLETATO** (29 Marzo 2026) — A17 risolto (diagnostica DB migliorata)
 - ~~**Sezione 11, Fase 1.4** — Istruzioni C3 e C4~~ **GIA' COMPLETATO**
 - ~~**Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx`~~ **CORRETTO** (31 Marzo 2026, commit Renan) — problema C6 risolto: file rinominato + JSON aggiornato
 - ~~**Sezione 8, constants.gd** — Rimuovere costanti orfane~~ **CORRETTO** (31 Marzo 2026, commit Renan) — problema C7 risolto: 3 costanti rimosse
@@ -286,7 +243,7 @@ Un **Autoload** (detto anche **Singleton**) e' uno script che viene caricato aut
 
 **Analogia**: Pensate a un servizio di emergenza come il 112. Non importa dove vi troviate in citta', potete sempre chiamare il 112 e qualcuno rispondera'. Non dovete cercarlo o crearlo: e' sempre li', pronto. Allo stesso modo, `AudioManager` (un autoload) e' sempre disponibile per riprodurre musica, da qualsiasi punto del gioco.
 
-Nel progetto ci sono 7 componenti principali (6 autoload + PerformanceManager): `SignalBus`, `GameManager`, `SaveManager`, `LocalDatabase`, `AudioManager`, `AppLogger`, `PerformanceManager`.
+Nel progetto ci sono 8 componenti principali (7 autoload + PerformanceManager): `SignalBus`, `AppLogger`, `LocalDatabase`, `AuthManager`, `GameManager`, `SaveManager`, `AudioManager`, `PerformanceManager`.
 
 ---
 
@@ -304,7 +261,7 @@ Questo e' un pattern molto potente perche' permette ai nodi di comunicare **senz
 
 Il **SignalBus** e' un autoload speciale che funziona come un "hub centrale" per tutti i segnali del gioco. Invece di far comunicare direttamente i nodi tra loro, tutti passano attraverso il SignalBus.
 
-**Analogia**: Pensate alla centralina di un ufficio postale. Invece di consegnare le lettere a mano porta a porta (comunicazione diretta tra nodi), tutti depositano le lettere all'ufficio postale (SignalBus) che si occupa di instradarle al destinatario giusto. In questo progetto il SignalBus gestisce 20 segnali diversi.
+**Analogia**: Pensate alla centralina di un ufficio postale. Invece di consegnare le lettere a mano porta a porta (comunicazione diretta tra nodi), tutti depositano le lettere all'ufficio postale (SignalBus) che si occupa di instradarle al destinatario giusto. In questo progetto il SignalBus gestisce 31 segnali diversi.
 
 ---
 
@@ -819,12 +776,12 @@ Lo **stack tecnologico** e' l'insieme di tecnologie usate per costruire il proge
 
 | Tecnologia | Cos'e' | Perche' la Usiamo |
 |------------|--------|-------------------|
-| **Godot 4.5** | Motore di gioco open source | Gratuito, leggero, perfetto per giochi 2D e applicazioni desktop |
+| **Godot 4.6** | Motore di gioco open source | Gratuito, leggero, perfetto per giochi 2D e applicazioni desktop |
 | **GDScript** | Linguaggio di programmazione di Godot | Semplice da imparare (simile a Python), integrato nell'editor, ottimizzato per Godot |
 | **GL Compatibility** | Renderer grafico | Compatibile con la piu' ampia gamma di hardware, ideale per un'app desktop leggera |
 | **JSON** | Formato dati testuale | Per i cataloghi (stanze, decorazioni, personaggi, tracce musicali) |
 | **SQLite** | Database leggero in file singolo | Per il backup dei dati di salvataggio, come fallback |
-| ~~**Supabase**~~ | ~~Backend cloud~~ | **RIMOSSO** (27 Marzo 2026) — Il gioco funziona esclusivamente offline con JSON + SQLite |
+| **Supabase** | Backend cloud (PostgreSQL + RLS) | **In preparazione** per Fase 4 — cloud sync cross-device. Client GDScript rimosso temporaneamente (27 Mar), Elia prepara il progetto PostgreSQL + RLS |
 | **GdUnit4** | Framework di testing | Non installato — i file test sono stati rimossi. I test potranno essere reintrodotti in futuro |
 | **GitHub Actions** | CI/CD | Per eseguire test e compilazione automaticamente ad ogni commit |
 
@@ -834,26 +791,26 @@ L'architettura di Mini Cozy Room si basa su un pattern chiamato **Signal-Driven 
 
 #### L'Analogia dell'Ufficio Postale
 
-Immaginate il progetto come un condominio con 7 uffici (i 7 componenti principali: 6 autoload + PerformanceManager). Ogni ufficio ha un compito specifico:
+Immaginate il progetto come un condominio con 8 uffici (i 8 componenti principali: 7 autoload + PerformanceManager). Ogni ufficio ha un compito specifico:
 
 | Ufficio (Autoload) | Compito |
 |---------------------|---------|
 | **SignalBus** | L'ufficio postale centrale — gestisce tutte le comunicazioni |
+| **AppLogger** | Il segretario — registra tutto quello che succede (log) |
+| **LocalDatabase** | Il database locale — gestisce la copia SQLite dei dati |
+| **AuthManager** | Il portiere — gestisce l'autenticazione (guest, username+password SHA-256) |
 | **GameManager** | Il direttore generale — coordina lo stato del gioco |
 | **SaveManager** | L'archivista — gestisce il salvataggio e caricamento dei dati |
-| **LocalDatabase** | Il database locale — gestisce la copia SQLite dei dati |
 | **AudioManager** | Il tecnico audio — gestisce musica e suoni |
-| ~~**SupabaseClient**~~ | ~~L'addetto alle comunicazioni esterne~~ — **RIMOSSO** (27 Marzo 2026) |
-| **AppLogger** | Il segretario — registra tutto quello che succede (log) |
-| **PerformanceManager** | Il tecnico della manutenzione — ottimizza le prestazioni |
+| **PerformanceManager** | Il tecnico della manutenzione — ottimizza le prestazioni (in `scripts/systems/`) |
 
 In un'architettura signal-driven ideale, questi uffici **non si parlano direttamente**. Quando il tecnico audio cambia il volume, non va di persona dall'archivista a dirglielo. Invece, lascia un messaggio all'ufficio postale (SignalBus) con scritto "il volume e' cambiato", e l'archivista (SaveManager), che e' abbonato a quel tipo di messaggio, lo riceve e aggiorna i suoi archivi.
 
-**Problema trovato**: Nel progetto attuale, diversi uffici "scavalcano" l'ufficio postale e vanno direttamente negli altri uffici a modificare i documenti. AudioManager scrive direttamente nei dati di SaveManager, PerformanceManager fa lo stesso, ecc. Questo crea confusione e fragilita'.
+**Problema trovato (parzialmente risolto)**: In passato, diversi uffici "scavalcavano" l'ufficio postale e andavano direttamente negli altri uffici a modificare i documenti. AudioManager ora comunica correttamente via SignalBus (AR3-AR5 corretti). Tuttavia, PerformanceManager e settings_panel scrivono ancora direttamente nei dati di SaveManager (AR6-AR7 aperti).
 
 #### Il SignalBus — Il Cuore delle Comunicazioni
 
-Il SignalBus gestisce attualmente **20 segnali** diversi. Ogni segnale rappresenta un tipo di "messaggio" che puo' essere inviato:
+Il SignalBus gestisce attualmente **31 segnali** diversi. Ogni segnale rappresenta un tipo di "messaggio" che puo' essere inviato:
 
 - `room_changed`: la stanza e' stata cambiata
 - `decoration_placed`: una decorazione e' stata piazzata
@@ -867,11 +824,12 @@ L'ordine in cui gli autoload vengono caricati e' **fondamentale** perche' alcuni
 
 1. **SignalBus** — caricato per primo perche' tutti gli altri lo usano per comunicare
 2. **AppLogger** — caricato presto perche' gli altri lo usano per registrare messaggi
-3. **GameManager** — coordina lo stato del gioco e carica i cataloghi
-4. **SaveManager** — dipende da LocalDatabase per il backup
-5. **LocalDatabase** — gestisce la persistenza SQLite
-6. **AudioManager** — dipende da GameManager per sapere quali tracce caricare
-7. **PerformanceManager** — ultimo perche' gestisce solo ottimizzazioni (in `scripts/systems/`)
+3. **LocalDatabase** — gestisce la persistenza SQLite (WAL mode, 9 tabelle)
+4. **AuthManager** — gestisce autenticazione locale (guest, username+password SHA-256)
+5. **GameManager** — coordina lo stato del gioco e carica i cataloghi JSON
+6. **SaveManager** — dipende da LocalDatabase per il backup, auto-save ogni 60s
+7. **AudioManager** — dipende da GameManager per sapere quali tracce caricare
+8. **PerformanceManager** — non e' un autoload ma un sistema caricato separatamente (in `scripts/systems/`)
 
 **Perche' l'ordine conta**: Se il SaveManager prova a usare il LocalDatabase prima che quest'ultimo sia stato caricato, il gioco crasha. E' come cercare di usare il telefono prima che sia stato acceso.
 
@@ -879,7 +837,7 @@ L'ordine in cui gli autoload vengono caricati e' **fondamentale** perche' alcuni
 
 Il gioco include:
 - **1 stanza** (cozy_studio) con **3 temi** colore (modern, natural, pink)
-- **58 decorazioni** in 11 categorie (letti, scrivanie, sedie, armadi, piante, ecc.)
+- **69 decorazioni** in 11 categorie (letti, scrivanie, sedie, armadi, piante, ecc.)
 - **1 personaggio** giocabile (male_old) con animazioni in 8 direzioni
 - **2 tracce musicali** (tema pioggia)
 - **FPS dinamico**: 60 FPS quando il gioco e' in primo piano, 15 FPS quando e' in background (per risparmiare risorse del computer)
@@ -931,11 +889,11 @@ Gli **autoload** (vedi glossario) sono gli script che formano la "spina dorsale"
 
 Poiche' gli autoload sono sempre attivi e accessibili da qualsiasi punto del gioco, un bug in un autoload ha un impatto potenzialmente **globale**: puo' causare problemi ovunque.
 
-In Mini Cozy Room ci sono 6 autoload (piu' PerformanceManager come sistema caricato all'avvio). Li analizziamo uno per uno.
+In Mini Cozy Room ci sono 7 autoload (piu' PerformanceManager come sistema). Li analizziamo uno per uno.
 
 ---
 
-### 6.1 signal_bus.gd (42 righe, 0 funzioni, 20 segnali)
+### 6.1 signal_bus.gd (58 righe, 0 funzioni, 31 segnali)
 
 **Cosa fa questo file**: E' il "centralino telefonico" del gioco (vedi glossario: SignalBus). Contiene solo dichiarazioni di segnali, senza nessuna logica. Quando un componente del gioco vuole comunicare qualcosa (ad esempio "la stanza e' cambiata"), lo fa attraverso questo file.
 
@@ -1019,16 +977,25 @@ Capire i problemi di questo file richiede una conoscenza base dei database. Brev
 
 ---
 
-### 6.6 supabase_client.gd — RIMOSSO (27 Marzo 2026)
+### 6.6 supabase_client.gd — RIMOSSO (27 Marzo 2026) — In reintegrazione Fase 4
 
-> **Questo file e' stato eliminato dal progetto.** L'analisi seguente e' mantenuta per riferimento
-> storico. I problemi A10 e A11 non sono piu' applicabili. La rimozione e' stata motivata dal fatto
-> che SupabaseClient aveva zero chiamanti nel codebase (codice morto). Il gioco funziona
-> esclusivamente offline con JSON + SQLite.
+> **Questo file e' stato eliminato dal progetto il 27 Marzo 2026.** I problemi A10, A11 e AR11
+> sono da considerarsi **risolti per rimozione**. Il client Supabase verra' **reimplementato**
+> nella Fase 4 del progetto (cloud sync cross-device). Elia prepara il progetto PostgreSQL + RLS
+> su Supabase; il client GDScript lo reimplementa Renan.
 
-> L'analisi completa originale (8 problemi: 1 CRITICO, 4 ALTI, 3 MEDI) e' disponibile nella versione
-> del 24 Marzo 2026 di questo documento. Tutti i problemi relativi a SupabaseClient (A10, A11, AR11)
-> sono da considerarsi **risolti per rimozione**.
+---
+
+### 6.6b auth_manager.gd (~120 righe, 8 funzioni)
+
+**Cosa fa questo file**: Gestisce l'autenticazione locale degli utenti. Supporta tre modalita': accesso come ospite (guest), registrazione con username + password (hashing SHA-256), e login con credenziali esistenti. Implementa una state machine con 4 stati: `LOGGED_OUT`, `LOGGING_IN`, `LOGGED_IN`, `GUEST`.
+
+**Stato**: FUNZIONANTE con problemi aperti A26 e A27.
+
+| # | Severita' | Problema | Spiegazione |
+|---|-----------|----------|-------------|
+| 1 | MEDIO | `_set_state()` chiama `LocalDatabase.get_character()` senza verificare `LocalDatabase.is_open()` (A26) | Se il database non e' stato aperto correttamente, questa chiamata causa crash. |
+| 2 | MEDIO | `register()` non verifica il ritorno di `create_account()` prima di chiamare `get_account()` (A27) | Se la creazione account fallisce (ritorna -1), il flusso continua con dati invalidi. |
 
 ---
 
@@ -1058,6 +1025,7 @@ Capire i problemi di questo file richiede una conoscenza base dei database. Brev
 | 2 | MEDIO | `get_viewport()` puo' essere null — nessun null check prima di connettere segnali | 8 | Il codice tenta di connettersi ai segnali del viewport senza prima verificare che il viewport esista. In circostanze rare (avvio problematico del gioco), questo potrebbe essere null e causare un crash. |
 | 3 | MEDIO | Solo posizione X/Y salvata — manca dimensione finestra, stato massimizzato, indice monitor | 53-54 | Il salvataggio della finestra registra solo la posizione (dove sullo schermo), ma non la dimensione, se era massimizzata, o su quale monitor era. All'avvio successivo, la finestra potrebbe apparire nella posizione giusta ma con la dimensione sbagliata. |
 | 4 | ALTO | Violazione architetturale: modifica direttamente `SaveManager.settings` | 53-54 | Come per l'AudioManager, il PerformanceManager scrive direttamente nei dati interni del SaveManager invece di usare il SignalBus. |
+| 5 | BASSO | Manca `_exit_tree()` — 3 segnali connessi in `_ready()` mai disconnessi | 8-10 | I segnali `focus_entered`, `focus_exited` e `load_completed` connessi in `_ready()` non vengono disconnessi. Rischio basso perche' e' un singleton che vive per tutta la durata dell'app, ma viola il pattern di cleanup del progetto. |
 
 ---
 
@@ -1278,7 +1246,7 @@ Il catalogo delle stanze contiene 1 stanza (cozy_studio) con 3 temi colore (mode
 
 #### decorations.json — BUONO
 
-Il catalogo delle decorazioni contiene 58 decorazioni in 11 categorie (letti, scrivanie, sedie, armadi, finestre, piante, accessori, elementi stanza, pet). Tutti i percorsi sprite sono stati verificati come esistenti nel filesystem.
+Il catalogo delle decorazioni contiene 69 decorazioni in 11 categorie (letti, scrivanie, sedie, armadi, finestre, piante, accessori, elementi stanza, pet). Tutti i percorsi sprite sono stati verificati come esistenti nel filesystem.
 
 #### characters.json — PROBLEMI CRITICI
 
@@ -1296,11 +1264,32 @@ Il catalogo delle tracce musicali contiene solo 2 tracce a tema pioggia, meno di
 
 ---
 
-### 8.3 Supabase Migration SQL — NON PIU' RILEVANTE (27 Marzo 2026)
+### 8.3 Supabase Migration SQL — IN PREPARAZIONE (Fase 4)
 
-> SupabaseClient e' stato rimosso dal progetto. Il file `supabase_migration.sql` non e' piu'
-> utilizzato. Lo schema PostgreSQL non e' piu' necessario poiche' il gioco funziona esclusivamente
-> con JSON + SQLite locale.
+> SupabaseClient e' stato rimosso dal codebase il 27 Marzo 2026. Tuttavia, Supabase verra'
+> **reintegrato nella Fase 4** per abilitare il cloud sync cross-device. Elia sta preparando
+> il progetto PostgreSQL con tabelle e RLS policies. Il client GDScript sara' reimplementato
+> da Renan. Lo schema PostgreSQL attuale e' da considerarsi **bozza** in attesa della
+> configurazione Supabase definitiva.
+
+---
+
+### 8.4 Asset Grafici — PNG Sostituiti (31 Marzo 2026)
+
+> I file PNG per il personaggio maschile (idle, walk, interact in 8 direzioni) e per la stanza
+> (`room.png`) sono stati aggiornati con nuova grafica. Se le dimensioni dei nuovi sprite
+> differiscono dagli originali, potrebbe essere necessario riallineare manualmente le collisioni.
+>
+> **Istruzioni per correggere i boundary in Godot**:
+>
+> 1. **RoomBounds (CollisionPolygon2D)**: Aprire `scenes/main/main.tscn` in Godot Editor,
+>    selezionare il nodo `RoomBounds > CollisionPolygon2D`, e ridisegnare il poligono per
+>    adattarlo alla nuova stanza. Usare lo strumento "Edit Polygon" nella toolbar in alto.
+> 2. **Character CollisionShape2D**: Aprire `scenes/male-old-character.tscn`, selezionare il
+>    nodo `CollisionShape2D`, e ridimensionare la forma di collisione per adattarla al nuovo sprite.
+> 3. **Verifica**: Avviare il gioco (F5) e testare che il personaggio non attraversi i muri e
+>    che le decorazioni restino all'interno della stanza. Controllare anche che il personaggio
+>    non rimanga bloccato in punti dove prima passava.
 
 ---
 
@@ -1350,7 +1339,7 @@ Il progetto utilizza 2 workflow GitHub Actions (semplificato da 3 il 25 Marzo 20
 
 Questa sezione presenta tutti i problemi trovati, organizzati per severita' e con un identificatore univoco (C1, A1, AR1...) per riferirsi ad essi facilmente nelle sezioni successive.
 
-### CRITICO (7 problemi originali — 5 corretti, 1 aperto, 1 risolto per rimozione) — Priorita' Immediata
+### CRITICO (7 problemi originali — 7 su 7 corretti) — COMPLETATO
 
 Questi problemi devono essere risolti **prima di qualsiasi rilascio**. Causano perdita di dati, crash irrecuperabili, o vulnerabilita' di sicurezza.
 
@@ -1380,7 +1369,7 @@ Questi problemi devono essere risolti **prima di qualsiasi rilascio**. Causano p
 
 ---
 
-### ALTO (18 problemi originali — 15 corretti/rimossi, 3 aperti) — Prossimo Sprint
+### ALTO (18 problemi originali + 11 scoperti = 29 totali — 21 corretti/rimossi, 8 aperti) — Prossimo Sprint
 
 Questi problemi non causano perdita di dati immediata, ma degradano l'esperienza utente con memory leak, crash intermittenti, e feature rotte.
 
@@ -1415,7 +1404,7 @@ Questi problemi non causano perdita di dati immediata, ma degradano l'esperienza
 
 **A5 — Crash su lista tracce vuota**: Se non ci sono tracce musicali caricate, il tentativo di riprodurre causa un crash per accesso a un array vuoto.
 
-**A6 — Memory leak drag preview shop_panel** — **RISOLTO per rimozione**: shop_panel.gd eliminato. **A7** (stesso problema in deco_panel.gd) resta aperto.
+**A6 — Memory leak drag preview shop_panel** — **RISOLTO per rimozione**: shop_panel.gd eliminato. **A7** (stesso problema in deco_panel.gd): **NON APPLICABILE** — analisi approfondita conferma che `set_drag_preview()` in Godot 4 gestisce automaticamente il lifecycle del preview.
 
 **A8 — Version comparison rotta**: La comparazione delle versioni funziona solo con numeri puri (come "3" o "4"). Versioni come "1.0.0-beta" causano crash.
 
@@ -1588,7 +1577,10 @@ Il piano di stabilizzazione e' diviso in **5 fasi**, ordinate per priorita'. Ogn
 
 ---
 
-### Fase 1 — Integrita' Dati (CRITICO)
+### Fase 1 — Integrita' Dati (CRITICO) — COMPLETATA (31 Marzo 2026)
+
+> Tutti i 7 problemi critici (C1-C7) sono stati corretti. Schema DB corretto, atomic writes implementati,
+> typo sprite risolto, costanti orfane rimosse, array mismatch fixato.
 
 #### Concetto: Perche' i Dati Sono la Priorita' Numero Uno?
 
@@ -1848,7 +1840,11 @@ CREATE TABLE IF NOT EXISTS inventario (
 
 ---
 
-### Fase 2 — Gestione Memoria e Lifecycle (ALTO)
+### Fase 2 — Gestione Memoria e Lifecycle (ALTO) — COMPLETATA (31 Marzo 2026)
+
+> `_exit_tree()` implementato in tutti i 10 script richiesti (A1). Race condition swap personaggio
+> corretta con `call_deferred` (A3). Tween orfani in main_menu.gd salvati come variabili membro (A19).
+> Memory leak ambience player e drag preview risolti (A4, A7 non applicabile).
 
 #### Concetto: Il Ciclo di Vita dei Nodi in Godot
 
@@ -2018,7 +2014,11 @@ func _play_current_track() -> void:
 
 ---
 
-### Fase 3 — Gestione Errori e Validazione (MEDIO)
+### Fase 3 — Gestione Errori e Validazione (MEDIO) — PARZIALMENTE COMPLETATA
+
+> **Completati**: A15 (decoration duplicates), A16 (texture cast), A28 (viewport clamp), A29 (null check instantiate).
+> **Ancora aperti**: A12, A13 (Logger — Cristian), A14 (PerformanceManager — Cristian),
+> A18, A24, A25, A26, A27 (Database/Auth — Elia).
 
 #### Concetto: Programmazione Difensiva
 
@@ -2136,7 +2136,12 @@ func _compare_versions(a: String, b: String) -> int:
 
 ---
 
-### Fase 4 — Allineamento Architetturale (ARCHITETTURALE)
+### Fase 4 — Allineamento Architetturale (ARCHITETTURALE) — PARZIALMENTE COMPLETATA
+
+> **Completati**: AR1 (GameManager→SaveManager via segnale), AR2 (parziale — save via segnale, load ancora diretto),
+> AR3 (SaveManager→AudioManager via segnale), AR4 (AudioManager volume via segnale), AR5 (music state via segnale).
+> **Ancora aperti**: AR6-AR10 (PerformanceManager/settings_panel scrivono ancora direttamente in SaveManager,
+> mancano validazione dipendenze autoload, propagazione errori, sistema migrazione schema DB).
 
 #### Concetto: Comunicazione Tramite Segnali, Non Tramite Chiamate Dirette
 
@@ -2636,7 +2641,7 @@ Le istruzioni dettagliate per questa correzione sono gia' state fornite nella Fa
 
 ---
 
-### C6 — Typo percorso sprite characters.json
+### C6 — Typo percorso sprite characters.json — GIA' CORRETTO (31 Marzo 2026)
 
 **File da modificare**: `data/characters.json`
 
@@ -2696,7 +2701,7 @@ func _play_animation(anim_name: String) -> void:
 
 ---
 
-### A1 — Template _exit_tree() per tutti gli script
+### A1 — Template _exit_tree() per tutti gli script — GIA' CORRETTO (31 Marzo 2026)
 
 **Obiettivo**: Aggiungere la funzione di pulizia a ~10 script (ridotto da 12 dopo rimozione di shop_panel e music_panel).
 
@@ -2884,27 +2889,23 @@ Sono inoltre disponibili **4 guide operative** nella cartella [`guide/`](guide/)
 
 ## 15. Riepilogo Statistico
 
-| Categoria | Audit Iniziale (21 Mar) | Aggiornamento (24 Mar) | Aggiornamento (29 Mar) |
-|-----------|------------------------|------------------------|------------------------|
-| File analizzati | 48 (26 script + 9 scene + 5 dati + 5 test + 3 CI) | Invariato | **35** (21 script + 8 scene + 4 dati + 0 test + 2 CI) |
-| Righe di codice analizzate | ~3500 (solo script GDScript) | Invariato | ~3000 (script ridotti per rimozioni) |
-| Autoload / Componenti | 8 | Invariato | **7** (6 autoload + PerformanceManager) |
-| Segnali SignalBus | 21 | Invariato | **20** |
-| Stanze / Temi | 4 stanze, 10 temi | Invariato | **1 stanza** (cozy_studio), **3 temi** |
-| Decorazioni | 118 in 14 categorie | Invariato | **58 in 11 categorie** |
-| Personaggi | 3 | Invariato | **1** (male_old) |
-| Problemi CRITICI | 7 | 5 aperti, **2 corretti** (C1, C2) | **2 aperti** (C6, C7 costante), **5 corretti** |
-| Problemi ALTI | 18 | 17 aperti, **2 corretti** (A8, A9), **1 nuovo** (A19) | **~8 aperti**, 5 corretti, **5 risolti per rimozione** |
-| Violazioni architetturali | 11 | 10 aperti, **1 parzialmente corretto** (AR2) | **~4 aperti**, 1 parz. corretto, **1 risolto per rimozione** (AR11) |
-| Nuovi problemi MEDI | — | **3 nuovi** (A20, A21, A22) | A22 **risolto per rimozione** (music_panel) |
-| Nuovi problemi BASSI | — | **1 nuovo** (A23) | Invariato |
-| Problemi MEDI totali | 30+ | 33+ | ~30 |
-| Problemi BASSI totali | 8 | 9 | 9 |
-| Copertura test attuale | ~15-20% | Invariata | **0%** (test rimossi, GdUnit4 non installato) |
-| Copertura test target | 50%+ | 50%+ | 50%+ |
-| Fasi di stabilizzazione | 5 | 5 | 5 |
-| Nuovi file test necessari | 6 | 6 | 6 (da creare da zero) |
-| Documenti di studio disponibili | 0 | **5** (in `study/`) | 5 (in `study/`) + **4 guide** (in `guide/`) |
+| Categoria | Audit Iniziale (21 Mar) | Aggiornamento (24 Mar) | Aggiornamento (29 Mar) | **Stato Attuale (31 Mar)** |
+|-----------|------------------------|------------------------|------------------------|---------------------------|
+| File analizzati | 48 (26 script + 9 scene + 5 dati + 5 test + 3 CI) | Invariato | **35** (21 script + 8 scene + 4 dati + 0 test + 2 CI) | 35 (invariato) |
+| Righe di codice analizzate | ~3500 (solo script GDScript) | Invariato | ~3000 (script ridotti per rimozioni) | **~4185** (script cresciuti per fix e auth) |
+| Autoload / Componenti | 8 | Invariato | **7** (6 autoload + PerformanceManager) | **8** (7 autoload + PerformanceManager) |
+| Segnali SignalBus | 21 | Invariato | **20** | **31** |
+| Stanze / Temi | 4 stanze, 10 temi | Invariato | **1 stanza** (cozy_studio), **3 temi** | 1 stanza, 3 temi (invariato) |
+| Decorazioni | 118 in 14 categorie | Invariato | **58 in 11 categorie** | **69 in 11 categorie** |
+| Personaggi | 3 | Invariato | **1** (male_old) | 1 (invariato, PNG aggiornati) |
+| Problemi CRITICI | 7 | 5 aperti, **2 corretti** (C1, C2) | **2 aperti** (C6, C7 costante), **5 corretti** | **7/7 corretti** |
+| Problemi ALTI | 18 | 17 aperti, **2 corretti** (A8, A9), **1 nuovo** (A19) | **~8 aperti**, 5 corretti, **5 risolti per rimozione** | **4 aperti** (A12, A13, A24, A25) |
+| Problemi MEDI | — | **3 nuovi** (A20, A21, A22) | A22 **risolto per rimozione** (music_panel) | **4 aperti** (A14, A18, A26, A27) |
+| Violazioni architetturali | 11 | 10 aperti, **1 parzialmente corretto** (AR2) | **~4 aperti**, 1 parz. corretto, **1 risolto per rimozione** (AR11) | **5 aperti** (AR6-AR10) |
+| Copertura test attuale | ~15-20% | Invariata | **0%** (test rimossi, GdUnit4 non installato) | 0% (invariato) |
+| Copertura test target | 50%+ | 50%+ | 50%+ | 50%+ |
+| Fasi di stabilizzazione | 5 | 5 | 5 | 2 completate, 2 parziali, 1 da fare |
+| Documenti di studio disponibili | 0 | **5** (in `study/`) | 5 (in `study/`) + **4 guide** (in `guide/`) | Invariato |
 
 ---
 
@@ -3236,27 +3237,29 @@ Questa tabella presenta una stima realistica delle ore necessarie per completare
 
 ### 19.1 Stima per Fase e Responsabile
 
-| Fase | Descrizione | Elia | Cristian | Renan | Totale Fase |
-|------|-------------|------|----------|-------|-------------|
-| **Fase 1** | Integrita' Dati (CRITICO) | ~~3h~~ 0.5h + 0.5h (C6/C7) | — | ~~1h~~ 0h | **1h** |
-| **Fase 2** | Memoria e Lifecycle (ALTO) | — | 1.5h | 5h | **6.5h** |
-| **Fase 3** | Errori e Validazione (MEDIO) | 1h | 2h | 3h | **6h** |
-| **Fase 4** | Allineamento Architettura | — | 1h | 4h | **5h** |
-| **Fase 5** | Copertura Test | 1h | 3h | 3h | **7h** |
-| **Totale** | | **3h** | **7.5h** | **15h** | **~25.5h** |
+| Fase | Descrizione | Elia | Cristian | Renan | Totale Fase | Stato |
+|------|-------------|------|----------|-------|-------------|-------|
+| **Fase 1** | Integrita' Dati (CRITICO) | 0h | 0h | 0h | **0h** | COMPLETATA |
+| **Fase 2** | Memoria e Lifecycle (ALTO) | 0h | 0h | 0h | **0h** | COMPLETATA |
+| **Fase 3** | Errori e Validazione (MEDIO) | 2h (A24-A27) | 2h (A12-A14) | 0h | **4h** | Parziale |
+| **Fase 4** | Allineamento Architettura | — | 1h | 4h | **5h** | Parziale |
+| **Fase 5** | Copertura Test | 1h | 3h | 3h | **7h** | Da fare |
+| **Totale rimanente** | | **3h** | **6h** | **7h** | **~16h** | |
 
-> **Nota (30 Marzo 2026)**: Team ridotto a 3 persone (Renan, Cristian, Elia). Le ore di Mohamed/Giovanni sono state redistribuite a Renan (gameplay/UI) e a Elia (task semplici C6/C7). C3/C4 gia' corretti, C7 risolto per rimozione. Fase 2 ridotta: shop_panel e music_panel rimossi.
+> **Nota (31 Marzo 2026)**: Tutti i task di Renan sono completati. Fase 1 e Fase 2 chiuse.
+> Ore rimanenti ridotte da ~25.5h a ~16h. Renan resta disponibile per Fase 4 (architettura)
+> e Fase 5 (test). Elia ha 5 problemi aperti (A18, A24-A27). Cristian ha 3 problemi aperti (A12-A14).
 
 ### 19.2 Distribuzione Settimanale (Scadenza 22 Aprile 2026)
 
-| Settimana | Date | Obiettivo | Ore/persona stimate |
-|-----------|------|-----------|---------------------|
-| Settimana 1 | 28 Mar - 4 Apr | Fase 1 completa (P1 — largamente gia' completata) + inizio Fase 2 | 3-4h |
-| Settimana 2 | 5 Apr - 11 Apr | Fase 2 completa (P2) + inizio Fase 3 | 3-5h |
-| Settimana 3 | 12 Apr - 18 Apr | Fase 3 + Fase 4 + inizio Fase 5 | 3-4h |
-| Settimana 4 | 19 Apr - 22 Apr | Fase 5 + test finale + fix urgenti | 2-3h |
+| Settimana | Date | Obiettivo | Ore/persona stimate | Stato |
+|-----------|------|-----------|---------------------|-------|
+| Settimana 1 | 28 Mar - 4 Apr | ~~Fase 1 + inizio Fase 2~~ | ~~3-4h~~ | COMPLETATA (Fase 1+2 chiuse al 31 Mar) |
+| Settimana 2 | 5 Apr - 11 Apr | Fase 3: Elia (A24-A27), Cristian (A12-A14) | 3-4h | Da fare |
+| Settimana 3 | 12 Apr - 18 Apr | Fase 4 (AR6-AR10) + inizio Fase 5 | 3-4h | Da fare |
+| Settimana 4 | 19 Apr - 22 Apr | Fase 5 + test finale + fix urgenti | 2-3h | Da fare |
 
-**Nota**: Le ore sono stime conservative. Includono tempo per capire il codice, implementare, testare e committare. Se siete piu' veloci, usate il tempo extra per i task P3/P4.
+**Nota**: Fase 1 e 2 completate in anticipo (31 Mar). Il team ha piu' tempo per le fasi rimanenti.
 
 ### 19.3 Percorso Critico (Dipendenze tra Fasi)
 
