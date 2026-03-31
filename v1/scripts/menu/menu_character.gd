@@ -77,7 +77,9 @@ func _on_walk_finished() -> void:
 
 
 func _exit_tree() -> void:
-	if _frame_timer and not _frame_timer.is_stopped():
+	if _frame_timer != null:
+		if _frame_timer.timeout.is_connected(_next_frame):
+			_frame_timer.timeout.disconnect(_next_frame)
 		_frame_timer.stop()
-	if _frame_timer and _frame_timer.timeout.is_connected(_next_frame):
-		_frame_timer.timeout.disconnect(_next_frame)
+		_frame_timer.queue_free()
+		_frame_timer = null

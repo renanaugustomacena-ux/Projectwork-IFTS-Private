@@ -178,8 +178,11 @@ func _on_login_pressed() -> void:
 
 
 func _on_register_pressed() -> void:
-	var reg_user: LineEdit = _register_form.get_node("RegUsername")
-	var reg_pass: LineEdit = _register_form.get_node("RegPassword")
+	var reg_user := _register_form.get_node_or_null("RegUsername") as LineEdit
+	var reg_pass := _register_form.get_node_or_null("RegPassword") as LineEdit
+	if reg_user == null or reg_pass == null:
+		_show_error("Internal error: form not ready")
+		return
 	var username := reg_user.text.strip_edges()
 	var password := reg_pass.text
 	var confirm := _confirm_input.text

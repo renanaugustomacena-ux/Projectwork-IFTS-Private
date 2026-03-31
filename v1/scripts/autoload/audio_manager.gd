@@ -147,26 +147,30 @@ func _auto_start_music() -> void:
 
 
 func _load_audio_stream(path: String) -> AudioStream:
-	# External files (absolute paths) need manual loading for MP3
-	if path.begins_with("/") or (path.length() > 2 and path[1] == ":"):
+	# Only allow res:// and user:// paths to prevent path traversal
+	if not path.begins_with("res://") and not path.begins_with("user://"):
+		AppLogger.error("AudioManager", "Blocked non-resource audio path", {"path": path})
+		return null
+
+	# user:// MP3 files need manual loading
+	if path.begins_with("user://"):
 		var ext := path.get_extension().to_lower()
 		if ext == "mp3":
 			var file := FileAccess.open(path, FileAccess.READ)
 			if file == null:
+				AppLogger.error("AudioManager", "Cannot open audio file", {"path": path})
 				return null
 			if file.get_length() > MAX_AUDIO_FILE_SIZE:
 				file.close()
-				push_error("AudioManager: file too large (%d bytes, max %d): %s" % [file.get_length(), MAX_AUDIO_FILE_SIZE, path])
+				AppLogger.error("AudioManager", "Audio file too large", {"path": path, "size": file.get_length(), "max": MAX_AUDIO_FILE_SIZE})
 				return null
 			var buffer := file.get_buffer(file.get_length())
 			file.close()
 			var mp3_stream := AudioStreamMP3.new()
 			mp3_stream.data = buffer
 			return mp3_stream
-		if ext == "wav":
-			return load(path) as AudioStream
 
-	# Resource paths (res://)
+	# Resource paths (res:// and user:// wav/ogg)
 	return load(path) as AudioStream
 
 
@@ -301,7 +305,7 @@ func _get_music_volume_db() -> float:
 
 func _apply_music_volume() -> void:
 	var db := _get_music_volume_db()
-	if _active_player.playing:
+	if _active_player != null and _active_player.playing:
 		_active_player.volume_db = db
 
 
@@ -320,6 +324,12 @@ func _sync_music_state() -> void:
 
 
 func _exit_tree() -> void:
+	if SignalBus.volume_changed.is_connected(_on_volume_changed):
+		SignalBus.volume_changed.disconnect(_on_volume_changed)
+	if SignalBus.ambience_toggled.is_connected(_on_ambience_toggled):
+		SignalBus.ambience_toggled.disconnect(_on_ambience_toggled)
+	if SignalBus.load_completed.is_connected(_on_load_completed):
+		SignalBus.load_completed.disconnect(_on_load_completed)
 	if _crossfade_tween != null and _crossfade_tween.is_running():
 		_crossfade_tween.kill()
 		_crossfade_tween = null
