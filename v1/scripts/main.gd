@@ -21,6 +21,7 @@ func _ready() -> void:
 	_panel_manager.initialize(_ui_layer)
 
 	_wire_hud_buttons()
+	_fit_background_to_viewport()
 	SignalBus.room_changed.connect(_on_room_changed)
 	_apply_theme(GameManager.current_room_id, GameManager.current_theme)
 	AppLogger.info("Main", "Scene initialized, HUD buttons wired")
@@ -62,6 +63,19 @@ func _apply_theme(room_id: String, theme_id: String) -> void:
 	_floor_rect.color = floor_color
 
 	_baseboard.color = Color(wall_hex).lightened(0.1)
+
+
+func _fit_background_to_viewport() -> void:
+	var tex := _room_bg.texture
+	if tex == null:
+		return
+	var tex_size := tex.get_size()
+	if tex_size.x <= 0 or tex_size.y <= 0:
+		return
+	var vp_size := get_viewport_rect().size
+	var scale_factor := maxf(vp_size.x / tex_size.x, vp_size.y / tex_size.y)
+	_room_bg.scale = Vector2(scale_factor, scale_factor)
+	_room_bg.position = vp_size / 2.0
 
 
 func _exit_tree() -> void:

@@ -12,7 +12,6 @@ script = ExtResource("2_main")
 
 [node name="RoomBackground" type="Sprite2D" parent="." unique_id=1824188207]
 position = Vector2(640, 360)
-scale = Vector2(4, 4)
 texture = ExtResource("6_room_bg")
 
 [node name="WallRect" type="ColorRect" parent="." unique_id=1475578150]
