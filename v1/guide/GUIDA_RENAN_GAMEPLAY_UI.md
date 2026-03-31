@@ -1,6 +1,6 @@
 # Guida Operativa — Renan Augusto Macena (Gameplay, UI & Asset)
 
-**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 31 Marzo 2026)
+**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 31 Marzo 2026 — **TUTTI I TASK COMPLETATI**)
 **Prerequisito**: Leggere prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare l'ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
@@ -33,23 +33,23 @@ Questa guida contiene **tutti** i task, divisi in tre parti:
 
 ### Riepilogo di Tutti i Task
 
-| # | Cosa Fare | File Principale | Priorita' | Tempo |
+| # | Cosa Fare | File Principale | Priorita' | Stato |
 |---|-----------|-----------------|-----------|-------|
-| 1 | Correggere typo sprite in characters.json | `data/characters.json` | CRITICO | 5 min |
-| 2 | Rimuovere costanti personaggi inutilizzati | `scripts/utils/constants.gd` | CRITICO | 10 min |
-| 3 | Correggere mismatch array in window_background.gd | `scripts/rooms/window_background.gd` | CRITICO | 20 min |
-| 4 | Correggere race condition swap personaggio | `scripts/rooms/room_base.gd` | ALTO | 15 min |
-| 5 | Correggere cast Texture2D unsafe | `scripts/ui/drop_zone.gd` | ALTO | 15 min |
-| 6 | Aggiungere `_exit_tree()` a 6 script | Vari | ALTO | 1.5 ore |
-| 7 | Aggiungere null check su character_controller.gd | `scripts/rooms/character_controller.gd` | MEDIO | 15 min |
-| 8 | ~~Integrare il Virtual Joystick~~ | `scenes/ui/virtual_joystick.tscn` | — | — | GIA' INTEGRATO |
-| 9 | ~~Integrare gli asset della loading screen~~ | `assets/menu/loading/` | — | — | GIA' INTEGRATO |
-| 10 | ~~Integrare gli asset dei bottoni menu~~ | `assets/menu/buttons_*/` | — | — | GIA' INTEGRATO |
-| 11 | ~~Registrare nuovi mobili nel catalogo~~ | `data/decorations.json` | — | — | GIA' INTEGRATO |
-| 12 | Popup interazione decorazioni | `scripts/rooms/decoration_system.gd` | MEDIO | 30 min |
-| 13 | Rotazione e ridimensionamento decorazioni | `scripts/rooms/decoration_system.gd` | MEDIO | 30 min |
+| 1 | ~~Correggere typo sprite in characters.json~~ | `data/characters.json` | CRITICO | **FATTO** |
+| 2 | ~~Rimuovere costanti personaggi inutilizzati~~ | `scripts/utils/constants.gd` | CRITICO | **FATTO** |
+| 3 | ~~Correggere mismatch array in window_background.gd~~ | `scripts/rooms/window_background.gd` | CRITICO | **FATTO** |
+| 4 | ~~Correggere race condition swap personaggio~~ | `scripts/rooms/room_base.gd` | ALTO | **FATTO** |
+| 5 | ~~Correggere cast Texture2D unsafe~~ | `scripts/ui/drop_zone.gd` | ALTO | **FATTO** |
+| 6 | ~~Aggiungere `_exit_tree()` a 6 script~~ | Vari | ALTO | **FATTO** |
+| 7 | ~~Aggiungere null check su character_controller.gd~~ | `scripts/rooms/character_controller.gd` | MEDIO | **FATTO** |
+| 8 | ~~Integrare il Virtual Joystick~~ | `scenes/ui/virtual_joystick.tscn` | — | **GIA' INTEGRATO** |
+| 9 | ~~Integrare gli asset della loading screen~~ | `assets/menu/loading/` | — | **GIA' INTEGRATO** |
+| 10 | ~~Integrare gli asset dei bottoni menu~~ | `assets/menu/buttons_*/` | — | **GIA' INTEGRATO** |
+| 11 | ~~Registrare nuovi mobili nel catalogo~~ | `data/decorations.json` | — | **GIA' INTEGRATO** |
+| 12 | ~~Popup interazione decorazioni~~ | `scripts/rooms/decoration_system.gd` | MEDIO | **GIA' IMPLEMENTATO** |
+| 13 | ~~Rotazione e ridimensionamento decorazioni~~ | `scripts/rooms/decoration_system.gd` | MEDIO | **GIA' IMPLEMENTATO** |
 
-**Tempo totale stimato**: circa 6 ore (distribuite su piu' sessioni)
+**Tutti i 13 task di Renan sono completati.**
 
 ---
 
@@ -1199,18 +1199,18 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 ### Parte 1 — Bug Fix Audit
 
 ```text
-- [ ] Task 1: Corretto typo sxt -> sx in characters.json
-- [ ] Task 2: Rimosse tutte le costanti personaggi inutilizzati da constants.gd
-- [ ] Task 3: Corretto allineamento array in window_background.gd
-- [ ] Task 4: Race condition swap personaggio corretto con call_deferred
-- [ ] Task 5: Null check su caricamento texture in drop_zone.gd
-- [ ] Task 6.1: _exit_tree() aggiunto a room_base.gd (3 segnali)
-- [ ] Task 6.2: _exit_tree() aggiunto a main.gd (1 segnale)
-- [ ] Task 6.3: _exit_tree() completato in deco_panel.gd
-- [ ] Task 6.4: _exit_tree() completato in settings_panel.gd (4 segnali)
-- [ ] Task 6.5: _exit_tree() aggiunto a main_menu.gd (5 segnali)
-- [ ] Task 6.6: _exit_tree() aggiunto a menu_character.gd (1 timer)
-- [ ] Task 7: Null check su _anim in character_controller.gd
+- [x] Task 1: Corretto typo sxt -> sx in characters.json (+ rinominato file su disco)
+- [x] Task 2: Rimosse 3 costanti personaggi inutilizzati da constants.gd
+- [x] Task 3: Corretto allineamento array in window_background.gd (two-pass approach)
+- [x] Task 4: Race condition swap personaggio corretto con call_deferred
+- [x] Task 5: Null check su caricamento texture in drop_zone.gd (+ push_warning)
+- [x] Task 6.1: _exit_tree() aggiunto a room_base.gd (3 segnali SignalBus)
+- [x] Task 6.2: _exit_tree() aggiunto a main.gd (1 segnale room_changed)
+- [x] Task 6.3: _exit_tree() completato in deco_panel.gd (1 segnale mode_button)
+- [x] Task 6.4: _exit_tree() completato in settings_panel.gd (3 slider + 1 language)
+- [x] Task 6.5: _exit_tree() aggiunto a main_menu.gd (5 btn + 1 walk_in_completed)
+- [x] Task 6.6: _exit_tree() aggiunto a menu_character.gd (1 timer + 1 segnale)
+- [x] Task 7: Null check su _anim in character_controller.gd (+ _exit_tree per segnale)
 ```
 
 ### Parte 2 — Integrazione Asset (GIA' COMPLETATA)
@@ -1224,14 +1224,18 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 - [x] Task 11: Piante registrate (assets/sprites/decorations/sc_indoor_plants_free/)
 ```
 
-### Parte 3 — Nuove Funzionalita'
+### Parte 3 — Nuove Funzionalita' (GIA' COMPLETATA)
 
 ```text
-- [ ] Task 12: Click su decorazione piazzata mostra popup con Elimina/Ruota/Ridimensiona
-- [ ] Task 12: Ruotare una decorazione funziona (90 gradi)
-- [ ] Task 12: Ridimensionare una decorazione funziona
-- [ ] Task 13: Il salvataggio/caricamento preserva rotazione e scala delle decorazioni
+- [x] Task 12: Popup con R (Rotate), F (Flip), S (Scale), X (Delete) su decorazioni piazzate
+- [x] Task 12: Ruotare (90 gradi), flippare, scalare (7 livelli: 0.25x-3x) funzionano
+- [x] Task 12: Delete con rimozione dal salvataggio
+- [x] Task 13: Persistenza rotazione, flip_h e scala nel salvataggio JSON
 ```
+
+> **Nota**: decoration_system.gd implementa gia' il popup completo su CanvasLayer (layer 100)
+> con bottoni R/F/S/X. room_base.gd salva/carica rotation, flip_h, item_scale.
+> Implementazione piu' avanzata di quella descritta nella guida originale.
 
 ---
 

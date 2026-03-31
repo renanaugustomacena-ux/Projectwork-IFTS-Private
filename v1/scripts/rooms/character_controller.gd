@@ -16,6 +16,11 @@ func _ready() -> void:
 	SignalBus.decoration_mode_changed.connect(_on_decoration_mode_changed)
 
 
+func _exit_tree() -> void:
+	if SignalBus.decoration_mode_changed.is_connected(_on_decoration_mode_changed):
+		SignalBus.decoration_mode_changed.disconnect(_on_decoration_mode_changed)
+
+
 func _on_decoration_mode_changed(active: bool) -> void:
 	if active:
 		# In edit mode, ignore decoration collisions so dragging doesn't push us
@@ -34,6 +39,8 @@ func _physics_process(_delta: float) -> void:
 
 
 func _update_animation(direction: Vector2) -> void:
+	if _anim == null:
+		return
 	if direction.length() < 0.1:
 		_play_idle()
 		return
@@ -56,6 +63,8 @@ func _update_animation(direction: Vector2) -> void:
 
 
 func _play_idle() -> void:
+	if _anim == null:
+		return
 	var abs_x := absf(_last_direction.x)
 	var abs_y := absf(_last_direction.y)
 	var anim_name: String
@@ -71,6 +80,8 @@ func _play_idle() -> void:
 
 
 func _play_anim(anim_name: String) -> void:
+	if _anim == null:
+		return
 	if anim_name != _last_anim:
 		_last_anim = anim_name
 		_anim.play(anim_name)

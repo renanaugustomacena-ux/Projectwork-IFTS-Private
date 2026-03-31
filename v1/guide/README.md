@@ -104,7 +104,7 @@ e `auth_manager.gd`. Coordinarsi per non lavorare sullo stesso file contemporane
 
 | Guida | Per Chi | Contenuto | Task Rimasti |
 |-------|---------|-----------|:------------:|
-| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | Bug fix gameplay, `_exit_tree()` x6, popup decorazioni | 9 |
+| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~Bug fix gameplay, `_exit_tree()` x6, popup decorazioni~~ | **0 — COMPLETATI** |
 | [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | Logger fix, PerformanceManager, **nuovo personaggio**, asset grafici | 6 |
 | [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ROLLBACK transazioni, fix auth_manager, **setup Supabase** | 6 |
 
@@ -152,8 +152,8 @@ Quando tutti i task sono completati, verificare **insieme** che tutto funzioni:
 
 ```text
 INTEGRITA' DATI (Elia + Renan)
-- [ ] characters.json: nessun typo nei percorsi sprite (Task 1 Renan)
-- [ ] constants.gd: solo costanti per personaggi esistenti (Task 2 Renan)
+- [x] characters.json: corretto typo sxt->sx + rinominato file (Task 1 Renan — FATTO)
+- [x] constants.gd: rimosse 3 costanti orfane (Task 2 Renan — FATTO)
 - [x] Database: schema characters con character_id PRIMARY KEY (GIA' FATTO 27 Mar)
 - [x] Database: schema inventario normalizzato (GIA' FATTO 27 Mar)
 - [ ] Database: transazioni con ROLLBACK su errore (Task 2 Elia)
@@ -162,10 +162,10 @@ INTEGRITA' DATI (Elia + Renan)
 - [ ] Database: create_account() validato in register() (Task 5 Elia)
 
 STABILITA' E LIFECYCLE (Renan + Cristian)
-- [ ] _exit_tree() presente in tutti e 7 gli script (Task 5 Cristian + Task 6 Renan)
+- [x] _exit_tree() in 6 script di Renan (Task 6 Renan — FATTO). Manca Task 5 Cristian
 - [ ] Nessun memory leak (Profiler stabile dopo 10 cicli menu->stanza->menu)
-- [ ] Race condition swap personaggio risolto con call_deferred (Task 4 Renan)
-- [ ] Null check su AnimatedSprite2D e Texture2D (Task 5+7 Renan)
+- [x] Race condition swap personaggio risolto con call_deferred (Task 4 Renan — FATTO)
+- [x] Null check su AnimatedSprite2D e Texture2D (Task 5+7 Renan — FATTO)
 - [ ] Logger: session ID con Crypto (Task 3 Cristian)
 - [ ] Logger: buffer non perso se file non disponibile (Task 4 Cristian)
 

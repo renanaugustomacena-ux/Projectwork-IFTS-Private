@@ -10,10 +10,7 @@ const THEME_NATURAL := "natural"
 const THEME_PINK := "pink"
 
 # Character identifiers
-const CHAR_FEMALE_RED_SHIRT := "female_red_shirt"
-const CHAR_MALE_YELLOW_SHIRT := "male_yellow_shirt"
 const CHAR_MALE_OLD := "male_old"
-const CHAR_MALE_BLACK_SHIRT := "male_black_shirt"
 
 # Playlist modes
 const PLAYLIST_SEQUENTIAL := "sequential"

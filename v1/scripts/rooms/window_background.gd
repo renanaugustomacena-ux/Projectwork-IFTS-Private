@@ -30,23 +30,28 @@ func _build_layers() -> void:
 		"Layer_0000_9.png",
 	]
 
-	var count := layer_files.size()
-	for i in count:
-		var path := LAYER_BASE_PATH + layer_files[i]
+	# First pass: collect only valid textures (skip missing files entirely)
+	var valid_textures: Array[Texture2D] = []
+	for file_name in layer_files:
+		var path := LAYER_BASE_PATH + file_name
 		var tex := load(path) as Texture2D
 		if tex == null:
-			push_warning("WindowBackground: missing layer %s" % path)
+			push_warning("WindowBackground: layer mancante, saltato: %s" % path)
 			continue
+		valid_textures.append(tex)
 
+	# Second pass: create sprites with correctly aligned parallax factors
+	var valid_count := valid_textures.size()
+	for i in valid_count:
 		var sprite := Sprite2D.new()
-		sprite.texture = tex
+		sprite.texture = valid_textures[i]
 		sprite.centered = false
 		sprite.scale = Vector2(SCALE_FACTOR, SCALE_FACTOR)
 		sprite.position.y = -505.0
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		add_child(sprite)
 		_layers.append(sprite)
-		_parallax_factors.append(float(i) / float(count))
+		_parallax_factors.append(float(i) / float(valid_count))
 
 
 func _update_parallax() -> void:

@@ -62,3 +62,8 @@ func _apply_theme(room_id: String, theme_id: String) -> void:
 	_floor_rect.color = floor_color
 
 	_baseboard.color = Color(wall_hex).lightened(0.1)
+
+
+func _exit_tree() -> void:
+	if SignalBus.room_changed.is_connected(_on_room_changed):
+		SignalBus.room_changed.disconnect(_on_room_changed)
