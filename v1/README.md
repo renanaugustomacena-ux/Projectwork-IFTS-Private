@@ -1,12 +1,44 @@
-# Mini Cozy Room — Documentazione Tecnica
+# Mini Cozy Room
 
-> **Work in Progress — Fase 4 (Supabase) in preparazione**
+> **Work in Progress — Fase 5 (Catalogo Decorazioni e Polish UI) in corso**
 > Il sistema account locale (username + password) e' funzionante.
 > Prossimo passo: integrazione Supabase per cloud sync cross-device.
 
+## Visione
+
+Mini Cozy Room nasce da un'idea semplice: non tutti i giochi devono essere una
+competizione. Esiste un pubblico — persone che affrontano stress, ansia, o
+semplicemente giornate pesanti — che cerca un passatempo che non chieda nulla in
+cambio. Niente classifiche, niente pressione, niente corsa contro il tempo.
+
+**La nostra filosofia di design:**
+
+- **Community, non ranking.** Non ci sono punteggi, non c'e' un "migliore" di
+  qualcun altro. L'unica cosa che condividi e' la tua stanza e la tua
+  creativita'. L'interazione con gli altri e' costruttiva, mai competitiva.
+- **Tutto disponibile, niente da sbloccare.** Non ci sono valute di gioco,
+  nessun grind, nessun paywall. Ogni decorazione, ogni stanza, ogni
+  personalizzazione e' accessibile dal primo momento. Il gioco e' completo
+  dal giorno in cui lo apri — non ti chiede di "guadagnarti" i contenuti.
+- **Achievement che parlano di te.** Al posto di monete e progressione
+  artificiale, ci sono traguardi con un feeling umano: un trofeo della
+  community, un riconoscimento per la creativita' della tua stanza, un
+  achievement per aver riempito ogni angolo di decorazioni. Non misurano
+  quanto hai giocato, ma come hai giocato. Sono ricordi, non ricompense.
+- **Rilassante, non banale.** Non e' un gioco vuoto. Puoi personalizzare la tua
+  stanza, scegliere le decorazioni, cambiare tema, ascoltare musica lo-fi,
+  e creare il tuo angolo digitale. C'e' profondita' nella creativita',
+  non nella difficolta'.
+- **Presente, non invadente.** Il gioco non ti punisce se non giochi per una
+  settimana. Non ci sono notifiche aggressive, timer che scadono, o energie
+  da ricaricare. Apri quando vuoi, rilassati, chiudi quando vuoi.
+
+Lo scopo e' creare qualcosa dove ci si diverte rilassandosi — senza pressioni,
+senza confronti, senza sensi di colpa. Un piccolo rifugio digitale.
+
 ## Descrizione
 
-Mini Cozy Room e un desktop companion 2D che combina stanze pixel art
+Mini Cozy Room e' un desktop companion 2D che combina stanze pixel art
 personalizzabili, musica lo-fi e un personaggio interattivo. Pensato per restare
 aperto in background come ambiente digitale rilassante.
 
