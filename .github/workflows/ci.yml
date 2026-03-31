@@ -1,8 +1,8 @@
-# Pipeline CI — Lint GDScript
+# Pipeline CI — Lint GDScript + Validazione Moduli
 #
 # Documentazione:
 # Eseguita su ogni push al branch main e su ogni PR verso main.
-# Un solo job: linting e verifica formattazione GDScript.
+# 5 job paralleli: lint, validazione JSON, sprite, cross-reference, schema DB.
 
 name: ci
 run-name: "${{ github.head_ref || github.ref_name }} — CI"
@@ -12,10 +12,12 @@ on:
     branches: [main]
     paths:
       - "v1/**"
+      - "ci/**"
   push:
     branches: [main]
     paths:
       - "v1/**"
+      - "ci/**"
   workflow_dispatch:
 
 concurrency:
@@ -43,3 +45,66 @@ jobs:
 
       - name: Check formatting
         run: gdformat --check v1/scripts/ v1/tests/
+
+  validate-json:
+    name: "Validate JSON Catalogs"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate catalog structure
+        run: python ci/validate_json_catalogs.py v1/data
+
+  validate-sprites:
+    name: "Validate Sprite Paths"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check sprite file existence
+        run: python ci/validate_sprite_paths.py v1
+
+  validate-crossrefs:
+    name: "Validate Cross-References"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    continue-on-error: true  # Temporaneo: 3 costanti orfane da rimuovere (C7)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check constants vs catalogs
+        run: python ci/validate_cross_references.py v1/scripts/utils/constants.gd v1/data
+
+  validate-db:
+    name: "Validate DB Schema"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate SQL syntax
+        run: python ci/validate_db_schema.py v1/scripts/autoload/local_database.gd

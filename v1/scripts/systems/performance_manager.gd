@@ -47,6 +47,17 @@ func _is_position_on_screen(pos: Vector2i) -> bool:
 	return false
 
 
+func _exit_tree() -> void:
+	var viewport := get_viewport()
+	if viewport:
+		if viewport.focus_entered.is_connected(_on_focus_entered):
+			viewport.focus_entered.disconnect(_on_focus_entered)
+		if viewport.focus_exited.is_connected(_on_focus_exited):
+			viewport.focus_exited.disconnect(_on_focus_exited)
+	if SignalBus.load_completed.is_connected(_on_load_completed):
+		SignalBus.load_completed.disconnect(_on_load_completed)
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		var pos := get_window().position
