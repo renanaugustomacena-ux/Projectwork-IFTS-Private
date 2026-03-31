@@ -1,6 +1,6 @@
 # Guida Operativa — Elia Zoccatelli (Database Support)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 30 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 31 Marzo 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 6.4, 8, 10.1 (A24-A27), 11 Fase 1.4 e 3, 12

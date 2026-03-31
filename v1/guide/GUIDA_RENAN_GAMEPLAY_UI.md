@@ -1,21 +1,21 @@
 # Guida Operativa — Renan Augusto Macena (Gameplay, UI & Asset)
 
-**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 29 Marzo 2026)
+**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 31 Marzo 2026)
 **Prerequisito**: Leggere prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare l'ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
 
-> **Nota sulla Semplificazione (27 Marzo 2026)**:
-> SupabaseClient e' stato rimosso dal progetto (codice morto, zero chiamanti).
-> I task riguardano la parte di gameplay e UI, che e' la parte **essenziale**.
-> Le correzioni proposte in questa guida restano valide al 100%.
+> **Stato Supabase (aggiornamento 31 Marzo 2026)**:
+> Il vecchio `SupabaseClient` (codice morto) e' stato rimosso il 27 Mar.
+> Supabase e' stato **reintrodotto** come servizio cloud: Elia sta preparando il progetto
+> Supabase (tabelle, RLS) come suo Task 6. Renan implementera' il client GDScript quando sara' pronto.
+> I task di questa guida riguardano gameplay, UI e asset — la parte **essenziale**.
 
-> **Nota sulle modifiche recenti (25-29 Marzo 2026)**:
-> - Il pannello musica (`music_panel.gd` e `music_panel.tscn`) e' stato **eliminato**. La musica ora parte automaticamente senza controlli utente.
-> - Gli asset della cucina (kitchen_appliances, kitchen_furniture, kitchen_accessories) sono stati **eliminati** da `decorations.json` e dalla cartella sprites.
-> - Lo shop panel (`shop_panel.gd`) **non esiste** nel progetto.
-> - I test unitari (cartella `tests/`) sono stati rimossi perche' dipendevano da GdUnit4 (non installato).
-> - **male_black_shirt** e' stato rimosso dal catalogo `characters.json` (29 Mar). Le 3 costanti orfane in `constants.gd` (righe 13-16) restano da rimuovere (Task 2).
+> **Cronologia modifiche**:
+> - **25-27 Mar**: Rimossi musica panel, kitchen assets, shop panel, test GdUnit4. SupabaseClient rimosso (codice morto)
+> - **29 Mar**: `male_black_shirt` rimosso da `characters.json`. Le 3 costanti orfane in `constants.gd` restano da rimuovere (Task 2)
+> - **30 Mar**: Team ristrutturato a 3 membri (Renan, Cristian, Elia). CI aggiornata su branch main. Guida rinominata da Mohamed/Giovanni a Renan
+> - **31 Mar**: README asset creati per ogni sottocartella. Verificati Tasks 8-11 (asset gia' integrati)
 
 ---
 
@@ -42,10 +42,10 @@ Questa guida contiene **tutti** i task, divisi in tre parti:
 | 5 | Correggere cast Texture2D unsafe | `scripts/ui/drop_zone.gd` | ALTO | 15 min |
 | 6 | Aggiungere `_exit_tree()` a 6 script | Vari | ALTO | 1.5 ore |
 | 7 | Aggiungere null check su character_controller.gd | `scripts/rooms/character_controller.gd` | MEDIO | 15 min |
-| 8 | Integrare il Virtual Joystick | `addons/virtual_joystick` | ALTO | 45 min |
-| 9 | Integrare gli asset della loading screen | `assets/sprites/loading/` | MEDIO | 30 min |
-| 10 | Integrare gli asset dei bottoni menu | `assets/sprites/menu/` | BASSO | 20 min |
-| 11 | Registrare nuovi mobili nel catalogo decorazioni | `data/decorations.json` | MEDIO | 45 min |
+| 8 | ~~Integrare il Virtual Joystick~~ | `scenes/ui/virtual_joystick.tscn` | — | — | GIA' INTEGRATO |
+| 9 | ~~Integrare gli asset della loading screen~~ | `assets/menu/loading/` | — | — | GIA' INTEGRATO |
+| 10 | ~~Integrare gli asset dei bottoni menu~~ | `assets/menu/buttons_*/` | — | — | GIA' INTEGRATO |
+| 11 | ~~Registrare nuovi mobili nel catalogo~~ | `data/decorations.json` | — | — | GIA' INTEGRATO |
 | 12 | Popup interazione decorazioni | `scripts/rooms/decoration_system.gd` | MEDIO | 30 min |
 | 13 | Rotazione e ridimensionamento decorazioni | `scripts/rooms/decoration_system.gd` | MEDIO | 30 min |
 
@@ -703,49 +703,22 @@ git push origin main
 
 ---
 
-# PARTE 2: Integrazione Asset da `projectwork-ifts/` (Task 8-11)
+# PARTE 2: Integrazione Asset (Task 8-11) — GIA' COMPLETATA
 
-Questi task servono a portare gli asset del progetto parallelo `projectwork-ifts/` dentro il progetto ufficiale `v1/`.
+> **Nota (31 Marzo 2026)**: Tutti i Task 8-11 sono stati **gia' completati** in sessioni precedenti.
+> Gli asset di `projectwork-ifts/` sono stati integrati in `v1/` e sono gia' funzionanti:
+> - **Task 8**: Virtual Joystick integrato (`scenes/ui/virtual_joystick.tscn`, texture in `assets/menu/ui/`)
+> - **Task 9**: Loading screen integrata (`assets/menu/loading/` — background, barra, silhouette)
+> - **Task 10**: Bottoni menu integrati (`assets/menu/buttons_static/`, `assets/menu/buttons_pressed/`)
+> - **Task 11**: Letti e decorazioni registrati in `data/decorations.json` (8 letti in `assets/room/bed/`, 20 mobili in `assets/sprites/rooms/Individuals/`, 28 piante in `assets/sprites/decorations/`)
+>
+> Le sezioni sotto sono mantenute come **riferimento tecnico** per capire come funziona l'integrazione.
+> Per la documentazione aggiornata degli asset, consultare i README in ogni sottocartella di `assets/`.
 
-## Contesto: La Situazione dei Due Progetti
+## Contesto: Il Progetto Parallelo
 
-Nel repository esistono **due progetti Godot separati**:
-
-```text
-Repository root/
-  v1/                    <-- il progetto UFFICIALE (qui lavoriamo tutti)
-  projectwork-ifts/      <-- il progetto parallelo
-```
-
-Il lavoro fatto in `projectwork-ifts/` (joystick, personaggi 8 direzioni, loading screen, bottoni menu, letti, gatto, griglia isometrica) **non e' integrato** in `v1/`. Sono due giochi separati che non si parlano.
-
-### Cosa Si Puo' Portare
-
-Gli **sprite** (.png) e l'**addon virtual joystick** si possono copiare direttamente. Gli script (.gd) e le scene con logica (.tscn) di `projectwork-ifts/` **NON si possono copiare** perche' hanno un'architettura incompatibile. Il progetto `v1/` usa un sistema a segnali (SignalBus), cataloghi JSON, e script condivisi. Gli script di `projectwork-ifts/` non usano niente di questo.
-
-### Regole Fondamentali
-
-1. **NON copiare script (.gd) da `projectwork-ifts/` a `v1/`** — hanno architettura incompatibile
-2. **NON modificare gli autoload** (SignalBus, GameManager, SaveManager, ecc.)
-3. **Si possono copiare liberamente sprite (.png)** e scene (.tscn) di sole risorse visive
-4. **Lavorare SOLO nel branch main** — fare `git pull origin main` prima di iniziare
-5. **Testare con F5 dopo ogni modifica** — se il gioco non parte, annullare l'ultima modifica
-
-### Cosa NON Integrare (Tabella Riferimento)
-
-| File da `projectwork-ifts/` | Motivo |
-|------|--------|
-| `scripts/male_character.gd` | v1 usa `character_controller.gd` unico per tutti i personaggi. Lo script originale ha un sistema armi (`aim_weapon`) con nodi che non esistono — crasherebbe. |
-| `scripts/female_character.gd` | Identico a `male_character.gd` — stessi problemi. |
-| `scripts/grid_test.gd` | Sistema griglia isometrica incompatibile con `room_grid.gd` di v1 (dimensioni celle diverse 16x8 vs 64x64). |
-| `scenes/main/game.tscn` | Scena principale di `projectwork-ifts/`. Non ha script, non usa SignalBus. |
-| `scenes/main/room.tscn` | Struttura stanza diversa (StaticBody2D vs Node2D). |
-| `scenes/main/settings.tscn` | TouchScreenButton singolo senza logica. v1 ha un pannello settings completo. |
-| `scenes/main/interact.tscn` | TouchScreenButton senza logica collegata. |
-| `scenes/menu/*.tscn` | Menu con posizioni assolute hardcoded, senza script. v1 ha un menu funzionante. |
-| `scenes/ui/ui_male.tscn` | Usa `StaticBody2D` come root per UI (sbagliato). Non usa Control. |
-| `scenes/ui/ui_female.tscn` | Stesso problema di `ui_male.tscn`. |
-| `project.godot` | Configurazione del progetto parallelo. NON sovrascrivere quello di v1. |
+Nel repository esiste anche `projectwork-ifts/` — un progetto parallelo con architettura diversa.
+I suoi **sprite e addon** sono stati copiati in `v1/`. I suoi **script e scene** NON sono compatibili.
 
 ---
 
@@ -1216,11 +1189,8 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 3. **Task 4** (race condition) e **Task 5** (texture cast) — **terzo**, fix di stabilita'
 4. **Task 7** (null check) — **quarto**, semplice e veloce
 5. **Task 6** (_exit_tree per 6 script) — **quinto**, e' il piu' lungo ma non blocca nessun altro task
-6. **Task 8** (virtual joystick) — **sesto**, il piu' importante dell'integrazione
-7. **Task 11** (nuovi mobili nel catalogo) — **settimo**, arricchisce il gameplay
-8. **Task 9** (loading screen) — **ottavo**, migliora l'aspetto visivo
-9. **Task 10** (bottoni menu, solo copia asset) — **nono**, bassa priorita'
-10. **Task 12-13** (popup + persistenza decorazioni) — **per ultimi**, nuove funzionalita'
+6. ~~**Task 8-11**~~ — **GIA' COMPLETATI** (asset gia' integrati in v1)
+7. **Task 12-13** (popup + persistenza decorazioni) — **per ultimi**, nuove funzionalita'
 
 ---
 
@@ -1243,19 +1213,15 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 - [ ] Task 7: Null check su _anim in character_controller.gd
 ```
 
-### Parte 2 — Integrazione Asset
+### Parte 2 — Integrazione Asset (GIA' COMPLETATA)
 
 ```text
-- [ ] Task 8: Addon virtual_joystick copiato in v1/addons/
-- [ ] Task 8: Plugin abilitato in Project Settings
-- [ ] Task 8: Joystick visibile e funzionante nella scena di gioco
-- [ ] Task 8: Touch emulation abilitata
-- [ ] Task 9: Asset loading screen copiati
-- [ ] Task 9: Loading screen mostra il nuovo background
-- [ ] Task 10: Asset bottoni menu copiati in v1/assets/sprites/menu/
-- [ ] Task 11: Sprite letti e disordine copiati
-- [ ] Task 11: decorations.json ha le nuove entry (letti + mess)
-- [ ] Task 11: Decorazioni trascinabili e posizionabili in gioco
+- [x] Task 8: Virtual joystick integrato (scenes/ui/virtual_joystick.tscn)
+- [x] Task 9: Loading screen integrata (assets/menu/loading/)
+- [x] Task 10: Bottoni menu integrati (assets/menu/buttons_static/ e buttons_pressed/)
+- [x] Task 11: Letti registrati in decorations.json (assets/room/bed/)
+- [x] Task 11: Mobili isometrici registrati (assets/sprites/rooms/Individuals/)
+- [x] Task 11: Piante registrate (assets/sprites/decorations/sc_indoor_plants_free/)
 ```
 
 ### Parte 3 — Nuove Funzionalita'
@@ -1337,11 +1303,13 @@ Se qualcosa fallisce: annotare quale test fallisce e quale errore appare nel pan
 
 ## Risorse Utili
 
+- **README Asset (root)**: [`assets/README.md`](../assets/README.md) — Mappa completa origini, licenze e integrazione di tutti gli asset
+- **README Asset Personaggi**: [`assets/charachters/README.md`](../assets/charachters/README.md) — Formato sprite, 8 direzioni, come sostituire il personaggio
+- **README Asset Stanza**: [`assets/room/README.md`](../assets/room/README.md) — Letti, porte, finestre
+- **README Asset Decorazioni**: [`assets/sprites/README.md`](../assets/sprites/README.md) — Piante SoppyCraft, mobili Thurraya, come aggiungere decorazioni
 - **Documentazione Godot 4 — Segnali**: <https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html>
 - **Documentazione Godot 4 — Scene e Nodi**: <https://docs.godotengine.org/en/stable/getting_started/introduction/key_concepts_overview.html>
 - **Documentazione Godot 4 — GDScript**: <https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html>
-- **CollisionPolygon2D**: <https://docs.godotengine.org/en/stable/classes/class_collisionpolygon2d.html>
-- **CharacterBody2D**: <https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html>
 - **Studio materiale progetto**: `v1/study/GODOT_ENGINE_STUDY_IT.md`
 - **Deep dive progetto**: `v1/study/PROJECT_DEEP_DIVE_IT.md`
 
