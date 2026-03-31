@@ -1,6 +1,6 @@
 # Audit Completo e Piano di Stabilizzazione — Mini Cozy Room
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 29 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 31 Marzo 2026)
 **Versione Progetto**: Godot 4.5 | GDScript | GL Compatibility
 **Autore**: Renan Augusto Macena
 **Ambito**: Analisi completa di 21 script, 8 scene, 4 file dati, 0 test, 2 workflow CI
@@ -56,6 +56,25 @@
 > **Numeri aggiornati**: 8 autoload (SignalBus, AppLogger, LocalDatabase, AuthManager, GameManager,
 > SaveManager, AudioManager, PerformanceManager), 31 segnali, 69 decorazioni (11 categorie).
 
+> **Aggiornamento 31 Marzo 2026 — Correzioni Massive Renan**:
+> Completati **tutti i task assegnati a Renan**. Correzioni applicate:
+>
+> - **C6**: Typo sprite `sxt` → `sx` corretto (file rinominato + JSON)
+> - **C7**: 3 costanti orfane rimosse da constants.gd
+> - **C5**: Array mismatch window_background.gd corretto (approccio two-pass)
+> - **A1**: `_exit_tree()` aggiunto/completato in **tutti** i 10 script (room_base, main, deco_panel, settings_panel, main_menu, menu_character, character_controller, decoration_system, panel_manager, room_grid)
+> - **A3**: Race condition swap personaggio corretto con `call_deferred`
+> - **A7**: Analisi approfondita: Godot gestisce automaticamente il lifecycle dei drag preview — **non e' un bug**
+> - **A15**: Decorazioni ora usano riferimento diretto al Dictionary di salvataggio (no piu' ricerca per item_id)
+> - **A16**: Null check su caricamento texture in drop_zone.gd con `push_warning`
+> - **A19**: Tween salvati come variabili membro (`_intro_tween`, `_panel_tween`) e killati in `_exit_tree()`
+> - **A28**: Posizione decorazioni clampata al viewport in `_reload_decorations()`
+> - **A29**: Null check dopo `scene.instantiate()` in 3 funzioni di main_menu.gd
+> - **Loading screen**: Scena grafica integrata via SubViewportContainer
+>
+> **Problemi Renan ancora aperti**: 0
+> **Problemi totali ancora aperti**: 8 (5 Elia: A18/A24/A25/A26/A27, 3 Cristian: A12/A13/A14)
+
 ---
 
 ## Team di Progetto
@@ -109,8 +128,8 @@
 - ~~**Sezione 6.4** — local_database.gd: ridisegnare tabella `characters`, ristrutturare tabella `inventario`~~ **COMPLETATO** (27 Marzo 2026) — problemi C3, C4 risolti
 - ~~**Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote~~ **COMPLETATO** (29 Marzo 2026) — A18 risolto (diagnostica DB migliorata)
 - ~~**Sezione 11, Fase 1.4** — Istruzioni C3 e C4~~ **GIA' COMPLETATO**
-- **Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx` (problema C6 — **APERTO**)
-- **Sezione 8, constants.gd** — Rimuovere costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd riga 16 (problema C7 costante residua — **APERTO**)
+- ~~**Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx`~~ **CORRETTO** (31 Marzo 2026, commit Renan) — problema C6 risolto: file rinominato + JSON aggiornato
+- ~~**Sezione 8, constants.gd** — Rimuovere costanti orfane~~ **CORRETTO** (31 Marzo 2026, commit Renan) — problema C7 risolto: 3 costanti rimosse
 - **Sezione 10.1, A24** — local_database.gd: aggiungere ROLLBACK se upsert_character o _save_inventory falliscono (problema A24 — **APERTO**)
 - **Sezione 10.1, A25** — local_database.gd: cambiare `_save_inventory()` per ritornare `bool` e propagare errori (problema A25 — **APERTO**)
 - **Sezione 10.1, A26** — auth_manager.gd: verificare `LocalDatabase.is_open()` in `_set_state()` (problema A26 — **APERTO**)
@@ -1342,7 +1361,7 @@ Questi problemi devono essere risolti **prima di qualsiasi rilascio**. Causano p
 | C3 | local_database.gd:101 | Characters PK impedisce multipli personaggi | Design schema rotto | **CORRETTO** (27 Mar) |
 | C4 | local_database.gd:89 | Inventory schema confuso (coins per item) | Dati incoerenti | **CORRETTO** (27 Mar) |
 | C5 | window_background.gd:33 | Array mismatch _layers vs _parallax_factors | Crash out-of-bounds | **CORRETTO** |
-| C6 | characters.json:49 | Typo percorso sprite "sxt" -> "sx" | Crash caricamento animazione | **APERTO** |
+| C6 | characters.json:49 | Typo percorso sprite "sxt" -> "sx" | Crash caricamento animazione | **CORRETTO** (31 Mar) |
 | C7 | characters.json | male_black_shirt incompleto | Crash cambio animazione | **Risolto per rimozione** |
 
 **C1 — Inventario MAI salvato su SQLite** — **CORRETTO**: La funzione `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con sia `character_data` che `inventory_data`.
@@ -1355,36 +1374,36 @@ Questi problemi devono essere risolti **prima di qualsiasi rilascio**. Causano p
 
 **C5 — Array mismatch window_background.gd** — **CORRETTO**: Il codice attuale allinea correttamente gli array con `continue` su `tex == null`.
 
-**C6 — Typo percorso sprite characters.json** — **ANCORA APERTO**: L'errore di battitura `sxt` (invece di `sx`) in characters.json riga 23 non e' ancora stato corretto. Causa crash al caricamento dell'animazione del personaggio `male_old`.
+**C6 — Typo percorso sprite characters.json** — **CORRETTO** (31 Marzo 2026): File sprite rinominato da `male_walk_down_side_sxt.png` a `male_walk_down_side_sx.png` e percorso aggiornato in characters.json.
 
-**C7 — male_black_shirt incompleto** — **RISOLTO per rimozione**: Il personaggio `male_black_shirt` e' stato rimosso dal catalogo characters.json. Resta la costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd (riga 16), insieme ad altre 2 costanti orfane (`CHAR_FEMALE_RED_SHIRT`, `CHAR_MALE_YELLOW_SHIRT`), che andrebbero rimosse.
+**C7 — male_black_shirt incompleto** — **CORRETTO** (31 Marzo 2026): Personaggio rimosso dal catalogo (29 Mar) e tutte e 3 le costanti orfane (`CHAR_FEMALE_RED_SHIRT`, `CHAR_MALE_YELLOW_SHIRT`, `CHAR_MALE_BLACK_SHIRT`) rimosse da constants.gd (31 Mar).
 
 ---
 
-### ALTO (18 problemi originali — 8 corretti/rimossi, 10 aperti) — Prossimo Sprint
+### ALTO (18 problemi originali — 15 corretti/rimossi, 3 aperti) — Prossimo Sprint
 
 Questi problemi non causano perdita di dati immediata, ma degradano l'esperienza utente con memory leak, crash intermittenti, e feature rotte.
 
 | # | File | Problema | Stato |
 |---|------|----------|-------|
-| A1 | ~10 script | Mancanza `_exit_tree()` in: panel_manager, deco_panel, settings_panel, room_base, decoration_system, room_grid, main_menu, menu_character, main, character_controller | **APERTO** |
+| A1 | ~10 script | Mancanza `_exit_tree()` in 10 script | **CORRETTO** (31 Mar) |
 | A2 | ~~music_panel.gd~~ | ~~FileDialog memory leak accumulativo~~ | **Rimosso** (file eliminato) |
-| A3 | room_base.gd:35 | Race condition swap personaggio | **APERTO** |
+| A3 | room_base.gd:35 | Race condition swap personaggio | **CORRETTO** (31 Mar) |
 | A4 | audio_manager.gd:240 | Memory leak player ambience | **CORRETTO** |
 | A5 | audio_manager.gd:82 | Crash su lista tracce vuota | **CORRETTO** |
 | A6 | ~~shop_panel.gd~~ | ~~Memory leak drag preview~~ | **Rimosso** (file eliminato) |
-| A7 | deco_panel.gd:157 | Memory leak drag preview | **APERTO** |
+| A7 | deco_panel.gd:157 | Memory leak drag preview | **NON APPLICABILE** — Godot gestisce il lifecycle |
 | A8 | save_manager.gd:275 | Version comparison rotta per non-numeric | **CORRETTO** |
 | A9 | save_manager.gd:245 | Migrazione v3 verso v4 non valida struttura | **CORRETTO** |
 | A10 | ~~supabase_client.gd~~ | ~~Token auth plaintext~~ | **Rimosso** (file eliminato) |
 | A11 | ~~supabase_client.gd~~ | ~~HTTP pool crescita illimitata~~ | **Rimosso** (file eliminato) |
-| A12 | logger.gd:121 | Flush sincrono blocca game thread | **APERTO** |
-| A13 | logger.gd:125 | Log persi se file non disponibile | **APERTO** |
-| A14 | performance_manager.gd:54 | Posizione finestra non persistita prima di shutdown | **APERTO** |
-| A15 | decoration_system.gd:64 | Rimozione duplicati item_id rotta | **APERTO** |
-| A16 | drop_zone.gd:17 | Cast Texture2D unsafe | **APERTO** |
+| A12 | logger.gd:121 | Flush sincrono blocca game thread | **APERTO** — Cristian |
+| A13 | logger.gd:125 | Log persi se file non disponibile | **APERTO** — Cristian |
+| A14 | performance_manager.gd:54 | Posizione finestra non persistita prima di shutdown | **APERTO** — Cristian |
+| A15 | decoration_system.gd:64 | Rimozione duplicati item_id rotta | **CORRETTO** (31 Mar) |
+| A16 | drop_zone.gd:17 | Cast Texture2D unsafe | **CORRETTO** (31 Mar) |
 | A17 | local_database.gd:48 | Tabelle seed vuote | **CORRETTO** (diagnostica DB migliorata) |
-| A18 | local_database.gd:35 | Errore apertura DB non propagato | **APERTO** |
+| A18 | local_database.gd:35 | Errore apertura DB non propagato | **APERTO** — Elia |
 
 **A1 — Mancanza _exit_tree()**: Questo e' il problema piu' diffuso nel progetto. ~10 script non implementano correttamente la funzione di pulizia `_exit_tree()` (ridotto da 12 dopo la rimozione di shop_panel e music_panel). Quando questi nodi vengono distrutti, le connessioni ai segnali restano attive, i timer continuano a scattare, e i tween continuano a funzionare — tutto puntando a nodi che non esistono piu'.
 
@@ -1460,27 +1479,27 @@ Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni a
 | C3 | **CORRETTO** (27 Mar) | La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE. Completato da Renan. |
 | C4 | **CORRETTO** (27 Mar) | `coins` e `inventario_capacita` spostati nella tabella `accounts`. Tabella `inventario` ristrutturata con FK `account_id` e ON DELETE CASCADE. Completato da Renan. |
 | C5 | **CORRETTO** | Il codice attuale di `window_background.gd` (righe 37-49) gia' allinea correttamente gli array: quando `tex == null`, il `continue` salta **sia** `_layers.append()` **che** `_parallax_factors.append()`. Gli array sono sempre della stessa dimensione. |
-| C6 | APERTO | Il typo `sxt` in `characters.json` non e' ancora stato corretto. **Assegnato a Elia.** |
-| C7 | **RISOLTO per rimozione** | `male_black_shirt` rimosso dal catalogo characters.json. Costante orfana `CHAR_MALE_BLACK_SHIRT` ancora presente in constants.gd riga 16. |
+| C6 | **CORRETTO** (31 Mar) | Typo `sxt` corretto: file sprite rinominato + percorso aggiornato in characters.json. |
+| C7 | **CORRETTO** (31 Mar) | Personaggio rimosso dal catalogo (29 Mar). Tutte e 3 le costanti orfane rimosse da constants.gd (31 Mar). |
 
 #### Problemi ALTI — Stato Aggiornato
 
 | # | Stato | Note |
 |---|-------|------|
-| A1 | APERTO | ~10 script mancano ancora di `_exit_tree()` correttamente implementato (ridotto da 12 dopo rimozione shop_panel e music_panel). **Assegnato a Renan (UI/scene scripts) e Cristian (logger, performance_manager).** |
+| A1 | **CORRETTO** (31 Mar) | `_exit_tree()` implementato in tutti i 10 script richiesti: room_base, main, deco_panel, settings_panel, main_menu, menu_character, character_controller, decoration_system, panel_manager, room_grid. |
 | A2 | **RISOLTO per rimozione** | `music_panel.gd` eliminato dal progetto. Problema non piu' applicabile. |
-| A3 | APERTO | La race condition in `room_base.gd` non e' stata corretta con `call_deferred`. **Assegnato a Renan.** |
+| A3 | **CORRETTO** (31 Mar) | Race condition corretta con `call_deferred("add_child", new_char)` in room_base.gd. |
 | A4 | **CORRETTO** | `AudioManager._exit_tree()` ora pulisce tutti gli ambience player con `stop()` e `queue_free()`, e `_stop_ambience()` verifica `is_instance_valid()` prima della distruzione. |
 | A5 | **CORRETTO** | `play()`, `next_track()` e `previous_track()` verificano tutti `tracks.is_empty()` prima dell'accesso. |
-| A6 | **RISOLTO per rimozione** | `shop_panel.gd` rimosso dal progetto. Il memory leak drag preview in `deco_panel.gd` (A7) resta aperto. **Assegnato a Renan.** |
+| A6 | **RISOLTO per rimozione** | `shop_panel.gd` rimosso dal progetto. A7 (deco_panel.gd) analizzato: `set_drag_preview()` in Godot 4 libera automaticamente il preview — **non e' un bug**. |
 | A8 | **CORRETTO** | `_compare_versions()` ora usa `split(".")`, gestisce versioni a lunghezza variabile, e usa `is_valid_int()` prima del cast (righe 310-321). Gestisce correttamente formati come "1.0.0-beta". |
 | A9 | **CORRETTO** | La migrazione v3→v4 ora valida la struttura dell'inventario: verifica la presenza delle chiavi `coins` e `items`, gestisce `items` non-Array, e logga un warning con reset dei dati corrotti (righe 280-296). |
 | A10 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). Il gioco funziona esclusivamente offline. |
 | A11 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). |
 | A12-A13 | APERTO | Flush sincrono del logger e log persi se file non disponibile. **Assegnato a Cristian.** |
 | A14 | APERTO | Posizione finestra non persistita prima dello shutdown. **Assegnato a Cristian.** |
-| A15 | APERTO | Rimozione duplicati item_id rotta in decoration_system.gd. **Assegnato a Renan.** |
-| A16 | APERTO | Cast Texture2D unsafe in drop_zone.gd. **Assegnato a Renan.** |
+| A15 | **CORRETTO** (31 Mar) | Decorazioni ora usano riferimento diretto al Dictionary di salvataggio, eliminando ambiguita' item_id duplicati. |
+| A16 | **CORRETTO** (31 Mar) | Aggiunto `push_warning` su texture non trovata in `_get_texture_for_item()`. |
 | A17 | **CORRETTO** (27 Mar) | Diagnostica database migliorata con info OS, directory e verifica FK. |
 | A18 | APERTO | Errore apertura DB non propagato. **Assegnato a Elia.** |
 
@@ -1502,7 +1521,7 @@ La ri-analisi approfondita del codebase, condotta con le conoscenze acquisite da
 
 | # | File | Severita' | Problema | Stato |
 |---|------|-----------|----------|-------|
-| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena. Le funzioni `_play_intro()`, `_on_walk_in_done()`, `_on_opzioni()`, `_close_settings()` e `_transition_to_scene()` creano tweens con variabili locali senza salvarle come variabili membro. **Soluzione**: Salvare i tween come variabili membro e ucciderli esplicitamente in `_exit_tree()`. | APERTO — **Assegnato a Renan.** |
+| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena. | **CORRETTO** (31 Mar) — Tween salvati come variabili membro (`_intro_tween`, `_panel_tween`), killati prima di crearne nuovi e in `_exit_tree()`. |
 | A20 | audio_manager.gd | MEDIO | `active_ambience` era un array pubblico mutabile. | **CORRETTO** — Rinominato in `_active_ambience` (privato), aggiunto `get_active_ambience()` getter che ritorna una copia. `music_panel.gd` aggiornato per usare il getter. |
 | A21 | audio_manager.gd | MEDIO | Nessun limite dimensione in `_load_audio_stream()` per file esterni. | **CORRETTO** — Aggiunta costante `MAX_AUDIO_FILE_SIZE = 50 MB` e check prima di `get_buffer()`. File troppo grandi vengono rifiutati con errore. |
 | A22 | ~~music_panel.gd~~ | ~~MEDIO~~ | ~~`_exit_tree()` disconnette solo 2 segnali su 9+ connessi.~~ | **RISOLTO per rimozione** — music_panel.gd eliminato dal progetto. |
@@ -1518,8 +1537,8 @@ Audit approfondito focalizzato su: transazioni SQLite, propagazione errori, vali
 | A25 | local_database.gd:361 | ALTO | `_save_inventory()` ritorna `void` — non propaga errori alla transazione chiamante. Dovrebbe ritornare `bool` per consentire il ROLLBACK in `_on_save_requested()`. La funzione esegue DELETE + loop INSERT: se un INSERT fallisce, l'inventario e' parzialmente perso. | APERTO — **Assegnato a Elia** |
 | A26 | auth_manager.gd:104-107 | MEDIO | `_set_state()` chiama `LocalDatabase.get_character(current_account_id)` senza verificare `LocalDatabase.is_open()`. Se il database non e' stato aperto (errore inizializzazione), causa crash `Invalid call ... in base 'Nil'`. | APERTO — **Assegnato a Elia** |
 | A27 | auth_manager.gd:52-54 | MEDIO | `register()` chiama `LocalDatabase.create_account()` ma non verifica il ritorno (`account_id`) prima di chiamare `get_account()`. Se `create_account()` ritorna `-1` (fallimento), `get_account(-1)` ritorna dizionario vuoto, e `_set_state()` viene chiamato con dati invalidi. | APERTO — **Assegnato a Elia** |
-| A28 | room_base.gd:61-76 | MEDIO | Quando le decorazioni vengono ricaricate da `SaveManager.decorations`, la posizione non viene clampata ai limiti del viewport. Se la finestra viene ridimensionata, decorazioni salvate ai bordi possono finire fuori schermo e diventare irraggiungibili. | APERTO — **Assegnato a Renan** |
-| A29 | main_menu.gd:84 | MEDIO | Dopo `scene.instantiate() as Control`, non c'e' null check sull'`auth_screen` risultante. Se l'instanziamento fallisce, la successiva `.auth_completed.connect()` causa crash. Stesso pattern presente per profile_panel (riga 107). | APERTO — **Assegnato a Renan** |
+| A28 | room_base.gd:61-76 | MEDIO | Decorazioni ricaricate senza clamp viewport. | **CORRETTO** (31 Mar) — `_reload_decorations()` ora usa `Helpers.clamp_to_viewport()` dopo il caricamento posizione. |
+| A29 | main_menu.gd:84 | MEDIO | Null check mancante dopo `scene.instantiate()`. | **CORRETTO** (31 Mar) — Aggiunto null check + `push_warning` in `_show_auth_screen()`, `_on_profilo()`, `_on_opzioni()`. |
 
 **A24 — Transaction senza ROLLBACK**: Il pattern corretto e':
 ```gdscript
@@ -1550,18 +1569,16 @@ else:
 
 ---
 
-**Riepilogo aggiornato dei conteggi (30 Marzo 2026)**:
+**Riepilogo aggiornato dei conteggi (31 Marzo 2026)**:
 
 | Stato | CRITICI | ALTI/MEDI | ARCHITETTURALI |
 |-------|---------|-----------|----------------|
-| Corretti | 5 (C1, C2, C3, C4, C5) | 8 (A4, A5, A8, A9, A17, A20, A21, A23) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
-| Risolti per rimozione | 1 (C7) | 4 (A2, A6, A10, A11) + A22 | 1 (AR11) |
-| Nuovi trovati (30 Mar) | 0 | 6 (A24, A25, A26, A27, A28, A29) | 0 |
-| Ancora aperti (CRITICI) | 1 (C6) + costanti orfane | — | — |
-| Ancora aperti (ALTI) | — | A1, A3, A7, A12-A16, A18-A19, A24-A25 (12) | 4 (AR6-AR10) |
-| Ancora aperti (MEDI) | — | A26, A27, A28, A29 (4) | — |
+| Corretti | 7 (C1-C7 tutti corretti) | 17 (A1, A3-A5, A7-A9, A15-A17, A19-A21, A23, A28, A29) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
+| Risolti per rimozione | 0 | 4 (A2, A6, A10, A11) + A22 | 1 (AR11) |
+| Ancora aperti (ALTI) | — | A12, A13, A24, A25 (4) | 4 (AR6-AR10) |
+| Ancora aperti (MEDI) | — | A14, A18, A26, A27 (4) | — |
 
-**Totale problemi catalogati**: 40 (7 critici + 29 alti/medi + 11 architetturali) di cui: risolti risolvere 19, in  **aperti 16**, rimossi 5.
+**Totale problemi catalogati**: 40 (7 critici + 29 alti/medi + 11 architetturali) di cui: **corretti 29**, **aperti 8** (3 Cristian, 5 Elia), rimossi 5, non applicabili 1 (A7).
 
 ---
 
@@ -3174,8 +3191,8 @@ Questa sezione traduce la classificazione dei problemi (Sezione 10) in una **mat
 |----|----------|---------|---------|--------|-----------|-----------|------|
 | C3 | PK characters impedisce multipli PG | Alta | Critico | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
 | C4 | Schema inventario confuso | Media | Alto | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
-| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | **P1** | Elia | APERTO — crash immediato con male_old |
-| C7 | male_black_shirt incompleto | Media | Critico | S | ~~P1~~ | Elia | **RISOLTO** per rimozione dal catalogo JSON. Costante orfana in constants.gd ancora da rimuovere |
+| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | ~~P1~~ | Renan | **CORRETTO** (31 Mar 2026) |
+| C7 | male_black_shirt incompleto | Media | Critico | S | ~~P1~~ | Renan | **CORRETTO** (31 Mar 2026) — costanti orfane rimosse |
 
 ### 18.3 Matrice Problemi ALTI
 

@@ -16,21 +16,26 @@
 
 Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 
-### Renan — Gameplay, UI & Asset
+### Renan — Gameplay, UI & Asset — COMPLETATO
 
-| Ordine | Task | Cosa Fare | Tempo | File |
-|:------:|------|-----------|-------|------|
-| 1 | Task 1 | Correggere typo `sxt` → `sx` in characters.json | 5 min | `data/characters.json` |
-| 2 | Task 2 | Rimuovere 3 costanti personaggi inutilizzati | 10 min | `scripts/utils/constants.gd` |
-| 3 | Task 3 | Correggere array mismatch in window_background.gd | 20 min | `scripts/rooms/window_background.gd` |
-| 4 | Task 4 | Race condition swap personaggio → `call_deferred` | 15 min | `scripts/rooms/room_base.gd` |
-| 5 | Task 5 | Null check su caricamento texture in drop_zone.gd | 15 min | `scripts/ui/drop_zone.gd` |
-| 6 | Task 6 | Aggiungere `_exit_tree()` a 6 script (il piu' lungo) | 1.5 ore | 6 file diversi |
-| 7 | Task 7 | Null check su `_anim` in character_controller.gd | 15 min | `scripts/rooms/character_controller.gd` |
-| — | Task 8-11 | ~~Integrazione asset~~ | — | **GIA' FATTO** |
-| 8 | Task 12-13 | Popup decorazioni + persistenza rotazione/scala | 1 ora | `scripts/rooms/decoration_system.gd` |
+| Ordine | Task | Cosa Fare | Stato |
+|:------:|------|-----------|:-----:|
+| 1 | Task 1 | ~~Correggere typo `sxt` → `sx` in characters.json~~ | **FATTO** |
+| 2 | Task 2 | ~~Rimuovere 3 costanti personaggi inutilizzati~~ | **FATTO** |
+| 3 | Task 3 | ~~Correggere array mismatch in window_background.gd~~ | **FATTO** |
+| 4 | Task 4 | ~~Race condition swap personaggio → `call_deferred`~~ | **FATTO** |
+| 5 | Task 5 | ~~Null check su caricamento texture in drop_zone.gd~~ | **FATTO** |
+| 6 | Task 6 | ~~Aggiungere `_exit_tree()` a 6 script~~ | **FATTO** |
+| 7 | Task 7 | ~~Null check su `_anim` in character_controller.gd~~ | **FATTO** |
+| — | Task 8-11 | ~~Integrazione asset~~ | **FATTO** |
+| 8 | Task 12-13 | ~~Popup decorazioni + persistenza rotazione/scala~~ | **FATTO** |
+| 9 | Task 14 | ~~`_exit_tree()` per panel_manager.gd e room_grid.gd~~ | **FATTO** |
+| 10 | Task 15 | ~~Riferimento diretto Dictionary per decorazioni (A15)~~ | **FATTO** |
+| 11 | Task 16 | ~~Tween orfani in main_menu.gd (A19)~~ | **FATTO** |
+| 12 | Task 17 | ~~Clamp posizione decorazioni al viewport (A28)~~ | **FATTO** |
+| 13 | Task 18 | ~~Null check dopo scene.instantiate() (A29)~~ | **FATTO** |
 
-**Puoi iniziare subito**: nessuna dipendenza da Cristian o Elia.
+**Tutti i 18 task completati.** Nessun problema aperto per Renan.
 **Guida**: [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md)
 
 ### Cristian — CI/CD, Logger & Asset
@@ -104,7 +109,7 @@ e `auth_manager.gd`. Coordinarsi per non lavorare sullo stesso file contemporane
 
 | Guida | Per Chi | Contenuto | Task Rimasti |
 |-------|---------|-----------|:------------:|
-| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~Bug fix gameplay, `_exit_tree()` x6, popup decorazioni~~ | **0 — COMPLETATI** |
+| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~Bug fix gameplay, `_exit_tree()` x8, popup decorazioni, tween fix, viewport clamp~~ | **0 — TUTTI 18 COMPLETATI** |
 | [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | Logger fix, PerformanceManager, **nuovo personaggio**, asset grafici | 6 |
 | [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ROLLBACK transazioni, fix auth_manager, **setup Supabase** | 6 |
 
@@ -162,10 +167,13 @@ INTEGRITA' DATI (Elia + Renan)
 - [ ] Database: create_account() validato in register() (Task 5 Elia)
 
 STABILITA' E LIFECYCLE (Renan + Cristian)
-- [x] _exit_tree() in 6 script di Renan (Task 6 Renan — FATTO). Manca Task 5 Cristian
+- [x] _exit_tree() in 8 script di Renan (Task 6+14 Renan — FATTO). Manca Task 5 Cristian
 - [ ] Nessun memory leak (Profiler stabile dopo 10 cicli menu->stanza->menu)
 - [x] Race condition swap personaggio risolto con call_deferred (Task 4 Renan — FATTO)
-- [x] Null check su AnimatedSprite2D e Texture2D (Task 5+7 Renan — FATTO)
+- [x] Null check su AnimatedSprite2D e Texture2D (Task 5+7+18 Renan — FATTO)
+- [x] Tween orfani in main_menu.gd risolti (Task 16 Renan — FATTO)
+- [x] Decorazioni: riferimento diretto Dictionary, no duplicati (Task 15 Renan — FATTO)
+- [x] Decorazioni: posizioni clampate al viewport al reload (Task 17 Renan — FATTO)
 - [ ] Logger: session ID con Crypto (Task 3 Cristian)
 - [ ] Logger: buffer non perso se file non disponibile (Task 4 Cristian)
 

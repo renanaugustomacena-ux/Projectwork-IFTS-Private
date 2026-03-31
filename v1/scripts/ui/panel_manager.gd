@@ -128,6 +128,13 @@ func _load_panel_scene(panel_name: String) -> PackedScene:
 	return scene
 
 
+func _exit_tree() -> void:
+	if _tween and _tween.is_running():
+		_tween.kill()
+	if _current_panel and is_instance_valid(_current_panel):
+		_current_panel.queue_free()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if is_panel_open():

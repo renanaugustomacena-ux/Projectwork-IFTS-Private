@@ -15,7 +15,8 @@
 > - **25-27 Mar**: Rimossi musica panel, kitchen assets, shop panel, test GdUnit4. SupabaseClient rimosso (codice morto)
 > - **29 Mar**: `male_black_shirt` rimosso da `characters.json`. Le 3 costanti orfane in `constants.gd` restano da rimuovere (Task 2)
 > - **30 Mar**: Team ristrutturato a 3 membri (Renan, Cristian, Elia). CI aggiornata su branch main. Guida rinominata da Mohamed/Giovanni a Renan
-> - **31 Mar**: README asset creati per ogni sottocartella. Verificati Tasks 8-11 (asset gia' integrati)
+> - **31 Mar**: README asset creati per ogni sottocartella. Verificati Tasks 8-11 (asset gia' integrati).
+>   Completati Task 1-7 (bug fix audit) + Task 14-18 (problemi audit aggiuntivi: A15, A19, A28, A29, A1 rimanenti)
 
 ---
 
@@ -28,6 +29,7 @@ Questa guida contiene **tutti** i task, divisi in tre parti:
 | **1 — Bug Fix Audit** | Correzioni critiche trovate nell'audit del codice | Task 1-7 | CRITICO/ALTO |
 | **2 — Integrazione Asset** | Portare asset da `projectwork-ifts/` in `v1/` | Task 8-11 | ALTO/MEDIO |
 | **3 — Nuove Funzionalita'** | Popup decorazioni e rotazione/ridimensionamento | Task 12-13 | MEDIO |
+| **4 — Bug Fix Audit 2** | Problemi aggiuntivi trovati nel deep audit | Task 14-18 | ALTO/MEDIO |
 
 **Ordine**: Fare **prima** i bug fix (Parte 1), **poi** l'integrazione (Parte 2), **infine** le nuove funzionalita' (Parte 3).
 
@@ -48,8 +50,13 @@ Questa guida contiene **tutti** i task, divisi in tre parti:
 | 11 | ~~Registrare nuovi mobili nel catalogo~~ | `data/decorations.json` | — | **GIA' INTEGRATO** |
 | 12 | ~~Popup interazione decorazioni~~ | `scripts/rooms/decoration_system.gd` | MEDIO | **GIA' IMPLEMENTATO** |
 | 13 | ~~Rotazione e ridimensionamento decorazioni~~ | `scripts/rooms/decoration_system.gd` | MEDIO | **GIA' IMPLEMENTATO** |
+| 14 | ~~Fix duplicati item_id decorazioni (A15)~~ | `scripts/rooms/decoration_system.gd` | ALTO | **FATTO** |
+| 15 | ~~Tween orfani main_menu (A19)~~ | `scripts/menu/main_menu.gd` | ALTO | **FATTO** |
+| 16 | ~~Clamp decorazioni al viewport (A28)~~ | `scripts/rooms/room_base.gd` | MEDIO | **FATTO** |
+| 17 | ~~Null check instantiate (A29)~~ | `scripts/menu/main_menu.gd` | MEDIO | **FATTO** |
+| 18 | ~~_exit_tree() panel_manager + room_grid (A1)~~ | `scripts/ui/panel_manager.gd`, `scripts/rooms/room_grid.gd` | ALTO | **FATTO** |
 
-**Tutti i 13 task di Renan sono completati.**
+**Tutti i 18 task di Renan sono completati.**
 
 ---
 
@@ -1236,6 +1243,19 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 > **Nota**: decoration_system.gd implementa gia' il popup completo su CanvasLayer (layer 100)
 > con bottoni R/F/S/X. room_base.gd salva/carica rotation, flip_h, item_scale.
 > Implementazione piu' avanzata di quella descritta nella guida originale.
+
+### Parte 4 — Bug Fix Audit 2 (COMPLETATA 31 Marzo 2026)
+
+```text
+- [x] Task 14: Fix duplicati item_id — decoration_system.gd ora usa riferimento diretto al Dictionary
+- [x] Task 15: Tween orfani — main_menu.gd ora usa _intro_tween e _panel_tween come variabili membro
+- [x] Task 16: Clamp viewport — room_base.gd clampa posizioni decorazioni al caricamento
+- [x] Task 17: Null check instantiate — main_menu.gd verifica risultato scene.instantiate() in 3 funzioni
+- [x] Task 18: _exit_tree() — panel_manager.gd (tween + panel) e room_grid.gd (segnale)
+```
+
+> **Nota**: A7 (memory leak drag preview) analizzato e determinato **non essere un bug** —
+> `Control.set_drag_preview()` in Godot 4 gestisce automaticamente il lifecycle del preview node.
 
 ---
 

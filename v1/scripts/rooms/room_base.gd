@@ -47,14 +47,15 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 	if item_data.is_empty():
 		return
 	var item_scale: float = item_data.get("item_scale", 1.0)
-	_spawn_decoration(item_id, pos, item_scale)
-	SaveManager.decorations.append({
+	var deco_data := {
 		"item_id": item_id,
 		"position": Helpers.vec2_to_array(pos),
 		"item_scale": item_scale,
 		"rotation": 0.0,
 		"flip_h": false,
-	})
+	}
+	SaveManager.decorations.append(deco_data)
+	_spawn_decoration(item_id, pos, item_scale, 0.0, false, deco_data)
 	SignalBus.save_requested.emit()
 
 
@@ -71,14 +72,15 @@ func _reload_decorations() -> void:
 		var item_scale: float = deco_data.get("item_scale", 1.0)
 		var rot: float = deco_data.get("rotation", 0.0)
 		var flipped: bool = deco_data.get("flip_h", false)
-		_spawn_decoration(
-			item_id, Helpers.array_to_vec2(pos), item_scale, rot, flipped
-		)
+		var pos_vec := Helpers.array_to_vec2(pos)
+		var viewport_size := Vector2(Constants.VIEWPORT_WIDTH, Constants.VIEWPORT_HEIGHT)
+		pos_vec = Helpers.clamp_to_viewport(pos_vec, 0.0, viewport_size)
+		_spawn_decoration(item_id, pos_vec, item_scale, rot, flipped, deco_data)
 
 
 func _spawn_decoration(
 	item_id: String, pos: Vector2, item_scale: float,
-	rot: float = 0.0, flipped: bool = false
+	rot: float = 0.0, flipped: bool = false, deco_data: Dictionary = {}
 ) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
@@ -105,6 +107,7 @@ func _spawn_decoration(
 		sprite.set_script(DecorationScript)
 		sprite.item_id = item_id
 		sprite.base_item_scale = item_scale
+		sprite._deco_data = deco_data
 
 	# Add collision so the character cannot walk through decorations.
 	# Layer 2 = decorations (separate from room walls on layer 1).
