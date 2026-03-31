@@ -21,6 +21,11 @@ func _on_decoration_mode_changed(active: bool) -> void:
 	queue_redraw()
 
 
+func _exit_tree() -> void:
+	if SignalBus.decoration_mode_changed.is_connected(_on_decoration_mode_changed):
+		SignalBus.decoration_mode_changed.disconnect(_on_decoration_mode_changed)
+
+
 func _draw() -> void:
 	if not visible:
 		return

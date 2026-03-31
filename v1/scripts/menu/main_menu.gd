@@ -10,6 +10,8 @@ const LOADING_PAUSE := 0.4
 
 var _settings_panel: PanelContainer = null
 var _transitioning: bool = false
+var _intro_tween: Tween = null
+var _panel_tween: Tween = null
 
 @onready var _loading_screen: ColorRect = $LoadingScreen
 @onready var _menu_character: Node2D = $MenuCharacter
@@ -62,16 +64,20 @@ func _setup_graphical_loading_screen() -> void:
 
 
 func _play_intro() -> void:
-	var tween := create_tween()
-	tween.tween_interval(LOADING_PAUSE)
-	tween.tween_property(_loading_screen, "modulate:a", 0.0, Constants.FADE_DURATION)
-	tween.tween_callback(_loading_screen.set_visible.bind(false))
-	tween.tween_callback(_menu_character.walk_in)
+	if _intro_tween and _intro_tween.is_running():
+		_intro_tween.kill()
+	_intro_tween = create_tween()
+	_intro_tween.tween_interval(LOADING_PAUSE)
+	_intro_tween.tween_property(_loading_screen, "modulate:a", 0.0, Constants.FADE_DURATION)
+	_intro_tween.tween_callback(_loading_screen.set_visible.bind(false))
+	_intro_tween.tween_callback(_menu_character.walk_in)
 
 
 func _on_walk_in_done() -> void:
-	var tween := create_tween()
-	tween.tween_property(_button_container, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
+	if _intro_tween and _intro_tween.is_running():
+		_intro_tween.kill()
+	_intro_tween = create_tween()
+	_intro_tween.tween_property(_button_container, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
 
 
 func _on_nuova_partita() -> void:
@@ -100,15 +106,21 @@ func _show_auth_screen() -> void:
 		_play_intro()
 		return
 	var auth_screen := scene.instantiate() as Control
+	if auth_screen == null:
+		push_warning("MainMenu: failed to instantiate auth screen")
+		_play_intro()
+		return
 	auth_screen.auth_completed.connect(_on_auth_completed)
 	$UILayer.add_child(auth_screen)
 	# Fade out loading screen to reveal auth screen
-	var tween := create_tween()
-	tween.tween_interval(LOADING_PAUSE)
-	tween.tween_property(
+	if _intro_tween and _intro_tween.is_running():
+		_intro_tween.kill()
+	_intro_tween = create_tween()
+	_intro_tween.tween_interval(LOADING_PAUSE)
+	_intro_tween.tween_property(
 		_loading_screen, "modulate:a", 0.0, Constants.FADE_DURATION
 	)
-	tween.tween_callback(_loading_screen.set_visible.bind(false))
+	_intro_tween.tween_callback(_loading_screen.set_visible.bind(false))
 
 
 func _on_auth_completed() -> void:
@@ -123,10 +135,15 @@ func _on_profilo() -> void:
 		push_warning("MainMenu: profile panel scene not found")
 		return
 	var panel := scene.instantiate() as PanelContainer
+	if panel == null:
+		push_warning("MainMenu: failed to instantiate profile panel")
+		return
 	panel.modulate.a = 0.0
 	$UILayer.add_child(panel)
-	var tween := create_tween()
-	tween.tween_property(
+	if _panel_tween and _panel_tween.is_running():
+		_panel_tween.kill()
+	_panel_tween = create_tween()
+	_panel_tween.tween_property(
 		panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION
 	)
 
@@ -140,10 +157,15 @@ func _on_opzioni() -> void:
 		push_warning("MainMenu: settings scene not found")
 		return
 	_settings_panel = scene.instantiate() as PanelContainer
+	if _settings_panel == null:
+		push_warning("MainMenu: failed to instantiate settings panel")
+		return
 	_settings_panel.modulate.a = 0.0
 	$UILayer.add_child(_settings_panel)
-	var tween := create_tween()
-	tween.tween_property(_settings_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
+	if _panel_tween and _panel_tween.is_running():
+		_panel_tween.kill()
+	_panel_tween = create_tween()
+	_panel_tween.tween_property(_settings_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
 
 
 func _on_esci() -> void:
@@ -155,9 +177,11 @@ func _close_settings() -> void:
 		return
 	var panel := _settings_panel
 	_settings_panel = null
-	var tween := create_tween()
-	tween.tween_property(panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
-	tween.tween_callback(panel.queue_free)
+	if _panel_tween and _panel_tween.is_running():
+		_panel_tween.kill()
+	_panel_tween = create_tween()
+	_panel_tween.tween_property(panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
+	_panel_tween.tween_callback(panel.queue_free)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -168,6 +192,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _exit_tree() -> void:
+	if _intro_tween and _intro_tween.is_running():
+		_intro_tween.kill()
+	if _panel_tween and _panel_tween.is_running():
+		_panel_tween.kill()
 	if _nuova_btn and _nuova_btn.pressed.is_connected(_on_nuova_partita):
 		_nuova_btn.pressed.disconnect(_on_nuova_partita)
 	if _carica_btn and _carica_btn.pressed.is_connected(_on_carica_partita):
@@ -187,6 +215,8 @@ func _exit_tree() -> void:
 func _transition_to_scene(scene_path: String) -> void:
 	_loading_screen.visible = true
 	_loading_screen.modulate.a = 0.0
-	var tween := create_tween()
-	tween.tween_property(_loading_screen, "modulate:a", 1.0, Constants.FADE_DURATION)
-	tween.tween_callback(get_tree().change_scene_to_file.bind(scene_path))
+	if _intro_tween and _intro_tween.is_running():
+		_intro_tween.kill()
+	_intro_tween = create_tween()
+	_intro_tween.tween_property(_loading_screen, "modulate:a", 1.0, Constants.FADE_DURATION)
+	_intro_tween.tween_callback(get_tree().change_scene_to_file.bind(scene_path))

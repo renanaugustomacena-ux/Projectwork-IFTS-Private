@@ -7,6 +7,7 @@ const SCALE_STEPS := [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
 
 var item_id: String = ""
 var base_item_scale: float = 1.0
+var _deco_data: Dictionary = {}
 
 var _is_dragging: bool = false
 var _drag_offset: Vector2 = Vector2.ZERO
@@ -185,47 +186,38 @@ func _is_mouse_over() -> bool:
 
 
 func _save_position() -> void:
-	for i in range(SaveManager.decorations.size()):
-		var deco: Dictionary = SaveManager.decorations[i]
-		if deco.get("item_id", "") == item_id:
-			deco["position"] = Helpers.vec2_to_array(position)
-			SignalBus.decoration_moved.emit(item_id, position)
-			SignalBus.save_requested.emit()
-			return
+	if _deco_data.is_empty():
+		return
+	_deco_data["position"] = Helpers.vec2_to_array(position)
+	SignalBus.decoration_moved.emit(item_id, position)
+	SignalBus.save_requested.emit()
 
 
 func _save_rotation() -> void:
-	for i in range(SaveManager.decorations.size()):
-		var deco: Dictionary = SaveManager.decorations[i]
-		if deco.get("item_id", "") == item_id:
-			deco["rotation"] = rotation_degrees
-			SignalBus.save_requested.emit()
-			return
+	if _deco_data.is_empty():
+		return
+	_deco_data["rotation"] = rotation_degrees
+	SignalBus.save_requested.emit()
 
 
 func _save_flip() -> void:
-	for i in range(SaveManager.decorations.size()):
-		var deco: Dictionary = SaveManager.decorations[i]
-		if deco.get("item_id", "") == item_id:
-			deco["flip_h"] = flip_h
-			SignalBus.save_requested.emit()
-			return
+	if _deco_data.is_empty():
+		return
+	_deco_data["flip_h"] = flip_h
+	SignalBus.save_requested.emit()
 
 
 func _save_scale(new_scale: float) -> void:
-	for i in range(SaveManager.decorations.size()):
-		var deco: Dictionary = SaveManager.decorations[i]
-		if deco.get("item_id", "") == item_id:
-			deco["item_scale"] = new_scale
-			SignalBus.save_requested.emit()
-			return
+	if _deco_data.is_empty():
+		return
+	_deco_data["item_scale"] = new_scale
+	SignalBus.save_requested.emit()
 
 
 func _remove_from_room() -> void:
-	for i in range(SaveManager.decorations.size()):
-		if SaveManager.decorations[i].get("item_id", "") == item_id:
-			SaveManager.decorations.remove_at(i)
-			break
+	var idx := SaveManager.decorations.find(_deco_data)
+	if idx >= 0:
+		SaveManager.decorations.remove_at(idx)
 	SignalBus.decoration_removed.emit(item_id)
 	SignalBus.save_requested.emit()
 	queue_free()
