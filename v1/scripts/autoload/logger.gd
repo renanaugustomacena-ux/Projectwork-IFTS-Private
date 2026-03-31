@@ -125,9 +125,13 @@ func _flush_buffer() -> void:
 	if _log_file == null:
 		_open_log_file()
 	if _log_file == null:
-		# Cannot write — clear buffer to prevent unbounded growth
-		push_warning("Logger: cleared %d buffered entries (log file unavailable)" % _log_buffer.size())
-		_log_buffer.clear()
+		# File non disponibile: manteniamo gli ultimi 100 messaggi (i piu' recenti)
+		# e scartiamo solo quelli piu' vecchi per evitare crescita illimitata
+		var max_retained := 100
+		if _log_buffer.size() > max_retained:
+			var discarded := _log_buffer.size() - max_retained
+			_log_buffer = _log_buffer.slice(discarded)
+			push_warning("Logger: discarded %d old entries, retaining %d (log file unavailable)" % [discarded, max_retained])
 		return
 
 	for line in _log_buffer:
@@ -172,15 +176,26 @@ func _cleanup_old_logs() -> void:
 
 
 func _generate_session_id() -> String:
+	# Combinazione di piu' fonti di casualita' per prevenire collisioni:
+	#   1. Tempo Unix (cambia ogni secondo)
+	#   2. Contatore di tick del motore (cambia ogni frame)
+	#   3. Numeri casuali crittograficamente sicuri
 	var unix_time := int(Time.get_unix_time_from_system())
-	var rng := RandomNumberGenerator.new()
-	rng.seed = unix_time ^ OS.get_process_id()
+	var ticks := Time.get_ticks_usec()
+	var crypto := Crypto.new()
+	var random_bytes := crypto.generate_random_bytes(4)
+	var random_int := (
+		random_bytes[0] << 24
+		| random_bytes[1] << 16
+		| random_bytes[2] << 8
+		| random_bytes[3]
+	)
 	return (
 		"%08x-%04x-%04x"
 		% [
 			unix_time & 0xFFFFFFFF,
-			rng.randi() & 0xFFFF,
-			rng.randi() & 0xFFFF,
+			ticks & 0xFFFF,
+			random_int & 0xFFFF,
 		]
 	)
 

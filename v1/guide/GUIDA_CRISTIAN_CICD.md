@@ -5,12 +5,13 @@
 
 **Riferimenti nell'Audit Report**: Sezioni 6.7, 6.8, 9.3, 11 Fase 5, 14
 
-> **⚠️ Nota Aggiornamento (30 Marzo 2026)**:
-> La CI/CD e' stata semplificata: rimossi il job test (GdUnit4 non installato), il job
-> security-scan e l'intera pipeline database-ci.yml. Resta solo il job lint (gdlint + gdformat)
-> con branch aggiornato a **main** e path v1/tests/ incluso. I Task 1 e 2 sono gia' stati completati.
-> Restano da fare i Task 3-5 (Logger e PerformanceManager), il Task 6 (documentazione),
-> e i **nuovi Task 7-8** (ricerca asset personaggio + asset grafici).
+> **⚠️ Nota Aggiornamento (31 Marzo 2026)**:
+> **CI/CD Unificata**: la pipeline e' stata espansa da 1 a 5 job paralleli:
+> lint (gdlint+gdformat), validate-json (cataloghi), validate-sprites (percorsi file),
+> validate-crossrefs (costanti vs cataloghi), validate-db (schema SQL).
+> Script di validazione in `ci/` (Python, stdlib only).
+> **Task completati**: 1-5 (CI, Logger, PerformanceManager), **CI unificata** (31 Mar).
+> **Restano**: Task 6 (documentazione, per ultimo), Task 7-8 (asset personaggio + grafici).
 
 ---
 
@@ -20,9 +21,9 @@
 |---|----------------|-----------------|---------------|-----------|---------------|-------|
 | 1 | ~~Aggiungere linting dei file test nella CI~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
 | 2 | ~~Aggiornare branch CI da "proto" a "main"~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
-| 3 | Correggere Logger: session ID con possibili collisioni | `scripts/autoload/logger.gd` | 6.7, A13 | MEDIO | 30 min | DA FARE |
-| 4 | Correggere Logger: log persi se file non disponibile | `scripts/autoload/logger.gd` | 6.7, A12 | MEDIO | 20 min | DA FARE |
-| 5 | Aggiungere `_exit_tree()` al PerformanceManager | `scripts/systems/performance_manager.gd` | 6.8, A14 | ALTO | 20 min | DA FARE |
+| 3 | ~~Correggere Logger: session ID con possibili collisioni~~ | `scripts/autoload/logger.gd` | 6.7, A13 | — | — | FATTO (31 Mar) |
+| 4 | ~~Correggere Logger: log persi se file non disponibile~~ | `scripts/autoload/logger.gd` | 6.7, A12 | — | — | FATTO (31 Mar) |
+| 5 | ~~Aggiungere `_exit_tree()` al PerformanceManager~~ | `scripts/systems/performance_manager.gd` | 6.8, A14 | — | — | FATTO (31 Mar) |
 | 6 | Aggiornare documentazione e riferimenti | Vari README | 14 | BASSO | 1 ora | DA FARE |
 | 7 | **Trovare/creare nuovo personaggio pixel art** | `assets/charachters/male/old/` | — | **ALTO** | 2-3 ore | DA FARE |
 | 8 | **Trovare/creare asset grafici aggiuntivi** (loading screen, ecc.) | `assets/` | — | MEDIO | 1-2 ore | DA FARE |
@@ -528,9 +529,9 @@ Usa questa checklist per verificare di aver completato tutto. Spunta ogni voce m
 ```
 - [x] CI/CD: gdlint e gdformat includono v1/tests/ (GIA' FATTO)
 - [x] CI/CD: branch aggiornato da "proto" a "main" (GIA' FATTO)
-- [ ] Logger: session ID usa Crypto per casualita' sicura
-- [ ] Logger: buffer mantiene ultimi 100 messaggi se file non disponibile
-- [ ] PerformanceManager: _exit_tree() disconnette 3 segnali
+- [x] Logger: session ID usa Crypto per casualita' sicura (FATTO 31 Mar)
+- [x] Logger: buffer mantiene ultimi 100 messaggi se file non disponibile (FATTO 31 Mar)
+- [x] PerformanceManager: _exit_tree() disconnette 3 segnali (FATTO 31 Mar)
 - [ ] Documentazione: README e riferimenti aggiornati
 - [ ] Personaggio: trovato/creato nuovo sprite set 16x16 con 8 direzioni
 - [ ] Asset grafici: trovati/creati asset aggiuntivi (loading screen, ecc.)
