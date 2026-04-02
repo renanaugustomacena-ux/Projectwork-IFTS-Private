@@ -1,22 +1,24 @@
 # Guide Operative per il Team — Mini Cozy Room
 
-> **Aggiornamento 31 Marzo 2026**:
+> **Aggiornamento 1 Aprile 2026**:
+> - **Audit Report v2.0.0**: riscrittura completa dell'audit. Le sezioni sono cambiate (vedi sotto)
 > - **Team**: 3 membri — Renan (Gameplay/UI/Architect), Cristian (CI/CD + Asset), Elia (Database + Supabase)
 > - **Supabase**: reintrodotto come servizio cloud. Elia prepara il progetto, Renan implementa il client
 > - **CI/CD**: pipeline unificata 5 job (lint, JSON, sprites, crossrefs, DB). Task 1-5 di Cristian FATTI
 > - **Asset**: tutti integrati in v1/ (Tasks 8-11 di Renan GIA' FATTI). README creati per ogni sottocartella
-> - **Schema DB**: C3/C4 completati (27 Mar). A24-A27 completati (31 Mar). Resta solo Supabase
+> - **Schema DB**: C3/C4 completati (27 Mar). A24-A27 completati (31 Mar). Resta Supabase + nuovi task da audit v2
+> - **Nuovi problemi**: audit v2.0.0 ha trovato 24 nuovi problemi (N-BD1 CRITICO, N-Q1-Q6, N-DB1-DB3, N-AR1-AR8, N-P1-P4)
 > - **Branch**: si lavora SOLO su `main`
 
 ---
 
 ## PRIMA DI TUTTO — Cosa Fare Adesso
 
-**Tutti**: leggere [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare Godot 4.5.2+, Git, VS Code.
+**Tutti**: leggere [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare Godot 4.6, Git, VS Code.
 
 Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 
-### Renan — Gameplay, UI & Asset — COMPLETATO
+### Renan — Gameplay, UI & Asset
 
 | Ordine | Task | Cosa Fare | Stato |
 |:------:|------|-----------|:-----:|
@@ -34,8 +36,11 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 | 11 | Task 16 | ~~Tween orfani in main_menu.gd (A19)~~ | **FATTO** |
 | 12 | Task 17 | ~~Clamp posizione decorazioni al viewport (A28)~~ | **FATTO** |
 | 13 | Task 18 | ~~Null check dopo scene.instantiate() (A29)~~ | **FATTO** |
+| **14** | **Task 19** | **Fix `clean_name` in auth_manager.gd:60 (N-Q3)** | **DA FARE** |
+| **15** | **Task 20** | **Aggiungere `_exit_tree()` + tween tracciato in auth_screen.gd (N-Q1)** | **DA FARE** |
+| **16** | **Task 21** | **Fix settings_panel.gd: usare SignalBus.settings_updated (N-AR7)** | **DA FARE** |
 
-**Tutti i 18 task completati.** Nessun problema aperto per Renan.
+**18 task completati su 21.** Restano 3 nuovi task da Audit v2.0.0.
 **Guida**: [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md)
 
 ### Cristian — CI/CD, Logger & Asset
@@ -47,11 +52,15 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 | — | Task 4 | ~~Logger: buffer mantiene ultimi 100 msg~~ | — | `scripts/autoload/logger.gd` | **FATTO (31 Mar)** |
 | — | Task 5 | ~~`_exit_tree()` al PerformanceManager~~ | — | `scripts/systems/performance_manager.gd` | **FATTO (31 Mar)** |
 | — | CI+ | ~~Pipeline unificata 5 job + 4 script Python~~ | — | `ci/`, `.github/workflows/ci.yml` | **FATTO (31 Mar)** |
-| 1 | **Task 7** | **Trovare/creare nuovo personaggio pixel art** (8 direzioni, 32x32) | 2-3 ore | `assets/charachters/male/old/` | DA FARE |
-| 2 | Task 8 | Trovare asset grafici aggiuntivi (loading screen, decorazioni, icone) | 1-2 ore | `assets/` | DA FARE |
-| 3 | Task 6 | Aggiornare documentazione (DOPO che tutti finiscono) | 1 ora | Vari README | DA FARE |
+| **1** | **Task 9** | **CRITICO — Fix build.yml: Godot 4.5 → 4.6 (N-BD1)** | **15 min** | `.github/workflows/build.yml` | **DA FARE** |
+| 2 | **Task 10** | **Icona applicazione Windows (N-BD4)** | 30 min | `export_presets.cfg` | **DA FARE** |
+| 3 | **Task 11** | **Versione applicazione (N-BD5)** | 10 min | `export_presets.cfg` | **DA FARE** |
+| 4 | Task 7 | **Trovare/creare nuovo personaggio pixel art** (8 direzioni, 32x32) | 2-3 ore | `assets/charachters/male/old/` | DA FARE |
+| 5 | Task 8 | Trovare asset grafici aggiuntivi (loading screen, decorazioni, icone) | 1-2 ore | `assets/` | DA FARE |
+| 6 | Task 6 | Aggiornare documentazione (DOPO che tutti finiscono) | 1 ora | Vari README | DA FARE |
 
-**Task 3-5 completati + CI espansa con 4 validatori Python.** Restano Task 6-8.
+**Task 3-5 completati + CI espansa con 4 validatori Python.** Restano Task 6-11 (3 nuovi da Audit v2).
+**PRIORITA' ASSOLUTA**: Task 9 (N-BD1) — la build GitHub Actions e' rotta perche' usa Godot 4.5 invece di 4.6.
 **Guida**: [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md)
 **Riferimento asset personaggio**: [`assets/charachters/README.md`](../assets/charachters/README.md)
 
@@ -64,9 +73,11 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 | — | Task 3 | ~~A25: `_save_inventory()` ritorna bool~~ | — | `scripts/autoload/local_database.gd` | **FATTO (31 Mar)** |
 | — | Task 4 | ~~A26: Check `is_open()` in `_set_state()`~~ | — | `scripts/autoload/auth_manager.gd` | **FATTO (31 Mar)** |
 | — | Task 5 | ~~A27: Validare `create_account()` in `register()`~~ | — | `scripts/autoload/auth_manager.gd` | **GIA' FATTO** |
-| 1 | **Task 6** | **Supabase**: creare progetto, 3 tabelle, RLS | 1.5 ore | Dashboard Supabase | DA FARE |
+| **1** | **Task 7** | **Aggiungere indici FK al database (N-DB2)** | **15 min** | `scripts/autoload/local_database.gd` | **DA FARE** |
+| 2 | **Task 8** | **Documentare/rimuovere tabelle morte (N-DB1)** | 10 min | `scripts/autoload/local_database.gd` | **DA FARE** |
+| 3 | **Task 6** | **Supabase**: creare progetto, 3 tabelle, RLS | 1.5 ore | Dashboard Supabase | DA FARE |
 
-**Task 1-5 completati.** Resta solo Task 6 (Supabase).
+**Task 1-5 completati.** Restano Task 6 (Supabase) + 2 nuovi task da Audit v2.
 **Dopo Task 6**: consegnare URL e anon key a Renan per implementazione client.
 **Guida**: [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md)
 **Riferimento asset menu**: [`assets/menu/README.md`](../assets/menu/README.md)
@@ -78,19 +89,22 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 ```text
 NESSUNO BLOCCA NESSUNO per i task iniziali — tutti possono partire subito!
 
-  Renan Task 1-7 ──────────────────────────────────┐
-  (gameplay fix, indipendenti)                      │
+  Cristian Task 9 (CRITICO N-BD1) ─────────────────┐ ← PRIMA PRIORITA'
+  (fix build.yml 4.5→4.6)                          │
                                                     │
-  Cristian Task 3-5 ────────────────────────────────┤
-  (Logger + PerformanceManager, indipendenti)       │
+  Renan Task 19-21 ────────────────────────────────┤
+  (fix audit v2, indipendenti)                      │
                                                     ├──► Cristian Task 6 (documentazione)
-  Cristian Task 7-8 ────────────────────────────────┤    Farlo SOLO quando tutti
+  Cristian Task 7-8 ───────────────────────────────┤    Farlo SOLO quando tutti
   (asset personaggio, indipendente)                 │    hanno finito i loro task
                                                     │
-  Elia Task 1-5 ────────────────────────────────────┤
-  (fix database, indipendenti)                      │
+  Cristian Task 10-11 ─────────────────────────────┤
+  (icona + versione app, indipendenti)              │
                                                     │
-  Elia Task 6 (Supabase setup) ─────────────────────┘
+  Elia Task 7-8 ───────────────────────────────────┤
+  (indici FK + tabelle morte, indipendenti)         │
+                                                    │
+  Elia Task 6 (Supabase setup) ────────────────────┘
        │
        └──► Consegna URL + anon key a Renan
             └──► Renan implementa client GDScript (fase futura)
@@ -101,7 +115,7 @@ gli altri non hanno finito. Tutto il resto si fa in parallelo.
 
 **Attenzione ai conflitti Git**: Renan e Elia modificano entrambi `local_database.gd`
 e `auth_manager.gd`. Coordinarsi per non lavorare sullo stesso file contemporaneamente:
-- **Consiglio**: Elia fa prima i suoi Task 2-5 (database), poi Renan lavora su quei file se serve
+- **Consiglio**: Elia fa prima i suoi Task 7-8 (database), poi Renan lavora su quei file se serve
 
 ---
 
@@ -109,13 +123,22 @@ e `auth_manager.gd`. Coordinarsi per non lavorare sullo stesso file contemporane
 
 | Guida | Per Chi | Contenuto | Task Rimasti |
 |-------|---------|-----------|:------------:|
-| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~Bug fix gameplay, `_exit_tree()` x8, popup decorazioni, tween fix, viewport clamp~~ | **0 — TUTTI 18 COMPLETATI** |
-| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | ~~Logger fix, PerformanceManager, CI 5 job~~, **nuovo personaggio**, asset grafici, documentazione | 3 |
-| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ~~ROLLBACK, _save_inventory, is_open(), create_account~~, **setup Supabase** | 1 |
+| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~Bug fix gameplay, `_exit_tree()` x8, popup decorazioni, tween fix, viewport clamp~~, **fix clean_name, auth_screen _exit_tree, settings_panel** | 3 |
+| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | ~~Logger fix, PerformanceManager, CI 5 job~~, **CRITICO fix build.yml**, icona, versione, personaggio, asset, documentazione | 6 |
+| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ~~ROLLBACK, _save_inventory, is_open(), create_account~~, **indici FK**, **tabelle morte**, **setup Supabase** | 3 |
 
 ## Relazione con l'Audit Report
 
-Queste guide sono la versione operativa (il "come fare") del documento [AUDIT_REPORT.md](../AUDIT_REPORT.md) (il "cosa fare e perche'"). Se avete dubbi sul *perche'* di una correzione, consultate la sezione dell'audit report indicata all'inizio di ogni task.
+Queste guide sono la versione operativa (il "come fare") del documento [AUDIT_REPORT.md](../AUDIT_REPORT.md) (il "cosa fare e perche'").
+
+**Versione audit**: **v2.0.0** — Riscrittura completa (1 Aprile 2026). L'audit ha 23 sezioni:
+- Sezioni 6-10: Analisi codice (autoload, menu, gameplay, UI, utility)
+- Sezione 11: Dati, database e CI/CD
+- Sezione 12: Classificazione problemi (24 nuovi: N-BD1-BD5, N-Q1-Q6, N-DB1-DB3, N-AR1-AR8, N-P1-P4)
+- Sezione 13-14: Piano di stabilizzazione e polishing
+- Sezioni 15-20: Guide frontend, Godot Editor, build (Windows, Inno Setup, Android, HTML5)
+
+Se avete dubbi sul *perche'* di una correzione, consultate la sezione dell'audit report indicata all'inizio di ogni task.
 
 ---
 
@@ -126,12 +149,12 @@ Non deve essere perfetto — deve essere stabile, senza crash, e con le funziona
 
 | Periodo | Obiettivo | Chi | Ore |
 |---------|-----------|-----|:---:|
-| **31 Mar - 6 Apr** | Setup ambiente + task CRITICI (typo sprite, costanti, ROLLBACK DB) | Tutti | 3-4h |
-| **7 Apr - 13 Apr** | Correzioni core (array mismatch, race condition, Logger, auth_manager) | Tutti | 3-4h |
-| **14 Apr - 18 Apr** | `_exit_tree()` x7, nuovo personaggio (Cristian), Supabase setup (Elia) | Tutti | 4-6h |
+| **1 Apr - 6 Apr** | **CRITICO**: Fix build.yml 4.5→4.6 (Cristian Task 9). Fix codice audit v2 (Renan Task 19-21). Indici FK (Elia Task 7) | Tutti | 2-3h |
+| **7 Apr - 13 Apr** | Tabelle morte DB (Elia Task 8), Icona+Versione app (Cristian Task 10-11), Supabase setup (Elia Task 6) | Elia, Cristian | 3-4h |
+| **14 Apr - 18 Apr** | Nuovo personaggio (Cristian Task 7), asset grafici (Cristian Task 8), test manuale completo | Cristian, Tutti | 4-6h |
 | **19 Apr - 22 Apr** | Test finale, fix urgenti, documentazione (Cristian Task 6), presentazione | Tutti | 2-3h |
 
-**Totale stimato per persona**: ~12-18 ore distribuite su ~3.5 settimane.
+**Totale stimato per persona**: ~12-18 ore distribuite su ~3 settimane.
 **Priorita'**: task CRITICI e ALTI prima. I task MEDI e BASSI sono bonus.
 
 ---
@@ -165,6 +188,8 @@ INTEGRITA' DATI (Elia + Renan)
 - [x] Database: _save_inventory() propaga errori (Task 3 Elia — FATTO 31 Mar)
 - [x] Database: is_open() check prima di query (Task 4 Elia — FATTO 31 Mar)
 - [x] Database: create_account() validato in register() (Task 5 Elia — GIA' FATTO)
+- [ ] Database: indici su colonne FK (Task 7 Elia — N-DB2)
+- [ ] Database: tabelle morte documentate/rimosse (Task 8 Elia — N-DB1)
 
 STABILITA' E LIFECYCLE (Renan + Cristian)
 - [x] _exit_tree() in 8 script di Renan (Task 6+14 Renan — FATTO) + PerformanceManager (Cristian — FATTO 31 Mar)
@@ -176,6 +201,16 @@ STABILITA' E LIFECYCLE (Renan + Cristian)
 - [x] Decorazioni: posizioni clampate al viewport al reload (Task 17 Renan — FATTO)
 - [x] Logger: session ID con Crypto (Task 3 Cristian — FATTO 31 Mar)
 - [x] Logger: buffer non perso se file non disponibile (Task 4 Cristian — FATTO 31 Mar)
+- [ ] Fix clean_name in auth_manager.gd (Task 19 Renan — N-Q3)
+- [ ] _exit_tree() + tween in auth_screen.gd (Task 20 Renan — N-Q1)
+- [ ] settings_panel.gd usa SignalBus (Task 21 Renan — N-AR7)
+
+BUILD & CI/CD (Cristian)
+- [ ] CRITICO: build.yml usa Godot 4.6 (non 4.5) (Task 9 Cristian — N-BD1)
+- [ ] Icona applicazione Windows configurata (Task 10 Cristian — N-BD4)
+- [ ] Versione applicazione impostata (Task 11 Cristian — N-BD5)
+- [x] CI attiva su branch main (GIA' FATTO)
+- [x] gdlint + gdformat controllano v1/scripts/ e v1/tests/ (GIA' FATTO)
 
 ASSET (Cristian)
 - [x] Asset integrati: joystick, loading screen, bottoni, letti, mobili, piante (GIA' FATTO)
@@ -186,10 +221,6 @@ CLOUD (Elia → Renan)
 - [ ] Supabase: progetto creato con 3 tabelle + RLS (Task 6 Elia)
 - [ ] URL e anon key consegnati a Renan
 - [ ] Client GDScript implementato da Renan (fase futura)
-
-PIPELINE CI/CD (Cristian)
-- [x] CI attiva su branch main (GIA' FATTO)
-- [x] gdlint + gdformat controllano v1/scripts/ e v1/tests/ (GIA' FATTO)
 
 GIOCO FUNZIONANTE (TUTTI — test finale)
 - [ ] Menu principale: si carica senza errori
@@ -231,6 +262,6 @@ Ogni sottocartella di `assets/` ha un proprio README con origine, licenza e istr
 
 ---
 
-*Queste guide fanno parte del progetto Mini Cozy Room — Audit Pre-Rilascio.*
+*Queste guide fanno parte del progetto Mini Cozy Room — Audit Pre-Rilascio v2.0.0.*
 *Scadenza progetto: 22 Aprile 2026.*
-*Ultimo aggiornamento: 31 Marzo 2026*
+*Ultimo aggiornamento: 1 Aprile 2026*

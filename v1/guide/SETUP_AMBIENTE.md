@@ -50,11 +50,11 @@ git --version
 
 Dovreste vedere qualcosa come `git version 2.47.0`. Se vedete un errore, l'installazione non e' andata a buon fine.
 
-### 1.2 Godot Engine 4.5
+### 1.2 Godot Engine 4.6
 
 **Cos'e'**: Godot e' il motore di gioco che usiamo per sviluppare Mini Cozy Room. E' come il "laboratorio" dove costruiamo il gioco: ci permette di vedere le scene, testare il gioco, e modificare l'interfaccia visuale.
 
-**Download**: https://godotengine.org/download/archive/4.5-stable/
+**Download**: https://godotengine.org/download/archive/4.6-stable/
 
 **Installazione**:
 1. Scaricate la versione **Standard** per il vostro sistema operativo
@@ -62,7 +62,7 @@ Dovreste vedere qualcosa come `git version 2.47.0`. Se vedete un errore, l'insta
 3. Estraete l'archivio ZIP in una cartella a vostra scelta (es. `C:\Godot\` su Windows)
 4. Rinominate il file in `Godot.exe` (o `Godot` su Linux/Mac) per comodita'
 
-**Importante**: Usate la versione **4.5** esatta. Versioni diverse potrebbero non essere compatibili con il progetto.
+**Importante**: Usate la versione **4.6** esatta. Versioni diverse potrebbero non essere compatibili con il progetto.
 
 ### 1.3 Visual Studio Code (Editor di Codice)
 
@@ -331,7 +331,7 @@ v1/                              <-- Cartella principale del progetto Godot
 │
 ├── data/                        <-- File di dati (JSON e SQL)
 │   ├── characters.json          <-- Catalogo personaggi (animazioni, sprite)
-│   ├── decorations.json         <-- Catalogo decorazioni (58 oggetti in 11 categorie)
+│   ├── decorations.json         <-- Catalogo decorazioni (69 oggetti in 11 categorie)
 │   ├── rooms.json               <-- Catalogo stanze (1 stanza, 3 temi)
 │   ├── tracks.json              <-- Catalogo tracce musicali
 │   └── README.md                <-- Documentazione schema database
@@ -343,13 +343,13 @@ v1/                              <-- Cartella principale del progetto Godot
 │
 ├── scripts/                     <-- Codice GDScript — la logica del gioco
 │   ├── autoload/                <-- Singleton (caricati automaticamente all'avvio)
-│   │   ├── signal_bus.gd        <-- Bus dei segnali (20 segnali globali)
+│   │   ├── signal_bus.gd        <-- Bus dei segnali (31 segnali globali)
 │   │   ├── logger.gd            <-- Sistema di logging
 │   │   ├── game_manager.gd      <-- Stato di gioco, cataloghi
 │   │   ├── save_manager.gd      <-- Salvataggio/caricamento dati
 │   │   ├── local_database.gd    <-- Database SQLite locale
-│   │   ├── audio_manager.gd     <-- Gestione musica e suoni
-│   │   └── audio_manager.gd     <-- Musica lo-fi con crossfade
+│   │   ├── audio_manager.gd     <-- Musica lo-fi con crossfade
+│   │   └── auth_manager.gd      <-- Autenticazione (guest, login, registrazione)
 │   ├── menu/                    <-- Script del menu principale
 │   ├── rooms/                   <-- Script della stanza e decorazioni
 │   ├── systems/                 <-- Performance manager
@@ -361,7 +361,7 @@ v1/                              <-- Cartella principale del progetto Godot
 │
 ├── guide/                       <-- Guide operative per il team (QUESTA cartella)
 │
-├── AUDIT_REPORT.md              <-- Report di audit completo (analisi e piano)
+├── AUDIT_REPORT.md              <-- Report di audit v2.0.0 (1 Aprile 2026 — 23 sezioni, 24 script)
 └── AUDIT_REPORT.pdf             <-- Versione PDF del report
 ```
 

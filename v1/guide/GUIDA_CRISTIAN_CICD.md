@@ -1,17 +1,21 @@
 # Guida Operativa — Cristian Marino (CI/CD & Documentation Lead)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 31 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 1 Aprile 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
-**Riferimenti nell'Audit Report**: Sezioni 6.7, 6.8, 9.3, 11 Fase 5, 14
+**Riferimenti nell'Audit Report v2.0.0**: Sezioni 6 (Autoload), 11 (Dati/DB/CI), 12 (Classificazione), 13 (Stabilizzazione)
 
-> **⚠️ Nota Aggiornamento (31 Marzo 2026)**:
+> **⚠️ Nota Aggiornamento (1 Aprile 2026)**:
+> **Audit v2.0.0**: il report e' stato riscritto da zero. Le sezioni di riferimento sono cambiate.
+> **CRITICO — N-BD1**: la pipeline `build.yml` usa l'immagine Docker `godot-ci:4.5` ma il progetto
+> e' su **Godot 4.6**. Le build GitHub Actions sono **rotte**. Questo e' il fix piu' urgente.
+> **Nuovi task**: 9 (fix build.yml), 10 (icona Windows), 11 (versione app).
 > **CI/CD Unificata**: la pipeline e' stata espansa da 1 a 5 job paralleli:
 > lint (gdlint+gdformat), validate-json (cataloghi), validate-sprites (percorsi file),
 > validate-crossrefs (costanti vs cataloghi), validate-db (schema SQL).
 > Script di validazione in `ci/` (Python, stdlib only).
 > **Task completati**: 1-5 (CI, Logger, PerformanceManager), **CI unificata** (31 Mar).
-> **Restano**: Task 6 (documentazione, per ultimo), Task 7-8 (asset personaggio + grafici).
+> **Restano**: Task 6 (documentazione, per ultimo), Task 7-8 (asset personaggio + grafici), **Task 9-11 (nuovi da audit v2)**.
 
 ---
 
@@ -19,14 +23,202 @@
 
 | # | Cosa Devi Fare | File Principale | Sezione Audit | Priorita' | Tempo Stimato | Stato |
 |---|----------------|-----------------|---------------|-----------|---------------|-------|
-| 1 | ~~Aggiungere linting dei file test nella CI~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
-| 2 | ~~Aggiornare branch CI da "proto" a "main"~~ | `.github/workflows/ci.yml` | 9.3 | — | — | GIA' FATTO |
-| 3 | ~~Correggere Logger: session ID con possibili collisioni~~ | `scripts/autoload/logger.gd` | 6.7, A13 | — | — | FATTO (31 Mar) |
-| 4 | ~~Correggere Logger: log persi se file non disponibile~~ | `scripts/autoload/logger.gd` | 6.7, A12 | — | — | FATTO (31 Mar) |
-| 5 | ~~Aggiungere `_exit_tree()` al PerformanceManager~~ | `scripts/systems/performance_manager.gd` | 6.8, A14 | — | — | FATTO (31 Mar) |
-| 6 | Aggiornare documentazione e riferimenti | Vari README | 14 | BASSO | 1 ora | DA FARE |
+| 1 | ~~Aggiungere linting dei file test nella CI~~ | `.github/workflows/ci.yml` | Sez. 11 | — | — | GIA' FATTO |
+| 2 | ~~Aggiornare branch CI da "proto" a "main"~~ | `.github/workflows/ci.yml` | Sez. 11 | — | — | GIA' FATTO |
+| 3 | ~~Correggere Logger: session ID con possibili collisioni~~ | `scripts/autoload/logger.gd` | Sez. 6 | — | — | FATTO (31 Mar) |
+| 4 | ~~Correggere Logger: log persi se file non disponibile~~ | `scripts/autoload/logger.gd` | Sez. 6 | — | — | FATTO (31 Mar) |
+| 5 | ~~Aggiungere `_exit_tree()` al PerformanceManager~~ | `scripts/systems/performance_manager.gd` | Sez. 6 | — | — | FATTO (31 Mar) |
+| 6 | Aggiornare documentazione e riferimenti | Vari README | Sez. 14 | BASSO | 1 ora | DA FARE |
 | 7 | **Trovare/creare nuovo personaggio pixel art** | `assets/charachters/male/old/` | — | **ALTO** | 2-3 ore | DA FARE |
 | 8 | **Trovare/creare asset grafici aggiuntivi** (loading screen, ecc.) | `assets/` | — | MEDIO | 1-2 ore | DA FARE |
+| **9** | **⚠️ CRITICO — Fix build.yml: Godot 4.5 → 4.6 (N-BD1)** | `.github/workflows/build.yml` | **Sez. 11, 12** | **CRITICO** | **15 min** | **DA FARE** |
+| **10** | **Icona applicazione Windows (N-BD4)** | `export_presets.cfg` | **Sez. 11, 12** | MEDIO | 30 min | **DA FARE** |
+| **11** | **Versione applicazione (N-BD5)** | `export_presets.cfg` | **Sez. 11, 12** | MEDIO | 10 min | **DA FARE** |
+
+**⚠️ PRIMA PRIORITA' ASSOLUTA: Task 9 (N-BD1)**. Senza questo fix, le build GitHub Actions falliranno sempre.
+
+---
+
+## ⚠️ Task 9: CRITICO — Fix build.yml: Godot 4.5 → 4.6 (N-BD1)
+
+**Sezione Audit di riferimento**: Sezione 11 (Analisi CI/CD), Sezione 12 (Classificazione — N-BD1 CRITICO)
+**Tempo stimato**: 15 minuti
+**Priorita'**: **CRITICO** — La build e' completamente rotta
+
+### Cosa C'e' da Fare
+
+Il file `.github/workflows/build.yml` usa l'immagine Docker `barichello/godot-ci:4.5` e i path degli export template per la versione `4.5.stable`. Ma il progetto usa **Godot 4.6**. Questo significa che:
+
+1. Il container Docker scarica Godot 4.5 (sbagliato)
+2. Gli export template sono per 4.5 (sbagliati)
+3. **Ogni build fallira'** perche' il progetto non e' compatibile con Godot 4.5
+
+E' come provare ad aprire un file Word 2026 con Word 2019 — non funziona.
+
+### Passo 1: Apri il File
+
+Apri `.github/workflows/build.yml` in VS Code (`Ctrl+P` -> digita `build.yml`).
+
+### Passo 2: Sostituisci TUTTE le occorrenze di 4.5
+
+Usa `Ctrl+H` (Cerca e Sostituisci) in VS Code:
+
+**Sostituzione 1 — Immagine Docker** (2 occorrenze, righe 27 e 59):
+- **Cerca**: `barichello/godot-ci:4.5`
+- **Sostituisci con**: `barichello/godot-ci:4.6`
+- Clicca "Sostituisci tutto" — deve trovare **2 occorrenze**
+
+**Sostituzione 2 — Path export template** (6 occorrenze, righe 35-38 e 67-70):
+- **Cerca**: `4.5.stable`
+- **Sostituisci con**: `4.6.stable`
+- Clicca "Sostituisci tutto" — deve trovare **6 occorrenze**
+
+### Passo 3: Verifica il Risultato
+
+Dopo le sostituzioni, il file deve apparire cosi':
+
+**Job export-windows (righe 26-27)**:
+```yaml
+    container:
+      image: barichello/godot-ci:4.6
+```
+
+**Setup templates Windows (righe 34-39)**:
+```yaml
+      - name: Setup export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
+          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
+              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
+          fi
+```
+
+**Job export-html5 (righe 58-59)**:
+```yaml
+    container:
+      image: barichello/godot-ci:4.6
+```
+
+**Setup templates HTML5 (righe 65-71)** — stesso pattern di sopra con `4.6.stable`.
+
+### Passo 4: Commit e Push
+
+```bash
+git add .github/workflows/build.yml
+git commit -m "fix(build): aggiornata immagine Docker e template da Godot 4.5 a 4.6"
+git push origin main
+```
+
+### Come Verificare
+
+1. Vai su https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private
+2. Clicca sulla tab **"Actions"** in alto
+3. Dovresti vedere il workflow "build" in esecuzione (cerchio giallo)
+4. Aspetta che finisca — se diventa verde (✓), il fix ha funzionato
+5. Clicca sul run e verifica che entrambi i job (Windows e HTML5) siano verdi
+6. Puoi scaricare gli artifact (file compilati) dalla sezione "Artifacts" del run
+
+### Cosa Puo' Andare Storto
+
+- **"Image not found"**: L'immagine `barichello/godot-ci:4.6` potrebbe non esistere ancora su Docker Hub. In quel caso, verifica su https://hub.docker.com/r/barichello/godot-ci/tags quale tag e' disponibile per Godot 4.6 (potrebbe essere `4.6.0` o `4.6-stable`). Aggiorna il tag di conseguenza
+- **"Export template not found"**: Se il path degli export template e' diverso nella nuova immagine Docker, il messaggio di errore ti dira' qual e' il path corretto
+
+---
+
+## Task 10: Icona Applicazione Windows (N-BD4)
+
+**Sezione Audit di riferimento**: Sezione 11 (export_presets.cfg), Sezione 12 (N-BD4 — BASSO)
+**Tempo stimato**: 30 minuti
+**Priorita'**: MEDIO
+
+### Cosa C'e' da Fare
+
+Il file `export_presets.cfg` ha il campo `application/icon=""` vuoto. Questo significa che il file `.exe` di Windows non avra' un'icona personalizzata — usera' l'icona generica di Godot. Per un gioco presentabile, serve un'icona `.ico`.
+
+### Passo 1: Creare o Trovare un'Icona
+
+L'icona deve essere un file `.ico` (formato Windows icon), idealmente con queste dimensioni:
+- 256x256 px (principale)
+- 128x128, 64x64, 48x48, 32x32, 16x16 (varianti per diverse dimensioni)
+
+**Opzione A — Creare da un PNG esistente**:
+1. Prendi un PNG del gioco (es. lo sprite del personaggio, il logo) e ridimensionalo a 256x256
+2. Converti il PNG in ICO usando un sito online come https://convertio.co/png-ico/ oppure https://icoconvert.com/
+3. Salva il file come `v1/assets/ui/icon.ico`
+
+**Opzione B — Creare in Aseprite/LibreSprite**:
+1. Crea un'icona pixel art 32x32 con il tema del gioco
+2. Esporta come PNG e converti in ICO
+
+### Passo 2: Configurare in export_presets.cfg
+
+Apri `v1/export_presets.cfg` e trova la riga:
+```ini
+application/icon=""
+```
+
+Sostituisci con:
+```ini
+application/icon="res://assets/ui/icon.ico"
+```
+
+### Passo 3: Commit
+
+```bash
+git add v1/assets/ui/icon.ico v1/export_presets.cfg
+git commit -m "asset: aggiunta icona applicazione Windows"
+git push origin main
+```
+
+### Come Verificare
+
+1. In Godot, vai in **Project → Export**
+2. Seleziona "Windows Desktop"
+3. Nella sezione "Application", il campo "Icon" deve mostrare il percorso dell'icona
+4. Se fai una build locale (Export), il file `.exe` risultante deve mostrare l'icona nel file explorer di Windows
+
+---
+
+## Task 11: Versione Applicazione (N-BD5)
+
+**Sezione Audit di riferimento**: Sezione 11 (export_presets.cfg), Sezione 12 (N-BD5 — BASSO)
+**Tempo stimato**: 10 minuti
+**Priorita'**: MEDIO
+
+### Cosa C'e' da Fare
+
+Il file `export_presets.cfg` ha i campi `application/file_version=""` e `application/product_version=""` vuoti. Quando si guarda le proprieta' del file `.exe` su Windows (tasto destro → Proprieta' → Dettagli), la versione risulta vuota.
+
+### Passo 1: Modifica export_presets.cfg
+
+Apri `v1/export_presets.cfg` e trova le righe:
+```ini
+application/file_version=""
+application/product_version=""
+```
+
+Sostituisci con:
+```ini
+application/file_version="1.0.0.0"
+application/product_version="1.0.0.0"
+```
+
+**Nota**: Il formato Windows richiede 4 numeri separati da punto: `major.minor.patch.build`.
+
+### Passo 2: Commit
+
+```bash
+git add v1/export_presets.cfg
+git commit -m "config: impostata versione applicazione 1.0.0.0 in export_presets"
+git push origin main
+```
+
+### Come Verificare
+
+1. Fai una build locale in Godot (Project → Export → Windows Desktop → Export)
+2. Tasto destro sul file `.exe` → Proprieta' → Dettagli
+3. Deve mostrare "Versione file: 1.0.0.0" e "Versione prodotto: 1.0.0.0"
 
 ---
 
@@ -49,7 +241,7 @@ Ogni volta che qualcuno fa un `git push`, questo controllo parte automaticamente
 
 ## Task 1: Aggiungere Linting dei File Test nella CI
 
-**Sezione Audit di riferimento**: 9.3
+**Sezione Audit di riferimento**: Sezione 11
 **Tempo stimato**: 20 minuti
 **Priorita'**: MEDIO
 
@@ -204,7 +396,7 @@ git push origin main
 
 ## Task 3: Correggere Logger — Session ID con Possibili Collisioni
 
-**Sezione Audit di riferimento**: 6.7, Problema A13
+**Sezione Audit di riferimento**: Sezione 6 (Autoload — logger.gd)
 **Tempo stimato**: 30 minuti
 **Priorita'**: MEDIO
 
@@ -306,14 +498,14 @@ git push origin main
 
 ### Cosa Puo' Andare Storto
 
-- **Errore `Crypto not found`**: Assicurati di usare Godot 4.5 — la classe `Crypto` e' disponibile dalla versione 4.0 in poi
+- **Errore `Crypto not found`**: Assicurati di usare Godot 4.6 — la classe `Crypto` e' disponibile dalla versione 4.0 in poi
 - **Errore di indentazione**: GDScript usa **tab** per l'indentazione, non spazi. Assicurati che il tuo editor sia configurato per usare tab
 
 ---
 
 ## Task 4: Correggere Logger — Log Persi se File Non Disponibile
 
-**Sezione Audit di riferimento**: 6.7, Problema A12
+**Sezione Audit di riferimento**: Sezione 6 (Autoload — logger.gd)
 **Tempo stimato**: 20 minuti
 **Priorita'**: MEDIO
 
@@ -404,7 +596,7 @@ Questa correzione e' difficile da testare manualmente in condizioni normali. Il 
 
 ## Task 5: Aggiungere `_exit_tree()` al PerformanceManager
 
-**Sezione Audit di riferimento**: 6.8, Problema A14
+**Sezione Audit di riferimento**: Sezione 6 (Autoload)
 **Tempo stimato**: 20 minuti
 **Priorita'**: ALTO
 
@@ -490,7 +682,7 @@ git push origin main
 
 ## Task 6: Aggiornare Documentazione e Riferimenti
 
-**Sezione Audit di riferimento**: 14
+**Sezione Audit di riferimento**: Sezione 14
 **Tempo stimato**: 1 ora
 **Priorita'**: BASSO
 
@@ -532,6 +724,9 @@ Usa questa checklist per verificare di aver completato tutto. Spunta ogni voce m
 - [x] Logger: session ID usa Crypto per casualita' sicura (FATTO 31 Mar)
 - [x] Logger: buffer mantiene ultimi 100 messaggi se file non disponibile (FATTO 31 Mar)
 - [x] PerformanceManager: _exit_tree() disconnette 3 segnali (FATTO 31 Mar)
+- [ ] CRITICO: build.yml usa Godot 4.6 (non 4.5) — Task 9 (N-BD1)
+- [ ] Icona applicazione Windows configurata — Task 10 (N-BD4)
+- [ ] Versione applicazione impostata — Task 11 (N-BD5)
 - [ ] Documentazione: README e riferimenti aggiornati
 - [ ] Personaggio: trovato/creato nuovo sprite set 16x16 con 8 direzioni
 - [ ] Asset grafici: trovati/creati asset aggiuntivi (loading screen, ecc.)
@@ -547,14 +742,17 @@ Non tutti i tuoi task hanno bisogno che gli altri abbiano finito. Ecco la mappa:
 | ---- | --------------------- | ---------- |
 | ~~Task 1 (lint test nella CI)~~ | — | GIA' FATTO |
 | ~~Task 2 (branch proto → main)~~ | — | GIA' FATTO |
-| Task 3 (Logger session ID) | **SI'** | Nessuna |
-| Task 4 (Logger buffer) | **SI'** | Nessuna |
-| Task 5 (PerformanceManager _exit_tree) | **SI'** | Nessuna |
+| ~~Task 3 (Logger session ID)~~ | — | FATTO 31 Mar |
+| ~~Task 4 (Logger buffer)~~ | — | FATTO 31 Mar |
+| ~~Task 5 (PerformanceManager _exit_tree)~~ | — | FATTO 31 Mar |
 | Task 6 (aggiornare documentazione) | **NO** | Dipende dal completamento di tutti gli altri task |
 | Task 7 (nuovo personaggio pixel art) | **SI'** | Nessuna — puo' essere fatto in parallelo |
 | Task 8 (asset grafici aggiuntivi) | **SI'** | Nessuna — puo' essere fatto in parallelo |
+| **Task 9 (CRITICO — fix build.yml)** | **SI' — FALLO SUBITO** | Nessuna — e' il fix piu' urgente |
+| **Task 10 (icona Windows)** | **SI'** | Nessuna |
+| **Task 11 (versione app)** | **SI'** | Nessuna |
 
-**Suggerimento**: inizia subito con Task 3-5, poi passa al Task 6 quando tutti hanno finito.
+**Suggerimento**: inizia SUBITO con Task 9 (CRITICO), poi Task 10-11, poi Task 7-8.
 
 ---
 
@@ -619,7 +817,7 @@ male_idle/
 male_walk/
 ├── male_walk_down.png           (128x32, 4 frame)
 ├── male_walk_down_side.png      (128x32, 4 frame)
-├── male_walk_down_side_sx.png   (128x32, 4 frame) ← NOTA: il file attuale ha un typo "sxt"
+├── male_walk_down_side_sx.png   (128x32, 4 frame)
 ├── male_walk_side.png           (128x32, 4 frame)
 ├── male_walk_side_sx.png        (128x32, 4 frame)
 ├── male_walk_up.png             (128x32, 4 frame)
@@ -863,11 +1061,11 @@ git push origin main
 
 **Causa**: La CI usa un'immagine Docker che deve scaricare Godot. Se la versione specificata nel workflow non corrisponde a quella disponibile, il download fallisce.
 
-**Soluzione**: Verifica nel file `ci.yml` che la versione di Godot sia `4.5-stable` e che l'URL di download sia corretto. Confronta con la pagina ufficiale dei rilasci: <https://github.com/godotengine/godot/releases>.
+**Soluzione**: Verifica nel file `build.yml` che l'immagine Docker sia `barichello/godot-ci:4.6` e che i path degli export template usino `4.6.stable`. Confronta con la pagina ufficiale dei rilasci: <https://github.com/godotengine/godot/releases>.
 
 ### "Il lint fallisce con 'unexpected token'"
 
-**Causa**: La versione di `gdtoolkit` installata nella CI non e' compatibile con Godot 4.5.
+**Causa**: La versione di `gdtoolkit` installata nella CI non e' compatibile con Godot 4.6.
 
 **Soluzione**: Verifica che il file `ci.yml` installi la versione corretta:
 
@@ -921,6 +1119,7 @@ Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare 
 - **Documentazione gdtoolkit**: <https://github.com/Scony/godot-gdscript-toolkit>
 - **Riferimento YAML**: <https://yaml.org/spec/> (per il file ci.yml)
 - **Validatore YAML online**: <https://www.yamllint.com/>
+- **Docker Hub godot-ci**: <https://hub.docker.com/r/barichello/godot-ci/tags> — per verificare i tag disponibili
 
 ---
 
