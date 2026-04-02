@@ -1,9 +1,9 @@
 # Guida Operativa — Renan Augusto Macena (Gameplay, UI & Asset)
 
-**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 31 Marzo 2026 — **TUTTI I TASK COMPLETATI**)
+**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 1 Aprile 2026)
 **Prerequisito**: Leggere prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare l'ambiente di sviluppo.
 
-**Riferimenti nell'Audit Report**: Sezioni 7.1-7.11, 8, 11 Fase 1 e 2
+**Riferimenti nell'Audit Report v2.0.0**: Sezioni 6-10 (Analisi Codice), 12 (Classificazione — N-Q1, N-Q3, N-AR7)
 
 > **Stato Supabase (aggiornamento 31 Marzo 2026)**:
 > Il vecchio `SupabaseClient` (codice morto) e' stato rimosso il 27 Mar.
@@ -30,6 +30,7 @@ Questa guida contiene **tutti** i task, divisi in tre parti:
 | **2 — Integrazione Asset** | Portare asset da `projectwork-ifts/` in `v1/` | Task 8-11 | ALTO/MEDIO |
 | **3 — Nuove Funzionalita'** | Popup decorazioni e rotazione/ridimensionamento | Task 12-13 | MEDIO |
 | **4 — Bug Fix Audit 2** | Problemi aggiuntivi trovati nel deep audit | Task 14-18 | ALTO/MEDIO |
+| **5 — Nuovi Task Audit v2.0.0** | Problemi trovati nella riscrittura completa dell'audit | Task 19-21 | MEDIO |
 
 **Ordine**: Fare **prima** i bug fix (Parte 1), **poi** l'integrazione (Parte 2), **infine** le nuove funzionalita' (Parte 3).
 
@@ -55,8 +56,11 @@ Questa guida contiene **tutti** i task, divisi in tre parti:
 | 16 | ~~Clamp decorazioni al viewport (A28)~~ | `scripts/rooms/room_base.gd` | MEDIO | **FATTO** |
 | 17 | ~~Null check instantiate (A29)~~ | `scripts/menu/main_menu.gd` | MEDIO | **FATTO** |
 | 18 | ~~_exit_tree() panel_manager + room_grid (A1)~~ | `scripts/ui/panel_manager.gd`, `scripts/rooms/room_grid.gd` | ALTO | **FATTO** |
+| **19** | **Fix `clean_name` in auth_manager.gd:60 (N-Q3)** | `scripts/autoload/auth_manager.gd` | MEDIO | **DA FARE** |
+| **20** | **Aggiungere `_exit_tree()` + tween in auth_screen.gd (N-Q1)** | `scripts/menu/auth_screen.gd` | MEDIO | **DA FARE** |
+| **21** | **Fix settings_panel.gd: usare SignalBus (N-AR7)** | `scripts/ui/settings_panel.gd` | MEDIO | **DA FARE** |
 
-**Tutti i 18 task di Renan sono completati.**
+**18 task completati su 21.** Restano 3 nuovi task da Audit v2.0.0.
 
 ---
 
@@ -1187,6 +1191,183 @@ git push origin main
 
 ---
 
+# PARTE 5: Nuovi Task da Audit v2.0.0 (Task 19-21)
+
+Questi task sono stati identificati nella riscrittura completa dell'audit report (v2.0.0, 1 Aprile 2026).
+Sono tutti di priorita' MEDIA e richiedono poco tempo.
+
+---
+
+## Task 19: Fix `clean_name` in auth_manager.gd (N-Q3)
+
+**Sezione Audit di riferimento**: Sezione 6 (auth_manager.gd), Sezione 12 (N-Q3 — MEDIO)
+**Tempo stimato**: 5 minuti
+**Priorita'**: MEDIO
+
+### Cosa C'e' da Fare
+
+In `auth_manager.gd`, alla riga 60, la funzione `register()` usa `username.strip_edges()` direttamente invece di chiamare la funzione `clean_name()` che esiste gia' nello stesso file e fa la stessa cosa (piu' eventuali future sanitizzazioni). E' un'incoerenza: in altre funzioni si usa `clean_name()`, qui no.
+
+### Passo 1: Apri il File
+
+Apri `scripts/autoload/auth_manager.gd` in VS Code.
+
+### Passo 2: Trova la Riga da Modificare
+
+Intorno alla riga 60, nella funzione `register()`, troverai:
+
+```gdscript
+var account_id := LocalDatabase.create_account(
+    username.strip_edges(), pw_hash
+)
+```
+
+Il problema: alla riga 45, la funzione ha gia' calcolato `var clean_name := username.strip_edges()` e lo usa ovunque (validazione, check duplicati). Ma alla riga 60 chiama `username.strip_edges()` **di nuovo** invece di riusare `clean_name`.
+
+### Passo 3: Sostituisci
+
+**Prima** (codice attuale):
+```gdscript
+var account_id := LocalDatabase.create_account(
+    username.strip_edges(), pw_hash
+)
+```
+
+**Dopo** (codice corretto):
+```gdscript
+var account_id := LocalDatabase.create_account(
+    clean_name, pw_hash
+)
+```
+
+**Cosa cambia**: Si riusa la variabile `clean_name` gia' calcolata alla riga 45, cosi' la sanitizzazione e' consistente e avviene in un solo punto.
+
+### Come Verificare
+
+1. Avvia il gioco (F5)
+2. Prova a registrare un nuovo account con spazi nel nome (es. "  test  ")
+3. Il nome deve essere salvato senza spazi iniziali e finali
+4. Nessun errore nel pannello Output
+
+### Commit
+
+```bash
+git add scripts/autoload/auth_manager.gd
+git commit -m "fix: riusare clean_name invece di strip_edges() doppio in register (N-Q3)"
+git push origin main
+```
+
+---
+
+## Task 20: (OPZIONALE) Protezione Doppio Click in auth_screen.gd (N-Q1)
+
+**Sezione Audit di riferimento**: Sezione 7 (auth_screen.gd), Sezione 12 (N-Q1 — MEDIO)
+**Tempo stimato**: 5 minuti
+**Priorita'**: BASSO (opzionale)
+
+### Analisi Post-Verifica
+
+Dopo analisi approfondita del codice, questo task e' stato **ridimensionato**:
+
+1. **`_exit_tree()` NON serve**: auth_screen non si connette a nessun segnale globale (SignalBus). Tutte le connessioni sono a nodi figli (bottoni, LineEdit) che vengono distrutti automaticamente insieme al padre.
+2. **Tween auto-cleanup**: In Godot 4, `create_tween()` crea un tween legato al nodo. Quando il nodo viene rimosso dall'albero, il tween viene automaticamente ucciso. Nessun leak possibile.
+3. **Unico miglioramento possibile**: proteggere `_finish()` dal doppio click (se l'utente clicca due volte velocemente, due tween partirebbero). Ma `queue_free()` e' idempotente in Godot, quindi non causa crash.
+
+### Se Vuoi Comunque Farlo
+
+Aggiungi un guard nella funzione `_finish()`:
+
+**Prima**:
+```gdscript
+func _finish() -> void:
+    var tween := create_tween()
+```
+
+**Dopo**:
+```gdscript
+var _finishing: bool = false
+
+func _finish() -> void:
+    if _finishing:
+        return
+    _finishing = true
+    var tween := create_tween()
+```
+
+### Come Verificare
+
+1. Avvia il gioco (F5)
+2. Clicca rapidamente due volte su "Play as Guest"
+3. L'animazione di fade-out deve partire una sola volta
+4. Nessun errore nel pannello Output
+
+---
+
+## Task 21: Fix settings_panel.gd — Usare SignalBus (N-AR7)
+
+**Sezione Audit di riferimento**: Sezione 9 (settings_panel.gd), Sezione 12 (N-AR7 — ARCHITETTURALE)
+**Tempo stimato**: 5 minuti
+**Priorita'**: MEDIO
+
+### Cosa C'e' da Fare
+
+In `settings_panel.gd`, alla riga 128 circa, il pannello scrive **direttamente** in `SaveManager.settings` invece di emettere un segnale tramite `SignalBus.settings_updated`. Questo viola il pattern architetturale del progetto, dove tutti i componenti dovrebbero comunicare tramite segnali, non con accesso diretto.
+
+### Passo 1: Apri il File
+
+Apri `scripts/ui/settings_panel.gd` in VS Code.
+
+### Passo 2: Trova il Punto di Scrittura Diretta
+
+Nella funzione `_on_language_selected()` (riga ~128), troverai:
+
+```gdscript
+func _on_language_selected(index: int) -> void:
+    var lang_code: String = _language_option.get_item_metadata(index)
+    SaveManager.settings["language"] = lang_code      # ← scrittura diretta!
+    SignalBus.language_changed.emit(lang_code)
+    SignalBus.save_requested.emit()
+    AppLogger.info("SettingsPanel", "Language changed", {"lang": lang_code})
+```
+
+**Perche' e' un problema**: Gli slider del volume usano correttamente il pattern segnale (`SignalBus.volume_changed` → `AudioManager` → `SignalBus.settings_updated` → `SaveManager`). Ma il selettore lingua bypassa tutto e scrive direttamente nel dizionario di SaveManager.
+
+### Passo 3: Sostituisci con Emissione Segnale
+
+**Prima** (codice attuale):
+```gdscript
+    SaveManager.settings["language"] = lang_code
+    SignalBus.language_changed.emit(lang_code)
+    SignalBus.save_requested.emit()
+```
+
+**Dopo** (codice corretto):
+```gdscript
+    SignalBus.settings_updated.emit("language", lang_code)
+    SignalBus.language_changed.emit(lang_code)
+```
+
+**Cosa cambia**: `SignalBus.settings_updated` gia' esiste (dichiarato in `signal_bus.gd` riga 37 come `signal settings_updated(key: String, value: Variant)`) e `SaveManager` gia' lo ascolta (riga 61: `SignalBus.settings_updated.connect(_on_settings_updated)`). Il handler `_on_settings_updated` scrive la chiave nel dizionario e chiama `_mark_dirty()`, quindi non serve piu' `save_requested`.
+
+### Come Verificare
+
+1. Avvia il gioco (F5)
+2. Apri il pannello Settings
+3. Cambia la lingua da English a Italiano
+4. L'interfaccia deve aggiornarsi
+5. Chiudi e riapri il gioco — la lingua deve essere Italiano
+6. Nessun errore nel pannello Output
+
+### Commit
+
+```bash
+git add scripts/ui/settings_panel.gd
+git commit -m "refactor: settings_panel lingua via SignalBus.settings_updated (N-AR7)"
+git push origin main
+```
+
+---
+
 ## Ordine Consigliato dei Task
 
 Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
@@ -1198,6 +1379,8 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 5. **Task 6** (_exit_tree per 6 script) — **quinto**, e' il piu' lungo ma non blocca nessun altro task
 6. ~~**Task 8-11**~~ — **GIA' COMPLETATI** (asset gia' integrati in v1)
 7. **Task 12-13** (popup + persistenza decorazioni) — **per ultimi**, nuove funzionalita'
+8. **Task 19** (clean_name) e **Task 21** (settings_panel) — **veloci**, 5 minuti ciascuno
+9. **Task 20** (_exit_tree auth_screen) — **ultimo**, richiede piu' attenzione (15 min)
 
 ---
 
@@ -1256,6 +1439,14 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 
 > **Nota**: A7 (memory leak drag preview) analizzato e determinato **non essere un bug** —
 > `Control.set_drag_preview()` in Godot 4 gestisce automaticamente il lifecycle del preview node.
+
+### Parte 5 — Nuovi Task da Audit v2.0.0
+
+```text
+- [x] Task 19: Fix clean_name in auth_manager.gd (N-Q3) — riusare variabile clean_name
+- [ ] Task 20: (OPZIONALE) Protezione doppio click auth_screen.gd (N-Q1) — ridimensionato dopo analisi
+- [x] Task 21: Fix settings_panel.gd scrittura diretta → SignalBus.settings_updated (N-AR7)
+```
 
 ---
 

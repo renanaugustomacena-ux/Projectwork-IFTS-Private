@@ -1,14 +1,14 @@
 # Guida Operativa — Elia Zoccatelli (Database Support)
 
-**Data**: 21 Marzo 2026 (Aggiornamento: 31 Marzo 2026)
+**Data**: 21 Marzo 2026 (Aggiornamento: 1 Aprile 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
-**Riferimenti nell'Audit Report**: Sezioni 6.4, 8, 10.1 (A24-A27), 11 Fase 1.4 e 3, 12
+**Riferimenti nell'Audit Report v2.0.0**: Sezioni 6 (Autoload — local_database.gd, auth_manager.gd), 11 (Dati/DB/CI), 12 (Classificazione — N-DB1, N-DB2)
 
-> **Nota Importante — Godot 4.5.2 Richiesto** (30 Marzo 2026):
-> Il plugin godot-sqlite (GDExtension) richiede **Godot 4.5.0 o superiore**.
-> Se usi Godot 4.4.x o precedente, il database non si carichera' e vedrai errori come:
-> `Could not find type "SQLite" in the current scope`.
+> **Nota Importante — Godot 4.6 Richiesto** (1 Aprile 2026):
+> Il plugin godot-sqlite (GDExtension) richiede **Godot 4.6**. Il progetto e' stato aggiornato
+> dalla versione 4.5 alla 4.6. Se usi Godot 4.5.x o precedente, il database non si carichera'
+> e vedrai errori come: `Could not find type "SQLite" in the current scope`.
 > Segui le istruzioni in [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per installare la versione corretta.
 
 > **Cronologia Aggiornamenti**:
@@ -16,6 +16,7 @@
 > - **27 Mar 2026**: C3, C4, C1, A17 completati da Renan. Task ridotti a verifica + seed data
 > - **29 Mar 2026**: Transazioni SQLite (BEGIN/COMMIT) e atomic writes aggiunti al codebase
 > - **30 Mar 2026**: Deep audit → 4 nuovi problemi assegnati (A24-A27) + sezione Supabase
+> - **1 Apr 2026**: Audit v2.0.0 → 2 nuovi task assegnati (N-DB2 indici FK, N-DB1 tabelle morte)
 
 ---
 
@@ -32,6 +33,8 @@
 | A25 | _save_inventory() ritorna void, errori non propagati | **CORRETTO** | Elia (31 Mar) |
 | A26 | _set_state() non verifica LocalDatabase.is_open() | **CORRETTO** | Elia (31 Mar) |
 | A27 | register() non valida ritorno di create_account() | **CORRETTO** | Renan (31 Mar) |
+| **N-DB2** | **Colonne FK senza indici (performance)** | **DA FARE** | Elia |
+| **N-DB1** | **Tabelle morte (shop, colore, categoria) non usate** | **DA FARE** | Elia |
 
 ## Task per Elia
 
@@ -43,8 +46,148 @@
 | 4 | ~~A26: Check is_open() in _set_state()~~ | `scripts/autoload/auth_manager.gd` | — | — | FATTO (31 Mar) |
 | 5 | ~~A27: Validare create_account() in register()~~ | `scripts/autoload/auth_manager.gd` | — | — | GIA' FATTO |
 | 6 | Supabase: Creare progetto, tabelle, RLS | Dashboard Supabase | ALTO | 1.5 ore | DA FARE |
+| **7** | **N-DB2: Aggiungere indici su colonne FK** | `scripts/autoload/local_database.gd` | **MEDIO** | **15 min** | **DA FARE** |
+| **8** | **N-DB1: Documentare/rimuovere tabelle morte** | `scripts/autoload/local_database.gd` | **BASSO** | **10 min** | **DA FARE** |
 
-**Restano**: solo Task 6 (Supabase)
+**Restano**: Task 6 (Supabase) + Task 7-8 (nuovi da audit v2.0.0)
+
+---
+
+## Task 7: Aggiungere Indici su Colonne FK (N-DB2)
+
+**Sezione Audit di riferimento**: Sezione 11 (Database), Sezione 12 (N-DB2 — MEDIO)
+**Tempo stimato**: 15 minuti
+**Priorita'**: MEDIO
+
+### Cosa C'e' da Fare
+
+Le tabelle `characters`, `inventario`, `rooms` e `items` hanno colonne **FOREIGN KEY** (`account_id`, `character_id`, `shop_id`, ecc.) ma nessuna di queste colonne ha un **indice**. Senza indici, le query che fanno JOIN o WHERE su queste colonne devono scansionare l'intera tabella — lento se ci sono molti record.
+
+### Il Concetto: Cos'e' un Indice?
+
+Immaginate un libro di 500 pagine. Se volete trovare dove si parla di "transazioni", avete due opzioni:
+1. **Senza indice**: sfogliare tutte le 500 pagine una per una (lento!)
+2. **Con indice**: guardare l'indice analitico in fondo al libro e andare direttamente alla pagina giusta
+
+Un indice nel database fa la stessa cosa: crea una "rubrica" che permette al database di trovare i record velocemente, senza scansionare tutta la tabella.
+
+**Nota importante**: SQLite crea automaticamente un indice per la PRIMARY KEY, ma **NON** per le FOREIGN KEY. Sta a noi crearli.
+
+### Passo 1: Apri il File
+
+Apri `scripts/autoload/local_database.gd` in VS Code (`Ctrl+P` -> digita `local_database.gd`).
+
+### Passo 2: Trova la Funzione `_create_tables()`
+
+Questa funzione contiene tutte le istruzioni `CREATE TABLE`. Si trova intorno alla riga 88. Alla fine della funzione, dopo l'ultimo `CREATE TABLE`, aggiungi i seguenti indici:
+
+### Passo 3: Aggiungi gli Indici
+
+Dopo l'ultima istruzione `CREATE TABLE` nella funzione `_create_tables()`, aggiungi:
+
+```gdscript
+	# Indici sulle colonne FOREIGN KEY per migliorare le performance delle query
+	# Senza questi indici, le JOIN e le WHERE su FK fanno full table scan
+	_execute("CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_rooms_character ON rooms(character_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_items_shop ON items(shop_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_items_categoria ON items(categoria_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_items_colore ON items(colore_id);")
+```
+
+**Cosa fa `CREATE INDEX IF NOT EXISTS`**:
+- `CREATE INDEX` — crea un indice sulla colonna specificata
+- `IF NOT EXISTS` — non da errore se l'indice esiste gia' (sicuro da rieseguire)
+- `idx_characters_account` — nome descrittivo dell'indice (tabella + colonna)
+- `ON characters(account_id)` — "crea l'indice sulla colonna account_id della tabella characters"
+
+### Passo 4: Salva e Testa
+
+1. Salva il file (`Ctrl+S`)
+2. **Cancella il database esistente** per forzare la ricreazione:
+   - Trova il file `cozy_room.db` (vedi sezione percorsi nel setup)
+   - Rinominalo in `cozy_room.db.backup` (NON cancellare, cosi' puoi recuperarlo)
+3. Avvia il gioco (F5 in Godot)
+4. Il database viene ricreato automaticamente con gli indici
+5. Nessun errore nel pannello Output
+
+### Passo 5: Verifica con DB Browser
+
+1. Apri `cozy_room.db` con DB Browser for SQLite
+2. Vai nella tab **"Execute SQL"**
+3. Esegui questa query:
+
+```sql
+-- Mostra tutti gli indici del database
+SELECT name, tbl_name FROM sqlite_master WHERE type='index' ORDER BY tbl_name;
+```
+
+Dovresti vedere i nuovi indici (es. `idx_characters_account`, `idx_inventario_account`, ecc.) oltre agli indici automatici delle PRIMARY KEY (che iniziano con `sqlite_autoindex_`).
+
+### Commit
+
+```bash
+git add scripts/autoload/local_database.gd
+git commit -m "perf: aggiunti indici su colonne FK per migliorare performance query"
+git push origin main
+```
+
+---
+
+## Task 8: Documentare/Rimuovere Tabelle Morte (N-DB1)
+
+**Sezione Audit di riferimento**: Sezione 11 (Database), Sezione 12 (N-DB1 — BASSO)
+**Tempo stimato**: 10 minuti
+**Priorita'**: BASSO
+
+### Cosa C'e' da Fare
+
+Il database ha **3 tabelle** che vengono create ma **mai usate** in nessuno script del progetto:
+- `shop` — doveva contenere i negozi, ma il negozio non esiste nel gioco
+- `colore` — doveva contenere i colori, ma i colori sono hardcoded
+- `categoria` — doveva contenere le categorie di oggetti, ma le categorie sono nel JSON
+
+Queste tabelle occupano spazio nello schema e confondono chi legge il codice. L'audit v2.0.0 le ha classificate come "dead code" (codice morto).
+
+### Due Opzioni
+
+**Opzione A — Aggiungere commenti (consigliata per ora)**:
+Se non siamo sicuri che servano in futuro, aggiungiamo un commento che le marca come non usate:
+
+```gdscript
+	# NOTE: Le seguenti tabelle sono create per compatibilita' con lo schema originale
+	# ma NON sono attualmente utilizzate da nessuno script del progetto.
+	# Candidate per rimozione in una futura pulizia.
+	_execute("""CREATE TABLE IF NOT EXISTS shop ...""")
+	_execute("""CREATE TABLE IF NOT EXISTS colore ...""")
+	_execute("""CREATE TABLE IF NOT EXISTS categoria ...""")
+```
+
+**Opzione B — Rimuovere completamente**:
+Se siamo sicuri che non servono, cancellare le 3 istruzioni `CREATE TABLE` per shop, colore e categoria dalla funzione `_create_tables()`.
+
+### Passo 1: Apri il File
+
+Apri `scripts/autoload/local_database.gd` e trova le istruzioni `CREATE TABLE` per `shop`, `colore` e `categoria` nella funzione `_create_tables()`.
+
+### Passo 2: Applica l'Opzione Scelta
+
+Se scegli **Opzione A**, aggiungi un commento sopra ciascuna delle 3 tabelle:
+
+```gdscript
+	# NOTA: tabella non utilizzata — mantenuta per compatibilita' schema originale
+```
+
+Se scegli **Opzione B**, cancella le 3 istruzioni `CREATE TABLE` per shop, colore, categoria e le relative `CREATE INDEX` (se presenti).
+
+### Commit
+
+```bash
+git add scripts/autoload/local_database.gd
+git commit -m "docs: documentate tabelle morte (shop, colore, categoria) come non usate"
+git push origin main
+```
 
 ---
 
@@ -154,6 +297,9 @@ SELECT * FROM inventario WHERE account_id = 1;
 
 -- Conta quanti personaggi ha l'account 1
 SELECT COUNT(*) FROM characters WHERE account_id = 1;
+
+-- Mostra tutti gli indici (per verificare Task 7)
+SELECT name, tbl_name FROM sqlite_master WHERE type='index' ORDER BY tbl_name;
 ```
 
 ---
@@ -282,118 +428,9 @@ git push origin main
 
 ---
 
-## Task 3: _save_inventory() Ritorna Bool (A25)
+## Task 3-5: Completati
 
-**Tempo stimato**: 10 minuti
-**Priorita'**: ALTO
-
-**Problema (A25)**: `_save_inventory()` ritorna `void` — il Task 2 ha bisogno che ritorni `bool`.
-
-**File**: `scripts/autoload/local_database.gd`, funzione `_save_inventory()` (riga 361)
-
-**Codice attuale**:
-
-```gdscript
-func _save_inventory(account_id: int, inv_data: Dictionary) -> void:
-```
-
-**Codice corretto**:
-
-```gdscript
-func _save_inventory(account_id: int, inv_data: Dictionary) -> bool:
-    var coins: int = inv_data.get("coins", 0)
-    var capacita: int = inv_data.get("capacita", 50)
-    if not _execute_bound(
-        "UPDATE accounts SET coins = ?, inventario_capacita = ? WHERE account_id = ?;",
-        [coins, capacita, account_id]
-    ):
-        return false
-    var items: Array = inv_data.get("items", [])
-    if not _execute_bound("DELETE FROM inventario WHERE account_id = ?;", [account_id]):
-        return false
-    for item in items:
-        if item is Dictionary and item.has("item_id"):
-            if not _execute_bound(
-                "INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);",
-                [account_id, item.get("item_id", 0), item.get("quantita", 1)]
-            ):
-                return false
-    return true
-```
-
-### Commit
-
-```bash
-git add scripts/autoload/local_database.gd
-git commit -m "save_inventory ritorna bool per propagazione errori (A25)"
-git push origin main
-```
-
----
-
-## Task 4: Check is_open() in _set_state() (A26)
-
-**Tempo stimato**: 5 minuti
-**Priorita'**: MEDIO
-
-**Problema (A26)**: Se il database non si apre (errore inizializzazione, Godot sbagliato), `_set_state()` crasha chiamando `LocalDatabase.get_character()` su un oggetto null.
-
-**File**: `scripts/autoload/auth_manager.gd`, funzione `_set_state()` (riga 99-110)
-
-**Riga da cambiare** (riga 104):
-
-```gdscript
-# PRIMA:
-if current_account_id >= 0:
-    has_character = not LocalDatabase.get_character(
-        current_account_id
-    ).is_empty()
-
-# DOPO:
-if current_account_id >= 0 and LocalDatabase != null and LocalDatabase.is_open():
-    has_character = not LocalDatabase.get_character(
-        current_account_id
-    ).is_empty()
-```
-
-### Commit
-
-```bash
-git add scripts/autoload/auth_manager.gd
-git commit -m "Check LocalDatabase.is_open() prima di query (A26)"
-git push origin main
-```
-
----
-
-## Task 5: Validare create_account() in register() (A27)
-
-**Tempo stimato**: 5 minuti
-**Priorita'**: MEDIO
-
-**Problema (A27)**: `register()` non controlla se `create_account()` ha avuto successo prima di usare l'account_id.
-
-**File**: `scripts/autoload/auth_manager.gd`, funzione `register()` (riga 40-57)
-
-**Riga da aggiungere** dopo riga 52 (`var account_id := LocalDatabase.create_account(...)`):
-
-```gdscript
-var account_id := LocalDatabase.create_account(
-    username.strip_edges(), pw_hash
-)
-# AGGIUNGERE QUESTE 2 RIGHE:
-if account_id < 0:
-    return {"error": "Failed to create account"}
-var account := LocalDatabase.get_account(account_id)
-```
-
-### Commit
-
-```bash
-git add scripts/autoload/auth_manager.gd
-git commit -m "Validazione ritorno create_account in register (A27)"
-git push origin main
-```
+I task 3, 4 e 5 sono stati completati il 31 Marzo 2026. Vedi le sezioni sopra per i dettagli.
 
 ---
 
@@ -460,8 +497,6 @@ anon public:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.XXXXX...
 -- Allineato allo schema SQLite locale
 -- ================================================
 
--- Tabella accounts
--- Collegata all'auth di Supabase tramite auth_uid → auth.users(id)
 CREATE TABLE accounts (
     account_id SERIAL PRIMARY KEY,
     auth_uid UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -472,8 +507,6 @@ CREATE TABLE accounts (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tabella characters
--- Un personaggio per account (come nel gioco)
 CREATE TABLE characters (
     character_id SERIAL PRIMARY KEY,
     account_id INTEGER REFERENCES accounts(account_id) ON DELETE CASCADE,
@@ -486,8 +519,6 @@ CREATE TABLE characters (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tabella rooms
--- La stanza del personaggio con decorazioni in formato JSON
 CREATE TABLE rooms (
     room_id SERIAL PRIMARY KEY,
     character_id INTEGER REFERENCES characters(character_id) ON DELETE CASCADE,
@@ -501,16 +532,6 @@ CREATE TABLE rooms (
 4. Clicca **"Run"** (pulsante verde in basso a destra)
 5. Dovresti vedere: `Success. No rows returned` — significa che le tabelle sono state create
 
-### Differenze PostgreSQL vs SQLite
-
-| Concetto | SQLite | PostgreSQL (Supabase) |
-|----------|--------|----------------------|
-| Auto-incremento | `INTEGER PRIMARY KEY AUTOINCREMENT` | `SERIAL PRIMARY KEY` |
-| Data/ora | `TEXT DEFAULT (datetime('now'))` | `TIMESTAMPTZ DEFAULT NOW()` |
-| JSON | `TEXT` (stringa JSON) | `JSONB` (JSON nativo, indicizzabile) |
-| Utente auth | `auth_uid TEXT` (stringa nostra) | `auth_uid UUID REFERENCES auth.users(id)` (collegato a Supabase Auth) |
-| Booleano | `INTEGER` (0 o 1) | `BOOLEAN` o `INTEGER` |
-
 ### Step 5: Abilitare Row Level Security (RLS)
 
 **Cos'e' RLS?** Immagina un condominio con serratura: ogni inquilino puo' aprire solo la porta del SUO appartamento. RLS fa la stessa cosa con i dati: ogni utente puo' leggere/modificare solo i SUOI record.
@@ -518,26 +539,18 @@ CREATE TABLE rooms (
 1. Nel **SQL Editor**, crea una nuova query e incolla:
 
 ```sql
--- ================================================
--- Row Level Security — Ogni utente vede solo i SUOI dati
--- ================================================
-
--- Abilita RLS su tutte le tabelle
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE characters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
 
--- Policy per accounts: l'utente puo' vedere/modificare solo il suo account
 CREATE POLICY "own_data" ON accounts FOR ALL
     USING (auth_uid = auth.uid());
 
--- Policy per characters: l'utente puo' vedere solo i personaggi del suo account
 CREATE POLICY "own_characters" ON characters FOR ALL
     USING (account_id IN (
         SELECT account_id FROM accounts WHERE auth_uid = auth.uid()
     ));
 
--- Policy per rooms: l'utente puo' vedere solo le stanze dei suoi personaggi
 CREATE POLICY "own_rooms" ON rooms FOR ALL
     USING (character_id IN (
         SELECT character_id FROM characters WHERE account_id IN (
@@ -554,12 +567,6 @@ CREATE POLICY "own_rooms" ON rooms FOR ALL
 1. Nel menu a sinistra, clicca **"Table Editor"**
 2. Dovresti vedere le 3 tabelle: `accounts`, `characters`, `rooms`
 3. Clicca su `accounts` — dovrebbe essere vuota (corretto, nessun utente ancora)
-4. Nella colonna `auth_uid`, nota che il tipo e' `uuid` — questo si collega automaticamente agli utenti che si registrano tramite Supabase Auth
-
-**Test manuale** (opzionale):
-1. Vai su **"Authentication"** nel menu a sinistra
-2. Clicca **"Users"**
-3. Non ci sono utenti ancora — e' corretto
 
 ### Consegna a Renan
 
@@ -571,71 +578,6 @@ Quando hai completato tutti gli step, comunica a Renan:
 
 ---
 
-## Transazioni: Raggruppare Operazioni Correlate
-
-### Cos'e' una Transazione?
-
-Immaginate di trasferire denaro dal conto A al conto B. Servono due operazioni:
-1. Togliere dal conto A
-2. Aggiungere al conto B
-
-Se il sistema si blocca dopo il passo 1 ma prima del passo 2, i soldi sono spariti! Una **transazione** garantisce che **o entrambe le operazioni riescono, o nessuna delle due viene applicata**.
-
-### Il Pattern BEGIN / COMMIT / ROLLBACK
-
-```sql
--- INIZIO transazione: da qui in poi, nulla e' definitivo
-BEGIN TRANSACTION;
-
--- Operazione 1
-UPDATE accounts SET coins = coins - 50 WHERE account_id = 1;
-
--- Operazione 2
-INSERT INTO inventario (account_id, item_id, quantita) VALUES (1, 5, 1);
-
--- Se tutto e' andato bene:
-COMMIT;  -- Conferma tutte le operazioni — ora sono definitive
-
--- Se qualcosa e' andato storto:
--- ROLLBACK;  -- Annulla TUTTO — come se non fosse successo nulla
-```
-
-### Quando Usare le Transazioni
-
-- **Salvataggio dati**: character + inventario insieme (Task 2)
-- **Acquisto oggetto**: togliere monete + aggiungere all'inventario
-- **Migrazione schema**: DROP + CREATE + INSERT — se una fallisce, devono fallire tutte
-
-### Transazioni in GDScript
-
-```gdscript
-func _purchase_item(account_id: int, item_id: int, price: int) -> bool:
-    _execute("BEGIN TRANSACTION;")
-
-    var debit_ok := _execute_bound(
-        "UPDATE accounts SET coins = coins - ? WHERE account_id = ? AND coins >= ?;",
-        [price, account_id, price]
-    )
-
-    if not debit_ok:
-        _execute("ROLLBACK;")
-        return false
-
-    var insert_ok := _execute_bound(
-        "INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, 1);",
-        [account_id, item_id]
-    )
-
-    if not insert_ok:
-        _execute("ROLLBACK;")
-        return false
-
-    _execute("COMMIT;")
-    return true
-```
-
----
-
 ## Schema Visuale del Database (9 tabelle)
 
 ```text
@@ -644,9 +586,6 @@ func _purchase_item(account_id: int, item_id: int, price: int) -> bool:
 │─────────────────────────│
 │ account_id  (PK, AUTO)  │◄──────────────────────────────────┐
 │ auth_uid    (UNIQUE)     │                                    │
-│ data_di_iscrizione       │                                    │
-│ data_di_nascita          │                                    │
-│ mail                     │                                    │
 │ display_name             │                                    │
 │ password_hash            │                                    │
 │ coins                    │  ← monete qui, NON in inventario   │
@@ -671,31 +610,12 @@ func _purchase_item(account_id: int, item_id: int, price: int) -> bool:
            └───────────────────►│ character_id (FK→chars)  │
                                 │ room_type               │
                                 │ theme                    │
-┌─────────────────────────┐     │ decorations (TEXT/JSON)  │
-│        colore            │     │ updated_at               │
-│─────────────────────────│     └─────────────────────────┘
-│ colore_id  (PK, AUTO)   │
-└─────────────────────────┘     ┌─────────────────────────┐
-                                │         items            │
-┌─────────────────────────┐     │─────────────────────────│
-│       categoria          │     │ item_id    (PK, AUTO)   │
-│─────────────────────────│     │ shop_id    (FK→shop)    │
-│ categoria_id (PK, AUTO) │◄────│ categoria_id (FK→categ) │
-└─────────────────────────┘     │ prezzo                   │
-                                │ disponibilita            │
-┌─────────────────────────┐     │ colore_id  (FK→colore)  │
-│         shop             │     └─────────────────────────┘
-│─────────────────────────│
-│ shop_id    (PK, AUTO)   │     ┌─────────────────────────┐
-│ prezzo_item              │     │       sync_queue         │
-└─────────────────────────┘     │─────────────────────────│
-                                │ queue_id   (PK, AUTO)   │
-                                │ table_name              │
-                                │ operation               │
-                                │ payload    (TEXT/JSON)   │
-                                │ created_at              │
-                                │ retry_count             │
+                                │ decorations (TEXT/JSON)  │
+                                │ updated_at               │
                                 └─────────────────────────┘
+
+Tabelle NON utilizzate (N-DB1 — candidate per rimozione):
+  shop, colore, categoria, items, sync_queue
 
 Legenda:
   PK = PRIMARY KEY       FK = FOREIGN KEY
@@ -707,55 +627,18 @@ Legenda:
 ## Troubleshooting Database
 
 ### "database is locked"
-
-**Quando capita**: Se il gioco e' aperto mentre usate DB Browser.
-
-**Soluzione**:
-1. Chiudete il gioco (Godot) prima di aprire il database con DB Browser
-2. Se persiste, cercate file `.db-wal` e `.db-shm` — sono normali per WAL mode
-3. Come ultima risorsa: riavviate il computer
+**Soluzione**: Chiudete il gioco prima di aprire il database con DB Browser.
 
 ### "FOREIGN KEY constraint failed"
-
-**Quando capita**: State inserendo un record figlio senza che il genitore esista.
-
-**Soluzione**: Verificate che il genitore esista prima:
-```sql
-SELECT * FROM accounts WHERE account_id = 1;
-```
-
-### "UNIQUE constraint failed"
-
-**Quando capita**: Tentate di inserire un record duplicato.
-
-**Soluzione**: Usate la funzione upsert (controlla se esiste, poi aggiorna o inserisce).
+**Soluzione**: Verificate che il genitore esista prima di inserire un figlio.
 
 ### "Could not find type SQLite"
-
-**Quando capita**: Godot troppo vecchio. Il plugin godot-sqlite richiede Godot 4.5+.
-
-**Soluzione**: Aggiornate Godot a 4.5.2 o superiore.
+**Soluzione**: Aggiornate Godot a 4.6. Il plugin godot-sqlite richiede questa versione.
 
 ### I dati non appaiono dopo le modifiche
-
 1. DB Browser non salva automaticamente — cliccate "Write Changes"
 2. Il gioco ha una cache — riavviatelo dopo modifiche con DB Browser
 3. WAL mode: chiudete il gioco per forzare il checkpoint
-
----
-
-## Backup del Database Prima delle Modifiche
-
-**Regola d'oro**: SEMPRE fare un backup prima di modificare lo schema.
-
-```bash
-# Linux/macOS
-DB_DIR="$HOME/.local/share/godot/app_userdata/MiniCozyRoom"
-BACKUP="$DB_DIR/backup_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$BACKUP"
-cp "$DB_DIR"/cozy_room.db* "$BACKUP/" 2>/dev/null
-echo "Backup salvato in: $BACKUP"
-```
 
 ---
 
@@ -763,17 +646,19 @@ echo "Backup salvato in: $BACKUP"
 
 ```text
 Correzioni gia' fatte (verificare con DB Browser):
-- [ ] Tabella characters ha character_id come PRIMARY KEY
-- [ ] Tabella accounts ha colonne coins e inventario_capacita
-- [ ] Tabella inventario NON ha colonne coins e capacita
-- [ ] Il gioco si avvia senza errori di database nel pannello Output
-- [ ] Dopo un salvataggio, SELECT * FROM characters restituisce dati
+- [x] Tabella characters ha character_id come PRIMARY KEY
+- [x] Tabella accounts ha colonne coins e inventario_capacita
+- [x] Il gioco si avvia senza errori di database nel pannello Output
 
-Task nuovi per Elia:
+Task completati:
 - [x] Task 2: ROLLBACK aggiunto alle transazioni (A24) — FATTO 31 Mar
 - [x] Task 3: _save_inventory() ritorna bool (A25) — FATTO 31 Mar
 - [x] Task 4: Check is_open() in _set_state() (A26) — FATTO 31 Mar
 - [x] Task 5: Validazione create_account() in register() (A27) — GIA' FATTO
+
+Nuovi task da audit v2.0.0:
+- [ ] Task 7: Indici FK creati (N-DB2) — verificare con query sqlite_master
+- [ ] Task 8: Tabelle morte documentate/rimosse (N-DB1)
 - [ ] Task 6: Progetto Supabase creato con tabelle e RLS
 - [ ] Consegnati URL e anon key a Renan
 ```

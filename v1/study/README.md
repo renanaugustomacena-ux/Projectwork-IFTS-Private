@@ -138,7 +138,7 @@ Per prepararvi all'esame, ecco quali documenti coprono quali potenziali argoment
 ## Related Resources
 
 - [../guide/](../guide/) — Operational guides for each team member
-- [../AUDIT_REPORT.md](../AUDIT_REPORT.md) — Technical audit with bug tracking
+- [../AUDIT_REPORT.md](../AUDIT_REPORT.md) — Technical audit v2.0.0 (1 April 2026 — 23 sections, 24 scripts analyzed)
 - [../TECHNICAL_GUIDE.md](../TECHNICAL_GUIDE.md) — Developer reference
 
 ---

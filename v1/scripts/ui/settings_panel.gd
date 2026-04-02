@@ -125,9 +125,8 @@ func _on_ambience_changed(value: float) -> void:
 
 func _on_language_selected(index: int) -> void:
 	var lang_code: String = _language_option.get_item_metadata(index)
-	SaveManager.settings["language"] = lang_code
+	SignalBus.settings_updated.emit("language", lang_code)
 	SignalBus.language_changed.emit(lang_code)
-	SignalBus.save_requested.emit()
 	AppLogger.info("SettingsPanel", "Language changed", {"lang": lang_code})
 
 

@@ -57,7 +57,7 @@ func register(username: String, password: String) -> Dictionary:
 		return {"error": "Username already taken"}
 	var pw_hash := _hash_password(password)
 	var account_id := LocalDatabase.create_account(
-		username.strip_edges(), pw_hash
+		clean_name, pw_hash
 	)
 	if account_id < 0:
 		return {"error": "Failed to create account"}
