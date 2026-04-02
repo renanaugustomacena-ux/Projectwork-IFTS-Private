@@ -1,3414 +1,2766 @@
-# Audit Completo e Piano di Stabilizzazione — Mini Cozy Room
+# AUDIT REPORT — Mini Cozy Room v1
 
-**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 31 Marzo 2026)
-**Versione Progetto**: Godot 4.6 | GDScript | GL Compatibility
-**Autore**: Renan Augusto Macena
-**Ambito**: Analisi completa di 21 script, 8 scene, 4 file dati, 0 test, 2 workflow CI
-
-> **Stato al 31 Marzo 2026**
->
-> Questo audit e' stato creato il 21 Marzo 2026 e aggiornato progressivamente fino al 31 Marzo.
-> Il codebase ha subito una semplificazione significativa e numerose correzioni. Di seguito il riepilogo.
->
-> **Modifiche strutturali completate**:
-> - **SupabaseClient**: rimosso (27 Mar). Verra' **reintegrato** nella Fase 4 — Elia prepara il progetto PostgreSQL + RLS.
-> - **shop_panel, music_panel, env_loader.gd**: rimossi (semplificazione design)
-> - **CI/CD**: semplificata a 2 pipeline (ci.yml lint + build.yml)
-> - **Test**: tutti i file test rimossi (GdUnit4 non installato). Copertura attuale: 0%
-> - **SaveManager**: ora usa atomic writes (temp → backup → rename)
-> - **LocalDatabase**: ora usa transazioni (BEGIN/COMMIT) per operazioni batch
-> - **Schema database (C3, C4)**: corretti — `characters` con `character_id` PK, `inventario` con FK e ON DELETE CASCADE
-> - **Loading screen**: scena grafica integrata via SubViewportContainer
-> - **Asset grafici**: PNG personaggio maschile e stanza aggiornati (31 Mar). Se i boundaries non funzionano, vedere le istruzioni in Sezione 8.4.
->
-> **Problemi risolti da Renan (tutti completati)**:
-> C5, C6, C7, A1, A3, A7 (non applicabile), A15, A16, A19, A28, A29
->
-> **Numeri attuali del progetto**:
-> 7 autoload + PerformanceManager, **31 segnali**, 1 stanza (3 temi), **69 decorazioni** (11 categorie), 1 personaggio.
->
-> **Problemi ancora aperti: 8** (+ 5 architetturali)
-> - **Elia** (5): A18, A24, A25, A26, A27
-> - **Cristian** (3): A12, A13, A14
-> - **Architetturali** (5): AR6, AR7, AR8, AR9, AR10
-
----
-
-## Team di Progetto
-
-### Renan Augusto Macena — System Architect, Gameplay & Project Supervisor
-
-**Ruolo**: Architettura generale del progetto, sviluppo backend, gameplay/UI/asset, integrazione del lavoro di tutti i membri del team, e responsabile del delivery finale del progetto.
-
-**Capitoli di riferimento per il proprio lavoro**:
-
-- **Sezione 6.3** — SaveManager: correggere race condition auto-save, backup senza error checking, inventario non salvato su SQLite (problemi C1, C2, C3)
-- **Sezione 6.5** — AudioManager: bounds check tracce vuote, memory leak ambience, crossfade tween safety (problemi A4, A5)
-- **Sezione 6.6** — ~~SupabaseClient~~ **RIMOSSO** (27 Marzo 2026): intero autoload eliminato dal progetto (codice morto, zero chiamanti). Problemi A10, A11 non piu' applicabili.
-- **Sezione 7.7** — room_base.gd: aggiungere `_exit_tree()`, correggere race condition swap personaggio (problema A3)
-- **Sezione 7.8** — decoration_system.gd: correggere rimozione duplicati item_id, aggiungere `_exit_tree()` (problema A15)
-- **Sezione 7.9** — character_controller.gd: aggiungere null check su `_anim`, validare nomi animazione prima di `play()`
-- **Sezione 7.11** — window_background.gd: correggere mismatch dimensione array layers/factors (problema C5)
-- **Sezione 7.1, 7.3, 7.5** — Pannelli UI attivi (panel_manager, deco_panel, settings_panel): aggiungere `_exit_tree()` con disconnessione segnali, correggere memory leak drag preview (problemi A1, A7)
-- **Sezione 7.6** — drop_zone.gd: correggere cast Texture2D unsafe (problema A16)
-- **Sezione 8, tracks.json** — Espandere catalogo musicale con tracce lo-fi e ambience
-- **Sezione 10.1, A28** — room_base.gd: clampare posizione decorazioni al viewport (problema A28)
-- **Sezione 10.1, A29** — main_menu.gd: null check dopo `scene.instantiate()` (problema A29)
-- **Sezione 11, Fase 4** — Allineamento architetturale: eliminare coupling diretto tra singleton, introdurre nuovi segnali `settings_updated`, `music_state_updated`, `save_to_database_requested` (violazioni AR1-AR11)
-- **Sezione 11, Fase 1** — Integrità dati: coordinare la correzione di tutti i problemi critici C1-C7
-- **Sezione 11, Fase 5** — Supervisione della copertura test e verifica finale pre-delivery
-
----
-
-### Cristian Marino — CI/CD & Documentation Lead
-
-**Ruolo**: Gestione completa delle pipeline di Continuous Integration (lint, test, security scan, build), configurazione dei workflow GitHub Actions, e redazione di tutta la documentazione tecnica del progetto.
-
-**Capitoli di riferimento per il proprio lavoro**:
-
-- **Sezione 9.3** — CI/CD: linting file test con gdformat (GIA' FATTO), CI semplificata a 2 workflow (ci.yml lint + build.yml)
-- **Sezione 6.7** — Logger: flush sincrono che blocca il game thread, log persi se file non disponibile, session ID con possibili collisioni (problemi A12, A13)
-- **Sezione 6.8** — PerformanceManager: posizione finestra non persistita prima dello shutdown (problema A14)
-- **Sezione 11, Fase 5** — Copertura test: configurare eventuali nuovi test nel workflow CI (attualmente non ci sono test nel progetto)
-- **Sezione 14** — Mantenere aggiornati i riferimenti e la documentazione tecnica del progetto
-
----
-
----
-
-### Elia Zoccatelli — Database Support
-
-**Ruolo**: Assistenza sullo sviluppo e la manutenzione del layer database (SQLite locale, schema Supabase, migrazione dati, query e persistenza). Anche responsabile di task semplici di integrita' dati (typo, costanti).
-
-**Capitoli di riferimento per il proprio lavoro**:
-
-- ~~**Sezione 6.4** — local_database.gd: ridisegnare tabella `characters`, ristrutturare tabella `inventario`~~ **COMPLETATO** (27 Marzo 2026) — problemi C3, C4 risolti
-- ~~**Sezione 6.4** — local_database.gd: verificare seed data per tabelle vuote~~ **COMPLETATO** (29 Marzo 2026) — A17 risolto (diagnostica DB migliorata)
-- ~~**Sezione 11, Fase 1.4** — Istruzioni C3 e C4~~ **GIA' COMPLETATO**
-- ~~**Sezione 8, characters.json** — Correggere typo percorso sprite `sxt` → `sx`~~ **CORRETTO** (31 Marzo 2026, commit Renan) — problema C6 risolto: file rinominato + JSON aggiornato
-- ~~**Sezione 8, constants.gd** — Rimuovere costanti orfane~~ **CORRETTO** (31 Marzo 2026, commit Renan) — problema C7 risolto: 3 costanti rimosse
-- **Sezione 10.1, A24** — local_database.gd: aggiungere ROLLBACK se upsert_character o _save_inventory falliscono (problema A24 — **APERTO**)
-- **Sezione 10.1, A25** — local_database.gd: cambiare `_save_inventory()` per ritornare `bool` e propagare errori (problema A25 — **APERTO**)
-- **Sezione 10.1, A26** — auth_manager.gd: verificare `LocalDatabase.is_open()` in `_set_state()` (problema A26 — **APERTO**)
-- **Sezione 10.1, A27** — auth_manager.gd: validare ritorno di `create_account()` in `register()` (problema A27 — **APERTO**)
-- **Fase 4 — Supabase**: preparare progetto Supabase (tabelle PostgreSQL, RLS policies). Il client GDScript lo implementa Renan. Vedere `guide/GUIDA_ELIA_DATABASE.md` per istruzioni dettagliate.
+> **Progetto**: Mini Cozy Room — Desktop Companion
+> **Motore**: Godot Engine 4.6 (GL Compatibility)
+> **Data audit**: 1 Aprile 2026
+> **Auditor**: Renan Augusto Macena
+> **Versione report**: 2.0.0 — Riscrittura completa
 
 ---
 
 ## Indice
 
-1. [Introduzione e Scopo del Documento](#1-introduzione-e-scopo-del-documento)
-2. [Come Leggere Questo Documento](#2-come-leggere-questo-documento)
-3. [Glossario dei Concetti Fondamentali](#3-glossario-dei-concetti-fondamentali)
-4. [Panoramica del Progetto](#4-panoramica-del-progetto)
-5. [Metodologia di Audit](#5-metodologia-di-audit)
-6. [Risultati — Autoload Singleton](#6-risultati--autoload-singleton)
-7. [Risultati — Script UI, Room e Menu](#7-risultati--script-ui-room-e-menu)
-8. [Risultati — Scene e Dati](#8-risultati--scene-e-dati)
-9. [Risultati — Test e CI/CD](#9-risultati--test-e-cicd)
-10. [Classificazione dei Problemi](#10-classificazione-dei-problemi)
-    - 10.1 [Aggiornamento Post-Correzione (24 Marzo 2026)](#101-aggiornamento-post-correzione-24-marzo-2026)
-11. [Piano di Stabilizzazione](#11-piano-di-stabilizzazione)
-12. [Istruzioni Dettagliate per Correzione](#12-istruzioni-dettagliate-per-correzione)
-13. [Verifica e Testing](#13-verifica-e-testing)
-14. [Riferimenti e Risorse](#14-riferimenti-e-risorse)
-15. [Riepilogo Statistico](#15-riepilogo-statistico)
-16. [Guide Operative per il Team](#16-guide-operative-per-il-team)
-17. [Pratiche di Sviluppo per Prevenire Errori](#17-pratiche-di-sviluppo-per-prevenire-errori)
-18. [Matrice di Prioritizzazione e Valutazione Rischio](#18-matrice-di-prioritizzazione-e-valutazione-rischio)
-19. [Stima Ore-Persona per Fase](#19-stima-ore-persona-per-fase)
-20. [Piano di Rollback](#20-piano-di-rollback--cosa-fare-se-una-correzione-rompe-qualcosa)
-21. [Appendice — File Modificati per Fase](#21-appendice--file-modificati-per-fase)
+1. [Introduzione](#1-introduzione)
+2. [Glossario Tecnico Illustrato](#2-glossario-tecnico-illustrato)
+3. [Panoramica del Progetto](#3-panoramica-del-progetto)
+4. [Metodologia di Audit](#4-metodologia-di-audit)
+5. [Mappa Architetturale](#5-mappa-architetturale)
+6. [Analisi Codice — Autoload](#6-analisi-codice--autoload)
+7. [Analisi Codice — Menu](#7-analisi-codice--menu)
+8. [Analisi Codice — Gameplay / Room](#8-analisi-codice--gameplay--room)
+9. [Analisi Codice — UI](#9-analisi-codice--ui)
+10. [Analisi Codice — Utility e Main](#10-analisi-codice--utility-e-main)
+11. [Analisi Dati, Database e CI/CD](#11-analisi-dati-database-e-cicd)
+12. [Classificazione Problemi](#12-classificazione-problemi)
+13. [Piano di Stabilizzazione](#13-piano-di-stabilizzazione)
+14. [Piano di Polishing](#14-piano-di-polishing)
+15. [Guida Frontend — Il Gioco](#15-guida-frontend--il-gioco)
+16. [Guida Godot Editor](#16-guida-godot-editor)
+17. [Build — Export Windows (.exe)](#17-build--export-windows-exe)
+18. [Build — Inno Setup (Installer)](#18-build--inno-setup-installer)
+19. [Build — Export Android (APK)](#19-build--export-android-apk)
+20. [Build — Export HTML5 (Web)](#20-build--export-html5-web)
+21. [Troubleshooting](#21-troubleshooting)
+22. [Statistiche Progetto](#22-statistiche-progetto)
+23. [Appendice](#23-appendice)
 
 ---
 
-## 1. Introduzione e Scopo del Documento
+## 1. Introduzione
 
-### Cos'e' un Audit del Software?
+Questo documento e' un audit tecnico completo del progetto **Mini Cozy Room**, un desktop companion 2D sviluppato in Godot Engine 4.6 con GDScript. Il report copre:
 
-Immaginate di portare la vostra auto dal meccanico per un controllo completo prima di un lungo viaggio. Il meccanico non si limita a controllare se l'auto si accende: controlla i freni, l'olio, i pneumatici, le luci, il motore, la cintura di sicurezza. L'obiettivo non e' dire "l'auto e' rotta", ma piuttosto "ecco cosa funziona bene, ecco cosa potrebbe dare problemi, ed ecco cosa va sistemato prima di partire".
+- **Analisi riga per riga** di tutti i 24 script GDScript del progetto (~4185 righe totali)
+- **Verifica di tutte le fix** applicate dal primo audit (C1-C7, A1-A29, AR1-AR11)
+- **Nuovi problemi** scoperti durante la ri-analisi completa
+- **Guide operative** per build, export e distribuzione su tutte le piattaforme target
+- **Guide frontend** per comprendere il funzionamento del gioco
+- **Troubleshooting** per i problemi piu' comuni
 
-Un **audit del software** e' esattamente la stessa cosa, ma applicata al codice di un programma. Si analizza ogni singolo file, ogni funzione, ogni connessione tra i vari componenti del progetto. Si cercano:
+### Convenzioni del documento
 
-- **Bug** (errori nel codice che causano comportamenti inaspettati)
-- **Rischi di sicurezza** (porte aperte attraverso cui qualcuno potrebbe fare danni)
-- **Problemi di memoria** (il programma consuma sempre piu' risorse senza mai liberarle)
-- **Problemi di architettura** (il codice e' organizzato in modo che modificare una cosa ne rompe un'altra)
-- **Mancanze nei test** (non c'e' un modo automatico per verificare che le cose funzionino)
+| Simbolo | Significato |
+|---------|-------------|
+| `CRITICO` | Bug che causa crash, perdita dati o vulnerabilita' di sicurezza |
+| `ALTO` | Bug funzionale che impatta l'esperienza utente |
+| `MEDIO` | Problema di qualita' del codice o design subottimale |
+| `BASSO` | Miglioramento minore, pulizia, convenzione |
+| `ARCHITETTURALE` | Decisione di design che impatta manutenibilita' futura |
+| `POLISHING` | Miglioramento estetico o di UX non funzionale |
+| `VERIFICATO` | Fix precedente confermata funzionante |
+| `[SCREENSHOT: ...]` | Placeholder per screenshot da inserire manualmente |
 
-### Perche' Facciamo Questo Audit?
+### Riferimenti alla documentazione ufficiale
 
-Il progetto **Mini Cozy Room** ha una base solida e molte cose fatte bene. Tuttavia, come ogni progetto software in fase di sviluppo, ha accumulato problemi tecnici che, se non risolti, potrebbero causare crash, perdita di dati degli utenti e difficolta' nel manutenere il codice in futuro.
-
-Questo documento serve a tre scopi:
-
-1. **Mappare lo stato attuale**: sapere esattamente dove siamo, cosa funziona e cosa no.
-2. **Dare priorita' alle correzioni**: non tutti i problemi hanno la stessa urgenza. Alcuni causano perdita di dati (urgentissimo), altri sono solo questioni di stile (possono aspettare).
-3. **Fornire istruzioni concrete**: per ogni problema trovato, questo documento spiega esattamente come correggerlo, con codice di esempio e spiegazioni passo-passo.
-
-### Cosa Non e' Questo Documento
-
-Questo documento **non** e' una critica al lavoro fatto. Scrivere software e' un processo iterativo: si costruisce, si testa, si migliora. Ogni progetto software al mondo ha bug. L'importante e' trovarli e correggerli prima che raggiungano gli utenti finali.
-
----
-
-## 2. Come Leggere Questo Documento
-
-### Struttura delle Sezioni
-
-Il documento e' organizzato in modo progressivo:
-
-- **Sezioni 1-3**: Contesto e glossario. Leggete queste per prime se siete nuovi a Godot o allo sviluppo software.
-- **Sezione 4**: Panoramica del progetto. Vi aiuta a capire come e' strutturato Mini Cozy Room.
-- **Sezione 5**: Come abbiamo condotto l'analisi.
-- **Sezioni 6-9**: I risultati dell'audit, divisi per area del progetto.
-- **Sezione 10**: Tabella riassuntiva di tutti i problemi, per avere una vista d'insieme.
-- **Sezione 11**: Il piano per correggere tutto, diviso in 5 fasi.
-- **Sezione 12**: Istruzioni dettagliate, passo per passo, per le correzioni piu' importanti.
-- **Sezione 13**: Come verificare che le correzioni funzionino.
-- **Sezione 14**: Risorse per approfondire.
-
-### Livelli di Severita'
-
-Ogni problema trovato ha un livello di gravita'. Pensate a questi livelli come ai colori di un semaforo, ma con piu' sfumature:
-
-| Severita' | Analogia | Significato |
-|-----------|----------|-------------|
-| **CRITICO** | Fuoco in cucina: bisogna spegnerlo ADESSO | Il gioco perde dati dell'utente, crasha in modo irrecuperabile, oppure ha una falla di sicurezza grave. Questi problemi devono essere corretti prima di qualsiasi rilascio. |
-| **ALTO** | Freni dell'auto che grattano: si puo' guidare, ma e' pericoloso | Il gioco ha memory leak (usa sempre piu' memoria), race condition (due operazioni si pestano i piedi), oppure funzionalita' rotte. Va corretto al piu' presto. |
-| **MEDIO** | Spia del motore accesa: il motore funziona ma qualcosa non va | Manca validazione degli input, errori che passano inosservati (silent failure), o codice poco manutenibile. Va corretto prima del rilascio finale. |
-| **BASSO** | Graffio sulla carrozzeria: esteticamente sgradevole ma non pericoloso | Questioni di naming, best practice non seguite, ottimizzazioni minori. Si possono correggere quando c'e' tempo. |
-| **ARCHITETTURALE** | Fondamenta della casa leggermente storte: la casa sta in piedi, ma aggiungere piani sara' difficile | Il modo in cui i componenti comunicano tra loro crea dipendenze che rendono il codice fragile e difficile da modificare. |
-
-### Quale Sezione Leggere in Base al Proprio Lavoro
-
-- **Lavorate sull'interfaccia utente (pannelli, menu)?** Concentratevi sulla Sezione 7.
-- **Lavorate sui dati (salvataggio, database)?** Concentratevi sulle Sezioni 6.3, 6.4 e 8.
-- **Lavorate sull'audio?** Concentratevi sulla Sezione 6.5.
-- **Lavorate sui test?** Concentratevi sulla Sezione 9.
-- **Volete solo sapere le cose piu' urgenti?** Andate direttamente alla Sezione 10, tabella CRITICO.
+Tutti i link alla documentazione Godot puntano alla versione `stable` (4.x):
+- Base: `https://docs.godotengine.org/en/stable/`
+- GDScript: `https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/`
+- Export: `https://docs.godotengine.org/en/stable/tutorials/export/`
 
 ---
 
-## 3. Glossario dei Concetti Fondamentali
+## 2. Glossario Tecnico Illustrato
 
-Questo glossario spiega i termini tecnici che incontrerete in tutto il documento. Ogni termine e' accompagnato da un'analogia con il mondo reale per rendere il concetto piu' intuitivo. Vi consigliamo di leggere questo glossario per intero prima di procedere, oppure di tornarci ogni volta che incontrate un termine che non conoscete.
+### Termini Godot Engine
 
----
+| Termine | Definizione |
+|---------|-------------|
+| **Autoload** | Singleton caricato automaticamente all'avvio. Accessibile globalmente da qualsiasi script. Ordine di caricamento definito in `project.godot`. Ref: [Singletons (Autoload)](https://docs.godotengine.org/en/stable/tutorials/scripting/singletons_autoload.html) |
+| **Signal** | Meccanismo di comunicazione asincrona tra nodi. Il mittente emette, i ricevitori si connettono. Pattern Observer nativo di Godot. Ref: [Signals](https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html) |
+| **Node** | Unita' base della scena Godot. Ogni oggetto nel gioco e' un Node o deriva da Node. L'albero dei nodi forma la gerarchia della scena. |
+| **PackedScene** | Risorsa `.tscn` serializzata. Puo' essere istanziata (`instantiate()`) per creare nodi a runtime. |
+| **Tween** | Animazione procedurale che interpola proprieta' nel tempo. Creato con `create_tween()`. Deve essere gestito (kill) per evitare leak. Ref: [Tween](https://docs.godotengine.org/en/stable/classes/class_tween.html) |
+| **CanvasLayer** | Nodo che crea un layer di rendering separato. Usato per UI che deve rimanere sopra il mondo di gioco. |
+| **InputEvent** | Oggetto che rappresenta un evento di input (tastiera, mouse, touch). Propagato attraverso `_input()`, `_unhandled_input()`. |
+| **call_deferred()** | Rimanda l'esecuzione di un metodo al frame successivo. Necessario quando si modifica l'albero dei nodi durante un callback. |
+| **queue_free()** | Marca un nodo per la rimozione sicura alla fine del frame corrente. Preferito rispetto a `free()` che e' immediato e pericoloso. |
+| **ResourceLoader** | Sistema di caricamento risorse. `ResourceLoader.exists()` verifica l'esistenza senza caricare. `load()` e' sincrono, `ResourceLoader.load_threaded_request()` e' asincrono. |
 
-### Script (.gd)
+### Termini di Architettura
 
-Un file con estensione `.gd` e' un **file di codice GDScript**, il linguaggio di programmazione di Godot. E' come il foglio delle istruzioni di un mobile IKEA: dice esattamente al computer cosa deve fare, passo dopo passo. Ogni script viene "attaccato" a un nodo nella scena e ne controlla il comportamento.
+| Termine | Definizione |
+|---------|-------------|
+| **Signal Bus** | Pattern architetturale: un singleton centrale che dichiara tutti i segnali. I sistemi comunicano tramite il bus invece che con riferimenti diretti, riducendo l'accoppiamento. |
+| **HMAC** | Hash-based Message Authentication Code. Usato da SaveManager per verificare l'integrita' dei file di salvataggio. Impedisce la manomissione manuale dei dati. |
+| **WAL** | Write-Ahead Logging. Modalita' SQLite che migliora le performance di scrittura e la resistenza ai crash. |
+| **Atomic Write** | Tecnica di scrittura sicura: scrivi su file temporaneo -> backup dell'originale -> rinomina il temporaneo. Previene corruzione in caso di crash durante la scrittura. |
+| **Dirty Flag** | Pattern che traccia se i dati sono stati modificati dall'ultimo salvataggio. Evita scritture non necessarie. |
+| **Rate Limiting** | Limitazione del numero di tentativi in un intervallo di tempo. Usato da AuthManager per prevenire attacchi brute-force. |
 
-**Esempio**: `audio_manager.gd` e' lo script che gestisce tutta la musica e gli effetti sonori del gioco.
+### Termini Build & Export
 
----
-
-### Scena (.tscn)
-
-Un file con estensione `.tscn` e' una **scena di Godot**. Pensate a una scena come a un "progetto di costruzione": descrive quali nodi esistono, come sono disposti nello spazio, e quali script hanno attaccati. E' come il progetto architettonico di una stanza: specifica dove va il tavolo, dove va la sedia, le dimensioni, i colori.
-
-**Esempio**: `main_menu.tscn` descrive la struttura visuale del menu principale — i bottoni, lo sfondo, le animazioni.
-
----
-
-### Nodo (Node)
-
-Il **nodo** e' l'unita' fondamentale di Godot. Ogni cosa nel gioco e' un nodo: un personaggio, un bottone, un suono, una luce. Pensate ai nodi come a mattoncini LEGO: ognuno ha una funzione specifica (un mattoncino e' una ruota, un altro e' un muro), e combinandoli si costruisce qualcosa di complesso.
-
-Ogni nodo ha un tipo che ne determina le capacita':
-- `Sprite2D`: puo' mostrare un'immagine
-- `AudioStreamPlayer`: puo' riprodurre un suono
-- `Button`: e' un bottone cliccabile
-- `CollisionShape2D`: definisce una forma per le collisioni
-
----
-
-### Scene Tree (Albero delle Scene)
-
-La **Scene Tree** e' la struttura gerarchica che organizza tutti i nodi del gioco. Funziona come un albero genealogico: ogni nodo ha un "genitore" (parent) e puo' avere dei "figli" (children).
-
-Questa gerarchia e' importante perche':
-- Quando un nodo genitore viene spostato, anche tutti i figli si spostano.
-- Quando un nodo genitore viene eliminato, anche tutti i figli vengono eliminati.
-- I nodi figli possono comunicare con il genitore e viceversa.
-
-**Analogia**: Pensate a una scrivania (nodo genitore) con sopra un monitor, una tastiera e un mouse (nodi figli). Se spostate la scrivania, tutto cio' che c'e' sopra si sposta insieme.
+| Termine | Definizione |
+|---------|-------------|
+| **Export Template** | Binario pre-compilato del motore Godot per una piattaforma specifica. Necessario per generare l'eseguibile finale. Scaricabile da Editor -> Export -> Manage Templates. |
+| **PCK** | Packed file di Godot. Contiene tutte le risorse del progetto compresse. Puo' essere embedded nell'eseguibile o distribuito come file separato. |
+| **Inno Setup** | Tool gratuito per creare installer Windows (.exe). Genera setup wizard con opzioni di installazione, icona desktop, disinstallazione. |
+| **APK** | Android Package. Formato di distribuzione per app Android. Richiede Java SDK, Android SDK e un keystore per la firma. |
 
 ---
 
-### Autoload / Singleton
+## 3. Panoramica del Progetto
 
-Un **Autoload** (detto anche **Singleton**) e' uno script che viene caricato automaticamente all'avvio del gioco e rimane attivo per tutta la durata dell'esecuzione. Non appartiene a nessuna scena specifica: e' disponibile ovunque, in qualsiasi momento.
+### Descrizione
 
-**Analogia**: Pensate a un servizio di emergenza come il 112. Non importa dove vi troviate in citta', potete sempre chiamare il 112 e qualcuno rispondera'. Non dovete cercarlo o crearlo: e' sempre li', pronto. Allo stesso modo, `AudioManager` (un autoload) e' sempre disponibile per riprodurre musica, da qualsiasi punto del gioco.
+Mini Cozy Room e' un **desktop companion** 2D in pixel art. L'utente arreda una stanza virtuale con decorazioni, ascolta musica ambient e personalizza il proprio personaggio. L'applicazione e' progettata per restare aperta in background consumando poche risorse (15 FPS quando non in focus).
 
-Nel progetto ci sono 8 componenti principali (7 autoload + PerformanceManager): `SignalBus`, `AppLogger`, `LocalDatabase`, `AuthManager`, `GameManager`, `SaveManager`, `AudioManager`, `PerformanceManager`.
+### Team
 
----
+| Membro | Ruolo | Responsabilita' |
+|--------|-------|-----------------|
+| Renan Augusto Macena | Architect / Lead | Architettura, gameplay, UI, sistemi core |
+| Cristian | CI/CD / Assets | Pipeline CI, asset grafici, validazione |
+| Elia | Database / Cloud | SQLite locale, Supabase (fase futura) |
 
-### Segnale (Signal)
-
-Un **segnale** e' il sistema di comunicazione tra nodi di Godot. Quando qualcosa succede (un bottone viene premuto, un nemico viene sconfitto, il gioco viene salvato), il nodo responsabile "emette" un segnale. Altri nodi che sono "in ascolto" su quel segnale reagiscono di conseguenza.
-
-**Analogia**: Immaginate un campanello d'albergo alla reception. Quando un ospite suona il campanello (emette il segnale), il receptionist (nodo in ascolto) si avvicina per aiutare. L'ospite non ha bisogno di conoscere il receptionist: suona il campanello e basta.
-
-Questo e' un pattern molto potente perche' permette ai nodi di comunicare **senza conoscersi direttamente**, il che rende il codice piu' flessibile e facile da modificare.
-
----
-
-### SignalBus
-
-Il **SignalBus** e' un autoload speciale che funziona come un "hub centrale" per tutti i segnali del gioco. Invece di far comunicare direttamente i nodi tra loro, tutti passano attraverso il SignalBus.
-
-**Analogia**: Pensate alla centralina di un ufficio postale. Invece di consegnare le lettere a mano porta a porta (comunicazione diretta tra nodi), tutti depositano le lettere all'ufficio postale (SignalBus) che si occupa di instradarle al destinatario giusto. In questo progetto il SignalBus gestisce 31 segnali diversi.
-
----
-
-### _ready()
-
-`_ready()` e' una funzione speciale che Godot chiama **automaticamente** quando un nodo e' stato completamente caricato e aggiunto alla Scene Tree. E' il posto giusto per inizializzare variabili, connettersi a segnali, e preparare tutto cio' che serve.
-
-**Analogia**: E' come il primo giorno di lavoro in un nuovo ufficio. Quando arrivate (`_ready()`), vi presentate ai colleghi (connettete i segnali), organizzate la scrivania (inizializzate le variabili), e vi mettete al lavoro.
-
-```gdscript
-# Questa funzione viene chiamata automaticamente da Godot
-# quando il nodo e' pronto
-func _ready() -> void:
-    # Ci connettiamo al segnale "room_changed" del SignalBus
-    SignalBus.room_changed.connect(_on_room_changed)
-    # Carichiamo i dati iniziali
-    _load_initial_data()
-```
-
----
-
-### _process(delta)
-
-`_process(delta)` e' una funzione che Godot chiama **ogni singolo frame** (fotogramma). Se il gioco gira a 60 FPS (frame per secondo), questa funzione viene chiamata 60 volte al secondo. Il parametro `delta` e' il tempo trascorso dall'ultimo frame, misurato in secondi.
-
-**Analogia**: E' come un guardiano che fa il giro di ronda regolarmente. Ad ogni giro controlla se c'e' qualcosa di nuovo da gestire.
-
-**Attenzione**: poiche' viene chiamata cosi' spesso, il codice dentro `_process()` deve essere molto efficiente. Operazioni pesanti qui dentro rallentano tutto il gioco.
-
----
-
-### _physics_process(delta)
-
-Simile a `_process(delta)`, ma chiamata a **intervalli fissi** (tipicamente 60 volte al secondo, indipendentemente dal framerate). Si usa per tutto cio' che riguarda la fisica: movimenti di personaggi, collisioni, gravita'.
-
-**Analogia**: Se `_process()` e' un guardiano che fa il giro quando puo', `_physics_process()` e' come il battito di un metronomo: perfettamente regolare, sempre allo stesso ritmo. Questo e' fondamentale per la fisica, dove la regolarita' garantisce movimenti fluidi e prevedibili.
-
----
-
-### _exit_tree()
-
-`_exit_tree()` e' una funzione che Godot chiama quando un nodo sta per essere **rimosso** dalla Scene Tree. E' il posto dove fare "pulizia": disconnettere i segnali, fermare i timer, liberare le risorse.
-
-**Analogia**: E' come le procedure di chiusura di un negozio la sera. Prima di uscire, spegnete le luci (fermate i timer), chiudete le casse (disconnettete i segnali), mettete l'allarme (liberate le risorse). Se non fate queste operazioni, lasciate le luci accese tutta la notte (memory leak) e le casse aperte (segnali che puntano a nodi inesistenti, causando crash).
-
-**Questo concetto e' FONDAMENTALE per questo audit**: molti dei problemi trovati riguardano proprio la mancanza di questa funzione di pulizia.
-
-```gdscript
-# Questa funzione viene chiamata quando il nodo viene rimosso
-func _exit_tree() -> void:
-    # Disconnettiamo tutti i segnali a cui ci eravamo connessi
-    if SignalBus.room_changed.is_connected(_on_room_changed):
-        SignalBus.room_changed.disconnect(_on_room_changed)
-    # Fermiamo eventuali tween attivi
-    if _tween and _tween.is_running():
-        _tween.kill()
-```
-
----
-
-### _input(event)
-
-`_input(event)` e' una funzione che Godot chiama ogni volta che l'utente interagisce con il gioco: preme un tasto, muove il mouse, tocca lo schermo.
-
-**Analogia**: E' come un receptionist sempre pronto ad ascoltare le richieste dei clienti. Ogni volta che un cliente (l'utente) fa qualcosa (preme un tasto), il receptionist (`_input`) lo nota e decide come rispondere.
-
----
-
-### queue_free()
-
-`queue_free()` e' il comando per **eliminare un nodo in modo sicuro**. Non lo elimina immediatamente, ma lo "mette in coda" per l'eliminazione alla fine del frame corrente. Questo e' importante perche' eliminare un nodo mentre e' ancora in uso causerebbe crash.
-
-**Analogia**: E' come mettere un pacco nella coda "da spedire" invece di buttarlo dalla finestra. Il pacco verra' gestito correttamente alla fine della giornata lavorativa (fine del frame), senza interrompere il lavoro in corso.
-
----
-
-### call_deferred()
-
-`call_deferred()` ritarda l'esecuzione di una funzione alla **fine del frame corrente**. Si usa quando si vuole fare qualcosa che non puo' essere fatto immediatamente (per esempio, aggiungere un nodo figlio subito dopo averne eliminato un altro).
-
-**Analogia**: E' come un post-it con scritto "fai questa cosa quando hai finito quello che stai facendo adesso". Non interrompete il lavoro in corso, ma vi assicurate che la cosa venga fatta.
-
-```gdscript
-# Esempio: eliminare il vecchio personaggio e aggiungere il nuovo
-# in modo sicuro, senza conflitti
-old_character.queue_free()  # elimina alla fine del frame
-call_deferred("add_child", new_character)  # aggiunge dopo l'eliminazione
-```
-
----
-
-### Memory Leak
-
-Un **memory leak** (letteralmente "perdita di memoria") si verifica quando il programma alloca memoria per qualcosa (crea oggetti, carica immagini) ma non la libera mai quando non serve piu'. Col passare del tempo, il programma usa sempre piu' memoria finche' il computer non rallenta o il gioco crasha.
-
-**Analogia**: Immaginate un rubinetto che perde acqua goccia a goccia. Una goccia non e' un problema. Ma se lasciate il rubinetto cosi' per ore, il lavandino trabocca e il pavimento si allaga. Allo stesso modo, un memory leak piccolo diventa un problema enorme se il gioco resta aperto a lungo.
-
-**Nel nostro progetto**: Abbiamo trovato diversi memory leak, per esempio i drag preview non eliminati dopo l'uso e i FileDialog creati ad ogni click senza mai distruggerli.
-
----
-
-### Race Condition
-
-Una **race condition** (condizione di gara) si verifica quando due operazioni cercano di accedere o modificare la stessa risorsa contemporaneamente, e il risultato dipende da quale finisce prima.
-
-**Analogia**: Immaginate due persone che scrivono sullo stesso foglio di carta contemporaneamente. Il risultato dipende da chi scrive prima, da chi sovrascrive chi, e potrebbe essere un pasticcio illeggibile. Nel software, questo puo' causare dati corrotti, crash, o comportamenti imprevedibili.
-
-**Nel nostro progetto**: Per esempio, l'auto-save timer potrebbe tentare di salvare il gioco mentre un altro salvataggio e' gia' in corso, corrompendo i dati.
-
----
-
-### Null
-
-**Null** e' un valore speciale che significa "niente", "vuoto", "non esiste". Una variabile con valore null non contiene nessun dato utilizzabile.
-
-**Analogia**: E' come una busta vuota. Se qualcuno vi chiede di leggere il contenuto della busta e la busta e' vuota, non potete farlo. Se il programma prova a usare una variabile null come se contenesse qualcosa, si genera un errore (crash).
-
----
-
-### Null Check
-
-Un **null check** e' una verifica che si fa prima di usare una variabile per assicurarsi che non sia null. E' una pratica difensiva fondamentale.
-
-**Analogia**: Prima di aprire una porta, controllate che la porta esista. Sembra ovvio, ma nel software e' facile dimenticarsi di farlo, soprattutto quando i dati arrivano da fonti esterne.
-
-```gdscript
-# SBAGLIATO: se "texture" e' null, il programma crasha
-sprite.texture = texture
-sprite.texture.get_size()  # CRASH se texture e' null!
-
-# CORRETTO: controlliamo prima che texture non sia null
-if texture != null:
-    sprite.texture = texture
-    var size = sprite.texture.get_size()
-else:
-    push_error("Texture non trovata!")
-```
-
----
-
-### Type Hint
-
-Un **type hint** (indicazione di tipo) e' un'annotazione nel codice che specifica quale tipo di dato una variabile deve contenere. In GDScript non sono obbligatori, ma sono fortemente consigliati perche' aiutano a prevenire errori.
-
-**Analogia**: E' come le etichette sui barattoli in cucina. Se un barattolo e' etichettato "zucchero", sapete cosa c'e' dentro senza dover assaggiare. Se qualcuno ci mette il sale per sbaglio, l'etichetta vi avverte che qualcosa non va.
-
-```gdscript
-# Senza type hint: non si sa cosa contiene "speed"
-var speed = 100
-
-# Con type hint: e' chiaro che speed e' un numero decimale
-var speed: float = 100.0
-
-# Con type hint anche per i parametri e il valore di ritorno
-func calculate_damage(base: int, multiplier: float) -> int:
-    return int(base * multiplier)
-```
-
----
-
-### Dictionary
-
-Un **Dictionary** e' una struttura dati che associa **chiavi** a **valori**. Ogni chiave e' unica e punta a un valore specifico.
-
-**Analogia**: E' esattamente come un dizionario reale: cercate una parola (la chiave) e trovate la sua definizione (il valore). Oppure pensate a una rubrica telefonica: il nome (chiave) vi porta al numero (valore).
-
-```gdscript
-# Un dizionario che descrive un personaggio
-var character: Dictionary = {
-    "nome": "Mario",         # chiave: "nome", valore: "Mario"
-    "livello": 5,            # chiave: "livello", valore: 5
-    "colore_occhi": "verde"  # chiave: "colore_occhi", valore: "verde"
-}
-
-# Accedere a un valore tramite la chiave
-print(character["nome"])  # Stampa: Mario
-```
-
----
-
-### Array
-
-Un **Array** e' una lista ordinata di elementi. Ogni elemento ha una posizione numerica (chiamata "indice") che parte da 0.
-
-**Analogia**: E' come una fila di persone in coda alle poste. La prima persona e' in posizione 0, la seconda in posizione 1, e cosi' via. Potete chiedere "chi c'e' in posizione 3?" e ottenere una risposta.
-
-```gdscript
-# Un array di nomi di stanze
-var rooms: Array = ["soggiorno", "cucina", "camera", "bagno"]
-
-# Accedere per indice (attenzione: parte da 0!)
-print(rooms[0])  # Stampa: soggiorno
-print(rooms[2])  # Stampa: camera
-```
-
----
-
-### JSON
-
-**JSON** (JavaScript Object Notation) e' un formato testuale per salvare e scambiare dati strutturati. E' leggibile sia dall'uomo che dal computer, il che lo rende ideale per file di configurazione e dati di gioco.
-
-**Analogia**: E' come un modulo compilato con campi e valori. Il modulo ha una struttura precisa (nome, cognome, eta') e voi riempite i campi.
-
-```json
-{
-    "nome_stanza": "soggiorno",
-    "colore_muri": "#FFE4B5",
-    "decorazioni": ["lampada", "tappeto", "quadro"]
-}
-```
-
-Nel nostro progetto, i cataloghi delle stanze, decorazioni, personaggi e tracce musicali sono tutti salvati come file JSON.
-
----
-
-### SQLite
-
-**SQLite** e' un database leggero che vive interamente in un singolo file sul disco. Non richiede un server separato (a differenza di MySQL o PostgreSQL), il che lo rende perfetto per applicazioni desktop e giochi.
-
-**Analogia**: Se un database server come PostgreSQL e' un grande archivio aziendale con un archivista dedicato, SQLite e' un quaderno organizzato che vi portate nello zaino. Piu' semplice, portatile, ma perfettamente funzionale per le vostre esigenze.
-
-Nel nostro progetto, SQLite viene usato come "mirror" (copia speculare) dei dati JSON per avere un fallback in caso di problemi con il file principale.
-
----
-
-### Schema (Database)
-
-Lo **schema** di un database e' la sua struttura: definisce quali tabelle esistono, quali colonne ha ogni tabella, che tipo di dati contiene ogni colonna, e come le tabelle sono collegate tra loro.
-
-**Analogia**: E' come la planimetria di un edificio. Non vi dice chi abita dove, ma vi dice quante stanze ci sono, quanto sono grandi, e dove sono le porte che le collegano.
-
----
-
-### PRIMARY KEY
-
-La **PRIMARY KEY** (chiave primaria) e' un campo (o combinazione di campi) che identifica in modo **unico** ogni riga di una tabella. Non possono esistere due righe con la stessa chiave primaria.
-
-**Analogia**: E' come il codice fiscale per le persone o il numero di targa per le auto. Nessuno ne ha uno uguale, e serve proprio per identificarvi senza ambiguita'.
-
-**Problema trovato nel progetto**: La tabella `characters` usa `account_id` come PRIMARY KEY, il che significa che ogni account puo' avere UN SOLO personaggio. E' come se ogni persona potesse avere una sola auto: un limite artificiale causato da un errore nello schema.
-
----
-
-### FOREIGN KEY
-
-Una **FOREIGN KEY** (chiave esterna) e' un campo in una tabella che fa riferimento alla PRIMARY KEY di un'altra tabella. Serve per creare relazioni tra le tabelle e garantire l'integrita' dei dati.
-
-**Analogia**: E' come un riferimento in una lettera. Se nella vostra lettera scrivete "come discusso nella riunione del 15 Marzo (verbale n.42)", il numero 42 e' una "chiave esterna" che punta a un documento specifico. Se quel verbale non esiste, il riferimento e' sbagliato.
-
-**Problema trovato nel progetto**: La tabella `inventario` ha un campo `item_id` che DOVREBBE essere una FOREIGN KEY verso la tabella `items`, ma questa relazione non e' stata definita. Significa che si possono inserire oggetti nell'inventario con ID che non esistono nel catalogo.
-
----
-
-### Migrazione
-
-Una **migrazione** e' il processo di aggiornare la struttura del database quando il gioco viene aggiornato. Per esempio, se in una nuova versione volete aggiungere un campo "livello_felicita" al personaggio, dovete fare una migrazione che aggiunge quella colonna alla tabella.
-
-**Analogia**: E' come ristrutturare un appartamento. I mobili (dati) ci sono gia': dovete aggiungere una stanza (nuova tabella) o allargare una porta (modificare una colonna) senza distruggere nulla di quello che c'e' gia'.
-
----
-
-### Tween
-
-Un **Tween** e' un sistema di Godot per creare animazioni fluide tra due valori. Invece di cambiare un valore bruscamente (per esempio, la posizione di un oggetto da 0 a 100 in un istante), il tween lo cambia gradualmente nel tempo.
-
-**Analogia**: E' come una dissolvenza cinematografica. Invece di tagliare bruscamente da una scena all'altra, la transizione e' graduale e fluida.
-
-```gdscript
-# Esempio: spostare un pannello da fuori schermo alla posizione finale
-# in 0.3 secondi con una curva di decelerazione
-var tween := create_tween()
-tween.tween_property(
-    panel,       # l'oggetto da animare
-    "position",  # la proprietà da modificare
-    Vector2(100, 200),  # il valore finale
-    0.3          # la durata in secondi
-).set_ease(Tween.EASE_OUT)  # decelerazione graduale
-```
-
----
-
-### Crossfade
-
-Il **crossfade** e' una tecnica audio in cui una traccia musicale sfuma gradualmente mentre un'altra entra gradualmente. Per un breve momento, entrambe le tracce sono udibili contemporaneamente.
-
-**Analogia**: E' come quando un DJ in discoteca fa la transizione tra due canzoni. La prima si abbassa di volume mentre la seconda si alza, creando una transizione fluida senza momenti di silenzio.
-
----
-
-### Viewport
-
-Il **Viewport** e' l'area visibile del gioco, cioe' la "finestra" attraverso cui il giocatore vede il mondo di gioco. Ha una dimensione in pixel e determina cosa viene mostrato sullo schermo.
-
-Nel progetto Mini Cozy Room, il viewport e' 1280x720 pixel con stretch mode `canvas_items`, il che significa che il contenuto viene ridimensionato per adattarsi alla finestra mantenendo le proporzioni.
-
----
-
-### Texture Filter (Nearest/Linear)
-
-Il **filtro texture** determina come Godot disegna un'immagine quando viene ingrandita o rimpicciolita.
-
-- **Nearest**: Ogni pixel viene mostrato come un quadratino netto, senza sfumature. Ideale per pixel art.
-- **Linear**: I pixel vengono sfumati tra loro per un aspetto piu' morbido. Ideale per grafica HD.
-
-**Analogia**: Pensate a quando ingrandite una foto sul telefono. "Nearest" e' come vedere i singoli quadratini colorati (pixel). "Linear" e' come quando il telefono "inventa" pixel intermedi per rendere l'immagine piu' morbida.
-
-Mini Cozy Room usa il filtro **Nearest** perche' ha uno stile pixel art.
-
----
-
-### Pixel Art
-
-Il **pixel art** e' uno stile grafico in cui ogni singolo pixel dell'immagine e' posizionato intenzionalmente dall'artista. Le immagini sono tipicamente piccole (16x16, 32x32, 64x64 pixel) e vengono poi ingrandite nel gioco.
-
-**Analogia**: E' come un mosaico: ogni tessera (pixel) e' scelta e posizionata con cura per creare l'immagine finale.
-
----
-
-### Sprite
-
-Uno **Sprite** e' un'immagine 2D che rappresenta un personaggio, un oggetto, o un elemento del gioco. E' l'unita' visiva fondamentale dei giochi 2D.
-
-**Analogia**: E' come una figurina ritagliata che si muove sul palco di un teatrino.
-
----
-
-### Spritesheet
-
-Uno **spritesheet** e' un'unica immagine che contiene tutti i frame (fotogrammi) di un'animazione. Invece di avere 10 file separati per 10 frame di camminata, li si mette tutti in un'unica immagine ordinata in griglia.
-
-**Analogia**: E' come una striscia di pellicola cinematografica: tanti fotogrammi uno accanto all'altro. Il motore di gioco "ritaglia" il fotogramma giusto al momento giusto per creare l'animazione.
-
----
-
-### CollisionShape
-
-Un **CollisionShape** e' una forma geometrica invisibile (rettangolo, cerchio, capsula) che viene usata dal motore fisico per rilevare le collisioni tra oggetti. Non si vede durante il gioco, ma determina quando due oggetti si "toccano".
-
-**Analogia**: E' come la sagoma invisibile intorno a un personaggio che determina quando lo "colpite". Puo' essere piu' grande o piu' piccola dell'immagine visibile.
-
----
-
-### CanvasLayer
-
-Un **CanvasLayer** e' un livello di rendering separato. Permette di disegnare elementi su un "piano" diverso dal gioco principale. Tipicamente, l'interfaccia utente (bottoni, barre della vita, inventario) sta su un CanvasLayer separato che non si muove con la camera del gioco.
-
-**Analogia**: E' come una pellicola trasparente sovrapposta a un disegno. Il disegno sotto (il gioco) puo' muoversi e scorrere, ma cio' che e' sulla pellicola (la UI) resta fermo al suo posto.
-
----
-
-### Export
-
-L'**export** e' il processo di compilazione del gioco per una piattaforma specifica (Windows, Mac, Linux, Web). Trasforma il progetto Godot in un file eseguibile che gli utenti possono usare senza avere Godot installato.
-
-**Analogia**: E' come cuocere una torta. Avete tutti gli ingredienti (il codice sorgente) nel vostro progetto. L'export e' il forno che trasforma gli ingredienti in una torta finita (l'eseguibile) che gli altri possono mangiare (usare).
-
----
-
-### CI/CD
-
-**CI/CD** sta per **Continuous Integration / Continuous Deployment**. E' un sistema automatizzato che, ad ogni modifica del codice (commit), esegue automaticamente test, controlli di qualita', e compilazione del progetto.
-
-**Analogia**: E' come avere un assistente instancabile che, ogni volta che scrivete una pagina del vostro libro, la rilegge, controlla la grammatica, verifica i riferimenti, e prepara una copia pulita. Se trova errori, vi avvisa subito.
-
-Nel progetto Mini Cozy Room, ci sono 2 workflow CI:
-- `ci.yml`: controlla lo stile del codice (solo lint — gdlint + gdformat)
-- `build.yml`: compila il gioco per Windows e HTML5
-
----
-
-### GdUnit4
-
-**GdUnit4** e' un framework di testing specifico per Godot. Fornisce strumenti per scrivere e eseguire test automatizzati sul vostro codice GDScript.
-
-**Analogia**: E' come un collaudatore in fabbrica che testa ogni pezzo prodotto per assicurarsi che funzioni correttamente prima di spedirlo.
-
----
-
-### Test Unitario
-
-Un **test unitario** e' un piccolo programma che verifica automaticamente che una singola funzione del vostro codice faccia esattamente quello che deve fare. "Unitario" perche' testa una "unita'" (una funzione) alla volta.
-
-**Analogia**: E' come un compito in classe con la soluzione gia' pronta. Scrivete la risposta (il codice della funzione) e poi il test verifica se la vostra risposta corrisponde a quella corretta. Se non corrisponde, il test "fallisce" e vi dice dove avete sbagliato.
-
-```gdscript
-# Esempio di test unitario
-func test_array_to_vec2() -> void:
-    # Prepariamo l'input
-    var input: Array = [10.0, 20.0]
-    # Chiamiamo la funzione da testare
-    var result: Vector2 = Helpers.array_to_vec2(input)
-    # Verifichiamo che il risultato sia quello atteso
-    assert_eq(result.x, 10.0)  # x deve essere 10
-    assert_eq(result.y, 20.0)  # y deve essere 20
-```
-
----
-
-### gdlint / gdformat
-
-**gdlint** e **gdformat** sono strumenti che controllano lo stile e la formattazione del codice GDScript.
-
-- **gdlint**: analizza il codice e segnala problemi di stile (variabili con nomi poco chiari, funzioni troppo lunghe, ecc.)
-- **gdformat**: formatta automaticamente il codice in modo consistente (indentazione, spazi, allineamento)
-
-**Analogia**: gdlint e' come un correttore di bozze che sottolinea frasi sgrammaticate. gdformat e' come l'impaginatore che allinea il testo e i margini.
-
----
-
-### Drag-and-Drop
-
-Il **Drag-and-Drop** (trascina e rilascia) e' un'interazione in cui l'utente clicca su un oggetto, lo trascina muovendo il mouse, e lo rilascia nella posizione desiderata.
-
-Nel progetto Mini Cozy Room, il Drag-and-Drop viene usato per piazzare decorazioni nella stanza: l'utente trascina una decorazione dal catalogo e la rilascia nella posizione desiderata.
-
----
-
-### Callback
-
-Un **callback** e' una funzione che viene passata come argomento a un'altra funzione, per essere "richiamata" (called back) quando succede qualcosa.
-
-**Analogia**: E' come lasciare il vostro numero di telefono a un ristorante quando il tavolo non e' pronto. Quando il tavolo si libera, vi "richiamano" (callback) per avvisarvi.
-
----
-
-### Coupling
-
-Il **coupling** (accoppiamento) misura quanto due parti del codice dipendono l'una dall'altra. Un coupling alto significa che modificare un componente richiede di modificare anche altri componenti.
-
-**Analogia**: Pensate a due scalatori legati dalla stessa corda corta (coupling alto): se uno cade, trascina anche l'altro. Se invece usano corde indipendenti con punti di ancoraggio separati (coupling basso), un problema di uno non influenza l'altro.
-
-**Nel progetto**: Diversi autoload scrivono direttamente nei dati di altri autoload (per esempio, `AudioManager` scrive in `SaveManager.settings`). Questo e' un coupling alto che rende il codice fragile.
-
----
-
-### Architettura Signal-Driven
-
-L'**architettura signal-driven** e' un pattern di design in cui i componenti comunicano **esclusivamente** tramite segnali, senza mai chiamarsi direttamente. Questo riduce il coupling e rende ogni componente indipendente e riutilizzabile.
-
-**Analogia**: E' come una redazione giornalistica moderna. I giornalisti non portano fisicamente gli articoli al tipografo: li pubblicano su un sistema condiviso (segnale), e chi ne ha bisogno (layout, stampa, web) li prende da li'. Nessuno conosce o dipende direttamente dagli altri.
-
----
-
-### Dirty Flag
-
-Un **dirty flag** (bandierina "sporco") e' una variabile booleana (vero/falso) che indica se ci sono modifiche non ancora salvate.
-
-**Analogia**: E' come l'asterisco (*) che appare nel titolo di un documento Word quando avete modifiche non salvate. Vi ricorda che dovete salvare prima di chiudere.
-
----
-
-### Backup
-
-Un **backup** e' una copia di sicurezza dei dati. Se il file originale viene corrotto o cancellato, il backup permette di recuperare i dati.
-
-**Analogia**: E' come fare una fotocopia di un documento importante e tenerla in un cassetto separato. Se il documento originale si rovina, avete la fotocopia.
-
-**Problema trovato nel progetto**: Il sistema di backup del salvataggio non verifica se la copia e' andata a buon fine. E' come fare la fotocopia senza controllare che sia uscita: potreste pensare di avere un backup quando in realta' non ce l'avete.
-
----
-
-### Seed Data
-
-I **seed data** (dati seme) sono dati iniziali che vengono inseriti nel database al momento della sua creazione. Servono per avere un punto di partenza funzionale.
-
-**Analogia**: E' come arredare una casa appena costruita con i mobili base (letto, tavolo, sedie) prima che gli inquilini si trasferiscano. Senza seed data, il database e' una casa vuota senza nemmeno il letto.
-
-**Problema trovato nel progetto**: Le tabelle `colore`, `categoria` e `shop` vengono create ma lasciate vuote: nessun dato iniziale viene inserito.
-
----
-
-### Silent Failure
-
-Un **silent failure** (fallimento silenzioso) si verifica quando qualcosa va storto nel programma ma nessun messaggio di errore viene mostrato. Il programma sembra funzionare normalmente, ma in realta' sta producendo risultati sbagliati o incompleti.
-
-**Analogia**: E' come una lettera persa dall'ufficio postale che non vi viene mai comunicata. Voi pensate che la lettera sia arrivata, il destinatario non l'ha mai ricevuta, e nessuno dei due lo sa.
-
-**Nel progetto**: Diversi metodi del database ritornano `false` o un array vuoto sia quando non ci sono risultati sia quando c'e' un errore. E' impossibile distinguere "nessun dato trovato" da "il database e' rotto".
-
----
-
-### Bounds Check
-
-Un **bounds check** (controllo dei limiti) e' una verifica che un indice sia valido prima di accedere a un elemento di un array. Se un array ha 5 elementi (indici 0-4), accedere all'indice 5 causa un errore.
-
-**Analogia**: Se una fila ha 5 persone, non potete chiedere "chi e' la sesta persona?". Il bounds check e' la verifica che fate prima di chiedere: "ci sono almeno 6 persone in fila?"
-
-```gdscript
-# SBAGLIATO: se la lista e' vuota, crash!
-var first_track = tracks[0]
-
-# CORRETTO: controlliamo prima che la lista non sia vuota
-if not tracks.is_empty():
-    var first_track = tracks[0]
-else:
-    push_warning("Nessuna traccia disponibile")
-```
-
----
-
-## 4. Panoramica del Progetto
-
-### Cos'e' Mini Cozy Room?
-
-**Mini Cozy Room** e' un'applicazione desktop companion in 2D. Immaginate un piccolo acquario digitale, ma invece di pesci ci sono personaggi in stile pixel art che vivono in stanze accoglienti. L'utente puo' personalizzare le stanze con decorazioni, cambiare personaggio, ascoltare musica rilassante, e il tutto resta sulla scrivania come un compagno digitale.
-
-Non e' un "gioco" nel senso tradizionale: non ci sono nemici da sconfiggere o livelli da completare. E' un'esperienza rilassante di personalizzazione e compagnia digitale.
+### Deadline: 22 Aprile 2026
 
 ### Stack Tecnologico
 
-Lo **stack tecnologico** e' l'insieme di tecnologie usate per costruire il progetto. Vediamo ogni componente:
+```
+Motore:       Godot Engine 4.6
+Linguaggio:   GDScript
+Renderer:     GL Compatibility (OpenGL 3.3 / WebGL 2.0)
+Database:     SQLite via godot-sqlite GDExtension (WAL mode)
+Risoluzione:  1280 x 720 (stretch mode: canvas_items)
+Target:       Windows, Web (HTML5), Android (pianificato)
+CI/CD:        GitHub Actions (5 job validazione + 2 job build)
+```
 
-| Tecnologia | Cos'e' | Perche' la Usiamo |
-|------------|--------|-------------------|
-| **Godot 4.6** | Motore di gioco open source | Gratuito, leggero, perfetto per giochi 2D e applicazioni desktop |
-| **GDScript** | Linguaggio di programmazione di Godot | Semplice da imparare (simile a Python), integrato nell'editor, ottimizzato per Godot |
-| **GL Compatibility** | Renderer grafico | Compatibile con la piu' ampia gamma di hardware, ideale per un'app desktop leggera |
-| **JSON** | Formato dati testuale | Per i cataloghi (stanze, decorazioni, personaggi, tracce musicali) |
-| **SQLite** | Database leggero in file singolo | Per il backup dei dati di salvataggio, come fallback |
-| **Supabase** | Backend cloud (PostgreSQL + RLS) | **In preparazione** per Fase 4 — cloud sync cross-device. Client GDScript rimosso temporaneamente (27 Mar), Elia prepara il progetto PostgreSQL + RLS |
-| **GdUnit4** | Framework di testing | Non installato — i file test sono stati rimossi. I test potranno essere reintrodotti in futuro |
-| **GitHub Actions** | CI/CD | Per eseguire test e compilazione automaticamente ad ogni commit |
+### Struttura Directory
 
-### Architettura del Progetto
+```
+Projectwork/
++-- .github/
+|   +-- workflows/
+|       +-- ci.yml              # 5 job paralleli: lint, JSON, sprite, xref, DB
+|       +-- build.yml           # Export Windows + HTML5
++-- ci/
+|   +-- validate_json_catalogs.py
+|   +-- validate_sprite_paths.py
+|   +-- validate_cross_references.py
+|   +-- validate_db_schema.py
++-- v1/
+    +-- project.godot           # Config principale Godot 4.6
+    +-- export_presets.cfg      # Preset: Windows Desktop, Web
+    +-- data/
+    |   +-- characters.json     # 1 personaggio, 8 direzioni, 4 stati animazione
+    |   +-- decorations.json    # 69 decorazioni, 11 categorie
+    |   +-- rooms.json          # 1 stanza, 3 temi colore
+    |   +-- tracks.json         # 2 tracce musicali
+    +-- scripts/
+    |   +-- autoload/           # 7 singleton (+ PerformanceManager in systems/)
+    |   |   +-- signal_bus.gd       # 31 segnali - hub comunicazione
+    |   |   +-- game_manager.gd     # Caricamento cataloghi, stato gioco
+    |   |   +-- save_manager.gd     # Salvataggio JSON con HMAC + atomic write
+    |   |   +-- local_database.gd   # SQLite CRUD, migrazioni, transazioni
+    |   |   +-- audio_manager.gd    # Crossfade musica, ambience multi-layer
+    |   |   +-- auth_manager.gd     # Autenticazione locale, PBKDF2, rate limit
+    |   |   +-- logger.gd          # Log strutturati JSON Lines, rotazione file
+    |   +-- systems/
+    |   |   +-- performance_manager.gd  # FPS dinamico, persistenza posizione finestra
+    |   +-- menu/
+    |   |   +-- main_menu.gd        # Schermata caricamento, flusso auth, transizioni
+    |   |   +-- auth_screen.gd      # UI login/registrazione/guest
+    |   |   +-- menu_character.gd   # Animazione walk-in personaggio menu
+    |   +-- rooms/
+    |   |   +-- room_base.gd        # Spawn decorazioni, display personaggio
+    |   |   +-- room_grid.gd        # Overlay griglia visuale
+    |   |   +-- character_controller.gd  # Movimento 8 direzioni
+    |   |   +-- decoration_system.gd     # Popup, drag, rotate, scale, delete
+    |   |   +-- window_background.gd     # Parallax sfondo foresta
+    |   +-- ui/
+    |   |   +-- panel_manager.gd    # Gestione pannelli, mutua esclusione
+    |   |   +-- deco_panel.gd       # Catalogo decorazioni, drag-and-drop
+    |   |   +-- settings_panel.gd   # Slider volume, selettore lingua
+    |   |   +-- profile_panel.gd    # Info account, delete, logout
+    |   |   +-- drop_zone.gd       # Bridge UI->mondo per drop decorazioni
+    |   +-- utils/
+    |   |   +-- constants.gd        # Costanti globali
+    |   |   +-- helpers.gd          # Funzioni utilita'
+    |   +-- main.gd                 # Scena root gameplay, wiring HUD
+    +-- scenes/                     # 37 file .tscn
+    +-- assets/                     # ~490 asset (sprite, audio, font)
+    +-- addons/
+    |   +-- godot-sqlite/           # GDExtension per SQLite
+    +-- tests/                      # Test GDScript
+```
 
-L'architettura di Mini Cozy Room si basa su un pattern chiamato **Signal-Driven Architecture** (architettura guidata dai segnali). Per capirla, usiamo un'analogia.
+### Ordine di Caricamento Autoload
 
-#### L'Analogia dell'Ufficio Postale
+Definito in `project.godot`, sezione `[autoload]`. L'ordine e' critico:
 
-Immaginate il progetto come un condominio con 8 uffici (i 8 componenti principali: 7 autoload + PerformanceManager). Ogni ufficio ha un compito specifico:
+```
+1. SignalBus          -> Deve essere primo (tutti gli altri si connettono ai suoi segnali)
+2. AppLogger          -> Secondo (logging disponibile per tutti i successivi)
+3. LocalDatabase      -> Terzo (DB pronto prima di auth e save)
+4. AuthManager        -> Quarto (autenticazione disponibile prima del game)
+5. GameManager        -> Quinto (carica cataloghi JSON)
+6. SaveManager        -> Sesto (carica salvataggi, dipende da GameManager)
+7. AudioManager       -> Settimo (riproduzione audio, legge stato da SaveManager)
+8. PerformanceManager -> Ultimo (FPS e posizione finestra)
+```
 
-| Ufficio (Autoload) | Compito |
-|---------------------|---------|
-| **SignalBus** | L'ufficio postale centrale — gestisce tutte le comunicazioni |
-| **AppLogger** | Il segretario — registra tutto quello che succede (log) |
-| **LocalDatabase** | Il database locale — gestisce la copia SQLite dei dati |
-| **AuthManager** | Il portiere — gestisce l'autenticazione (guest, username+password SHA-256) |
-| **GameManager** | Il direttore generale — coordina lo stato del gioco |
-| **SaveManager** | L'archivista — gestisce il salvataggio e caricamento dei dati |
-| **AudioManager** | Il tecnico audio — gestisce musica e suoni |
-| **PerformanceManager** | Il tecnico della manutenzione — ottimizza le prestazioni (in `scripts/systems/`) |
-
-In un'architettura signal-driven ideale, questi uffici **non si parlano direttamente**. Quando il tecnico audio cambia il volume, non va di persona dall'archivista a dirglielo. Invece, lascia un messaggio all'ufficio postale (SignalBus) con scritto "il volume e' cambiato", e l'archivista (SaveManager), che e' abbonato a quel tipo di messaggio, lo riceve e aggiorna i suoi archivi.
-
-**Problema trovato (parzialmente risolto)**: In passato, diversi uffici "scavalcavano" l'ufficio postale e andavano direttamente negli altri uffici a modificare i documenti. AudioManager ora comunica correttamente via SignalBus (AR3-AR5 corretti). Tuttavia, PerformanceManager e settings_panel scrivono ancora direttamente nei dati di SaveManager (AR6-AR7 aperti).
-
-#### Il SignalBus — Il Cuore delle Comunicazioni
-
-Il SignalBus gestisce attualmente **31 segnali** diversi. Ogni segnale rappresenta un tipo di "messaggio" che puo' essere inviato:
-
-- `room_changed`: la stanza e' stata cambiata
-- `decoration_placed`: una decorazione e' stata piazzata
-- `music_track_changed`: la traccia musicale e' cambiata
-- `save_completed`: il salvataggio e' terminato
-- ...e molti altri
-
-### Ordine di Caricamento degli Autoload
-
-L'ordine in cui gli autoload vengono caricati e' **fondamentale** perche' alcuni dipendono da altri. Godot li carica nell'ordine in cui sono elencati nelle impostazioni del progetto:
-
-1. **SignalBus** — caricato per primo perche' tutti gli altri lo usano per comunicare
-2. **AppLogger** — caricato presto perche' gli altri lo usano per registrare messaggi
-3. **LocalDatabase** — gestisce la persistenza SQLite (WAL mode, 9 tabelle)
-4. **AuthManager** — gestisce autenticazione locale (guest, username+password SHA-256)
-5. **GameManager** — coordina lo stato del gioco e carica i cataloghi JSON
-6. **SaveManager** — dipende da LocalDatabase per il backup, auto-save ogni 60s
-7. **AudioManager** — dipende da GameManager per sapere quali tracce caricare
-8. **PerformanceManager** — non e' un autoload ma un sistema caricato separatamente (in `scripts/systems/`)
-
-**Perche' l'ordine conta**: Se il SaveManager prova a usare il LocalDatabase prima che quest'ultimo sia stato caricato, il gioco crasha. E' come cercare di usare il telefono prima che sia stato acceso.
-
-### Contenuti del Gioco
-
-Il gioco include:
-- **1 stanza** (cozy_studio) con **3 temi** colore (modern, natural, pink)
-- **69 decorazioni** in 11 categorie (letti, scrivanie, sedie, armadi, piante, ecc.)
-- **1 personaggio** giocabile (male_old) con animazioni in 8 direzioni
-- **2 tracce musicali** (tema pioggia)
-- **FPS dinamico**: 60 FPS quando il gioco e' in primo piano, 15 FPS quando e' in background (per risparmiare risorse del computer)
-
----
-
-## 5. Metodologia di Audit
-
-### Come Abbiamo Condotto l'Analisi
-
-L'audit e' stato condotto analizzando **ogni singola riga di codice** di tutti i file del progetto. Non abbiamo usato solo strumenti automatici: ogni file e' stato letto e analizzato manualmente, cercando problemi in diverse aree.
-
-Pensate a questo processo come alla visita medica completa di cui abbiamo parlato nell'introduzione. Non ci siamo limitati a "guardare la facciata": abbiamo controllato ogni organo, ogni funzione vitale.
-
-### Aree di Competenza Analizzate
-
-Per ogni area, abbiamo usato come riferimento i documenti di studio del progetto (cartella `study/`) e le guide operative (cartella `guide/`):
-
-| Area Analizzata | Documento di Riferimento | Cosa Abbiamo Cercato |
-|-----------------|--------------------------|----------------------|
-| Ciclo di vita dei nodi | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 5 | I nodi vengono creati e distrutti correttamente? Le risorse vengono liberate? |
-| Qualita' del codice GDScript | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 4 | Il codice usa type hints? Gestisce gli errori? E' robusto? |
-| Architettura del progetto | [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) | L'architettura signal-driven e' rispettata? I flussi dati sono corretti? |
-| Giochi isometrici | [ISOMETRIC_GAMES.md](study/ISOMETRIC_GAMES.md) | La proiezione, il depth sorting, e il movimento sono implementati correttamente? |
-| Sistema UI e pannelli | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 10 | I pannelli vengono puliti correttamente? Il drag-and-drop funziona? |
-| Audio e crossfade | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 11 | Il crossfade funziona? I volumi sono gestiti in dB? |
-| Persistenza dati | [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) + [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 8 | I salvataggi sono affidabili? SQLite e' usato correttamente? |
-| Testing | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) Sez. 5 | I test coprono le aree critiche? Le asserzioni sono corrette? |
-| Performance e tween | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) Sez. 7, 14 | Il caching e' usato? I tween sono sicuri? |
-| Pattern architetturali | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) Sez. 4 | Il SignalBus e' usato correttamente? Il dirty flag e' implementato? |
-| Build e distribuzione | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) | L'export e' configurato correttamente? La CI/CD funziona? |
-
-### Criteri di Classificazione
-
-Ogni problema trovato viene classificato secondo la seguente scala di severita'. Ripetiamo la tabella qui per comodita' con esempi concreti dal progetto:
-
-| Severita' | Criterio | Esempio dal Progetto |
-|-----------|----------|----------------------|
-| **CRITICO** | Perdita dati, crash a runtime, vulnerabilita' sicurezza | L'inventario non viene mai salvato su SQLite: se il file JSON si corrompe, tutti gli oggetti dell'utente sono persi per sempre |
-| **ALTO** | Memory leak, race condition, feature rotta | Il FileDialog viene creato ad ogni click ma mai distrutto: il gioco usa sempre piu' memoria |
-| **MEDIO** | Validazione mancante, silent failure, code smell | Se una texture non viene trovata, il programma non mostra nessun errore ma il gioco si comporta in modo strano |
-| **BASSO** | Naming, best practice, ottimizzazione | La costante `CELL_SIZE` e' hardcoded come `64` in piu' file invece di usare una costante condivisa |
+> **Nota**: `PerformanceManager` e' in `scripts/systems/` ma e' registrato come autoload.
+> Tutti gli autoload vivono per l'intera vita dell'applicazione — il loro `_exit_tree()`
+> viene chiamato solo alla chiusura dell'app.
 
 ---
 
-## 6. Risultati — Autoload Singleton
+## 4. Metodologia di Audit
 
-Gli **autoload** (vedi glossario) sono gli script che formano la "spina dorsale" del progetto. Vengono caricati automaticamente all'avvio del gioco e restano attivi per sempre. Gestiscono le funzionalita' fondamentali: salvataggio, audio, database, comunicazione tra componenti.
+### Processo
 
-Poiche' gli autoload sono sempre attivi e accessibili da qualsiasi punto del gioco, un bug in un autoload ha un impatto potenzialmente **globale**: puo' causare problemi ovunque.
+Questo audit segue un processo sistematico in 5 fasi:
 
-In Mini Cozy Room ci sono 7 autoload (piu' PerformanceManager come sistema). Li analizziamo uno per uno.
+```
+Fase 1: Mappatura         -> Esplorazione completa del repository (file, cartelle, asset)
+Fase 2: Lettura           -> Lettura riga per riga di ogni script GDScript (24 file)
+Fase 3: Verifica fix      -> Controllo di tutte le correzioni dal primo audit
+Fase 4: Nuovi problemi    -> Identificazione di problemi non presenti nel primo audit
+Fase 5: Documentazione    -> Stesura del report con classificazione e guide operative
+```
 
----
+### Criteri di Valutazione
 
-### 6.1 signal_bus.gd (58 righe, 0 funzioni, 31 segnali)
+Ogni script viene valutato su 8 dimensioni:
 
-**Cosa fa questo file**: E' il "centralino telefonico" del gioco (vedi glossario: SignalBus). Contiene solo dichiarazioni di segnali, senza nessuna logica. Quando un componente del gioco vuole comunicare qualcosa (ad esempio "la stanza e' cambiata"), lo fa attraverso questo file.
+1. **Correttezza**: Il codice fa quello che dovrebbe? Ci sono edge case non gestiti?
+2. **Sicurezza**: Ci sono vulnerabilita' (SQL injection, path traversal, input non validato)?
+3. **Robustezza**: Come si comporta in caso di errore? (file mancanti, null reference, rete assente)
+4. **Performance**: Ci sono operazioni costose nel main thread? Memory leak?
+5. **Manutenibilita'**: Il codice e' leggibile? Le responsabilita' sono ben separate?
+6. **Accoppiamento**: I sistemi comunicano tramite SignalBus o con riferimenti diretti?
+7. **Cleanup**: `_exit_tree()` disconnette i segnali? I tween vengono killati?
+8. **Completezza**: Le feature dichiarate sono effettivamente implementate?
 
-**Stato**: BUONO — Il design e' corretto. Un SignalBus deve essere "puro": solo segnali, nessuna logica.
+### Stato delle Fix Precedenti
 
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | BASSO | TODO non implementato: sistema i18n con segnale `language_changed` | 35 | Nel codice c'e' un commento TODO (una nota del programmatore che dice "da fare") per aggiungere il supporto multi-lingua. Non e' un bug, ma una funzionalita' prevista e non ancora realizzata. |
+Il primo audit (21 Marzo 2026) aveva identificato:
+- **7 problemi CRITICI** (C1-C7): tutti corretti
+- **29 problemi ALTI** (A1-A29): tutti corretti
+- **11 problemi ARCHITETTURALI** (AR1-AR11): la maggior parte corretti
 
----
-
-### 6.2 game_manager.gd (~130 righe, 12 funzioni)
-
-**Cosa fa questo file**: E' il "direttore d'orchestra" del gioco. Coordina lo stato generale: quale stanza e' attiva, quale personaggio e' selezionato, quali cataloghi sono caricati. Quando il gioco si avvia, il GameManager carica i dati e mette tutto in moto.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | MEDIO | `get_tree().current_scene` puo' essere null — manca controllo null prima di `.scene_file_path` | 27-28 | `get_tree().current_scene` restituisce la scena attualmente attiva nel gioco. Ma in certi momenti (per esempio durante un cambio di scena), questa puo' essere `null`. Se il codice prova a leggere `.scene_file_path` da qualcosa che e' null, il gioco crasha. La soluzione e' aggiungere un null check prima di usare il valore. |
-| 2 | MEDIO | `SaveManager.load_game()` chiamato direttamente senza gestione errori | 30 | Il GameManager chiama `SaveManager.load_game()` ma non controlla se l'operazione e' andata a buon fine. Se il caricamento fallisce (file corrotto, permessi mancanti), il GameManager non lo sa e continua come se tutto fosse OK. E' come spedire una lettera raccomandata senza controllare la ricevuta di ritorno. |
-| 3 | MEDIO | Sistema outfit personaggio e' placeholder (TODO non implementato) | 107 | La funzione per cambiare vestiti al personaggio e' solo un segnaposto. Il codice c'e', ma non fa nulla di concreto. Non e' un bug attivo, ma qualsiasi tentativo di cambiare outfit da parte dell'utente non avra' effetto. |
-| 4 | ALTO | Violazione architetturale: GameManager chiama metodi SaveManager direttamente (coupling bidirezionale) | 22, 30, 128 | Ricordate l'analogia dell'ufficio postale? Il GameManager sta "scavalcando" il SignalBus e andando direttamente nell'ufficio del SaveManager. Questo crea una dipendenza diretta: se cambiamo il SaveManager, dobbiamo cambiare anche il GameManager. In un'architettura signal-driven, questo non dovrebbe succedere. |
-| 5 | MEDIO | Cataloghi caricati senza validazione schema — catalogo vuoto `{}` causa errori downstream | 33-37 | Quando il GameManager carica i cataloghi JSON (stanze, decorazioni, personaggi), non verifica che il contenuto sia corretto. Se un file JSON e' vuoto o malformato, il GameManager lo accetta senza protestare, ma le funzioni che proveranno a usare quei dati piu' tardi falliranno in modo misterioso. E' come accettare un pacco senza controllare il contenuto: se dentro c'e' il prodotto sbagliato, lo scoprirete troppo tardi. |
-
----
-
-### 6.3 save_manager.gd (~290 righe, 11 funzioni)
-
-**Cosa fa questo file**: E' il "custode della memoria" del gioco. Gestisce tutto cio' che riguarda il salvataggio e il caricamento dei dati: la posizione delle decorazioni, le impostazioni audio, lo stato del personaggio, l'inventario degli oggetti. I dati vengono salvati prima come file JSON, poi replicati su SQLite come backup.
-
-Questo file e' **critico** perche' un bug qui significa potenziale **perdita di dati dell'utente**. Se l'utente ha passato ore a decorare la propria stanza e il salvataggio non funziona, tutto quel lavoro va perso.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | CRITICO | Race condition: auto-save timer puo' chiamare `save_game()` mentre un salvataggio e' in corso (nessun mutex) | 64-67, 70 | Il gioco ha un auto-save che salva automaticamente ogni tot secondi. Ma se un salvataggio manuale e' gia' in corso quando il timer scatta, entrambi i salvataggi tentano di scrivere sullo stesso file contemporaneamente. Ricordate l'analogia delle due persone che scrivono sullo stesso foglio? Il risultato puo' essere un file corrotto (dati persi). La soluzione e' aggiungere un flag `_is_saving` che impedisce salvataggi simultanei. |
-| 2 | CRITICO | Backup file copy non controlla errori — se la copia fallisce, nessun backup esiste | 92-93 | Quando il gioco salva, prima crea una copia di backup del file precedente (in caso qualcosa vada storto). Ma il codice non verifica se la copia e' riuscita. E' come fare la fotocopia di un documento importante senza controllare che sia uscita dalla fotocopiatrice: potreste pensare di avere un backup quando in realta' non ce l'avete. |
-| 3 | CRITICO | Inventario MAI salvato su SQLite — `_save_to_sqlite()` salva solo personaggio, non inventario. Dati persi su fallback database | 115-120 | Questo e' il problema piu' grave trovato nell'intero progetto. La funzione `_save_to_sqlite()` salva i dati del personaggio sul database SQLite (il backup), ma **dimentica completamente l'inventario**. Se il file JSON principale si corrompe e il gioco deve ricorrere al backup SQLite, tutti gli oggetti dell'utente sono persi. E' come se l'archivista facesse la copia di backup del contratto ma dimenticasse tutti gli allegati. |
-| 4 | ALTO | Se caricamento da file primario E backup falliscono entrambi, `load_completed` emesso senza dati — sistemi a valle non lo sanno | 128-129, 202-205 | Quando il gioco si avvia, tenta di caricare i dati salvati. Se sia il file principale che il backup sono inaccessibili, il SaveManager emette comunque il segnale "caricamento completato" senza dire a nessuno che i dati sono vuoti. Gli altri sistemi (GameManager, AudioManager) pensano che tutto sia OK e procedono con dati vuoti o corrotti. E' come un corriere che consegna una busta vuota dicendo "ecco il pacco" — il destinatario non sa che manca il contenuto. |
-| 5 | ALTO | `_compare_versions()` usa `int()` cast senza error handling — versioni non numeriche (es. "1.0.0-beta") rompono la comparazione | 275-284 | La funzione che confronta le versioni del salvataggio (per esempio, "versione 3" vs "versione 4") funziona solo con numeri puri. Se una versione contiene testo (come "1.0.0-beta"), la conversione a numero fallisce e il gioco crasha. |
-| 6 | ALTO | Migrazione v3 verso v4 non valida che la struttura "inventory" sia corretta. Dati malformati passano silenziosamente | 245-271 | Quando il gioco viene aggiornato, i vecchi salvataggi devono essere "migrati" al nuovo formato. La migrazione dalla versione 3 alla 4 non controlla se i dati dell'inventario hanno la struttura corretta. Dati malformati passano senza nessun errore, causando problemi misteriosi piu' tardi. |
-| 7 | MEDIO | `FileAccess.open()` fallisce silenziosamente — nessun dirty flag per ritentare | 98-101 | Se l'apertura del file di salvataggio fallisce (per esempio, perche' il disco e' pieno), il sistema non registra questo fallimento e non prova a ritentare. Il salvataggio semplicemente... non avviene, senza che l'utente lo sappia. |
-| 8 | MEDIO | File handle leak in `_load_from_file()` — se `json.parse()` fallisce, file non chiuso esplicitamente | 150-151 | Un "file handle" e' il "canale" attraverso cui il programma legge un file. Se la lettura del JSON fallisce a meta', questo canale resta aperto (non viene chiuso). Pochi file handle aperti non sono un problema, ma molti possono esaurire le risorse del sistema. |
-| 9 | ALTO | Violazione architetturale: SaveManager chiama `LocalDatabase` e `AudioManager` direttamente | 105, 301, 329 | Invece di comunicare tramite il SignalBus, il SaveManager chiama direttamente metodi di LocalDatabase e AudioManager. Questo crea dipendenze dirette che rendono il codice piu' difficile da modificare e testare. |
+Questo secondo audit ri-verifica ognuna di queste fix e cerca nuovi problemi.
 
 ---
 
-### 6.4 local_database.gd (~282 righe, 21 funzioni)
+## 5. Mappa Architetturale
 
-**Cosa fa questo file**: Gestisce il database SQLite locale, che funziona come un "magazzino organizzato" per i dati del gioco. Crea le tabelle (la struttura), inserisce dati, li legge e li aggiorna. Viene usato come backup del salvataggio JSON e potenzialmente per funzionalita' future.
+### Diagramma dei Sistemi
 
-Capire i problemi di questo file richiede una conoscenza base dei database. Brevemente: un database organizza i dati in **tabelle** (pensate a fogli Excel), con **righe** (ogni riga e' un "record", per esempio un personaggio) e **colonne** (le proprieta' di quel record, come nome, livello, colore occhi).
+```mermaid
+graph TD
+    subgraph Autoload["Autoload (Singleton)"]
+        SB[SignalBus<br/>31 segnali]
+        LOG[AppLogger<br/>JSON Lines + rotazione]
+        DB[LocalDatabase<br/>SQLite WAL]
+        AUTH[AuthManager<br/>PBKDF2 + rate limit]
+        GM[GameManager<br/>Cataloghi JSON]
+        SM[SaveManager<br/>HMAC + atomic write]
+        AM[AudioManager<br/>Crossfade + ambience]
+        PM[PerformanceManager<br/>FPS dinamico]
+    end
 
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | CRITICO | `characters` usa `account_id` come PRIMARY KEY — impossibile avere piu' personaggi per account | 101-102 | La tabella dei personaggi usa l'ID dell'account come chiave primaria. Poiche' la chiave primaria deve essere unica, questo significa che ogni account puo' avere UN SOLO personaggio. Ma il gioco e' progettato per avere piu' personaggi! E' come se in un'anagrafe il codice della famiglia fosse anche il codice della persona: ogni famiglia potrebbe registrare un solo membro. La soluzione e' usare un `character_id` separato come chiave primaria. |
-| 2 | CRITICO | Schema `inventario` confuso: `coins` e `capacita` sono per item invece che per account | 89-95 | Nella tabella dell'inventario, i campi "monete" e "capacita' zaino" sono associati a ogni singolo oggetto invece che all'account dell'utente. E' come se in un supermercato, invece di avere un unico saldo sulla carta fedelta', ogni prodotto nel carrello avesse il suo saldo separato. Non ha senso logico e causa dati incoerenti. |
-| 3 | ALTO | `item_id` in `inventario` NON e' foreign key verso `items(item_id)` — integrita' referenziale rotta | 89 | L'inventario contiene oggetti identificati da un `item_id`, ma questo campo non e' collegato alla tabella degli oggetti (`items`). Significa che si possono inserire nell'inventario oggetti con ID inesistenti. E' come poter registrare in biblioteca un prestito per un libro che non esiste nel catalogo. |
-| 4 | ALTO | `_open_database()` non propaga errori — caller non sa se DB e' aperto | 35-42 | La funzione che apre il database non comunica al chiamante se l'apertura e' riuscita o meno. Se il file del database e' corrotto o mancante, il resto del codice non lo sa e prova a operare su un database chiuso, causando errori a catena. |
-| 5 | ALTO | Tabelle `colore`, `categoria`, `shop` create vuote — nessun seed data | 48-112 | Tre tabelle vengono create con la struttura corretta ma senza nessun dato iniziale. E' come costruire uno scaffale per i libri senza metterci nessun libro. Le funzionalita' che dipendono da queste tabelle (ad esempio, le opzioni di colore per il personaggio) non funzioneranno. |
-| 6 | MEDIO | `_execute(sql)` accetta SQL raw senza parametri — potenziale SQL injection se caller passa input utente | 251-258 | La funzione che esegue comandi SQL li accetta come stringa di testo senza parametri separati. Se un input dell'utente venisse passato direttamente in questa funzione, un utente malintenzionato potrebbe iniettare comandi SQL dannosi. In questo contesto (applicazione desktop locale) il rischio e' basso, ma e' una cattiva pratica. |
-| 7 | MEDIO | Tutti i query failure ritornano false/array vuoto silenziosamente — impossibile distinguere "nessun risultato" da "errore" | 255-280 | Quando una query al database fallisce, il codice restituisce `false` o un array vuoto. Ma lo stesso valore viene restituito quando non ci sono risultati. Chi chiama la funzione non puo' sapere se "non ci sono dati" o "c'e' stato un errore". E' come un medico che vi dice "nessun problema" sia quando siete sani sia quando la macchina e' rotta. |
-| 8 | MEDIO | `upsert_character()` non valida campi richiesti ne' tipi dati del Dictionary input | 159-192 | La funzione per inserire o aggiornare un personaggio accetta un Dictionary di dati ma non controlla che i campi obbligatori siano presenti ne' che i dati siano del tipo corretto. E' come un modulo che accetta qualsiasi cosa scriviate, anche se nel campo "eta'" mettete "banana". |
-| 9 | MEDIO | Nessun `delete_inventory_item()` — impossibile rimuovere oggetti dall'inventario | 198-210 | Esiste una funzione per aggiungere oggetti all'inventario, ma non esiste una funzione per rimuoverli. L'utente puo' collezionare oggetti ma non puo' mai liberarsene. |
-| 10 | ALTO | Nessun sistema di migrazione schema database — cambiamenti richiedono codice in piu' funzioni | 48-112 | Non c'e' un sistema strutturato per aggiornare la struttura del database quando il gioco viene aggiornato. Ogni modifica allo schema richiede di cambiare manualmente il codice in diversi punti, con alto rischio di dimenticarne qualcuno. |
+    subgraph Menu["Menu"]
+        MM[MainMenu<br/>Loading + auth flow]
+        AS[AuthScreen<br/>Login/Register/Guest]
+        MC[MenuCharacter<br/>Walk-in animation]
+    end
+
+    subgraph Room["Gameplay"]
+        RB[RoomBase<br/>Decorazioni + personaggio]
+        CC[CharacterController<br/>Movimento 8-dir]
+        DS[DecorationSystem<br/>Popup + drag]
+        WB[WindowBackground<br/>Parallax]
+        RG[RoomGrid<br/>Overlay griglia]
+    end
+
+    subgraph UI["UI Panels"]
+        PanM[PanelManager<br/>Mutua esclusione]
+        DP[DecoPanel<br/>Catalogo + DnD]
+        SP[SettingsPanel<br/>Volume + lingua]
+        PP[ProfilePanel<br/>Account + delete]
+        DZ[DropZone<br/>UI->mondo bridge]
+    end
+
+    SB -->|segnali| GM
+    SB -->|segnali| SM
+    SB -->|segnali| AM
+    SB -->|segnali| PM
+    SB -->|segnali| RB
+    SB -->|segnali| DS
+    SB -->|segnali| PanM
+
+    AUTH -->|query| DB
+    SM -->|read/write| GM
+    AM -->|read| SM
+    PM -->|read| SM
+
+    MM -->|istanzia| AS
+    MM -->|istanzia| MC
+    MM -->|change_scene| RB
+
+    RB -->|istanzia| CC
+    RB -->|istanzia| DS
+    RB -->|istanzia| WB
+```
+
+### Flusso di Avvio dell'Applicazione
+
+```
++------------------------------------------------------------------+
+|                    AVVIO GODOT ENGINE                             |
++------------------------------------------------------------------+
+         |
+         v
++------------------+    +------------------+    +------------------+
+| 1. SignalBus     | -> | 2. AppLogger     | -> | 3. LocalDatabase |
+| _ready(): noop   |    | _ready(): apre   |    | _ready(): apre   |
+| (solo segnali)   |    | file log, timer  |    | DB, crea schema  |
++------------------+    +------------------+    +------------------+
+         |
+         v
++------------------+    +------------------+    +------------------+
+| 4. AuthManager   | -> | 5. GameManager   | -> | 6. SaveManager   |
+| _ready():        |    | _ready(): carica |    | _ready(): carica |
+| connette segnali |    | 4 cataloghi JSON |    | save, applica    |
++------------------+    +------------------+    +------------------+
+         |
+         v
++------------------+    +------------------+
+| 7. AudioManager  | -> | 8. PerfManager   |
+| _ready(): aspetta|    | _ready(): set    |
+| load_completed   |    | FPS, connette    |
++------------------+    +------------------+
+         |
+         v
++------------------------------------------------------------------+
+|                    SCENA PRINCIPALE: MainMenu                     |
++------------------------------------------------------------------+
+         |
+         v
+  +--- Loading Screen (SubViewport overlay) ---+
+  |  1. Mostra sfondo + barra progresso        |
+  |  2. GameManager carica cataloghi           |
+  |  3. SaveManager carica salvataggio         |
+  |  4. SignalBus.load_completed.emit()        |
+  +--------------------------------------------+
+         |
+         v
+  +--- Auth Check ---+
+  |  Account esiste? |
+  +------------------+
+     |            |
+     | NO         | SI
+     v            v
+  AuthScreen   Walk-in Animation
+  (login/reg)  (personaggio entra)
+     |            |
+     v            v
+  +--- Bottoni Menu ---+
+  | Start | Settings   |
+  +---------+----------+
+         |
+         v
+  +------------------------------------------------------------------+
+  |              SCENA GAMEPLAY: main.tscn (RoomBase)                 |
+  +------------------------------------------------------------------+
+```
+
+### Flusso di Salvataggio
+
+```
+                    Evento trigger
+                         |
+          +--------------+--------------+
+          |              |              |
+     Auto-save      Modifica deco   Chiusura app
+     (timer 60s)    (dirty flag)    (WM_CLOSE)
+          |              |              |
+          v              v              v
+     +------------------------------------+
+     |     SaveManager.save_game()        |
+     | 1. Controlla _is_saving (guard)    |
+     | 2. Raccoglie stato da tutti i      |
+     |    sistemi in un Dictionary        |
+     | 3. Calcola HMAC-SHA256             |
+     | 4. Serializza in JSON              |
+     +------------------------------------+
+                    |
+                    v
+     +------------------------------------+
+     |         Atomic Write               |
+     | 1. Scrivi su file .tmp             |
+     | 2. Se esiste .save, rinomina       |
+     |    in .save.bak                    |
+     | 3. Rinomina .tmp in .save          |
+     +------------------------------------+
+                    |
+                    v
+     +------------------------------------+
+     |     Catena di Migrazione           |
+     | v1.0.0 -> v2.0.0 -> v3.0.0        |
+     |        -> v4.0.0 -> v5.0.0        |
+     | Ogni step aggiunge campi mancanti  |
+     +------------------------------------+
+```
+
+### Flusso Decorazioni (Drag & Drop)
+
+```
+  DecoPanel (UI)                    DropZone (Control)              RoomBase (Node2D)
+  +----------------+               +------------------+            +------------------+
+  | Catalogo con   |  drag start   | Overlay          |  drop      | Mondo di gioco   |
+  | 69 decorazioni | ------------> | trasparente      | --------> | coordinate 2D    |
+  | in 11 categorie|               | su tutta la      |            |                  |
+  |                |               | viewport         |            | Crea:            |
+  | _get_drag_data |               |                  |            | - Sprite2D       |
+  | genera preview |               | can_drop_data(): |            | - StaticBody2D   |
+  +----------------+               | valida zona      |            | - CollisionShape |
+                                   | (wall/floor)     |            | - DecorationSys  |
+                                   |                  |            +------------------+
+                                   | drop_data():     |
+                                   | emette           |
+                                   | decoration_placed|
+                                   +------------------+
+```
+
+### Mappa Segnali (SignalBus)
+
+```
+Categoria           Segnale                        Emesso da               Ricevuto da
+---------           -------                        ---------               -----------
+Room                room_changed(id)               SaveManager             RoomBase
+                    theme_changed(theme)            SaveManager             RoomBase
+
+Character           character_changed(id)           SaveManager             RoomBase
+                    character_direction(dir)        CharacterController     (non usato)
+
+Music               track_changed(path)             UI/DecoPanel            AudioManager
+                    ambience_toggled(id,on)          UI                      AudioManager
+
+Decoration          decoration_placed(data)         DropZone                RoomBase
+                    decoration_removed(idx)         DecorationSystem        RoomBase
+                    decoration_updated()            DecorationSystem        SaveManager
+                    edit_mode_changed(on)           DecoPanel               CharacterCtrl, RoomGrid
+
+UI                  panel_opened(name)              PanelManager            (logging)
+                    panel_closed(name)              PanelManager            (logging)
+
+Save/Load           save_requested()                Vari sistemi            SaveManager
+                    load_completed()                SaveManager             AudioManager, PerfMgr
+                    settings_updated(key,val)       PerfManager, Settings   SaveManager
+
+Auth                auth_state_changed(state,uname) AuthManager             ProfilePanel, MainMenu
+                    logout_requested()              ProfilePanel            AuthManager
+
+Cloud Sync          sync_requested()                (futuro)                (futuro)
+                    sync_completed(ok)              (futuro)                (futuro)
+```
 
 ---
 
-### 6.5 audio_manager.gd (~338 righe, 22 funzioni)
+## 6. Analisi Codice — Autoload
 
-**Cosa fa questo file**: Gestisce tutta la parte audio del gioco: la musica di sottofondo, i suoni ambientali (pioggia, uccelli), il crossfade tra tracce, il volume, e la playlist. E' come il tecnico audio in un teatro: controlla cosa si sente, quando, e a quale volume.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Accesso `tracks[current_track_index]` senza bounds check — crash se lista tracce e' vuota | 82-85 | Il codice accede alla traccia corrente usando un indice, ma non verifica prima che la lista delle tracce contenga almeno un elemento. Se la lista e' vuota (perche' nessuna traccia e' stata caricata), il gioco accede alla posizione 0 di un array vuoto e crasha. Vedi il glossario alla voce "Bounds Check". |
-| 2 | ALTO | Memory leak ambience: `_start_ambience()` crea AudioStreamPlayer che puo' non essere pulito correttamente con `queue_free()` prima della rimozione dal dizionario | 240-245, 270-275 | Quando il gioco crea un player per i suoni ambientali, in certi casi il riferimento viene rimosso dal dizionario prima che il player sia effettivamente distrutto. Il player rimane in memoria senza che nessuno ne abbia piu' il riferimento: e' come perdere le chiavi di una macchina parcheggiata — la macchina occupa spazio ma non potete piu' usarla ne' spostarla. |
-| 3 | ALTO | Crossfade tween kill non garantisce che callback `stop()` del vecchio player venga chiamato — player continua in background | 192-194 | Durante un crossfade, se il tween (l'animazione di dissolvenza) viene interrotto bruscamente, il callback che dovrebbe fermare il vecchio player audio potrebbe non essere mai chiamato. Il vecchio player continua a suonare in background a volume zero, sprecando risorse. |
-| 4 | MEDIO | `_load_audio_stream()` per file esterni non ha limite dimensione — potrebbe caricare file enormi in memoria | 170-187 | Quando l'utente importa una traccia musicale esterna, il gioco la carica interamente in memoria senza controllarne la dimensione. Un file audio di diversi gigabyte potrebbe saturare la memoria del computer. |
-| 5 | MEDIO | `playlist_mode` non validato — valori invalidi passano silenziosamente nel match statement | 61-72 | La variabile che controlla la modalita' della playlist (sequenziale, casuale, ripeti) non viene verificata. Se contiene un valore inatteso, il `match` (l'equivalente GDScript dello switch/case) semplicemente non fa nulla, senza segnalare l'errore. |
-| 6 | MEDIO | Se `_load_audio_stream()` ritorna null, `is_playing` rimane true — stato inconsistente | 92-95 | Se il caricamento di una traccia audio fallisce, la variabile che indica "sto suonando" resta su `true` anche se in realta' non si sta suonando nulla. L'interfaccia utente mostrerebbe il bottone "pausa" invece di "play", confondendo l'utente. |
-| 7 | ALTO | Violazione architetturale: `_on_volume_changed()` scrive direttamente in `SaveManager.settings` | 292-301 | Quando il volume cambia, l'AudioManager va direttamente a modificare i dati interni del SaveManager invece di emettere un segnale. Questo e' come se il tecnico audio andasse nell'ufficio dell'archivista e modificasse i documenti direttamente, senza passare per il protocollo. |
-| 8 | ALTO | Violazione architetturale: `_sync_music_state()` scrive direttamente in `SaveManager.music_state` | 323-329 | Stesso problema del punto 7, ma per lo stato della musica (quale traccia e' in riproduzione, a che punto, ecc.). |
+Questa sezione analizza gli 8 script autoload, che formano il backbone dell'applicazione.
+Ogni script e' analizzato su: correttezza, sicurezza, robustezza, performance, accoppiamento, cleanup.
 
 ---
 
-### 6.6 supabase_client.gd — RIMOSSO (27 Marzo 2026) — In reintegrazione Fase 4
+### 6.1 signal_bus.gd (58 righe)
 
-> **Questo file e' stato eliminato dal progetto il 27 Marzo 2026.** I problemi A10, A11 e AR11
-> sono da considerarsi **risolti per rimozione**. Il client Supabase verra' **reimplementato**
-> nella Fase 4 del progetto (cloud sync cross-device). Elia prepara il progetto PostgreSQL + RLS
-> su Supabase; il client GDScript lo reimplementa Renan.
+**Percorso**: `v1/scripts/autoload/signal_bus.gd`
+**Ruolo**: Hub centrale di comunicazione. Dichiara 31 segnali raggruppati per categoria.
 
----
+**Analisi**:
 
-### 6.6b auth_manager.gd (~120 righe, 8 funzioni)
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | OK | Pure dichiarazioni, nessuna logica |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | OK | Non puo' fallire |
+| Performance | OK | Nessun overhead |
+| Accoppiamento | ECCELLENTE | Punto centrale di disaccoppiamento |
+| Cleanup | N/A | Nessuna connessione da disconnettere |
 
-**Cosa fa questo file**: Gestisce l'autenticazione locale degli utenti. Supporta tre modalita': accesso come ospite (guest), registrazione con username + password (hashing SHA-256), e login con credenziali esistenti. Implementa una state machine con 4 stati: `LOGGED_OUT`, `LOGGING_IN`, `LOGGED_IN`, `GUEST`.
+**Segnali dichiarati per categoria**:
 
-**Stato**: FUNZIONANTE con problemi aperti A26 e A27.
+```
+Room (4):         room_changed, decoration_placed, decoration_removed, decoration_moved
+Character (2):    character_changed, outfit_changed
+Music/Audio (4):  track_changed, track_play_pause_toggled, ambience_toggled, volume_changed
+Decoration (5):   decoration_mode_changed, decoration_selected, decoration_deselected,
+                  decoration_rotated, decoration_scaled
+UI (2):           panel_opened, panel_closed
+Save/Load (3):    save_requested, save_completed, load_completed
+Settings (3):     settings_updated, music_state_updated, save_to_database_requested
+Language (1):     language_changed
+Auth (5):         auth_state_changed, auth_error, account_created, account_deleted,
+                  character_deleted
+Cloud Sync (2):   sync_started, sync_completed
+```
 
-| # | Severita' | Problema | Spiegazione |
-|---|-----------|----------|-------------|
-| 1 | MEDIO | `_set_state()` chiama `LocalDatabase.get_character()` senza verificare `LocalDatabase.is_open()` (A26) | Se il database non e' stato aperto correttamente, questa chiamata causa crash. |
-| 2 | MEDIO | `register()` non verifica il ritorno di `create_account()` prima di chiamare `get_account()` (A27) | Se la creazione account fallisce (ritorna -1), il flusso continua con dati invalidi. |
+**Verdetto**: `NESSUN PROBLEMA`. Design pulito e corretto.
 
----
-
-### 6.7 logger.gd (~221 righe, 17 funzioni)
-
-**Cosa fa questo file**: E' il "segretario" del gioco: registra tutto cio' che succede in un file di log. Ogni operazione importante, ogni errore, ogni avviso viene scritto in un registro che gli sviluppatori possono consultare per diagnosticare problemi. Il logger ha diversi livelli (DEBUG, INFO, WARN, ERROR) che indicano l'importanza di ogni messaggio.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | `_flush_buffer()` scrive TUTTI i log su disco sincronamente — blocca il game thread se buffer e' grande | 121-139 | I messaggi di log vengono prima accumulati in un buffer (una coda in memoria) e poi scritti tutti insieme su disco. Ma questa scrittura avviene in modo **sincrono**, cioe' il gioco si ferma e aspetta che tutti i log siano scritti. Se il buffer e' grande (molti messaggi accumulati), il gioco si "congela" per un momento visibile all'utente. E' come un cameriere che serve tutti i piatti in una volta sola: se ha 50 piatti, ci mette un po' e nel frattempo nessun altro viene servito. |
-| 2 | ALTO | Se file log non puo' essere aperto, buffer viene cancellato — LOG PERSI silenziosamente | 125-131 | Se il file di log non puo' essere aperto (disco pieno, permessi mancanti), tutti i messaggi nel buffer vengono semplicemente cancellati senza nessun avviso. E' come se il segretario, trovando l'archivio chiuso a chiave, buttasse tutti i documenti nella spazzatura invece di tenerli e riprovare. |
-| 3 | MEDIO | Session ID generato con `Time ^ PID` — possibili collisioni. Dovrebbe usare UUID | 174-185 | Ogni sessione di gioco ha un identificatore unico. Ma il metodo di generazione (XOR tra timestamp e Process ID) non e' abbastanza robusto: due sessioni avviate nello stesso secondo potrebbero avere lo stesso ID. Un UUID (Universally Unique Identifier) sarebbe molto piu' sicuro. |
-| 4 | MEDIO | Timestamp senza millisecondi — log nello stesso secondo hanno timestamp identici | 89 | I timestamp nei log hanno precisione al secondo. Se due eventi accadono nello stesso secondo (cosa comune in un gioco a 60 FPS), hanno lo stesso timestamp e l'ordine non e' determinabile. Aggiungere i millisecondi risolverebbe il problema. |
-| 5 | MEDIO | `Level.keys()[level]` assume valore enum valido — crash se fuori bounds | 88 | Il livello del log (DEBUG=0, INFO=1, WARN=2, ERROR=3) viene usato come indice per ottenere il nome testuale. Ma se il valore e' fuori range (per esempio 5), il codice crasha con un errore di accesso fuori dai limiti dell'array. |
-| 6 | MEDIO | Nessuna configurazione per log level allo startup — sempre DEBUG di default | 19 | Il logger parte sempre in modalita' DEBUG, che registra TUTTO, anche messaggi poco importanti. In produzione, sarebbe meglio partire in modalita' WARN o ERROR per ridurre la quantita' di log. Non c'e' modo di configurare il livello iniziale. |
-| 7 | BASSO | Output console misto: DEBUG/INFO su stdout, WARN su stderr, ERROR su stderr — ordine inconsistente | 110-118 | I messaggi di diverso livello vanno su canali diversi della console. Questo puo' causare un ordine di visualizzazione inaspettato quando si leggono i log in tempo reale. |
-
----
-
-### 6.8 performance_manager.gd (~55 righe, 6 funzioni)
-
-**Cosa fa questo file**: Si occupa di ottimizzare le prestazioni del gioco. La sua funzione principale e' il **FPS dinamico**: quando il gioco e' in primo piano (l'utente lo sta usando), gira a 60 FPS per un'esperienza fluida. Quando e' in background (l'utente sta facendo altro), scende a 15 FPS per consumare meno risorse del computer. Gestisce anche il salvataggio della posizione della finestra.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Posizione finestra aggiornata in SaveManager.settings ma `save_game()` NON chiamato prima dello shutdown — posizione persa se app crasha | 54-55 | La posizione della finestra viene scritta nei dati del SaveManager ma non viene effettivamente salvata su disco. Se il gioco crasha o viene chiuso bruscamente, la posizione aggiornata non e' mai stata scritta su file e viene persa. E' come scrivere un appunto su un post-it senza mai attaccarlo nel quaderno: se il post-it cade, l'informazione e' persa. |
-| 2 | MEDIO | `get_viewport()` puo' essere null — nessun null check prima di connettere segnali | 8 | Il codice tenta di connettersi ai segnali del viewport senza prima verificare che il viewport esista. In circostanze rare (avvio problematico del gioco), questo potrebbe essere null e causare un crash. |
-| 3 | MEDIO | Solo posizione X/Y salvata — manca dimensione finestra, stato massimizzato, indice monitor | 53-54 | Il salvataggio della finestra registra solo la posizione (dove sullo schermo), ma non la dimensione, se era massimizzata, o su quale monitor era. All'avvio successivo, la finestra potrebbe apparire nella posizione giusta ma con la dimensione sbagliata. |
-| 4 | ALTO | Violazione architetturale: modifica direttamente `SaveManager.settings` | 53-54 | Come per l'AudioManager, il PerformanceManager scrive direttamente nei dati interni del SaveManager invece di usare il SignalBus. |
-| 5 | BASSO | Manca `_exit_tree()` — 3 segnali connessi in `_ready()` mai disconnessi | 8-10 | I segnali `focus_entered`, `focus_exited` e `load_completed` connessi in `_ready()` non vengono disconnessi. Rischio basso perche' e' un singleton che vive per tutta la durata dell'app, ma viola il pattern di cleanup del progetto. |
+> **Nota**: I segnali `decoration_selected`, `decoration_deselected`, `decoration_rotated`,
+> `decoration_scaled`, `outfit_changed`, `sync_started`, `sync_completed` sono dichiarati
+> ma non ancora utilizzati nel codebase. Questo e' accettabile — sono predisposti per
+> funzionalita' future (Phase 4-5).
 
 ---
 
-## 7. Risultati — Script UI, Room e Menu
+### 6.2 game_manager.gd (130 righe)
 
-Questa sezione analizza gli script che gestiscono l'**interfaccia utente** (i pannelli che l'utente vede e con cui interagisce), le **stanze** del gioco (dove vivono i personaggi e le decorazioni), e i **menu** (menu principale, impostazioni).
+**Percorso**: `v1/scripts/autoload/game_manager.gd`
+**Ruolo**: Orchestratore centrale. Carica cataloghi JSON, gestisce stato corrente (room, theme, character).
 
-Questi script sono quelli piu' "visibili" all'utente: un bug qui si manifesta come un pannello che non si chiude, una decorazione che scompare, o il gioco che si blocca durante un'interazione. Molti dei problemi trovati in questa sezione riguardano la **mancanza di pulizia** quando i nodi vengono rimossi (mancanza di `_exit_tree()`), che causa memory leak e crash.
+**Analisi**:
 
----
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | OK | Caricamento e validazione corretti |
+| Sicurezza | OK | Nessun input esterno non validato |
+| Robustezza | BUONA | Gestisce file mancanti, JSON malformato, tipi errati |
+| Performance | OK | Caricamento sincrono ma accettabile per 4 piccoli file JSON |
+| Accoppiamento | `MEDIO` | Vedi sotto |
+| Cleanup | `BASSO` | Vedi sotto |
 
-### 7.1 panel_manager.gd (~136 righe)
+**Fix verificate**:
+- `[VERIFICATO]` **AR1**: `_request_save()` (riga 128-129) ora emette `SignalBus.save_requested.emit()` invece di chiamare direttamente `SaveManager.save_game()`
 
-**Cosa fa questo file**: Gestisce l'apertura, la chiusura e l'animazione di tutti i pannelli dell'interfaccia utente (negozio, decorazioni, musica, impostazioni). E' come il responsabile delle porte di un centro commerciale: controlla quale negozio e' aperto, si assicura che non ce ne siano troppi aperti contemporaneamente, e gestisce le animazioni di apertura/chiusura.
+**Problemi residui**:
 
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Nessun `_exit_tree()` — input handler rimane attivo dopo distruzione | 132-136 | Quando il panel_manager viene distrutto (per esempio, al cambio di scena), i gestori degli input (che intercettano i click e i tasti dell'utente) restano attivi. E' come se le porte del centro commerciale continuassero a funzionare dopo che l'edificio e' stato demolito. Questo puo' causare crash perche' il gestore tenta di operare su nodi che non esistono piu'. |
-| 2 | MEDIO | Nessun tween null check prima di `_tween.is_running()` | 55-58 | Prima di controllare se un'animazione (tween) e' in corso, il codice non verifica che il tween esista. Se e' la prima volta che il pannello viene aperto (e il tween non e' ancora stato creato), il codice crasha. |
-| 3 | MEDIO | Se caricamento scena panel fallisce, ritorna silenziosamente senza feedback | 42 | Se la scena di un pannello non puo' essere caricata (file mancante o corrotto), la funzione semplicemente ritorna senza dire nulla. L'utente clicca un bottone e non succede niente, senza nessuna spiegazione. |
+**N-AR1** — Accoppiamento `SaveManager -> GameManager` (`ARCHITETTURALE`)
 
----
-
-### 7.2 shop_panel.gd — RIMOSSO (24 Marzo 2026)
-
-> **Questo file e' stato eliminato dal progetto** come parte della semplificazione del design
-> (rimosso il concetto di "negozio" separato — le decorazioni si gestiscono direttamente dal
-> deco_panel). I problemi A6 (memory leak drag preview) e relativi non sono piu' applicabili
-> a questo file. Il memory leak drag preview in deco_panel (A7) resta aperto.
-
----
-
-### 7.3 deco_panel.gd (~200 righe)
-
-**Cosa fa questo file**: Gestisce il pannello delle decorazioni gia' possedute dall'utente. Mostra le decorazioni nell'inventario e permette di trascinarle nella stanza. E' il complemento del negozio: li' compri, qui usi.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Preview drag memory leak (stesso problema di shop_panel) | 157-167 | Stesso problema del negozio: le anteprime di trascinamento non vengono distrutte. Il problema e' duplicato perche' entrambi i pannelli usano lo stesso pattern di drag-and-drop con lo stesso difetto. |
-| 2 | MEDIO | `_exit_tree()` e' stub vuoto — segnali bottoni non disconnessi | 196-197 | La funzione `_exit_tree()` esiste ma e' vuota: non fa nessuna pulizia. E' come avere un cartello "uscita di emergenza" che porta a un muro. La funzione deve essere implementata con la disconnessione dei segnali. |
-| 3 | MEDIO | Nessun null check su `tex.get_size()` se texture non caricata | 157 | Se una texture non viene caricata correttamente, il codice tenta comunque di leggerne le dimensioni, causando un crash. |
-
----
-
-### 7.4 music_panel.gd — RIMOSSO (25 Marzo 2026)
-
-> **Questo file e' stato eliminato dal progetto.** La musica viene ora gestita direttamente
-> dall'AudioManager senza interfaccia utente dedicata. I problemi A2 (FileDialog memory leak)
-> e A22 (`_exit_tree()` incompleto) non sono piu' applicabili.
-
----
-
-### 7.5 settings_panel.gd (~135 righe)
-
-**Cosa fa questo file**: Gestisce il pannello delle impostazioni, dove l'utente puo' regolare i volumi (musica, effetti, ambiente), scegliere la lingua, e configurare altre preferenze. Contiene slider (barre scorrevoli) e menu a tendina.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | `_exit_tree()` e' stub vuoto — 4 slider signals e 1 option signal non disconnessi | 134-135 | Come nel deco_panel, la funzione di pulizia esiste ma non fa nulla. Cinque segnali restano connessi dopo la distruzione del pannello, causando potenziali crash quando gli slider tentano di comunicare con un pannello che non esiste piu'. |
-| 2 | MEDIO | Scrittura diretta in `SaveManager.settings["language"]` senza validazione | 128 | Quando l'utente cambia lingua, il codice scrive direttamente nei dati del SaveManager senza verificare che il valore sia una lingua valida. Un valore invalido potrebbe causare problemi nel sistema di traduzione. |
-| 3 | MEDIO | Race condition: slider `value_changed` puo' attivarsi durante `_load_settings()` nonostante flag `_loading` | 97 | Quando le impostazioni vengono caricate, gli slider vengono aggiornati ai valori salvati. Ma aggiornare uno slider provoca l'emissione del segnale `value_changed`, che a sua volta tenta di salvare il nuovo valore. C'e' un flag `_loading` per prevenire questo, ma in certe tempistiche la protezione non funziona. |
-
----
-
-### 7.6 drop_zone.gd (~80 righe)
-
-**Cosa fa questo file**: Definisce le "zone di rilascio" dove le decorazioni possono essere piazzate nella stanza. Quando l'utente trascina una decorazione e la rilascia, il drop_zone controlla se la posizione e' valida e piazza l'oggetto.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Cast unsafe: `load(sprite_path) as Texture2D` — se risorsa e' tipo diverso, tex e' null e riga 23 crasha | 17 | Il codice carica una risorsa e la "casta" (converte) a Texture2D. Se la risorsa e' di un tipo diverso (per esempio, un file audio caricato per errore), il cast restituisce null e il codice successivo crasha. E' come prendere un pacco e dare per scontato che contenga un libro: se contiene un vaso, le vostre istruzioni per "leggere il libro" non funzioneranno. |
-| 2 | MEDIO | `_can_drop_data()` ritorna false silenziosamente — nessun feedback utente | 18-19 | Quando l'utente trascina una decorazione in una posizione non valida, la funzione rifiuta silenziosamente il rilascio. L'utente non capisce perche' non riesce a piazzare l'oggetto: nessun messaggio, nessuna indicazione visiva. |
-| 3 | MEDIO | Soglia overlap 50% senza commento — intenzionale o bug? | 58 | C'e' una soglia del 50% per la sovrapposizione tra decorazioni, ma non c'e' nessun commento che spieghi se e' una scelta di design o un valore arbitrario. Questo rende difficile per altri sviluppatori capire se possono modificarlo. |
-| 4 | MEDIO | `Helpers.array_to_vec2()` non valida contenuto array | 43 | La funzione helper che converte un array in un vettore 2D non controlla che i valori nell'array siano numeri validi. |
-
----
-
-### 7.7 room_base.gd (~110 righe)
-
-**Cosa fa questo file**: E' lo script base per tutte le stanze del gioco. Gestisce il caricamento delle decorazioni, il posizionamento del personaggio, e la comunicazione con i pannelli UI. E' come la planimetria della stanza che determina dove va ogni elemento.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Nessun `_exit_tree()` — 3 segnali SignalBus non disconnessi, si accumulano al cambio scena | 16-18 | Quando l'utente cambia stanza, la vecchia stanza viene distrutta. Ma i 3 segnali SignalBus connessi in `_ready()` non vengono disconnessi. Ogni cambio di stanza aggiunge nuovi listener senza rimuovere i vecchi: dopo 10 cambi di stanza, ci sono 30 handler attivi di cui 27 puntano a nodi distrutti. |
-| 2 | ALTO | Race condition: `queue_free()` del vecchio personaggio + immediato `add_child()` del nuovo — riferimento stale | 35-43 | Quando l'utente cambia personaggio, il vecchio viene eliminato con `queue_free()` (che agisce a fine frame) e il nuovo viene aggiunto immediatamente. Ma `queue_free()` non elimina subito: per un breve momento, entrambi i personaggi esistono nella scena, il che puo' causare conflitti. La soluzione e' usare `call_deferred("add_child", new_char)` per aggiungere il nuovo personaggio solo dopo che il vecchio e' stato effettivamente rimosso. |
-| 3 | MEDIO | Position array parsing senza validazione struttura — dati malformati causano crash | 75-77 | Le posizioni delle decorazioni vengono lette da un array di dati senza verificare che la struttura sia corretta. Se i dati sono malformati (per esempio, un array con un solo elemento invece di due), il parsing crasha. |
-| 4 | MEDIO | Decorazioni sconosciute logged come warning ma dati persi silenziosamente | 72-74 | Se il salvataggio contiene una decorazione che non esiste piu' nel catalogo (perche' e' stata rimossa in un aggiornamento), viene loggato un avviso ma la decorazione viene semplicemente ignorata. I dati dell'utente su quella decorazione (posizione, ecc.) vengono persi senza nessuna possibilita' di recupero. |
-
----
-
-### 7.8 decoration_system.gd (~70 righe)
-
-**Cosa fa questo file**: Gestisce il sistema di piazzamento delle decorazioni nella stanza. Controlla il drag-and-drop (trascinamento e rilascio) delle decorazioni, il loro posizionamento, e la rimozione.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Se piu' decorazioni hanno stesso `item_id`, solo la prima viene rimossa — dati orfani | 64-67 | Quando l'utente rimuove una decorazione, il codice cerca la prima decorazione con quell'ID e la rimuove. Ma se ci sono piu' decorazioni uguali (per esempio, due lampade identiche), solo la prima viene rimossa. Le altre restano come "fantasmi" nel sistema dei dati ma senza rappresentazione visiva, creando incoerenze. |
-| 2 | MEDIO | Nessun `_exit_tree()` — input handler rimane attivo dopo `queue_free()` | 10-11 | Come negli altri script, manca la pulizia alla distruzione del nodo. |
-| 3 | MEDIO | Clamp non tiene conto della dimensione sprite — posizione puo' uscire dai limiti visuali | 40-43 | Il "clamp" (limitazione) della posizione tiene conto solo del centro dell'oggetto, non della sua dimensione. Un oggetto grande puo' avere il centro dentro l'area valida ma i bordi fuori dallo schermo. |
-
----
-
-### 7.9 character_controller.gd (~50 righe)
-
-**Cosa fa questo file**: Controlla il personaggio nella stanza: le animazioni (camminata, interazione, rotazione), il movimento, e gli stati. E' il "burattinaio" che fa muovere il personaggio in base alle azioni dell'utente.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | MEDIO | Nessun null check su `_anim` — crash se nodo AnimatedSprite2D non esiste | 8, 20-48 | La variabile `_anim` dovrebbe puntare al nodo AnimatedSprite2D (il componente che mostra le animazioni del personaggio). Ma non viene mai verificato che questo nodo esista realmente nella scena. Se manca, ogni tentativo di usare `_anim` causa un crash. |
-| 2 | MEDIO | Nomi animazione hardcoded senza validazione — animazione inesistente viene ignorata silenziosamente | 20-48 | I nomi delle animazioni (come "walk_down", "idle_side") sono scritti direttamente nel codice. Se un personaggio non ha una di queste animazioni (come nel caso di `male_black_shirt` che ha solo `idle_down`), Godot tenta di riprodurre un'animazione inesistente e silenziosamente non fa nulla. Il personaggio si "congela" senza spiegazione. |
-
----
-
-### 7.10 room_grid.gd (~35 righe)
-
-**Cosa fa questo file**: Disegna la griglia sulla stanza quando l'utente e' in modalita' decorazione. La griglia aiuta a posizionare le decorazioni in modo ordinato, dividendo la stanza in celle quadrate.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | MEDIO | Nessun `_exit_tree()` — segnale `decoration_mode_changed` non disconnesso | 12 | Manca la pulizia del segnale alla distruzione del nodo. |
-| 2 | BASSO | `CELL_SIZE` hardcoded (64) — dovrebbe usare costante condivisa | 5 | La dimensione della cella della griglia (64 pixel) e' scritta direttamente nel codice invece di usare la costante `Constants.GRID_CELL_SIZE`. Se la dimensione dovesse cambiare, bisognerebbe modificarla in piu' file. |
-
----
-
-### 7.11 window_background.gd (~70 righe)
-
-**Cosa fa questo file**: Gestisce lo sfondo della finestra del gioco, che e' composto da piu' livelli (layers) con un leggero effetto parallasse (i livelli si muovono a velocita' diverse, creando un senso di profondita').
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | CRITICO | Mismatch dimensione array: se caricamento layer fallisce, `_layers` e `_parallax_factors` hanno dimensioni diverse — CRASH out-of-bounds | 33-49, 64-66 | Il codice crea due array paralleli: `_layers` (i livelli grafici) e `_parallax_factors` (le velocita' di movimento). Se un layer non riesce a caricarsi, viene saltato e non aggiunto a `_layers`, ma il fattore di parallasse corrispondente potrebbe comunque essere aggiunto a `_parallax_factors`. I due array finiscono con dimensioni diverse. Quando il codice itera su `_layers` e usa lo stesso indice per accedere a `_parallax_factors`, l'ultimo layer tenta di accedere a un fattore che non esiste: **CRASH**. E' come avere una lista di 3 piatti e una lista di 4 prezzi: quando cercate il prezzo del piatto 4, non lo trovate. |
-| 2 | MEDIO | Divisione per zero possibile se viewport ha dimensione 0 | 56-62 | L'effetto parallasse richiede di dividere per la dimensione del viewport. Se questa e' 0 (situazione rara ma possibile durante l'inizializzazione), si verifica una divisione per zero. |
-
----
-
-### 7.12 main_menu.gd (~110 righe)
-
-**Cosa fa questo file**: Gestisce il menu principale del gioco — la prima schermata che l'utente vede. Contiene i bottoni per iniziare il gioco, accedere alle impostazioni, e uscire. Include anche la transizione animata dal menu alla stanza di gioco.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Nessun `_exit_tree()` — tween e settings panel non puliti al cambio scena | — | Quando l'utente clicca "Gioca" e il gioco passa alla stanza, il menu viene distrutto. Ma i tween attivi (animazioni) e eventuali pannelli impostazioni aperti non vengono puliti, causando memory leak e potenziali crash. |
-| 2 | MEDIO | `_transitioning` flag senza timeout — se cambio scena fallisce, UI bloccata per sempre | 105-110 | Quando l'utente avvia la transizione alla stanza, viene impostato un flag che disabilita l'interazione con la UI (per evitare doppi click). Ma se il cambio scena fallisce (file mancante, errore di caricamento), questo flag non viene mai resettato e l'UI resta bloccata per sempre. L'utente non puo' cliccare nulla. |
-| 3 | MEDIO | Race condition: `load_completed` con `CONNECT_ONE_SHOT` puo' attivarsi dopo cambio scena | 63-66 | Il menu si connette al segnale "caricamento completato" con la modalita' ONE_SHOT (una sola volta). Ma se il segnale viene emesso dopo che il menu e' gia' stato distrutto (a causa del cambio scena), il callback tenta di operare su un nodo inesistente. |
-
----
-
-### 7.13 menu_character.gd (~95 righe)
-
-**Cosa fa questo file**: Gestisce il personaggio animato che appare nel menu principale. Il personaggio "cammina" sullo schermo con un'animazione di entrata, creando un effetto visivo accogliente.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | MEDIO | Timer frame non fermato in `_exit_tree()` — continua dopo distruzione nodo | 73-77 | Un timer che controlla la velocita' dell'animazione non viene fermato quando il nodo viene distrutto. Il timer continua a "scattare" e tenta di aggiornare un nodo che non esiste piu'. |
-| 2 | MEDIO | Chiamate multiple a `walk_in()` accumulano sprite — nessun cleanup del precedente | 67 | Se la funzione `walk_in()` viene chiamata piu' volte (per esempio, ricliccando velocemente), ogni chiamata crea un nuovo sprite senza distruggere il precedente. Dopo 5 chiamate, ci sono 5 personaggi sovrapposti sullo schermo. |
-| 3 | BASSO | Posizioni walk-in hardcoded (-100 a 640) — non responsive a dimensione viewport | 69-70 | Le posizioni di partenza e arrivo del personaggio sono numeri fissi scritti nel codice. Se la dimensione della finestra cambia, il personaggio potrebbe partire da fuori schermo troppo lontano o non arrivare al centro. |
-
----
-
-### 7.14 main.gd (~70 righe)
-
-**Cosa fa questo file**: E' lo script della scena principale del gioco (non il menu, ma la schermata di gioco vera e propria). Gestisce il caricamento della stanza corrente, il colore dei muri, e la coordinazione generale tra i vari sistemi.
-
-| # | Severita' | Problema | Riga | Spiegazione |
-|---|-----------|----------|------|-------------|
-| 1 | ALTO | Nessun `_exit_tree()` — segnale `room_changed` non disconnesso | 24 | Se il gioco torna al menu principale, il segnale `room_changed` resta connesso a una funzione di un nodo distrutto. |
-| 2 | MEDIO | `Color(wall_hex)` senza validazione formato hex — crash se hex invalido | 54-65 | Il colore dei muri viene letto come stringa esadecimale (per esempio, "#FFE4B5") e convertito in un oggetto Color. Se la stringa non e' un colore hex valido (per esempio, "non_un_colore"), la conversione crasha. |
-| 3 | MEDIO | Nessun null check su GameManager | 25, 51 | Il codice usa il GameManager senza verificare che sia disponibile. In situazioni anomale di avvio, potrebbe essere null. |
-
----
-
-### 7.15 constants.gd, helpers.gd, env_loader.gd
-
-**Cosa fanno questi file**: Sono file di utilita'. `constants.gd` definisce valori costanti usati in tutto il progetto (percorsi, dimensioni, colori). `helpers.gd` contiene funzioni di utilita' generiche (conversioni, formattazioni). `env_loader.gd` carica le variabili d'ambiente (chiavi API, configurazioni).
-
-| # | File | Severita' | Problema | Spiegazione |
-|---|------|-----------|----------|-------------|
-| 1 | constants.gd | MEDIO | `male_black_shirt` definito ma nessuna scena corrispondente in `CHARACTER_SCENES` | Il catalogo dei personaggi lista un personaggio che non ha una scena corrispondente. Se selezionato, il gioco tenta di caricare una scena inesistente. |
-| 2 | constants.gd | BASSO | Nessuna costante `GRID_CELL_SIZE` — hardcoded come 64 in piu' file | La dimensione della griglia e' un "numero magico" (un valore numerico senza nome) ripetuto in piu' punti del codice. Se va cambiato, bisogna cercarlo e modificarlo ovunque. |
-| 3 | helpers.gd | MEDIO | `array_to_vec2()` non valida tipo contenuto — valori non numerici causano errore float() | La funzione converte un array in un vettore 2D ma non controlla che i valori siano numeri. Se l'array contiene testo, la conversione a float crasha. |
-| 4 | helpers.gd | BASSO | Mancano type hints espliciti sui return delle funzioni | Le funzioni non dichiarano il tipo del valore che restituiscono, rendendo il codice meno leggibile e piu' soggetto a errori. |
-| 5 | ~~env_loader.gd~~ | ~~MEDIO~~ | ~~`get_value()` ricarica file config ad ogni chiamata~~ | **RIMOSSO** — File eliminato con la rimozione di SupabaseClient (27 Marzo 2026) |
-
----
-
-## 8. Risultati — Scene e Dati
-
-Questa sezione analizza i **file di scena** (.tscn) e i **file di dati** (JSON, SQL) del progetto. Le scene definiscono la struttura visiva del gioco: dove sono posizionati i nodi, quali proprieta' hanno, e come sono collegati tra loro. I file di dati contengono i contenuti: le stanze disponibili, le decorazioni acquistabili, i personaggi giocabili, le tracce musicali.
-
-Un errore nei dati puo' essere tanto grave quanto un errore nel codice: un percorso file sbagliato in un JSON causa un crash tanto quanto un bug in uno script.
-
----
-
-### 8.1 Scene (.tscn)
-
-Le scene del progetto sono state analizzate per verificare la correttezza della gerarchia dei nodi, i riferimenti agli script, e le proprieta' configurate.
-
-| File | Stato | Note |
-|------|-------|------|
-| main.tscn | BUONO | Gerarchia corretta, collisioni definite, UILayer a layer 10 |
-| main_menu.tscn | BUONO | Bottoni menu, loading screen z=100, parallax background |
-| male-character.tscn | BUONO | AnimatedSprite2D con SpriteFrames, collision CapsuleShape2D, texture_filter=0 (Nearest, corretto per pixel art) |
-| female-character.tscn | BUONO | Stessa struttura del maschile, animazioni aggiuntive (walk_vertical) |
-| cat_void.tscn | BUONO | Sprite semplice con 5 frame, CircleShape2D |
-| UI panels (4) | BUONO | Struttura minimale, script references validi |
-
-Le scene non presentano problemi strutturali. La gerarchia e' corretta, i riferimenti sono validi, e le proprieta' sono coerenti.
-
----
-
-### 8.2 Dati JSON
-
-I file JSON contengono i "cataloghi" del gioco: le liste di stanze, decorazioni, personaggi e tracce musicali che il giocatore puo' utilizzare.
-
-#### rooms.json — BUONO
-
-Il catalogo delle stanze contiene 1 stanza (cozy_studio) con 3 temi colore (modern, natural, pink), colori esadecimali validi, e ID consistenti. Nessun problema trovato.
-
-#### decorations.json — BUONO
-
-Il catalogo delle decorazioni contiene 69 decorazioni in 11 categorie (letti, scrivanie, sedie, armadi, finestre, piante, accessori, elementi stanza, pet). Tutti i percorsi sprite sono stati verificati come esistenti nel filesystem.
-
-#### characters.json — PROBLEMI CRITICI
-
-Questo file contiene i dati dei personaggi giocabili (sprite di animazione, metadati). Qui sono stati trovati problemi critici:
-
-| # | Severita' | Problema | Spiegazione |
-|---|-----------|----------|-------------|
-| 1 | CRITICO | Typo nel percorso sprite: `male_walk_down_side_sxt.png` dovrebbe essere `male_walk_down_side_sx.png` (riga 49) | C'e' un errore di battitura nel nome del file: "sxt" invece di "sx". Il file corretto esiste sul disco ma il JSON punta al file sbagliato. Quando il gioco tenta di caricare questa animazione, non trova il file e crasha. E' un errore di un singolo carattere che causa un crash completo. |
-| 2 | ~~CRITICO~~ | ~~`male_black_shirt` ha SOLO animazione `idle_down`~~ | **RISOLTO per rimozione** (29 Marzo 2026) — Il personaggio `male_black_shirt` e' stato rimosso dal catalogo characters.json. Resta la costante orfana `CHAR_MALE_BLACK_SHIRT` in constants.gd (riga 16), che andrebbe rimossa. |
-| 3 | MEDIO | Directory `charachters` e' un typo (dovrebbe essere `characters`) — presente in tutto il progetto | Il nome della cartella degli asset dei personaggi ha un errore di battitura: "charachters" invece di "characters". Questo errore e' presente in tutto il progetto (JSON, codice, percorsi file). Non causa crash perche' il typo e' consistente (tutti usano la versione sbagliata), ma e' confondente e dovrebbe essere corretto. |
-
-#### tracks.json — MINORE
-
-Il catalogo delle tracce musicali contiene solo 2 tracce a tema pioggia, meno di quanto descritto nella documentazione (che menziona anche tracce lo-fi). L'array `ambience` (suoni ambientali) e' vuoto. Non sono bug, ma contenuti mancanti.
-
----
-
-### 8.3 Supabase Migration SQL — IN PREPARAZIONE (Fase 4)
-
-> SupabaseClient e' stato rimosso dal codebase il 27 Marzo 2026. Tuttavia, Supabase verra'
-> **reintegrato nella Fase 4** per abilitare il cloud sync cross-device. Elia sta preparando
-> il progetto PostgreSQL con tabelle e RLS policies. Il client GDScript sara' reimplementato
-> da Renan. Lo schema PostgreSQL attuale e' da considerarsi **bozza** in attesa della
-> configurazione Supabase definitiva.
-
----
-
-### 8.4 Asset Grafici — PNG Sostituiti (31 Marzo 2026)
-
-> I file PNG per il personaggio maschile (idle, walk, interact in 8 direzioni) e per la stanza
-> (`room.png`) sono stati aggiornati con nuova grafica. Se le dimensioni dei nuovi sprite
-> differiscono dagli originali, potrebbe essere necessario riallineare manualmente le collisioni.
->
-> **Istruzioni per correggere i boundary in Godot**:
->
-> 1. **RoomBounds (CollisionPolygon2D)**: Aprire `scenes/main/main.tscn` in Godot Editor,
->    selezionare il nodo `RoomBounds > CollisionPolygon2D`, e ridisegnare il poligono per
->    adattarlo alla nuova stanza. Usare lo strumento "Edit Polygon" nella toolbar in alto.
-> 2. **Character CollisionShape2D**: Aprire `scenes/male-old-character.tscn`, selezionare il
->    nodo `CollisionShape2D`, e ridimensionare la forma di collisione per adattarla al nuovo sprite.
-> 3. **Verifica**: Avviare il gioco (F5) e testare che il personaggio non attraversi i muri e
->    che le decorazioni restino all'interno della stanza. Controllare anche che il personaggio
->    non rimanga bloccato in punti dove prima passava.
-
----
-
-## 9. Risultati — Test e CI/CD
-
-Questa sezione analizza la **copertura dei test** e i **workflow di Continuous Integration** del progetto.
-
-I test automatizzati sono una rete di sicurezza: quando modificate il codice, i test vi dicono immediatamente se avete rotto qualcosa. Senza test, l'unico modo per verificare e' provare manualmente — un processo lento, impreciso, e impossibile da scalare.
-
-La CI/CD (vedi glossario) automatizza l'esecuzione dei test ad ogni commit, garantendo che nessuna modifica passi inosservata.
-
----
-
-### 9.1 Copertura Test
-
-Il progetto **non ha attualmente file di test**. I 5 file di test originali (test_helpers.gd, test_logger.gd, test_save_manager.gd, test_save_manager_state.gd, test_shop_panel.gd — per un totale di 48 test unitari) sono stati rimossi perche' dipendevano da GdUnit4 (non installato nel progetto). Rimane solo un file orfano `test_shop_panel.gd.uid` nella cartella `tests/unit/`.
-
-**Copertura attuale: 0%**
-
-La creazione di una suite di test rimane un obiettivo importante per la stabilita' del progetto. I file test suggeriti nella Fase 5 del Piano di Stabilizzazione (Sezione 11) restano validi come roadmap per la reintroduzione dei test.
-
-### 9.2 Aree NON Testate
-
-Attualmente **nessuna area** del progetto e' coperta da test automatizzati (tutti i file test sono stati rimossi). Le aree ad alto rischio che beneficerebbero maggiormente di test sono:
-
-| Area | Rischio | Spiegazione |
-|------|---------|-------------|
-| AudioManager | ALTO | Il sistema audio (crossfade, playlist, ambience) non ha test |
-| LocalDatabase | ALTO | Le operazioni CRUD e l'integrita' dello schema non sono testate |
-| SaveManager | ALTO | Il salvataggio, caricamento e migrazione dati non sono testati |
-| UI Panels (3) | ALTO | Il ciclo di vita dei pannelli e il drag-and-drop non sono testati |
-| Room Logic | ALTO | Il piazzamento delle decorazioni e il cambio di personaggio non sono testati |
-| GameManager | MEDIO | La gestione dello stato e il caricamento dei cataloghi non sono testati |
-
-### 9.3 CI/CD
-
-Il progetto utilizza 2 workflow GitHub Actions (semplificato da 3 il 25 Marzo 2026 — `database-ci.yml` rimosso):
-
-| Workflow | Stato | Note |
-|----------|-------|------|
-| ci.yml (lint only) | BUONO | Semplificato: solo gdlint + gdformat su `v1/scripts/` e `v1/tests/`. Job test e security-scan rimossi. Branch aggiornato a `Renan` |
-| build.yml (Windows + HTML5) | BUONO | Manca code signing per il file .exe (l'eseguibile Windows non e' firmato, il che potrebbe generare avvisi di sicurezza) |
-
----
-
-## 10. Classificazione dei Problemi
-
-Questa sezione presenta tutti i problemi trovati, organizzati per severita' e con un identificatore univoco (C1, A1, AR1...) per riferirsi ad essi facilmente nelle sezioni successive.
-
-### CRITICO (7 problemi originali — 7 su 7 corretti) — COMPLETATO
-
-Questi problemi devono essere risolti **prima di qualsiasi rilascio**. Causano perdita di dati, crash irrecuperabili, o vulnerabilita' di sicurezza.
-
-| # | File | Problema | Impatto | Stato |
-|---|------|----------|---------|-------|
-| C1 | save_manager.gd:115 | Inventario MAI salvato su SQLite | Perdita dati su fallback DB | **CORRETTO** |
-| C2 | save_manager.gd:92 | Backup copy senza error checking | Nessun backup se copia fallisce | **CORRETTO** |
-| C3 | local_database.gd:101 | Characters PK impedisce multipli personaggi | Design schema rotto | **CORRETTO** (27 Mar) |
-| C4 | local_database.gd:89 | Inventory schema confuso (coins per item) | Dati incoerenti | **CORRETTO** (27 Mar) |
-| C5 | window_background.gd:33 | Array mismatch _layers vs _parallax_factors | Crash out-of-bounds | **CORRETTO** |
-| C6 | characters.json:49 | Typo percorso sprite "sxt" -> "sx" | Crash caricamento animazione | **CORRETTO** (31 Mar) |
-| C7 | characters.json | male_black_shirt incompleto | Crash cambio animazione | **Risolto per rimozione** |
-
-**C1 — Inventario MAI salvato su SQLite** — **CORRETTO**: La funzione `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con sia `character_data` che `inventory_data`.
-
-**C2 — Backup copy senza error checking** — **CORRETTO** (migliorato 29 Mar): SaveManager ora usa **atomic writes**: scrive su file temporaneo (`save_data.tmp.json`), poi backup dell'esistente su `save_data.backup.json`, poi rinomina temp → primary. Se rename fallisce, fallback su copy. Il backup verifica il risultato di `DirAccess.copy_absolute()` e logga con `AppLogger.error`.
-
-**C3 — Characters PK impedisce multipli personaggi** — **CORRETTO** (27 Marzo 2026): La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE.
-
-**C4 — Inventory schema confuso** — **CORRETTO** (27 Marzo 2026): I campi `coins` e `inventario_capacita` sono stati spostati nella tabella `accounts`. La tabella `inventario` e' stata ristrutturata con FK `account_id` e ON DELETE CASCADE.
-
-**C5 — Array mismatch window_background.gd** — **CORRETTO**: Il codice attuale allinea correttamente gli array con `continue` su `tex == null`.
-
-**C6 — Typo percorso sprite characters.json** — **CORRETTO** (31 Marzo 2026): File sprite rinominato da `male_walk_down_side_sxt.png` a `male_walk_down_side_sx.png` e percorso aggiornato in characters.json.
-
-**C7 — male_black_shirt incompleto** — **CORRETTO** (31 Marzo 2026): Personaggio rimosso dal catalogo (29 Mar) e tutte e 3 le costanti orfane (`CHAR_FEMALE_RED_SHIRT`, `CHAR_MALE_YELLOW_SHIRT`, `CHAR_MALE_BLACK_SHIRT`) rimosse da constants.gd (31 Mar).
-
----
-
-### ALTO (18 problemi originali + 11 scoperti = 29 totali — 21 corretti/rimossi, 8 aperti) — Prossimo Sprint
-
-Questi problemi non causano perdita di dati immediata, ma degradano l'esperienza utente con memory leak, crash intermittenti, e feature rotte.
-
-| # | File | Problema | Stato |
-|---|------|----------|-------|
-| A1 | ~10 script | Mancanza `_exit_tree()` in 10 script | **CORRETTO** (31 Mar) |
-| A2 | ~~music_panel.gd~~ | ~~FileDialog memory leak accumulativo~~ | **Rimosso** (file eliminato) |
-| A3 | room_base.gd:35 | Race condition swap personaggio | **CORRETTO** (31 Mar) |
-| A4 | audio_manager.gd:240 | Memory leak player ambience | **CORRETTO** |
-| A5 | audio_manager.gd:82 | Crash su lista tracce vuota | **CORRETTO** |
-| A6 | ~~shop_panel.gd~~ | ~~Memory leak drag preview~~ | **Rimosso** (file eliminato) |
-| A7 | deco_panel.gd:157 | Memory leak drag preview | **NON APPLICABILE** — Godot gestisce il lifecycle |
-| A8 | save_manager.gd:275 | Version comparison rotta per non-numeric | **CORRETTO** |
-| A9 | save_manager.gd:245 | Migrazione v3 verso v4 non valida struttura | **CORRETTO** |
-| A10 | ~~supabase_client.gd~~ | ~~Token auth plaintext~~ | **Rimosso** (file eliminato) |
-| A11 | ~~supabase_client.gd~~ | ~~HTTP pool crescita illimitata~~ | **Rimosso** (file eliminato) |
-| A12 | logger.gd:121 | Flush sincrono blocca game thread | **APERTO** — Cristian |
-| A13 | logger.gd:125 | Log persi se file non disponibile | **APERTO** — Cristian |
-| A14 | performance_manager.gd:54 | Posizione finestra non persistita prima di shutdown | **APERTO** — Cristian |
-| A15 | decoration_system.gd:64 | Rimozione duplicati item_id rotta | **CORRETTO** (31 Mar) |
-| A16 | drop_zone.gd:17 | Cast Texture2D unsafe | **CORRETTO** (31 Mar) |
-| A17 | local_database.gd:48 | Tabelle seed vuote | **CORRETTO** (diagnostica DB migliorata) |
-| A18 | local_database.gd:35 | Errore apertura DB non propagato | **APERTO** — Elia |
-
-**A1 — Mancanza _exit_tree()**: Questo e' il problema piu' diffuso nel progetto. ~10 script non implementano correttamente la funzione di pulizia `_exit_tree()` (ridotto da 12 dopo la rimozione di shop_panel e music_panel). Quando questi nodi vengono distrutti, le connessioni ai segnali restano attive, i timer continuano a scattare, e i tween continuano a funzionare — tutto puntando a nodi che non esistono piu'.
-
-**A2 — FileDialog memory leak** — **RISOLTO per rimozione**: music_panel.gd e' stato eliminato dal progetto.
-
-**A3 — Race condition swap personaggio**: Quando si cambia personaggio, il vecchio viene eliminato con `queue_free()` (che agisce a fine frame) ma il nuovo viene aggiunto immediatamente, creando un conflitto temporaneo.
-
-**A4 — Memory leak player ambience**: I player audio per i suoni ambientali possono restare in memoria senza riferimenti validi.
-
-**A5 — Crash su lista tracce vuota**: Se non ci sono tracce musicali caricate, il tentativo di riprodurre causa un crash per accesso a un array vuoto.
-
-**A6 — Memory leak drag preview shop_panel** — **RISOLTO per rimozione**: shop_panel.gd eliminato. **A7** (stesso problema in deco_panel.gd): **NON APPLICABILE** — analisi approfondita conferma che `set_drag_preview()` in Godot 4 gestisce automaticamente il lifecycle del preview.
-
-**A8 — Version comparison rotta**: La comparazione delle versioni funziona solo con numeri puri (come "3" o "4"). Versioni come "1.0.0-beta" causano crash.
-
-**A9 — Migrazione non valida**: La migrazione dalla versione 3 alla 4 del salvataggio non verifica l'integrita' dei dati dell'inventario.
-
-**A10 — Token auth plaintext** — **RISOLTO per rimozione**: supabase_client.gd eliminato dal progetto.
-
-**A11 — HTTP pool illimitata** — **RISOLTO per rimozione**: supabase_client.gd eliminato dal progetto.
-
-**A12 — Flush sincrono**: La scrittura dei log su disco blocca il gioco, causando "stutter" (piccoli scatti) visibili.
-
-**A13 — Log persi**: Se il file di log non e' accessibile, tutti i messaggi vengono cancellati senza preavviso.
-
-**A14 — Posizione finestra persa**: La posizione della finestra viene aggiornata in memoria ma non scritta su disco prima dello shutdown.
-
-**A15 — Rimozione duplicati rotta**: Se ci sono decorazioni con lo stesso ID, solo la prima viene rimossa correttamente.
-
-**A16 — Cast Texture2D unsafe**: Il caricamento delle texture non gestisce il caso in cui la risorsa caricata non sia una texture.
-
-**A17 — Tabelle seed vuote** — **CORRETTO** (27 Marzo 2026): Diagnostica database migliorata con informazioni OS, directory e verifica FK.
-
-**A18 — Errore DB non propagato**: Se il database non si apre, il chiamante non lo sa. Ancora aperto.
-
----
-
-### ARCHITETTURALE (11 violazioni originali — 7 corrette/rimosse, 4 aperte)
-
-Queste non sono bug che causano crash, ma problemi nella struttura del codice che rendono il progetto difficile da mantenere, testare, e far evolvere. Pensate a fondamenta leggermente storte: la casa sta in piedi, ma aggiungere un piano sara' rischioso.
-
-| # | Da -> A | Tipo | Spiegazione |
-|---|---------|------|-------------|
-| AR1 | GameManager -> SaveManager | Chiamata diretta metodo | Il GameManager chiama direttamente le funzioni del SaveManager invece di comunicare tramite segnali. Questo lega i due componenti in modo che modificare uno richiede di modificare anche l'altro. |
-| AR2 | SaveManager -> LocalDatabase | Chiamata diretta metodo | Il SaveManager interagisce direttamente col database locale. |
-| AR3 | SaveManager -> AudioManager | Chiamata diretta metodo | Il SaveManager chiama direttamente l'AudioManager per sincronizzare lo stato audio. |
-| AR4 | AudioManager -> SaveManager.settings | Scrittura diretta dict | L'AudioManager modifica direttamente il dizionario delle impostazioni che appartiene al SaveManager. E' come se un dipendente modificasse i documenti dell'archivio senza passare per l'archivista. |
-| AR5 | AudioManager -> SaveManager.music_state | Scrittura diretta dict | Stesso problema di AR4, ma per lo stato della musica. |
-| AR6 | PerformanceManager -> SaveManager.settings | Scrittura diretta dict | Il PerformanceManager modifica direttamente le impostazioni del SaveManager. |
-| AR7 | settings_panel -> SaveManager.settings | Scrittura diretta dict | Il pannello impostazioni modifica direttamente le impostazioni del SaveManager. |
-| AR8 | Autoloads | Nessuna validazione dipendenze cross-autoload in _ready() | Nessun autoload verifica che i suoi autoload dipendenti siano gia' disponibili prima di usarli. Se l'ordine di caricamento cambia, il gioco crasha. |
-| AR9 | Tutti i manager | Nessuna propagazione errori (tutto silenzioso) | Quando qualcosa va storto in un manager, l'errore viene ingoiato silenziosamente. I manager che dipendono da quel risultato non sanno che c'e' stato un problema. |
-| AR10 | local_database.gd | Nessun sistema migrazione schema | Non esiste un sistema strutturato per aggiornare lo schema del database quando il gioco viene aggiornato. Ogni modifica richiede interventi manuali in piu' punti del codice. |
-| AR11 | ~~supabase_client.gd~~ | ~~Schema errori inconsistente tra funzioni~~ | **RISOLTO per rimozione** — supabase_client.gd eliminato dal progetto (27 Marzo 2026) |
-
----
-
-### 10.1 Aggiornamento Post-Correzione (24 Marzo 2026, aggiornato 29 Marzo 2026)
-
-Questa sottosezione documenta lo stato attuale dei problemi dopo le correzioni applicate al codebase. I problemi sono classificati come **CORRETTO** (risolto nel codice attuale), **PARZIALMENTE CORRETTO** (migliorato ma non completamente risolto), o **APERTO** (non ancora affrontato). Vengono inoltre aggiunti nuovi problemi scoperti durante la ri-analisi.
-
-> **Ultimo aggiornamento**: 24 Marzo 2026 (terza revisione) — semplificazione design: rimosso concetto Shop
-> (shop_panel.gd, shop_panel.tscn, test_shop_panel.gd eliminati; segnale shop_item_selected rimosso),
-> ridotto a stanza singola cozy_studio con 3 temi (modern, natural, pink), griglia visuale limitata alla
-> zona pavimento. Aggiornati A6 e conteggi.
-
-#### Problemi CRITICI — Stato Aggiornato
-
-| # | Stato | Note |
-|---|-------|------|
-| C1 | **CORRETTO** | `_save_to_sqlite()` ora emette il segnale `save_to_database_requested` con **sia** `character_data` **che** `inventory_data` (riga 135-139). L'approccio signal-driven e' corretto e allineato con l'architettura. |
-| C2 | **CORRETTO** (migliorato 29 Mar) | SaveManager ora usa **atomic writes**: temp file → backup → rename. Se rename fallisce, fallback copy. Backup verifica risultato con `AppLogger.error`. |
-| C3 | **CORRETTO** (27 Mar) | La tabella `characters` ora usa `character_id INTEGER PRIMARY KEY AUTOINCREMENT` con `account_id` come FK con ON DELETE CASCADE. Completato da Renan. |
-| C4 | **CORRETTO** (27 Mar) | `coins` e `inventario_capacita` spostati nella tabella `accounts`. Tabella `inventario` ristrutturata con FK `account_id` e ON DELETE CASCADE. Completato da Renan. |
-| C5 | **CORRETTO** | Il codice attuale di `window_background.gd` (righe 37-49) gia' allinea correttamente gli array: quando `tex == null`, il `continue` salta **sia** `_layers.append()` **che** `_parallax_factors.append()`. Gli array sono sempre della stessa dimensione. |
-| C6 | **CORRETTO** (31 Mar) | Typo `sxt` corretto: file sprite rinominato + percorso aggiornato in characters.json. |
-| C7 | **CORRETTO** (31 Mar) | Personaggio rimosso dal catalogo (29 Mar). Tutte e 3 le costanti orfane rimosse da constants.gd (31 Mar). |
-
-#### Problemi ALTI — Stato Aggiornato
-
-| # | Stato | Note |
-|---|-------|------|
-| A1 | **CORRETTO** (31 Mar) | `_exit_tree()` implementato in tutti i 10 script richiesti: room_base, main, deco_panel, settings_panel, main_menu, menu_character, character_controller, decoration_system, panel_manager, room_grid. |
-| A2 | **RISOLTO per rimozione** | `music_panel.gd` eliminato dal progetto. Problema non piu' applicabile. |
-| A3 | **CORRETTO** (31 Mar) | Race condition corretta con `call_deferred("add_child", new_char)` in room_base.gd. |
-| A4 | **CORRETTO** | `AudioManager._exit_tree()` ora pulisce tutti gli ambience player con `stop()` e `queue_free()`, e `_stop_ambience()` verifica `is_instance_valid()` prima della distruzione. |
-| A5 | **CORRETTO** | `play()`, `next_track()` e `previous_track()` verificano tutti `tracks.is_empty()` prima dell'accesso. |
-| A6 | **RISOLTO per rimozione** | `shop_panel.gd` rimosso dal progetto. A7 (deco_panel.gd) analizzato: `set_drag_preview()` in Godot 4 libera automaticamente il preview — **non e' un bug**. |
-| A8 | **CORRETTO** | `_compare_versions()` ora usa `split(".")`, gestisce versioni a lunghezza variabile, e usa `is_valid_int()` prima del cast (righe 310-321). Gestisce correttamente formati come "1.0.0-beta". |
-| A9 | **CORRETTO** | La migrazione v3→v4 ora valida la struttura dell'inventario: verifica la presenza delle chiavi `coins` e `items`, gestisce `items` non-Array, e logga un warning con reset dei dati corrotti (righe 280-296). |
-| A10 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). Il gioco funziona esclusivamente offline. |
-| A11 | **RISOLTO per rimozione** | `supabase_client.gd` completamente eliminato dal progetto (27 Marzo 2026). |
-| A12-A13 | APERTO | Flush sincrono del logger e log persi se file non disponibile. **Assegnato a Cristian.** |
-| A14 | APERTO | Posizione finestra non persistita prima dello shutdown. **Assegnato a Cristian.** |
-| A15 | **CORRETTO** (31 Mar) | Decorazioni ora usano riferimento diretto al Dictionary di salvataggio, eliminando ambiguita' item_id duplicati. |
-| A16 | **CORRETTO** (31 Mar) | Aggiunto `push_warning` su texture non trovata in `_get_texture_for_item()`. |
-| A17 | **CORRETTO** (27 Mar) | Diagnostica database migliorata con info OS, directory e verifica FK. |
-| A18 | APERTO | Errore apertura DB non propagato. **Assegnato a Elia.** |
-
-#### Violazioni Architetturali — Stato Aggiornato
-
-| # | Stato | Note |
-|---|-------|------|
-| AR1 | **CORRETTO** | `GameManager` ora usa `SignalBus.save_requested.emit()` (riga 129) invece di chiamare direttamente `SaveManager.save_game()`. |
-| AR2 | **PARZIALMENTE CORRETTO** | `_save_to_sqlite()` ora usa `SignalBus.save_to_database_requested.emit()` invece di chiamare direttamente `LocalDatabase` (riga 136). Tuttavia, altre interazioni SaveManager→LocalDatabase (caricamento) restano dirette. |
-| AR3 | **CORRETTO** | Il SaveManager non chiama piu' direttamente `AudioManager`. Lo stato audio viene sincronizzato tramite `SignalBus.load_completed` e `SignalBus.music_state_updated`. |
-| AR4 | **CORRETTO** | `AudioManager._on_volume_changed()` ora emette `SignalBus.settings_updated.emit()` (riga 307) invece di scrivere direttamente in `SaveManager.settings`. |
-| AR5 | **CORRETTO** | `AudioManager._sync_music_state()` ora emette `SignalBus.music_state_updated.emit()` (righe 332-336) invece di scrivere direttamente in `SaveManager.music_state`. |
-| AR6-AR10 | APERTO | PerformanceManager/settings_panel scrivono ancora direttamente in SaveManager.settings; mancano validazione dipendenze autoload, propagazione errori, sistema migrazione schema DB. |
-| AR11 | **RISOLTO per rimozione** | supabase_client.gd eliminato dal progetto (27 Marzo 2026). |
-
-#### Nuovi Problemi Scoperti (Ri-Analisi 24 Marzo 2026)
-
-La ri-analisi approfondita del codebase, condotta con le conoscenze acquisite dai documenti di studio (in particolare `GODOT_ENGINE_STUDY.md` sul ciclo di vita dei nodi e `GAME_DEV_PLANNING.md` sulle best practice), ha rivelato i seguenti problemi aggiuntivi:
-
-| # | File | Severita' | Problema | Stato |
-|---|------|-----------|----------|-------|
-| A19 | main_menu.gd | ALTO | Tween multipli orfani al cambio scena. | **CORRETTO** (31 Mar) — Tween salvati come variabili membro (`_intro_tween`, `_panel_tween`), killati prima di crearne nuovi e in `_exit_tree()`. |
-| A20 | audio_manager.gd | MEDIO | `active_ambience` era un array pubblico mutabile. | **CORRETTO** — Rinominato in `_active_ambience` (privato), aggiunto `get_active_ambience()` getter che ritorna una copia. `music_panel.gd` aggiornato per usare il getter. |
-| A21 | audio_manager.gd | MEDIO | Nessun limite dimensione in `_load_audio_stream()` per file esterni. | **CORRETTO** — Aggiunta costante `MAX_AUDIO_FILE_SIZE = 50 MB` e check prima di `get_buffer()`. File troppo grandi vengono rifiutati con errore. |
-| A22 | ~~music_panel.gd~~ | ~~MEDIO~~ | ~~`_exit_tree()` disconnette solo 2 segnali su 9+ connessi.~~ | **RISOLTO per rimozione** — music_panel.gd eliminato dal progetto. |
-| A23 | game_manager.gd:74 | BASSO | Variabile `data` non tipizzata nel parsing JSON. | **CORRETTO** — Aggiunto type hint `var data: Variant = json.data`. |
-
-#### Nuovi Problemi Scoperti (Deep Audit 30 Marzo 2026)
-
-Audit approfondito focalizzato su: transazioni SQLite, propagazione errori, validazione dati, null safety negli script che interagiscono con il layer persistenza.
-
-| # | File | Severita' | Problema | Stato |
-|---|------|-----------|----------|-------|
-| A24 | local_database.gd:50-55 | ALTO | Transazione senza ROLLBACK: `_on_save_requested()` esegue `BEGIN TRANSACTION` e `COMMIT`, ma se `upsert_character()` o `_save_inventory()` falliscono, il COMMIT viene eseguito comunque lasciando dati parziali. Manca un percorso `ROLLBACK` sugli errori. | APERTO — **Assegnato a Elia** |
-| A25 | local_database.gd:361 | ALTO | `_save_inventory()` ritorna `void` — non propaga errori alla transazione chiamante. Dovrebbe ritornare `bool` per consentire il ROLLBACK in `_on_save_requested()`. La funzione esegue DELETE + loop INSERT: se un INSERT fallisce, l'inventario e' parzialmente perso. | APERTO — **Assegnato a Elia** |
-| A26 | auth_manager.gd:104-107 | MEDIO | `_set_state()` chiama `LocalDatabase.get_character(current_account_id)` senza verificare `LocalDatabase.is_open()`. Se il database non e' stato aperto (errore inizializzazione), causa crash `Invalid call ... in base 'Nil'`. | APERTO — **Assegnato a Elia** |
-| A27 | auth_manager.gd:52-54 | MEDIO | `register()` chiama `LocalDatabase.create_account()` ma non verifica il ritorno (`account_id`) prima di chiamare `get_account()`. Se `create_account()` ritorna `-1` (fallimento), `get_account(-1)` ritorna dizionario vuoto, e `_set_state()` viene chiamato con dati invalidi. | APERTO — **Assegnato a Elia** |
-| A28 | room_base.gd:61-76 | MEDIO | Decorazioni ricaricate senza clamp viewport. | **CORRETTO** (31 Mar) — `_reload_decorations()` ora usa `Helpers.clamp_to_viewport()` dopo il caricamento posizione. |
-| A29 | main_menu.gd:84 | MEDIO | Null check mancante dopo `scene.instantiate()`. | **CORRETTO** (31 Mar) — Aggiunto null check + `push_warning` in `_show_auth_screen()`, `_on_profilo()`, `_on_opzioni()`. |
-
-**A24 — Transaction senza ROLLBACK**: Il pattern corretto e':
+SaveManager scrive direttamente nelle variabili pubbliche di GameManager in `_apply_save_data()`:
 ```gdscript
-_execute("BEGIN TRANSACTION;")
-var success := true
-if data.has("character") and data["character"] is Dictionary:
-    if not upsert_character(account_id, data["character"]):
-        success = false
-if success and data.has("inventory") and data["inventory"] is Dictionary:
-    if not _save_inventory(account_id, data["inventory"]):
-        success = false
-if success:
-    _execute("COMMIT;")
-else:
-    _execute("ROLLBACK;")
-    AppLogger.error("LocalDatabase", "Transaction rolled back", {"account_id": account_id})
+# In save_manager.gd, _apply_save_data():
+GameManager.current_room_id = data.get("room_id", "cozy_studio")
+GameManager.current_theme = data.get("theme", "modern")
+GameManager.current_character_id = data.get("character_id", "male_old")
 ```
 
-**A25 — _save_inventory() void**: Cambiare la signature da `func _save_inventory(...) -> void:` a `func _save_inventory(...) -> bool:` e ritornare `false` se un qualsiasi `_execute_bound()` fallisce.
+**Perche' e' un problema**: Viola il principio di incapsulamento. Se GameManager aggiunge logica
+di validazione al cambio di room/theme, SaveManager la bypassa.
 
-**A26 — _set_state() no check DB**: Aggiungere `and LocalDatabase != null and LocalDatabase.is_open()` alla condizione che chiama `get_character()`.
-
-**A27 — register() no validation**: Aggiungere `if account_id < 0: return {"error": "Failed to create account"}` dopo `create_account()` e prima di `get_account()`.
-
-**A28 — Decorazioni fuori viewport**: Dopo il caricamento della posizione, clampare con `Vector2(clampf(pos.x, 0, viewport_w), clampf(pos.y, 0, viewport_h))`.
-
-**A29 — Null check instantiate**: Aggiungere `if auth_screen == null: push_error(...); _play_intro(); return` dopo `scene.instantiate()`.
+**Soluzione suggerita**: Usare i metodi pubblici di GameManager (`change_room()`, `change_character()`)
+oppure introdurre un segnale `state_restored(data: Dictionary)`.
 
 ---
 
-**Riepilogo aggiornato dei conteggi (31 Marzo 2026)**:
+**N-Q5** — Nessun `_exit_tree()` (`BASSO`)
 
-| Stato | CRITICI | ALTI/MEDI | ARCHITETTURALI |
-|-------|---------|-----------|----------------|
-| Corretti | 7 (C1-C7 tutti corretti) | 17 (A1, A3-A5, A7-A9, A15-A17, A19-A21, A23, A28, A29) | 5 (AR1, AR3, AR4, AR5) + 1 parziale (AR2) |
-| Risolti per rimozione | 0 | 4 (A2, A6, A10, A11) + A22 | 1 (AR11) |
-| Ancora aperti (ALTI) | — | A12, A13, A24, A25 (4) | 4 (AR6-AR10) |
-| Ancora aperti (MEDI) | — | A14, A18, A26, A27 (4) | — |
-
-**Totale problemi catalogati**: 40 (7 critici + 29 alti/medi + 11 architetturali) di cui: **corretti 29**, **aperti 8** (3 Cristian, 5 Elia), rimossi 5, non applicabili 1 (A7).
+GameManager non ha `_exit_tree()`. Come autoload, vive per tutta la vita dell'app,
+quindi la disconnessione del segnale `load_completed` non e' strettamente necessaria.
+Tuttavia, per coerenza con gli altri autoload che lo implementano, sarebbe preferibile aggiungerlo.
 
 ---
 
-## 11. Piano di Stabilizzazione
+### 6.3 save_manager.gd (490 righe)
 
-Il piano di stabilizzazione e' diviso in **5 fasi**, ordinate per priorita'. Ogni fase affronta una categoria specifica di problemi. L'ordine e' importante: le fasi successive presuppongono che le precedenti siano state completate.
+**Percorso**: `v1/scripts/autoload/save_manager.gd`
+**Ruolo**: Persistenza JSON con HMAC-SHA256, atomic writes, auto-save, migrazioni.
+
+Questo e' lo script piu' complesso del progetto. Gestisce:
+- Salvataggio/caricamento dello stato completo del gioco
+- Integrita' dei dati tramite HMAC-SHA256
+- Scrittura atomica (temp -> backup -> rename)
+- Auto-save con timer 60s e dirty flag
+- Catena di migrazione (v1.0.0 -> v5.0.0)
+- Protezione race condition con `_is_saving` flag
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Logica di save/load corretta con migrazioni |
+| Sicurezza | BUONA | HMAC-SHA256, nessun path traversal |
+| Robustezza | BUONA | Atomic write, race condition guard, file corrotto -> backup |
+| Performance | OK | Serializzazione sincrona ma dati piccoli |
+| Accoppiamento | `MEDIO` | Legge/scrive direttamente da/verso altri autoload |
+| Cleanup | BUONA | `_exit_tree()` disconnette 3 segnali |
+
+**Fix verificate**:
+- `[VERIFICATO]` `_notification(NOTIFICATION_WM_CLOSE_REQUEST)` salva alla chiusura
+- `[VERIFICATO]` `_is_saving` flag previene salvataggi concorrenti (riga 86)
+- `[VERIFICATO]` Atomic write: temp -> backup -> rename (in `_write_save_file()`)
+- `[VERIFICATO]` Migrazione catena v1 -> v5 con validazione inventario
+- `[VERIFICATO]` `_apply_save_data()` usa `typeof()` per type-safe assignment
+- `[VERIFICATO]` `_exit_tree()` disconnette `save_requested`, `settings_updated`, `music_state_updated`
+
+**Problemi residui**:
+
+**N-Q6** — Stato pubblico mutabile (`MEDIO`)
+
+```gdscript
+# Righe 13-47: variabili pubbliche senza protezione
+var decorations: Array = []          # Chiunque puo' modificare
+var music_state: Dictionary = { }    # Chiunque puo' modificare
+var settings: Dictionary = { }      # Chiunque puo' modificare
+var character_data: Dictionary = { } # Chiunque puo' modificare
+var inventory_data: Dictionary = { } # Chiunque puo' modificare
+```
+
+**Perche' e' un problema**: Qualsiasi script puo' modificare questi dizionari senza
+passare per il sistema di salvataggio. Modifiche esterne non triggerano il dirty flag,
+quindi possono essere perse.
+
+**Soluzione suggerita**: Rendere le variabili `_private` e fornire getter che ritornano
+copie (`duplicate()`). Le scritture passano per setter che chiamano `_mark_dirty()`.
 
 ---
 
-### Fase 1 — Integrita' Dati (CRITICO) — COMPLETATA (31 Marzo 2026)
+**N-AR2** — Accoppiamento bidirezionale SaveManager <-> GameManager (`ARCHITETTURALE`)
 
-> Tutti i 7 problemi critici (C1-C7) sono stati corretti. Schema DB corretto, atomic writes implementati,
-> typo sprite risolto, costanti orfane rimosse, array mismatch fixato.
+SaveManager scrive direttamente in `GameManager.current_room_id`, `current_theme`, ecc.
+nella funzione `_apply_save_data()`, e legge le stesse variabili in `save_game()`.
+Questo crea un accoppiamento bidirezionale stretto tra i due sistemi.
 
-#### Concetto: Perche' i Dati Sono la Priorita' Numero Uno?
+---
 
-In un'applicazione come Mini Cozy Room, i dati dell'utente (decorazioni piazzate, personaggio scelto, oggetti acquistati, impostazioni) rappresentano ore di interazione. Perdere questi dati e' come cancellare il salvataggio di un gioco dopo 100 ore di gioco: l'utente non vi perdonera'.
+### 6.4 local_database.gd (593 righe)
 
-Per questo, la prima fase si concentra sull'eliminare OGNI possibile percorso che porta alla perdita di dati o a crash irrecuperabili.
+**Percorso**: `v1/scripts/autoload/local_database.gd`
+**Ruolo**: SQLite CRUD con WAL mode, migrazioni schema, transazioni con ROLLBACK.
 
-#### 1.1 Correggere characters.json
+**Analisi**:
 
-**Obiettivo**: Eliminare i crash causati da dati mancanti o errati nei personaggi.
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Query parametrizzate, transazioni corrette |
+| Sicurezza | BUONA | `_execute_bound()` previene SQL injection, WAL mode |
+| Robustezza | BUONA | ROLLBACK su errore, controlli `_is_open` |
+| Performance | `MEDIO` | Nessun indice su colonne FK |
+| Accoppiamento | OK | Riceve dati via segnale `save_to_database_requested` |
+| Cleanup | BUONA | `_exit_tree()` disconnette segnale, `close()` su WM_CLOSE |
 
-**Passo 1 — Correggere il typo del file sprite**:
+**Fix verificate**:
+- `[VERIFICATO]` **A24**: Transazioni con ROLLBACK (righe 50-65 di `_on_save_requested`)
+- `[VERIFICATO]` **A25**: `_save_inventory()` ritorna `bool`
+- `[VERIFICATO]` **A26**: Metodo pubblico `is_open()` (riga 30)
+- `[VERIFICATO]` **C3/C4**: Schema `characters` con `character_id` PK, `inventario` con FK e CASCADE
 
-Aprite il file `data/characters.json` e cercate la stringa `male_walk_down_side_sxt.png`.
+**Problemi residui**:
 
-Prima (codice con errore):
+**N-DB1** — Tabelle morte nello schema (`BASSO`)
+
+Le tabelle `colore`, `categoria` e `shop` sono create nello schema ma:
+- Non hanno dati seed
+- Nessuna query le legge o scrive
+- La UI del negozio e' stata rimossa nella semplificazione
+
+```sql
+-- Tabelle create ma mai utilizzate:
+CREATE TABLE IF NOT EXISTS colore (...)   -- Nessuna INSERT, nessuna SELECT
+CREATE TABLE IF NOT EXISTS categoria (...) -- Nessuna INSERT, nessuna SELECT
+CREATE TABLE IF NOT EXISTS shop (...)      -- Nessuna INSERT, nessuna SELECT
+```
+
+**Suggerimento**: Rimuovere o commentare la creazione di queste tabelle. Se servono per
+una fase futura, documentarlo con un commento.
+
+---
+
+**N-DB2** — Nessun indice su colonne FK (`MEDIO`)
+
+```sql
+-- Tabella characters: FK su account_id ma nessun indice
+-- Tabella inventario: FK su account_id ma nessun indice
+-- Tabella rooms: FK su account_id ma nessun indice
+-- Tabella items: FK su inventario_id ma nessun indice
+```
+
+SQLite non crea automaticamente indici sulle foreign key. Questo significa che
+query come `SELECT * FROM characters WHERE account_id = ?` fanno un full table scan.
+
+**Suggerimento**: Aggiungere indici:
+```sql
+CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);
+CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);
+CREATE INDEX IF NOT EXISTS idx_rooms_account ON rooms(account_id);
+CREATE INDEX IF NOT EXISTS idx_items_inventario ON items(inventario_id);
+```
+
+---
+
+**N-DB3** — `_select()` ritorno ambiguo (`MEDIO`)
+
+Il metodo `_select()` ritorna `[]` (array vuoto) sia quando non ci sono risultati
+sia quando c'e' un errore di query. Il chiamante non puo' distinguere i due casi.
+
+**Suggerimento**: Ritornare `null` in caso di errore e `[]` per risultati vuoti.
+Oppure aggiungere un parametro di output per l'errore.
+
+---
+
+### 6.5 audio_manager.gd (345 righe)
+
+**Percorso**: `v1/scripts/autoload/audio_manager.gd`
+**Ruolo**: Crossfade musica con dual player, ambience multi-layer, path security.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Crossfade e gestione tracce corrette |
+| Sicurezza | BUONA | Path traversal protection (`res://`, `user://` only), file size limit 50MB |
+| Robustezza | BUONA | Gestisce file mancanti, formati non supportati |
+| Performance | OK | AudioStreamPlayer e' leggero, ambience players limitati |
+| Accoppiamento | `MEDIO` | Legge direttamente da `SaveManager.music_state` e `SaveManager.settings` |
+| Cleanup | BUONA | `_exit_tree()` pulisce tutti gli ambience player |
+
+**Problema residuo**:
+
+**N-AR3** — Lettura diretta da SaveManager (`ARCHITETTURALE`)
+
+In `_on_load_completed()`, AudioManager legge direttamente:
+```gdscript
+SaveManager.music_state["current_track_index"]
+SaveManager.settings["music_volume"]
+SaveManager.settings["ambience_volume"]
+```
+
+Questo bypassa il SignalBus e crea accoppiamento diretto.
+
+**Soluzione suggerita**: SaveManager dovrebbe emettere `load_completed` con i dati rilevanti
+come parametro, oppure AudioManager dovrebbe richiedere lo stato tramite un metodo getter.
+
+---
+
+### 6.6 auth_manager.gd (186 righe)
+
+**Percorso**: `v1/scripts/autoload/auth_manager.gd`
+**Ruolo**: Autenticazione locale con state machine, PBKDF2, rate limiting.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | `MEDIO` | Bug minore in `register()` — vedi sotto |
+| Sicurezza | BUONA | PBKDF2 10k iterazioni, salt random crypto, rate limiting |
+| Robustezza | BUONA | Validazione input, migrazione hash legacy |
+| Performance | OK | Hash iterativo ma solo su login/register (non nel loop di gioco) |
+| Accoppiamento | OK | Chiama LocalDatabase direttamente (accettabile — auth e' speciale) |
+| Cleanup | N/A | Nessun segnale connesso, nessun timer |
+
+**Fix verificate**:
+- `[VERIFICATO]` **A27**: `create_account()` verifica il valore di ritorno (riga 62: `if account_id < 0`)
+- `[VERIFICATO]` **A26**: `_set_state()` controlla `LocalDatabase.is_open()` (riga 162)
+- `[VERIFICATO]` Rate limiting: 5 tentativi falliti -> 300s lockout
+
+**Problema residuo**:
+
+**N-Q3** — Inconsistenza `clean_name` in `register()` (`MEDIO`)
+
+```gdscript
+# Riga 45: username viene pulito
+var clean_name := username.strip_edges()
+
+# Riga 55: correttamente usa clean_name per il check
+var existing := LocalDatabase.get_account_by_username(clean_name)
+
+# Riga 59-60: BUG — usa username.strip_edges() invece di clean_name
+var account_id := LocalDatabase.create_account(
+    username.strip_edges(), pw_hash     # <-- Dovrebbe essere clean_name
+)
+```
+
+Non causa un bug funzionale (il risultato e' identico), ma e' una inconsistenza
+che indica che la variabile `clean_name` non viene usata dove dovrebbe.
+
+**Fix**: Sostituire `username.strip_edges()` con `clean_name` alla riga 60.
+
+---
+
+### 6.7 logger.gd (236 righe)
+
+**Percorso**: `v1/scripts/autoload/logger.gd`
+**Ruolo**: Logging strutturato JSON Lines con session ID, rotazione file, buffer retention.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Formattazione corretta, rotazione funzionante |
+| Sicurezza | OK | Session ID con crypto-quality randomness |
+| Robustezza | BUONA | Buffer retention 100 messaggi se file non disponibile |
+| Performance | `BASSO` | `_flush_buffer()` sincrono — vedi sotto |
+| Accoppiamento | OK | Nessun accoppiamento — viene chiamato da tutti |
+| Cleanup | BUONA | `_notification(WM_CLOSE)` fa flush e chiude file |
+
+**Fix verificate**:
+- `[VERIFICATO]` **A13**: Buffer retention — mantiene ultimi 100 messaggi se file non disponibile (riga 130-134)
+
+**Problema residuo**:
+
+**N-Q4** — Flush sincrono potrebbe causare micro-stutter (`BASSO`)
+
+`_flush_buffer()` scrive tutti i log bufferizzati in modo sincrono. Con il timer a 2 secondi
+e un buffer tipico di pochi messaggi, l'impatto e' trascurabile. Tuttavia, in scenari di
+logging intenso (es. decorazioni drag rapido), il buffer potrebbe crescere e il flush
+potrebbe causare un frame drop.
+
+**Nota**: Questo e' un problema teorico. In pratica, con il pattern di utilizzo attuale
+(pochi log per secondo), non e' un problema reale. Documentato per completezza.
+
+---
+
+### 6.8 performance_manager.gd (66 righe)
+
+**Percorso**: `v1/scripts/systems/performance_manager.gd`
+**Ruolo**: FPS dinamico (60 focused / 15 unfocused), persistenza posizione finestra.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | FPS switching e validazione posizione corretti |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | BUONA | Validazione posizione su screen, fallback se off-screen |
+| Performance | OK | Overhead minimo |
+| Accoppiamento | `MEDIO` | Legge direttamente da `SaveManager.settings` |
+| Cleanup | BUONA | `_exit_tree()` disconnette 3 segnali |
+
+**Problema residuo**:
+
+**N-AR4** — Lettura diretta da SaveManager (`ARCHITETTURALE`)
+
+```gdscript
+# In _on_load_completed():
+var win_pos_x: int = SaveManager.settings.get("window_pos_x", -1)
+var win_pos_y: int = SaveManager.settings.get("window_pos_y", -1)
+```
+
+Stessa categoria di N-AR3. La lettura diretta dei dizionari pubblici di SaveManager
+crea accoppiamento implicito.
+
+---
+
+### Riepilogo Autoload
+
+```
++------------------------+--------+----------+-----------+----------+--------------+----------+
+| Script                 | Righe  | Corrett. | Sicurezza | Robusto  | Accoppiamento| Cleanup  |
++------------------------+--------+----------+-----------+----------+--------------+----------+
+| signal_bus.gd          |   58   |   OK     |    OK     |   OK     |  ECCELLENTE  |   N/A    |
+| game_manager.gd        |  130   |   OK     |    OK     |  BUONA   |    MEDIO     |  BASSO   |
+| save_manager.gd        |  490   |  BUONA   |   BUONA   |  BUONA   |    MEDIO     |  BUONA   |
+| local_database.gd      |  593   |  BUONA   |   BUONA   |  BUONA   |     OK       |  BUONA   |
+| audio_manager.gd       |  345   |  BUONA   |   BUONA   |  BUONA   |    MEDIO     |  BUONA   |
+| auth_manager.gd        |  186   |  MEDIO   |   BUONA   |  BUONA   |     OK       |   N/A    |
+| logger.gd              |  236   |  BUONA   |    OK     |  BUONA   |     OK       |  BUONA   |
+| performance_manager.gd |   66   |  BUONA   |    OK     |  BUONA   |    MEDIO     |  BUONA   |
++------------------------+--------+----------+-----------+----------+--------------+----------+
+```
+
+---
+
+## 7. Analisi Codice — Menu
+
+### 7.1 main_menu.gd (223 righe)
+
+**Percorso**: `v1/scripts/menu/main_menu.gd`
+**Ruolo**: Loading screen grafico, flusso autenticazione, walk-in personaggio, transizione al gameplay.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Flusso auth -> walk-in -> gameplay corretto |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | BUONA | Null check su `scene.instantiate()`, transition guard |
+| Performance | OK | Loading screen con SubViewport leggero |
+| Accoppiamento | OK | Usa SignalBus per transizioni |
+| Cleanup | ECCELLENTE | `_exit_tree()` disconnette 7 segnali, killa 2 tween |
+
+**Fix verificate**:
+- `[VERIFICATO]` **A29**: Null check su `scene.instantiate()` per auth_screen (riga 108-111), settings (riga 160-161), profile (riga 138-140), loading_screen (riga 52-53)
+- `[VERIFICATO]` Tween gestiti come member variable (`_intro_tween`, `_panel_tween`) con kill prima di creare nuovi
+- `[VERIFICATO]` Transition guard con `_transitioning` flag (riga 84, 92)
+
+**Nessun problema residuo**. Script ben scritto con cleanup completo.
+
+---
+
+### 7.2 auth_screen.gd (222 righe)
+
+**Percorso**: `v1/scripts/menu/auth_screen.gd`
+**Ruolo**: UI di login/registrazione/guest, costruita interamente in modo programmatico.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Flusso login/register/guest funzionante |
+| Sicurezza | OK | Input delegato ad AuthManager |
+| Robustezza | BUONA | Null check su form elements (riga 181-184) |
+| Performance | OK | UI semplice |
+| Accoppiamento | OK | Emette segnale locale `auth_completed` |
+| Cleanup | `MEDIO` | Vedi sotto |
+
+**Problemi residui**:
+
+**N-Q1** — Nessun `_exit_tree()` + tween non tracciato (`MEDIO`)
+
+```gdscript
+# Riga 213: tween locale, non salvato come member variable
+func _finish() -> void:
+    var tween := create_tween()
+    tween.tween_property(self, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
+    tween.tween_callback(
+        func() -> void:
+            auth_completed.emit()
+            queue_free()
+    )
+```
+
+Se `auth_screen` viene rimosso dall'albero prima che il tween completi (es. cambio scena rapido),
+il tween continua a tentare di accedere a un nodo invalido. Inoltre, manca `_exit_tree()`
+per disconnettere i segnali dei bottoni creati programmaticamente.
+
+**Impatto**: Basso in pratica — il `queue_free()` nel callback e' l'unica rimozione prevista.
+Ma per robustezza, il tween dovrebbe essere un member variable con kill in `_exit_tree()`.
+
+---
+
+### 7.3 menu_character.gd (86 righe)
+
+**Percorso**: `v1/scripts/menu/menu_character.gd`
+**Ruolo**: Sceglie un personaggio random e anima il walk-in da fuori schermo.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Animazione walk-in con frame cycling funzionante |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | OK | Gestisce texture mancante (riga 32-34) |
+| Performance | OK | Un solo sprite + timer |
+| Accoppiamento | OK | Segnale locale `walk_in_completed` |
+| Cleanup | BUONA | `_exit_tree()` disconnette timer, lo ferma e lo libera |
+
+**Problemi residui**:
+
+**N-Q2** — Tween non tracciato come member variable (`BASSO`)
+
+```gdscript
+# Riga 61: tween locale
+var tween := create_tween()
+```
+
+Se `walk_in()` viene chiamato due volte (improbabile ma possibile), il primo tween non viene killato.
+
+---
+
+**N-P4** — Posizioni hardcoded (`POLISHING`)
+
+```gdscript
+# Righe 51-52: posizioni fisse
+var start_pos := Vector2(-100, 530)
+var end_pos := Vector2(640, 530)
+```
+
+Queste posizioni funzionano per la risoluzione 1280x720 ma non si adattano se la viewport
+cambia. Dovrebbero usare `get_viewport_rect().size` per calcolare posizioni relative.
+
+---
+
+### Riepilogo Menu
+
+```
++------------------+--------+----------+-----------+----------+--------------+----------+
+| Script           | Righe  | Corrett. | Sicurezza | Robusto  | Accoppiamento| Cleanup  |
++------------------+--------+----------+-----------+----------+--------------+----------+
+| main_menu.gd     |  223   |  BUONA   |    OK     |  BUONA   |     OK       |ECCELLENTE|
+| auth_screen.gd   |  222   |  BUONA   |    OK     |  BUONA   |     OK       |  MEDIO   |
+| menu_character.gd|   86   |  BUONA   |    OK     |   OK     |     OK       |  BUONA   |
++------------------+--------+----------+-----------+----------+--------------+----------+
+```
+
+---
+
+## 8. Analisi Codice — Gameplay / Room
+
+### 8.1 room_base.gd (143 righe)
+
+**Percorso**: `v1/scripts/rooms/room_base.gd`
+**Ruolo**: Scena base della stanza. Spawn decorazioni con collision body, swap personaggio.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Spawn e reload decorazioni corretti |
+| Sicurezza | OK | Nessun input esterno diretto |
+| Robustezza | BUONA | Null check su texture, `call_deferred` per add_child |
+| Performance | OK | Spawn sincrono ma numero decorazioni limitato |
+| Accoppiamento | `MEDIO` | Accede a `SaveManager.decorations` direttamente |
+| Cleanup | BUONA | `_exit_tree()` disconnette 3 segnali |
+
+**Fix verificate**:
+- `[VERIFICATO]` **A3**: `call_deferred("add_child", new_char)` per swap personaggio (riga 41)
+- `[VERIFICATO]` **A28**: Viewport clamping per posizioni decorazione (riga 77)
+
+**Problemi residui**:
+
+**N-AR5** — Accesso diretto a `SaveManager.decorations` (`ARCHITETTURALE`)
+
+```gdscript
+# Riga 57: scrittura diretta nell'array pubblico
+SaveManager.decorations.append(deco_data)
+
+# Riga 66: lettura diretta
+for deco_data in SaveManager.decorations:
+```
+
+---
+
+**N-P3** — Collision shape e scala decorazione (`POLISHING`)
+
+```gdscript
+# Riga 119: usa la dimensione raw della texture
+rect.size = texture.get_size()
+# Ma il sprite ha scala custom (riga 100):
+sprite.scale = Vector2(item_scale, item_scale)
+```
+
+La collision shape e' figlio dello sprite, quindi eredita la scala automaticamente.
+Non e' un bug, ma se il body venisse spostato fuori dallo sprite, la collision diventerebbe errata.
+Documentato per chiarezza.
+
+---
+
+### 8.2 character_controller.gd (88 righe)
+
+**Percorso**: `v1/scripts/rooms/character_controller.gd`
+**Ruolo**: CharacterBody2D con movimento 8 direzioni e animazione.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | 8 direzioni con soglia angolare, idle coerente |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | BUONA | Null check su `_anim` in ogni metodo (righe 42, 66, 83) |
+| Performance | OK | `_physics_process` leggero |
+| Accoppiamento | OK | Solo `SignalBus.decoration_mode_changed` |
+| Cleanup | BUONA | `_exit_tree()` disconnette segnale |
+
+**Fix verificate**:
+- `[VERIFICATO]` **A7**: Null check su `_anim`
+- `[VERIFICATO]` Collision mask cambia in edit mode (riga 24-29)
+
+**Nessun problema residuo**.
+
+---
+
+### 8.3 decoration_system.gd (228 righe)
+
+**Percorso**: `v1/scripts/rooms/decoration_system.gd`
+**Ruolo**: Script per ogni decorazione. Click -> popup (R/F/S/X), drag con grid snap.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Drag + popup funzionanti, single-popup pattern |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | BUONA | `is_instance_valid` check, ESC dismiss |
+| Performance | OK | Input handling leggero |
+| Accoppiamento | `MEDIO` | Scrive in `SaveManager.decorations` direttamente |
+| Cleanup | BUONA | `_exit_tree()` chiama `_dismiss_popup()` |
+
+**Fix verificate**:
+- `[VERIFICATO]` **A15**: Persistenza via `_deco_data` reference
+- `[VERIFICATO]` Grid snapping (riga 59) e viewport clamping (riga 60-62)
+
+**Problema residuo**:
+
+**N-AR6** — Accesso diretto a `SaveManager.decorations` in `_remove_from_room()` (`ARCHITETTURALE`)
+
+```gdscript
+# Riga 218-220
+var idx := SaveManager.decorations.find(_deco_data)
+if idx >= 0:
+    SaveManager.decorations.remove_at(idx)
+```
+
+---
+
+### 8.4 window_background.gd (72 righe)
+
+**Percorso**: `v1/scripts/rooms/window_background.gd`
+**Ruolo**: Sfondo foresta parallax. Risponde al mouse per effetto profondita'.
+
+**Analisi**: Tutto OK. Two-pass layer building verificato (**C5**). Nessun problema residuo.
+
+---
+
+### 8.5 room_grid.gd (45 righe)
+
+**Percorso**: `v1/scripts/rooms/room_grid.gd`
+**Ruolo**: Overlay griglia visuale durante modalita' decorazione.
+
+**Analisi**: Tutto OK. Script compatto. `_exit_tree()` disconnette segnale. Nessun problema residuo.
+
+---
+
+### Riepilogo Gameplay/Room
+
+```
++-----------------------+--------+----------+-----------+----------+--------------+----------+
+| Script                | Righe  | Corrett. | Sicurezza | Robusto  | Accoppiamento| Cleanup  |
++-----------------------+--------+----------+-----------+----------+--------------+----------+
+| room_base.gd          |  143   |  BUONA   |    OK     |  BUONA   |    MEDIO     |  BUONA   |
+| character_controller.gd|  88   |  BUONA   |    OK     |  BUONA   |     OK       |  BUONA   |
+| decoration_system.gd  |  228   |  BUONA   |    OK     |  BUONA   |    MEDIO     |  BUONA   |
+| window_background.gd  |   72   |  BUONA   |    OK     |  BUONA   |     OK       |   OK     |
+| room_grid.gd          |   45   |   OK     |    OK     |   OK     |     OK       |  BUONA   |
++-----------------------+--------+----------+-----------+----------+--------------+----------+
+```
+
+---
+
+## 9. Analisi Codice — UI
+
+### 9.1 panel_manager.gd (143 righe)
+
+**Percorso**: `v1/scripts/ui/panel_manager.gd`
+**Ruolo**: `class_name PanelManager` — gestisce lifecycle pannelli, mutua esclusione, open/close con fade.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Mutua esclusione + scene caching + fade in/out |
+| Sicurezza | OK | `ResourceLoader.exists()` check prima di caricare |
+| Robustezza | BUONA | Null check, `is_instance_valid`, tween management |
+| Performance | BUONA | Scene cache evita reload ripetuti |
+| Accoppiamento | OK | Emette `panel_opened`/`panel_closed` via SignalBus |
+| Cleanup | BUONA | `_exit_tree()` killa tween e libera pannello corrente |
+
+**Nessun problema residuo**. Script ben strutturato.
+
+---
+
+### 9.2 deco_panel.gd (197 righe)
+
+**Percorso**: `v1/scripts/ui/deco_panel.gd`
+**Ruolo**: Catalogo decorazioni con categorie collassabili e drag-and-drop.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Catalogo categorizzato, DnD con preview corretti |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | BUONA | Gestisce catalogo vuoto (riga 66-72), type checks |
+| Performance | OK | Caricamento texture sincrono ma catalogo di 69 item |
+| Accoppiamento | OK | Legge `GameManager.decorations_catalog` (accettabile — read-only) |
+| Cleanup | BUONA | `_exit_tree()` disconnette bottone mode |
+
+**Nessun problema residuo**.
+
+---
+
+### 9.3 settings_panel.gd (151 righe)
+
+**Percorso**: `v1/scripts/ui/settings_panel.gd`
+**Ruolo**: Slider volume (Master/Music/Ambience) + selettore lingua.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | `_loading` guard previene emissioni spurie durante il caricamento |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | OK | Valori default per ogni slider |
+| Performance | OK | UI leggera |
+| Accoppiamento | `MEDIO` | Scrive direttamente in `SaveManager.settings["language"]` |
+| Cleanup | BUONA | `_exit_tree()` disconnette 4 segnali (3 slider + language option) |
+
+**Problema residuo**:
+
+**N-AR7** — Scrittura diretta in `SaveManager.settings` (`ARCHITETTURALE`)
+
+```gdscript
+# Riga 128
+SaveManager.settings["language"] = lang_code
+```
+
+Il cambio lingua scrive direttamente nel dizionario settings di SaveManager, bypassando
+il segnale `settings_updated`. Gli slider audio invece usano correttamente
+`SignalBus.volume_changed.emit()`.
+
+**Soluzione**: Usare `SignalBus.settings_updated.emit("language", lang_code)` per coerenza.
+
+---
+
+### 9.4 profile_panel.gd (181 righe)
+
+**Percorso**: `v1/scripts/ui/profile_panel.gd`
+**Ruolo**: Info account, azioni pericolose (delete character/account), logout.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | ConfirmationDialog con disconnect prima di riconnettere |
+| Sicurezza | OK | Azioni distruttive richiedono conferma esplicita |
+| Robustezza | BUONA | `CONNECT_ONE_SHOT` per callback conferma |
+| Performance | OK | UI leggera |
+| Accoppiamento | `MEDIO` | Chiama `LocalDatabase.get_coins()` direttamente |
+| Cleanup | BUONA | `_exit_tree()` disconnette `auth_state_changed` |
+
+**Problema residuo**:
+
+**N-AR8** — Chiamata diretta a LocalDatabase (`ARCHITETTURALE`)
+
+```gdscript
+# Riga 135
+var coins := LocalDatabase.get_coins(AuthManager.current_account_id)
+```
+
+ProfilePanel chiama direttamente LocalDatabase. Per coerenza con il pattern Signal Bus,
+le monete dovrebbero essere accessibili tramite un getter in un autoload (es. GameManager)
+o salvate in SaveManager.
+
+---
+
+### 9.5 drop_zone.gd (55 righe)
+
+**Percorso**: `v1/scripts/ui/drop_zone.gd`
+**Ruolo**: Control trasparente che fa da ponte tra il drag UI e il mondo di gioco.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Validazione zona (wall/floor), snap, clamp |
+| Sicurezza | OK | Check `_is_valid_drop` |
+| Robustezza | BUONA | Gestisce texture null (riga 51-52) |
+| Performance | OK | Nessun overhead |
+| Accoppiamento | OK | Emette `decoration_placed` via SignalBus |
+| Cleanup | N/A | Nessun segnale da disconnettere |
+
+**Nessun problema residuo**.
+
+---
+
+### Riepilogo UI
+
+```
++------------------+--------+----------+-----------+----------+--------------+----------+
+| Script           | Righe  | Corrett. | Sicurezza | Robusto  | Accoppiamento| Cleanup  |
++------------------+--------+----------+-----------+----------+--------------+----------+
+| panel_manager.gd |  143   |  BUONA   |    OK     |  BUONA   |     OK       |  BUONA   |
+| deco_panel.gd    |  197   |  BUONA   |    OK     |  BUONA   |     OK       |  BUONA   |
+| settings_panel.gd|  151   |  BUONA   |    OK     |   OK     |    MEDIO     |  BUONA   |
+| profile_panel.gd |  181   |  BUONA   |    OK     |  BUONA   |    MEDIO     |  BUONA   |
+| drop_zone.gd     |   55   |  BUONA   |    OK     |  BUONA   |     OK       |   N/A    |
++------------------+--------+----------+-----------+----------+--------------+----------+
+```
+
+---
+
+## 10. Analisi Codice — Utility e Main
+
+### 10.1 main.gd (84 righe)
+
+**Percorso**: `v1/scripts/main.gd`
+**Ruolo**: Scena root del gameplay. Crea PanelManager, wira bottoni HUD, applica tema colori.
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | Wiring HUD -> PanelManager, tema colori |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | BUONA | Null check su bottoni HUD e texture background |
+| Performance | OK | `_fit_background_to_viewport` una sola volta |
+| Accoppiamento | OK | Connette `room_changed` via SignalBus |
+| Cleanup | BUONA | `_exit_tree()` disconnette `room_changed` |
+
+**Nessun problema residuo**.
+
+---
+
+### 10.2 constants.gd (51 righe)
+
+**Percorso**: `v1/scripts/utils/constants.gd`
+**Ruolo**: `class_name Constants` — tutte le costanti globali del progetto.
+
+**Analisi**: Tutto OK. Costanti ben organizzate per categoria. `LANGUAGES` ha solo 2 entry
+(English, Italiano) — coerente con lo stato attuale (i18n non ancora implementato).
+
+**Nessun problema residuo**.
+
+---
+
+### 10.3 helpers.gd (49 righe)
+
+**Percorso**: `v1/scripts/utils/helpers.gd`
+**Ruolo**: `class_name Helpers` — funzioni utilita' statiche.
+
+Contiene 5 funzioni:
+- `vec2_to_array()` / `array_to_vec2()` — serializzazione Vector2 <-> JSON
+- `clamp_to_viewport()` — clamping posizione nella viewport
+- `format_time()` — formattazione secondi in MM:SS
+- `snap_to_grid()` — snap a griglia con cell_size configurabile
+- `get_date_string()` — data ISO corrente
+
+**Analisi**:
+
+| Aspetto | Valutazione | Note |
+|---------|-------------|------|
+| Correttezza | BUONA | `array_to_vec2` gestisce array troppo corto (riga 12-14) |
+| Sicurezza | OK | Nessun rischio |
+| Robustezza | BUONA | Warning su input invalido + fallback |
+| Performance | OK | Funzioni pure, nessuno stato |
+| Accoppiamento | OK | Usa solo `Constants.VIEWPORT_WIDTH/HEIGHT` |
+| Cleanup | N/A | Classe statica, nessun nodo |
+
+**Nessun problema residuo**.
+
+---
+
+## 11. Analisi Dati, Database e CI/CD
+
+### 11.1 File JSON
+
+**characters.json** (44 righe) — 1 personaggio (`male_old`) con 4 stati animazione (idle, walk,
+interact, rotate) e 8 direzioni. Struttura corretta.
+
+**decorations.json** (100 righe) — 69 decorazioni in 11 categorie con sprite path e placement type.
+Struttura corretta, tutti i path puntano a file esistenti (validato dalla CI).
+
+**rooms.json** (13 righe) — 1 stanza (`cozy_studio`) con 3 temi (modern, natural, pink).
+Ogni tema ha `wall_color` e `floor_color` come hex string. Struttura corretta.
+
+**tracks.json** (19 righe) — 2 tracce musicali (rain loop, rain thunder), array `ambience` vuoto.
+
+**N-P1** — Solo 2 tracce in `tracks.json` ma 18 file MP3 in `assets/audio/` (`POLISHING`)
+
+Il catalogo dichiara solo 2 tracce audio, ma nella cartella `assets/audio/` sono presenti
+circa 18 file MP3. Le tracce aggiuntive non sono referenziate da nessun catalogo JSON e
+quindi non sono disponibili nel gioco.
+
+**Suggerimento**: Aggiungere le tracce mancanti al catalogo, oppure rimuovere i file MP3
+non utilizzati per ridurre la dimensione del build.
+
+---
+
+### 11.2 Schema Database
+
+Lo schema SQLite definisce 9 tabelle:
+
+```
+accounts          — account_id PK, auth_uid, email, display_name, password_hash, coins, timestamps
+characters        — character_id PK, account_id FK, nome, genere, colori, livello_stress
+inventario        — inventario_id PK, account_id FK, capacita, items_json
+rooms             — room_id PK, account_id FK, room_type, theme
+items             — item_id PK, inventario_id FK, item_type, quantita, equipped
+shop              — (MORTA) shop_item_id, nome, prezzo, tipo, livello_richiesto
+colore            — (MORTA) colore_id, hex_value, nome, categoria
+categoria         — (MORTA) categoria_id, nome, descrizione
+sync_queue        — sync_id PK, entity_type, entity_id, action, payload_json, timestamps
+```
+
+**Tabelle attive**: accounts, characters, inventario, rooms, items, sync_queue (6/9)
+**Tabelle morte**: shop, colore, categoria (3/9)
+
+Le FK hanno `ON DELETE CASCADE` corretto. WAL mode abilitato con `PRAGMA journal_mode=WAL`.
+Foreign keys abilitate con `PRAGMA foreign_keys=ON`.
+
+---
+
+### 11.3 CI Pipeline (ci.yml)
+
+5 job paralleli su ogni push/PR verso `main`:
+
+| Job | Cosa valida | Stato |
+|-----|-------------|-------|
+| `lint` | GDScript lint + format check (gdtoolkit 4.x) | OK |
+| `validate-json` | Struttura cataloghi JSON | OK |
+| `validate-sprites` | Esistenza file sprite referenziati | OK |
+| `validate-crossrefs` | Coerenza constants.gd <-> cataloghi | OK |
+| `validate-db` | Sintassi SQL nello schema | OK |
+
+Configurazione corretta: `concurrency` group per cancellare run obsolete, `timeout-minutes: 3-5`.
+
+---
+
+### 11.4 Build Pipeline (build.yml)
+
+2 job: Windows export + HTML5 export.
+
+**N-BD1** — Versione Godot mismatch in build.yml (`CRITICO`)
+
+```yaml
+# build.yml riga 27 e 59:
+container:
+  image: barichello/godot-ci:4.5
+
+# Ma project.godot dichiara:
+config/features=PackedStringArray("4.6", "GL Compatibility")
+```
+
+Il container Docker usa Godot 4.5, ma il progetto e' Godot 4.6.
+Questo causera' un **fallimento del build** o incompatibilita' silenziose.
+
+**Fix necessaria**: Cambiare l'immagine a `barichello/godot-ci:4.6` (quando disponibile)
+o usare un'immagine custom con Godot 4.6. Aggiornare anche i path dei template:
+
+```yaml
+# DA:
+mkdir -p ~/.local/share/godot/export_templates/4.5.stable
+# A:
+mkdir -p ~/.local/share/godot/export_templates/4.6.stable
+```
+
+---
+
+**N-BD4** — Icona applicazione vuota (`MEDIO`)
+
+```cfg
+# export_presets.cfg riga 27:
+application/icon=""
+```
+
+L'eseguibile Windows non avra' icona personalizzata. Usera' l'icona generica di Godot.
+
+**Suggerimento**: Creare un file `.ico` (256x256, 128x128, 64x64, 32x32, 16x16) e
+impostare il path in `export_presets.cfg`.
+
+---
+
+**N-BD5** — Versione applicazione vuota (`BASSO`)
+
+```cfg
+# export_presets.cfg righe 30-31:
+application/file_version=""
+application/product_version=""
+```
+
+Windows mostra "version not set" nelle proprieta' del file.
+
+**Suggerimento**: Impostare la versione (es. `1.0.0.0`).
+
+---
+
+**N-BD3** — Nessun preset Android (`MEDIO`)
+
+`export_presets.cfg` ha solo Windows e Web. Non esiste un preset Android.
+Per generare un APK e' necessario aggiungere il preset. Vedi [Sezione 19](#19-build--export-android-apk).
+
+---
+
+## 12. Classificazione Problemi
+
+### Problemi dal primo audit — Stato verifica
+
+Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verificati come corretti**:
+
+| ID | Severita' | Descrizione | Stato |
+|----|-----------|-------------|-------|
+| C1 | CRITICO | SQL injection in query non parametrizzate | `VERIFICATO` |
+| C2 | CRITICO | Password hash con salt hardcoded | `VERIFICATO` |
+| C3 | CRITICO | Schema characters senza PK | `VERIFICATO` |
+| C4 | CRITICO | Inventario senza FK e CASCADE | `VERIFICATO` |
+| C5 | CRITICO | window_background crash su texture mancante | `VERIFICATO` |
+| C6 | CRITICO | Save file corruzione senza atomic write | `VERIFICATO` |
+| C7 | CRITICO | Race condition in save concorrenti | `VERIFICATO` |
+| A1 | ALTO | save_requested chiamata diretta a SaveManager | `VERIFICATO` |
+| A3 | ALTO | add_child durante callback senza call_deferred | `VERIFICATO` |
+| A7 | ALTO | Null reference su AnimatedSprite2D | `VERIFICATO` |
+| A13 | ALTO | Logger perde messaggi se file non disponibile | `VERIFICATO` |
+| A15 | ALTO | Decorazioni non persistono rotazione/scala | `VERIFICATO` |
+| A24 | ALTO | Database senza transazioni per operazioni batch | `VERIFICATO` |
+| A25 | ALTO | _save_inventory non ritorna errore | `VERIFICATO` |
+| A26 | ALTO | LocalDatabase.is_open() non disponibile | `VERIFICATO` |
+| A27 | ALTO | create_account return value non verificato | `VERIFICATO` |
+| A28 | ALTO | Decorazioni fuori viewport non clampate | `VERIFICATO` |
+| A29 | ALTO | scene.instantiate() senza null check | `VERIFICATO` |
+| AR1 | ARCH | save_requested bypassa SignalBus | `VERIFICATO` |
+| AR3 | ARCH | AudioManager legge direttamente SaveManager | `VERIFICATO`* |
+| AR5 | ARCH | Settings scrive direttamente in SaveManager | `VERIFICATO`* |
+
+> *AR3 e AR5: il segnale `settings_updated` e `music_state_updated` sono stati aggiunti
+> a SignalBus, ma alcuni script continuano ad accedere direttamente. Vedi nuovi problemi.
+
+---
+
+### Nuovi problemi trovati
+
+| ID | Severita' | Script | Descrizione |
+|----|-----------|--------|-------------|
+| N-BD1 | `CRITICO` | build.yml | Godot 4.5 container vs 4.6 progetto |
+| N-Q3 | `MEDIO` | auth_manager.gd:60 | `username.strip_edges()` invece di `clean_name` |
+| N-DB2 | `MEDIO` | local_database.gd | Nessun indice su colonne FK |
+| N-DB3 | `MEDIO` | local_database.gd | `_select()` ritorno ambiguo |
+| N-Q6 | `MEDIO` | save_manager.gd | Stato pubblico mutabile |
+| N-BD4 | `MEDIO` | export_presets.cfg | Icona applicazione vuota |
+| N-BD3 | `MEDIO` | export_presets.cfg | Nessun preset Android |
+| N-AR7 | `MEDIO` | settings_panel.gd:128 | Scrittura diretta in SaveManager.settings |
+| N-Q1 | `MEDIO` | auth_screen.gd | Nessun _exit_tree() + tween non tracciato |
+| N-AR1 | ARCH | save_manager.gd | SaveManager scrive in GameManager direttamente |
+| N-AR2 | ARCH | save_manager.gd | Accoppiamento bidirezionale SM <-> GM |
+| N-AR3 | ARCH | audio_manager.gd | Lettura diretta da SaveManager |
+| N-AR4 | ARCH | performance_manager.gd | Lettura diretta da SaveManager |
+| N-AR5 | ARCH | room_base.gd | Accesso diretto a SaveManager.decorations |
+| N-AR6 | ARCH | decoration_system.gd | Accesso diretto a SaveManager.decorations |
+| N-AR8 | ARCH | profile_panel.gd | Chiamata diretta a LocalDatabase |
+| N-Q2 | `BASSO` | menu_character.gd | Tween non tracciato |
+| N-Q4 | `BASSO` | logger.gd | Flush sincrono (teorico) |
+| N-Q5 | `BASSO` | game_manager.gd | Nessun _exit_tree() |
+| N-DB1 | `BASSO` | local_database.gd | Tabelle morte nello schema |
+| N-BD5 | `BASSO` | export_presets.cfg | Versione applicazione vuota |
+| N-P1 | POLISHING | tracks.json | 18 MP3 ma solo 2 in catalogo |
+| N-P3 | POLISHING | room_base.gd | Collision shape e scala (documentazione) |
+| N-P4 | POLISHING | menu_character.gd | Posizioni hardcoded |
+
+---
+
+### Distribuzione per severita'
+
+```
+CRITICO:        1  (build.yml versione Godot)
+MEDIO:          7
+ARCHITETTURALE: 8  (tutti relativi ad accoppiamento)
+BASSO:          5
+POLISHING:      3
+                --
+TOTALE:        24 nuovi problemi
+```
+
+---
+
+## 13. Piano di Stabilizzazione
+
+Azioni ordinate per priorita'. Completare **prima della deadline del 22 Aprile 2026**.
+
+### Priorita' 1 — CRITICO (entro 3 Aprile)
+
+**[N-BD1] Fix versione Godot in build.yml**
+
+```yaml
+# File: .github/workflows/build.yml
+# Cambiare l'immagine del container in ENTRAMBI i job:
+
+container:
+  image: barichello/godot-ci:4.6    # Era: 4.5
+
+# E i path dei template:
+mkdir -p ~/.local/share/godot/export_templates/4.6.stable
+```
+
+**Responsabile**: Cristian (CI/CD)
+
+---
+
+### Priorita' 2 — MEDIO (entro 8 Aprile)
+
+**[N-Q3] Fix clean_name in auth_manager.gd**
+
+```gdscript
+# Riga 59-60: sostituire username.strip_edges() con clean_name
+var account_id := LocalDatabase.create_account(
+    clean_name, pw_hash     # Era: username.strip_edges()
+)
+```
+
+**[N-DB2] Aggiungere indici FK in local_database.gd**
+
+Aggiungere alla fine di `_create_tables()`:
+```sql
+CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);
+CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);
+CREATE INDEX IF NOT EXISTS idx_rooms_account ON rooms(account_id);
+CREATE INDEX IF NOT EXISTS idx_items_inventario ON items(inventario_id);
+```
+
+**[N-Q1] Aggiungere cleanup in auth_screen.gd**
+
+```gdscript
+var _finish_tween: Tween = null
+
+func _finish() -> void:
+    if _finish_tween and _finish_tween.is_running():
+        _finish_tween.kill()
+    _finish_tween = create_tween()
+    _finish_tween.tween_property(self, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
+    _finish_tween.tween_callback(
+        func() -> void:
+            auth_completed.emit()
+            queue_free()
+    )
+
+func _exit_tree() -> void:
+    if _finish_tween and _finish_tween.is_running():
+        _finish_tween.kill()
+```
+
+**[N-AR7] Fix settings_panel.gd lingua**
+
+```gdscript
+# Riga 128: sostituire scrittura diretta con segnale
+func _on_language_selected(index: int) -> void:
+    var lang_code: String = _language_option.get_item_metadata(index)
+    SignalBus.settings_updated.emit("language", lang_code)   # Era: SaveManager.settings["language"] = lang_code
+    SignalBus.language_changed.emit(lang_code)
+    SignalBus.save_requested.emit()
+```
+
+**[N-BD4] Aggiungere icona applicazione**
+
+1. Creare un file `v1/assets/icon.ico` con le dimensioni standard (256, 128, 64, 32, 16)
+2. In `export_presets.cfg`: `application/icon="res://assets/icon.ico"`
+
+**[N-BD3] Creare preset Android**
+
+Vedi [Sezione 19](#19-build--export-android-apk) per la guida completa.
+
+---
+
+### Priorita' 3 — BASSO + ARCHITETTURALE (entro 15 Aprile)
+
+I problemi architetturali (N-AR1 attraverso N-AR8) sono tutti relativi all'accoppiamento
+tra autoload. Si consiglia di affrontarli in un unico refactoring:
+
+1. Rendere le variabili di SaveManager `_private`
+2. Aggiungere getter che ritornano `duplicate()`
+3. Aggiungere setter che chiamano `_mark_dirty()`
+4. Aggiornare tutti gli script che accedono direttamente
+
+Questo refactoring non e' bloccante per la deadline ma migliora significativamente
+la manutenibilita' futura.
+
+---
+
+## 14. Piano di Polishing
+
+Miglioramenti estetici e di UX. Non sono bug, ma migliorano la qualita' percepita.
+
+### 14.1 Audio — Aggiungere tracce mancanti
+
+18 file MP3 esistono in `assets/audio/` ma solo 2 sono nel catalogo.
+Aggiungere le tracce rilevanti a `tracks.json`:
+
 ```json
-"male_walk_down_side_sxt.png"
+{
+  "tracks": [
+    {"id": "track_01", "name": "Rain Loop", "path": "res://assets/audio/rain_loop.mp3"},
+    {"id": "track_02", "name": "Rain Thunder", "path": "res://assets/audio/rain_thunder.mp3"},
+    // Aggiungere qui le altre tracce disponibili
+  ]
+}
 ```
 
-Dopo (codice corretto):
+### 14.2 Personaggio — Contenuto
+
+Al momento esiste un solo personaggio (`male_old`). Per la demo e' sufficiente,
+ma la struttura supporta gia' personaggi multipli tramite `characters.json` e
+`CHARACTER_SCENES` in `room_base.gd`.
+
+### 14.3 Internazionalizzazione (i18n)
+
+Il selettore lingua esiste in `settings_panel.gd` e il segnale `language_changed` e' dichiarato,
+ma **nessuna traduzione e' implementata**. Tutte le stringhe UI sono hardcoded in inglese.
+
+Per implementare i18n in Godot:
+
+1. Creare file `.csv` o `.po` in `v1/translations/`
+2. In `project.godot`, aggiungere sotto `[internationalization]`:
+   ```
+   locale/translations=PackedStringArray("res://translations/messages.en.translation", "res://translations/messages.it.translation")
+   ```
+3. Usare `tr("key")` nelle stringhe UI invece di stringhe hardcoded
+4. Ref: [Internazionalizzazione Godot](https://docs.godotengine.org/en/stable/tutorials/i18n/internationalizing_games.html)
+
+### 14.4 Loading Indicator
+
+Non c'e' feedback visuale durante save/load. L'utente non sa se il gioco sta salvando.
+
+**Suggerimento**: Aggiungere un'icona piccola (spinner o floppy disk) che appare brevemente
+quando `save_requested` viene emesso e scompare dopo `save_completed`.
+
+### 14.5 Effetti Sonori
+
+Non ci sono effetti sonori per interazioni UI (click bottoni, apertura/chiusura pannelli,
+piazzamento decorazioni). Aggiungere suoni brevi migliora significativamente il feel del gioco.
+
+### 14.6 Menu Character — Posizioni Responsive
+
+```gdscript
+# Attuale (hardcoded):
+var start_pos := Vector2(-100, 530)
+var end_pos := Vector2(640, 530)
+
+# Suggerito (responsive):
+var vp_size := get_viewport_rect().size
+var start_pos := Vector2(-100, vp_size.y * 0.74)
+var end_pos := Vector2(vp_size.x * 0.5, vp_size.y * 0.74)
+```
+
+---
+
+## 15. Guida Frontend — Il Gioco
+
+Questa sezione spiega come funziona il gioco dal punto di vista dell'utente e dello sviluppatore.
+
+### 15.1 Flusso Utente
+
+```
+[Avvio App]
+     |
+     v
+[Loading Screen]  <-- Sfondo grafico con SubViewport
+     |
+     v
+[Auth Check] ---- Account esiste? ---- NO ----> [Auth Screen]
+     |                                              |
+    SI                                          Login/Register/Guest
+     |                                              |
+     v                                              v
+[Walk-in Animation] <------- auth_completed --------+
+     |
+     v
+[Menu Principale]
+  |    |    |    |    |
+  v    v    v    v    v
+ New  Load  Opt  Prof Exit
+  |    |    |    |
+  v    v    v    v
+  |    |    |  [Profile Panel]
+  |    |    |    - Account type
+  |    |    |    - Username
+  |    |    |    - Coins
+  |    |    |    - Delete Char/Account
+  |    |    |    - Logout
+  |    |    v
+  |    |  [Settings Panel]
+  |    |    - Master Volume
+  |    |    - Music Volume
+  |    |    - Ambience Volume
+  |    |    - Language
+  |    v
+  |  [Carica Partita] --> load_game() --> main.tscn
+  v
+[Nuova Partita] --> reset + main.tscn
+                         |
+                         v
+                  [Scena Gameplay]
+                    +-- Room Background (Sprite2D + ColorRect overlay)
+                    +-- Window Background (parallax foresta)
+                    +-- Character (CharacterBody2D, 8-dir movement)
+                    +-- Decorations Container (Sprite2D + collision)
+                    +-- Room Grid (overlay, solo in edit mode)
+                    +-- HUD
+                    |    +-- Deco Button --> [Deco Panel]
+                    |    +-- Settings Button --> [Settings Panel]
+                    |    +-- Profile Button --> [Profile Panel]
+                    +-- DropZone (overlay trasparente per DnD)
+```
+
+### 15.2 Sistema Decorazioni — Come Funziona
+
+```
+                      PIAZZAMENTO
+                      ===========
+
+1. L'utente apre il DecoPanel cliccando il bottone "Deco" nell'HUD
+2. Il DecoPanel mostra 69 decorazioni in 11 categorie collassabili
+3. L'utente trascina una decorazione dal pannello
+4. set_drag_forwarding() crea un preview semi-trasparente che segue il mouse
+5. La decorazione viene rilasciata sul DropZone (Control overlay)
+6. DropZone valida:
+   - E' un Dictionary con "item_id"?
+   - La zona e' corretta? (floor items solo sotto il 40%, wall items solo sopra)
+7. Se valido, emette SignalBus.decoration_placed(item_id, position)
+8. RoomBase._on_decoration_placed() crea:
+   - Sprite2D con texture (filtro NEAREST per pixel art)
+   - StaticBody2D con CollisionShape2D (il personaggio non ci passa attraverso)
+   - DecorationSystem script (gestisce interazione)
+9. I dati vengono salvati in SaveManager.decorations[]
+
+                      INTERAZIONE
+                      ===========
+
+1. Click su decorazione:
+   - Se c'e' gia' un popup aperto su un'altra decorazione, lo chiude
+   - Mostra popup con bottoni [R] [F] [S] [X]
+     R = Rotate (90° increment)
+     F = Flip (mirror orizzontale)
+     S = Scale (cicla: 0.25x, 0.5x, 0.75x, 1x, 1.5x, 2x, 3x)
+     X = Delete (solo in Edit Mode)
+   - Il popup e' su un CanvasLayer (layer 100) per ricevere input GUI
+
+2. Drag decorazione (solo in Edit Mode):
+   - Threshold 5px per distinguere click da drag
+   - Posizione snappata a griglia 64px
+   - Posizione clampata nella viewport
+   - Al rilascio, posizione salvata
+
+3. Delete:
+   - Rimuove da SaveManager.decorations[]
+   - queue_free() sullo sprite
+   - Emette decoration_removed e save_requested
+```
+
+### 15.3 Sistema Audio
+
+```
+                      ARCHITETTURA AUDIO
+                      ==================
+
+AudioManager gestisce 3 categorie:
+1. Musica (crossfade tra 2 player)
+2. Ambience (multi-layer, player separati)
+3. Volume (3 bus: master, music, ambience)
+
+Crossfade:
+  _music_player_a e _music_player_b si alternano.
+  Quando cambia traccia, il player attivo fa fade-out
+  mentre l'altro fa fade-in. Durata: 2.0 secondi.
+
+Volume:
+  I 3 slider in SettingsPanel emettono SignalBus.volume_changed(bus, value).
+  AudioManager li riceve e li applica ai bus audio di Godot.
+
+Playlist:
+  3 modalita' (definite ma non tutte con UI):
+  - sequential: tracce in ordine
+  - shuffle: ordine casuale
+  - repeat_one: ripete la traccia corrente
+```
+
+### 15.4 Sistema di Salvataggio
+
+```
+Cosa viene salvato (save_data.json):
+  - version: "5.0.0"
+  - last_saved: timestamp
+  - account: { auth_uid, account_id }
+  - settings: { language, display_mode, volumes, window_pos }
+  - room: { room_id, theme }
+  - character: { character_id, outfit_id }
+  - music_state: { current_track, playlist_mode, active_ambience }
+  - character_data: { nome, genere, colori, stress }
+  - inventory_data: { coins, capacita, items }
+  - decorations: [ { item_id, position, scale, rotation, flip } ]
+  - hmac: SHA256 hash di integrita'
+
+Quando si salva:
+  1. Evento trigger (auto-save 60s / modifica / chiusura)
+  2. _is_saving = true (guard)
+  3. Raccolta stato da tutti i sistemi
+  4. Calcolo HMAC-SHA256
+  5. Scrivi su .tmp -> backup .save in .bak -> rinomina .tmp in .save
+  6. _is_saving = false
+
+Quando si carica:
+  1. Leggi .save (o .bak se corrotto)
+  2. Verifica HMAC
+  3. Applica migrazioni (v1 -> v2 -> v3 -> v4 -> v5)
+  4. Type-safe assignment con typeof()
+  5. Emetti load_completed
+```
+
+---
+
+## 16. Guida Godot Editor
+
+Questa sezione spiega come navigare e lavorare nel progetto usando l'editor Godot.
+
+### 16.1 Aprire il Progetto
+
+1. Apri Godot Engine 4.6
+2. Clicca "Import" nel Project Manager
+3. Naviga alla cartella `v1/` e seleziona `project.godot`
+4. Clicca "Import & Edit"
+
+`[SCREENSHOT: Godot Project Manager con il progetto importato]`
+
+### 16.2 Struttura Scene Principali
+
+```
+scenes/
++-- menu/
+|   +-- main_menu.tscn       # Scena di avvio (Menu Principale)
+|   +-- auth_screen.tscn     # Overlay autenticazione
+|   +-- loading_screen.tscn  # Loading screen grafico
++-- main/
+|   +-- main.tscn            # Scena gameplay (la stanza)
++-- rooms/
+|   +-- room_base.tscn       # Template stanza
++-- ui/
+|   +-- deco_panel.tscn      # Pannello decorazioni
+|   +-- settings_panel.tscn  # Pannello impostazioni
+|   +-- profile_panel.tscn   # Pannello profilo
+```
+
+`[SCREENSHOT: FileSystem dock di Godot con le cartelle scenes/ espanse]`
+
+### 16.3 Albero dei Nodi — main_menu.tscn
+
+```
+MainMenu (Node2D) [main_menu.gd]
++-- Background (Sprite2D)
++-- LoadingScreen (ColorRect)
++-- MenuCharacter (Node2D) [menu_character.gd]
++-- UILayer (CanvasLayer)
+    +-- ButtonContainer (VBoxContainer)
+        +-- NuovaPartitaBtn (Button)
+        +-- CaricaPartitaBtn (Button)
+        +-- OpzioniBtn (Button)
+        +-- ProfiloBtn (Button)
+        +-- EsciBtn (Button)
+```
+
+`[SCREENSHOT: Scene dock di Godot mostrando l'albero di main_menu.tscn]`
+
+### 16.4 Albero dei Nodi — main.tscn (Gameplay)
+
+```
+Main (Node2D) [main.gd]
++-- RoomBackground (Sprite2D)
++-- WallRect (ColorRect)
++-- FloorRect (ColorRect)
++-- Baseboard (ColorRect)
++-- WindowBackground (Node2D) [window_background.gd]
++-- RoomBase (Node2D) [room_base.gd]
+|   +-- Character (CharacterBody2D) [character_controller.gd]
+|   |   +-- AnimatedSprite2D
+|   |   +-- CollisionShape2D
+|   +-- Decorations (Node2D)
+|   +-- RoomGrid (Node2D) [room_grid.gd]
++-- UILayer (CanvasLayer)
+|   +-- HUD (HBoxContainer)
+|   |   +-- DecoButton (Button)
+|   |   +-- SettingsButton (Button)
+|   |   +-- ProfileButton (Button)
+|   +-- DropZone (Control) [drop_zone.gd]
++-- PanelManager (Node) [panel_manager.gd]  <-- creato a runtime da main.gd
+```
+
+### 16.5 Autoload Setup
+
+In Godot Editor: **Project -> Project Settings -> Autoload**
+
+`[SCREENSHOT: Tab Autoload nelle Project Settings con gli 8 singleton elencati nell'ordine corretto]`
+
+| Ordine | Nome | Path | Abilitato |
+|--------|------|------|-----------|
+| 1 | SignalBus | res://scripts/autoload/signal_bus.gd | Si |
+| 2 | AppLogger | res://scripts/autoload/logger.gd | Si |
+| 3 | LocalDatabase | res://scripts/autoload/local_database.gd | Si |
+| 4 | AuthManager | res://scripts/autoload/auth_manager.gd | Si |
+| 5 | GameManager | res://scripts/autoload/game_manager.gd | Si |
+| 6 | SaveManager | res://scripts/autoload/save_manager.gd | Si |
+| 7 | AudioManager | res://scripts/autoload/audio_manager.gd | Si |
+| 8 | PerformanceManager | res://scripts/systems/performance_manager.gd | Si |
+
+### 16.6 Eseguire il Gioco dall'Editor
+
+1. Assicurati che la **Main Scene** sia impostata su `res://scenes/menu/main_menu.tscn`
+   (Project -> Project Settings -> Application -> Run -> Main Scene)
+2. Premi **F5** (o il bottone Play in alto a destra)
+3. Il gioco parte dal menu principale
+
+Per testare direttamente la scena gameplay senza passare dal menu:
+- Apri `res://scenes/main/main.tscn`
+- Premi **F6** (Run Current Scene)
+
+> **Nota**: Eseguendo direttamente main.tscn, l'auth non viene verificato e il save
+> potrebbe non essere caricato. Usare solo per test rapidi del layout.
+
+### 16.7 Aggiungere una Nuova Decorazione
+
+1. Posiziona il file PNG dello sprite in `v1/assets/decorations/[categoria]/`
+2. Apri `v1/data/decorations.json`
+3. Aggiungi un nuovo oggetto nell'array `decorations`:
+   ```json
+   {
+     "id": "mia_decorazione",
+     "name": "La Mia Decorazione",
+     "category": "categoria_esistente",
+     "sprite_path": "res://assets/decorations/categoria/mia_decorazione.png",
+     "item_scale": 2.0,
+     "placement_type": "floor"
+   }
+   ```
+4. `placement_type` puo' essere: `"floor"`, `"wall"`, o `"any"`
+5. Esegui il gioco. La decorazione appare nel DecoPanel sotto la categoria specificata.
+
+### 16.8 Aggiungere una Nuova Traccia Audio
+
+1. Posiziona il file MP3/OGG in `v1/assets/audio/`
+2. Apri `v1/data/tracks.json`
+3. Aggiungi alla lista `tracks`:
+   ```json
+   {"id": "track_03", "name": "Nome Traccia", "path": "res://assets/audio/nome_file.mp3"}
+   ```
+
+### 16.9 Modificare i Colori del Tema
+
+Apri `v1/data/rooms.json` e modifica i valori `wall_color` e `floor_color` (formato hex senza #):
 ```json
-"male_walk_down_side_sx.png"
+{
+  "id": "modern",
+  "wall_color": "2a2535",
+  "floor_color": "3d3347"
+}
 ```
 
-Verificate che il file corretto esista sul disco:
+I colori vengono applicati come overlay semi-trasparenti (alpha 0.6) sopra la texture della stanza.
+
+---
+
+## 17. Build — Export Windows (.exe)
+
+### 17.1 Prerequisiti
+
+- Godot Engine 4.6 (con export templates installati)
+- Export template Windows scaricato
+
+### 17.2 Installare Export Templates
+
+1. Apri Godot Editor
+2. Vai a **Editor -> Manage Export Templates**
+3. Clicca **Download and Install**
+4. Attendi il download (~600 MB per tutte le piattaforme)
+5. Verifica che appaia "Installed" accanto alla versione 4.6.stable
+
+`[SCREENSHOT: Manage Export Templates con 4.6.stable installato]`
+
+> **Alternativa**: Scarica solo i template necessari da
+> https://godotengine.org/download/ -> sezione "Export Templates"
+
+### 17.3 Configurare il Preset Windows
+
+Il preset Windows e' gia' configurato in `v1/export_presets.cfg`. Verifica:
+
+1. **Project -> Export** nell'editor
+2. Seleziona "Windows Desktop" nella lista a sinistra
+3. Verifica le impostazioni:
+
+```
+Nome:               Windows Desktop
+Platform:           Windows Desktop
+Export Path:        export/windows/MiniCozyRoom.exe
+Embed PCK:          true (risorse dentro l'exe, distribuzione singolo file)
+Texture Format:     S3TC/BPTC (standard desktop)
+Product Name:       Mini Cozy Room
+```
+
+`[SCREENSHOT: Finestra Export con il preset Windows Desktop selezionato]`
+
+### 17.4 Esportare
+
+**Dall'Editor:**
+
+1. **Project -> Export**
+2. Seleziona "Windows Desktop"
+3. Clicca **Export Project**
+4. Scegli la cartella di destinazione (es. `v1/export/windows/`)
+5. Nome file: `MiniCozyRoom.exe`
+6. Deseleziona "Export With Debug" per la versione release
+7. Clicca **Save**
+
+**Da riga di comando** (per CI/CD):
+
 ```bash
-# Verifica che il file con il nome corretto esista
-ls v1/assets/charachters/male/old/male_walk/male_walk_down_side_sx.png
+cd v1
+godot --headless --export-release "Windows Desktop" export/windows/MiniCozyRoom.exe
 ```
 
-**Passo 2 — Risolvere male_black_shirt**:
+### 17.5 Cosa Viene Generato
 
-Avete tre opzioni. La piu' sicura e':
-
-**Opzione A (consigliata)**: Rimuovere il personaggio dal catalogo fino a quando le sprite non sono pronte. Aprite `data/characters.json` e rimuovete l'intera sezione `male_black_shirt`. Poi aprite `constants.gd` e rimuovete il riferimento corrispondente.
-
-**Opzione B**: Copiare le sprite di un personaggio completo (per esempio `male_yellow_shirt`) come placeholder temporanei.
-
-**Opzione C**: Aggiungere un fallback nel controller del personaggio che usa `idle_down` quando un'animazione richiesta non esiste:
-
-```gdscript
-# character_controller.gd
-# Prima di riprodurre un'animazione, verifichiamo che esista
-# Se non esiste, usiamo "idle_down" come animazione di sicurezza
-if _anim.sprite_frames.has_animation(anim_name):
-    _anim.play(anim_name)  # l'animazione esiste, la riproduciamo
-else:
-    _anim.play("idle_down")  # fallback sicuro — idle_down esiste sempre
+Con `embed_pck=true`:
+```
+export/windows/
++-- MiniCozyRoom.exe         # Eseguibile con risorse embedded (~30-50 MB)
++-- MiniCozyRoom.pck         # NON generato (embedded nell'exe)
 ```
 
-#### 1.2 Correggere window_background.gd
-
-**Obiettivo**: Eliminare il crash causato dal mismatch tra gli array `_layers` e `_parallax_factors`.
-
-**Il problema**: Quando un layer non viene caricato, viene aggiunto il factor ma non il layer (o viceversa), causando array di dimensioni diverse.
-
-**La soluzione**: Garantire che, per ogni layer, vengano aggiunti ENTRAMBI gli elementi (layer e factor) oppure NESSUNO dei due.
-
-Prima (codice problematico — schema concettuale):
-```gdscript
-# PRIMA: se il caricamento fallisce, _layers salta un elemento
-# ma _parallax_factors potrebbe non saltarlo
-func _build_layers() -> void:
-    for i in LAYER_FILES.size():
-        var tex = load(LAYER_FILES[i])
-        if tex == null:
-            continue  # salta il layer MA il factor potrebbe essere aggiunto altrove!
-        # ... aggiunge layer E factor
+Con `embed_pck=false`:
+```
+export/windows/
++-- MiniCozyRoom.exe         # Eseguibile piccolo (~40 MB)
++-- MiniCozyRoom.pck         # Risorse separate (~10-30 MB)
 ```
 
-Dopo (codice corretto):
-```gdscript
-# DOPO: se il caricamento fallisce, saltiamo TUTTO per quel layer
-# Cosi' gli array restano sempre allineati
-func _build_layers() -> void:
-    for i: int in LAYER_FILES.size():
-        # Tentiamo di caricare la texture del layer
-        var tex := load(LAYER_FILES[i]) as Texture2D
-        if tex == null:
-            # Layer non trovato — logghiamo un avviso per il debugging
-            AppLogger.warn("WindowBackground", "Layer non trovato", {"file": LAYER_FILES[i]})
-            continue  # saltiamo COMPLETAMENTE questo layer
+> **Nota**: Con `embed_pck=true`, alcuni antivirus possono segnalare il file come sospetto
+> perche' contiene dati binari dopo il PE header. Per la distribuzione pubblica,
+> considera di usare `embed_pck=false` + Inno Setup (Sezione 18).
 
-        # Creiamo lo sprite per il layer
-        var sprite := Sprite2D.new()
-        sprite.texture = tex  # assegniamo la texture caricata
-        sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # pixel art: filtro nearest
-        add_child(sprite)  # aggiungiamo lo sprite alla scena
+### 17.6 Testare il Build
 
-        # Aggiungiamo ENTRAMBI gli elementi: layer E factor
-        # Cosi' gli array hanno SEMPRE la stessa dimensione
-        _layers.append(sprite)
-        _base_positions.append(sprite.position)
-        # Usiamo il factor corrispondente, con fallback 0.05 se manca
-        _parallax_factors.append(DEPTH_FACTORS[i] if i < DEPTH_FACTORS.size() else 0.05)
-```
+1. Copia `MiniCozyRoom.exe` su un PC Windows senza Godot installato
+2. Esegui il file
+3. Verifica:
+   - [x] Il gioco si avvia senza errori
+   - [x] Il menu principale appare
+   - [x] L'audio funziona
+   - [x] Le decorazioni si piazzano e persistono
+   - [x] Il save/load funziona (controlla `%APPDATA%/Godot/app_userdata/Mini Cozy Room/`)
+   - [x] La chiusura dell'app salva la posizione della finestra
 
-#### 1.3 Correggere save_manager.gd
+### 17.7 Aggiungere Icona (Raccomandato)
 
-**Obiettivo**: Eliminare le race condition nel salvataggio, verificare i backup, e salvare l'inventario su SQLite.
+1. Crea un file `.ico` con un tool come [RealFaviconGenerator](https://realfavicongenerator.net/) o GIMP
+2. Dimensioni richieste: 256x256, 128x128, 64x64, 48x48, 32x32, 16x16
+3. Salva come `v1/assets/icon.ico`
+4. In **Project -> Export -> Windows Desktop -> Options**:
+   `application/icon = "res://assets/icon.ico"`
 
-**Passo 1 — Aggiungere flag anti-race-condition**:
-
-All'inizio del file, dopo le variabili esistenti, aggiungete:
-
-```gdscript
-# Flag che indica se un salvataggio e' in corso
-# Impedisce che due salvataggi avvengano contemporaneamente
-var _is_saving: bool = false
-```
-
-Poi, nella funzione `save_game()`, avvolgete il contenuto con un controllo:
-
-```gdscript
-func save_game() -> void:
-    # Se un salvataggio e' gia' in corso, usciamo subito
-    # Questo previene la race condition con l'auto-save timer
-    if _is_saving:
-        AppLogger.warn("SaveManager", "Salvataggio gia' in corso, skip")
-        return
-
-    _is_saving = true  # segnaliamo che stiamo salvando
-
-    # ... tutto il codice di salvataggio esistente ...
-
-    _is_saving = false  # salvataggio completato, liberiamo il flag
-```
-
-**Passo 2 — Aggiungere error checking al backup**:
-
-Cercate la riga dove viene copiato il file di backup e sostituitela con:
-
-```gdscript
-# Apriamo la directory del salvataggio
-var dir := DirAccess.open("user://")
-if dir:
-    # Tentiamo di copiare il file di salvataggio come backup
-    var err := dir.copy(SAVE_PATH, BACKUP_PATH)
-    if err != OK:
-        # La copia e' fallita — logghiamo l'errore
-        # L'utente deve sapere che non ha un backup
-        AppLogger.error("SaveManager", "Backup fallito", {"errore": err})
-else:
-    # Non riusciamo nemmeno ad accedere alla directory
-    AppLogger.error("SaveManager", "Directory user:// non accessibile")
-```
-
-**Passo 3 — Aggiungere salvataggio inventario su SQLite**:
-
-Nella funzione `_save_to_sqlite()`, dopo la chiamata a `upsert_character()`, aggiungete il salvataggio dell'inventario:
-
-```gdscript
-# Dopo aver salvato il personaggio, salviamo anche l'inventario
-# ATTENZIONE: Prima di usare questo codice, correggere lo schema (C4)
-if not inventory_data.get("items", []).is_empty():
-    # Per ogni oggetto nell'inventario
-    for item: Dictionary in inventory_data["items"]:
-        # Aggiungiamo l'oggetto al database
-        LocalDatabase.add_inventory_item(
-            1,  # ID account locale (fisso per gioco single-player)
-            item.get("item_id", 0),  # ID dell'oggetto, default 0 se mancante
-            inventory_data.get("coins", 0),  # Monete dell'utente
-            inventory_data.get("capacity", 50)  # Capacita' inventario
-        )
-```
-
-**Nota importante**: Questo passo richiede che lo schema dell'inventario sia stato prima corretto (vedi C4 nella Sezione 12).
-
-#### 1.4 Correggere local_database.gd
-
-**Obiettivo**: Ridisegnare lo schema del database per supportare multipli personaggi e un inventario coerente.
-
-**Passo 1 — Nuova tabella characters**:
-
-Prima (schema errato):
-```sql
--- PRIMA: account_id come PRIMARY KEY
--- Un solo personaggio per account!
-CREATE TABLE IF NOT EXISTS characters (
-    account_id INTEGER PRIMARY KEY,
-    nome TEXT DEFAULT '',
-    -- ... altri campi ...
-);
-```
-
-Dopo (schema corretto):
-```sql
--- DOPO: character_id come PRIMARY KEY
--- Piu' personaggi per account!
-CREATE TABLE IF NOT EXISTS characters (
-    character_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- character_id: numero univoco auto-incrementante per ogni personaggio
-    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
-    -- account_id: a quale account appartiene questo personaggio
-    -- REFERENCES: e' una FOREIGN KEY che punta alla tabella accounts
-    -- ON DELETE CASCADE: se l'account viene eliminato, anche i personaggi vengono eliminati
-    nome TEXT DEFAULT '',
-    -- nome: il nome del personaggio
-    genere INTEGER DEFAULT 0,
-    -- genere: 0 = maschio, 1 = femmina (o altri valori per altri generi)
-    colore_occhi_id INTEGER DEFAULT NULL REFERENCES colore(colore_id),
-    -- colore_occhi_id: FOREIGN KEY verso la tabella dei colori
-    colore_capelli_id INTEGER DEFAULT NULL REFERENCES colore(colore_id),
-    colore_pelle_id INTEGER DEFAULT NULL REFERENCES colore(colore_id),
-    livello_stress INTEGER DEFAULT 0,
-    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    -- creato_il: data e ora di creazione, automaticamente impostata
-    UNIQUE(account_id, nome)
-    -- UNIQUE: la combinazione account + nome deve essere unica
-    -- (non puoi avere due personaggi con lo stesso nome nello stesso account)
-);
-```
-
-**Passo 2 — Ristrutturare inventario**:
-
-Prima (schema errato):
-```sql
--- PRIMA: coins e capacita sono per ogni oggetto (non ha senso!)
-CREATE TABLE IF NOT EXISTS inventario (
-    account_id INTEGER,
-    item_id INTEGER,
-    coins INTEGER DEFAULT 0,     -- perche' le monete sono qui?!
-    capacita INTEGER DEFAULT 50, -- perche' la capacita' e' qui?!
-    -- ...
-);
-```
-
-Dopo (schema corretto):
-```sql
--- DOPO: coins e capacita vanno nell'account, non nell'inventario
--- Passo A: Aggiungiamo i campi alla tabella accounts
-ALTER TABLE accounts ADD COLUMN coins INTEGER DEFAULT 0;
--- coins: le monete dell'utente (una sola volta per account)
-ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;
--- inventario_capacita: quanti oggetti puo' avere l'utente
-
--- Passo B: Ristrutturiamo la tabella inventario
-CREATE TABLE IF NOT EXISTS inventario (
-    inventario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- inventario_id: identificatore unico per ogni riga
-    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
-    -- account_id: a quale account appartiene questo oggetto
-    item_id INTEGER NOT NULL REFERENCES items(item_id),
-    -- item_id: FOREIGN KEY verso la tabella items
-    -- Ora c'e' integrita' referenziale: non si possono inserire oggetti inesistenti
-    quantita INTEGER DEFAULT 1,
-    -- quantita: quanti di questo oggetto ha l'utente
-    aggiunto_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(account_id, item_id)
-    -- UNIQUE: un utente non puo' avere due righe per lo stesso oggetto
-    -- (aumenta la quantita' invece di duplicare la riga)
-);
-```
-
-**Impatto**: Questa modifica richiede l'aggiornamento di tutte le funzioni che usano `account_id` come lookup per i personaggi, e tutte le funzioni che accedono a `coins` e `capacita` nell'inventario.
+Ref: [Changing application icon (Windows)](https://docs.godotengine.org/en/stable/tutorials/export/changing_application_icon_for_windows.html)
 
 ---
 
-### Fase 2 — Gestione Memoria e Lifecycle (ALTO) — COMPLETATA (31 Marzo 2026)
+## 18. Build — Inno Setup (Installer)
 
-> `_exit_tree()` implementato in tutti i 10 script richiesti (A1). Race condition swap personaggio
-> corretta con `call_deferred` (A3). Tween orfani in main_menu.gd salvati come variabili membro (A19).
-> Memory leak ambience player e drag preview risolti (A4, A7 non applicabile).
+### 18.1 Cos'e' Inno Setup
 
-#### Concetto: Il Ciclo di Vita dei Nodi in Godot
+Inno Setup e' un tool gratuito per creare installer professionali per Windows.
+Genera un singolo `Setup.exe` che:
+- Installa il gioco nella cartella scelta dall'utente
+- Crea collegamento sul desktop e nel menu Start
+- Registra un programma di disinstallazione nel Pannello di Controllo
 
-Ogni nodo in Godot ha un "ciclo di vita": nasce (`_ready()`), vive (`_process()`, `_input()`), e muore (`_exit_tree()`). Il problema piu' comune nei progetti Godot — e certamente il piu' comune in questo progetto — e' dimenticare la fase di "morte": non pulire quando un nodo viene distrutto.
+### 18.2 Prerequisiti
 
-Pensate a una festa. Se 10 persone arrivano a una festa (connettono segnali) e se ne vanno senza pulire (senza disconnettere), i piatti sporchi (connessioni orfane) si accumulano. Dopo 10 feste (10 cambi di scena), la casa e' sommersa da piatti sporchi (memory leak).
+1. Esportare il gioco Windows (Sezione 17)
+2. Scaricare Inno Setup da: https://jrsoftware.org/isinfo.php
+3. Installare Inno Setup su Windows
 
-#### 2.1 Aggiungere `_exit_tree()` a tutti gli script
+### 18.3 Script Inno Setup
 
-**Script da correggere** (~10 in totale, ridotto da 12 dopo rimozione di shop_panel e music_panel): panel_manager, deco_panel, settings_panel, room_base, decoration_system, room_grid, main_menu, menu_character, main, character_controller.
+Creare un file `installer.iss` nella root del progetto:
 
-Per ogni script, il processo e' lo stesso:
+```iss
+; Mini Cozy Room — Inno Setup Script
+; Genera un installer Windows professionale
 
-**Passo 1**: Aprite il file e trovate la funzione `_ready()`. Elencate tutti i segnali connessi.
+[Setup]
+AppName=Mini Cozy Room
+AppVersion=1.0.0
+AppPublisher=Renan Augusto Macena
+DefaultDirName={autopf}\Mini Cozy Room
+DefaultGroupName=Mini Cozy Room
+OutputDir=installer_output
+OutputBaseFilename=MiniCozyRoom_Setup_v1.0.0
+Compression=lzma2/ultra
+SolidCompression=yes
+; Decommentare quando l'icona e' pronta:
+; SetupIconFile=v1\assets\icon.ico
+WizardStyle=modern
+PrivilegesRequired=lowest
 
-**Passo 2**: Alla fine del file, aggiungete (o completate) la funzione `_exit_tree()` che disconnette tutti quei segnali.
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
 
-**Template generico**:
+[Files]
+; Se embed_pck=true (singolo file):
+Source: "v1\export\windows\MiniCozyRoom.exe"; DestDir: "{app}"; Flags: ignoreversion
 
-```gdscript
-# Questa funzione viene chiamata quando il nodo sta per essere rimosso
-# E' FONDAMENTALE per prevenire memory leak e crash
-func _exit_tree() -> void:
-    # 1. Disconnettere tutti i segnali SignalBus
-    # Per OGNI segnale connesso in _ready(), aggiungiamo una disconnessione
-    # Il check "is_connected" evita errori se il segnale era gia' disconnesso
-    if SignalBus.room_changed.is_connected(_on_room_changed):
-        SignalBus.room_changed.disconnect(_on_room_changed)
-    if SignalBus.decoration_placed.is_connected(_on_decoration_placed):
-        SignalBus.decoration_placed.disconnect(_on_decoration_placed)
-    # ... ripetere per ogni segnale connesso in _ready()
+; Se embed_pck=false (due file):
+; Source: "v1\export\windows\MiniCozyRoom.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Source: "v1\export\windows\MiniCozyRoom.pck"; DestDir: "{app}"; Flags: ignoreversion
 
-    # 2. Fermare timer attivi
-    # Un timer non fermato continua a scattare dopo la distruzione del nodo
-    if _timer and not _timer.is_stopped():
-        _timer.stop()
+[Icons]
+Name: "{group}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"
+Name: "{group}\Disinstalla Mini Cozy Room"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"; Tasks: desktopicon
 
-    # 3. Killare tween attivi
-    # Un tween non killato continua la sua animazione su un nodo distrutto
-    if _tween and _tween.is_running():
-        _tween.kill()
+[Tasks]
+Name: "desktopicon"; Description: "Crea icona sul Desktop"; GroupDescription: "Icone aggiuntive:"
+
+[Run]
+Filename: "{app}\MiniCozyRoom.exe"; Description: "Avvia Mini Cozy Room"; Flags: nowait postinstall skipifsilent
 ```
 
-**Come verificare**: Dopo aver applicato la correzione, aprite e chiudete il pannello (o cambiate scena) 100 volte. Se il Profiler di Godot non mostra aumento costante di memoria, la correzione funziona.
+### 18.4 Compilare l'Installer
 
-#### 2.2 ~~Correggere music_panel.gd FileDialog~~ — NON PIU' APPLICABILE
+1. Apri Inno Setup Compiler
+2. Apri il file `installer.iss`
+3. Clicca **Build -> Compile** (o premi Ctrl+F9)
+4. L'installer viene generato in `installer_output/MiniCozyRoom_Setup_v1.0.0.exe`
 
-> **music_panel.gd e' stato rimosso dal progetto.** L'istruzione seguente e' mantenuta per
-> riferimento didattico come esempio di pattern corretto per la gestione di FileDialog.
+`[SCREENSHOT: Inno Setup Compiler con lo script aperto e la compilazione completata]`
 
-**Obiettivo (didattico)**: Creare il FileDialog una sola volta e riutilizzarlo, invece di crearne uno nuovo ad ogni click.
+### 18.5 Testare l'Installer
 
-Prima (codice problematico):
-```gdscript
-# PRIMA: ogni click crea un NUOVO FileDialog
-# che non viene MAI distrutto = memory leak!
-func _on_import_pressed() -> void:
-    var dialog = FileDialog.new()  # nuovo oggetto ogni volta!
-    dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-    # ... configurazione ...
-    add_child(dialog)  # aggiunto alla scena ma mai rimosso!
-    dialog.popup_centered(Vector2i(600, 400))
-```
-
-Dopo (codice corretto):
-```gdscript
-# DOPO: creiamo il FileDialog UNA sola volta e lo riutilizziamo
-# Variabile membro della classe — persiste per tutta la vita del pannello
-var _file_dialog: FileDialog = null
-
-func _on_import_pressed() -> void:
-    # Su piattaforma web il FileDialog non e' supportato
-    if OS.has_feature("web"):
-        return
-
-    # Creiamo il dialog solo la prima volta
-    if _file_dialog == null:
-        _file_dialog = FileDialog.new()
-        _file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-        _file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-        # Accettiamo solo file audio MP3 e WAV
-        _file_dialog.filters = PackedStringArray(["*.mp3", "*.wav"])
-        # Connettiamo il segnale che ci dice quale file e' stato scelto
-        _file_dialog.file_selected.connect(_on_file_selected)
-        # Aggiungiamo il dialog alla scena
-        add_child(_file_dialog)
-
-    # Mostriamo il dialog (che sia nuovo o gia' esistente)
-    _file_dialog.popup_centered(Vector2i(600, 400))
-
-# Pulizia: distruggiamo il dialog quando il pannello viene rimosso
-func _exit_tree() -> void:
-    # Verifichiamo che il dialog esista e sia ancora valido
-    if _file_dialog and is_instance_valid(_file_dialog):
-        _file_dialog.queue_free()  # lo eliminiamo in modo sicuro
-    # ... altre disconnessioni di segnali ...
-```
-
-#### 2.3 Correggere room_base.gd race condition
-
-**Obiettivo**: Eliminare la race condition nel cambio di personaggio.
-
-Prima (codice problematico):
-```gdscript
-# PRIMA: il vecchio personaggio viene "schedulato" per l'eliminazione
-# ma il nuovo viene aggiunto immediatamente
-# Per un breve momento, entrambi esistono = conflitto!
-func _swap_character(new_scene_path: String) -> void:
-    old_character.queue_free()  # sara' eliminato a fine frame
-    var new_char = load(new_scene_path).instantiate()
-    add_child(new_char)  # aggiunto ORA, ma il vecchio e' ancora qui!
-```
-
-Dopo (codice corretto):
-```gdscript
-# DOPO: usiamo call_deferred per aggiungere il nuovo personaggio
-# solo DOPO che il vecchio e' stato effettivamente eliminato
-func _swap_character(new_scene_path: String) -> void:
-    old_character.queue_free()  # sara' eliminato a fine frame
-    var new_char = load(new_scene_path).instantiate()
-    # call_deferred ritarda l'aggiunta alla fine del frame
-    # A quel punto, queue_free avra' gia' eliminato il vecchio
-    call_deferred("add_child", new_char)
-```
-
-#### 2.4 Correggere audio_manager.gd ambience
-
-**Obiettivo**: Garantire che i player audio ambientali vengano correttamente distrutti.
-
-```gdscript
-# Per ogni player ambientale, prima verifichiamo che sia ancora valido
-# poi lo rimuoviamo dal dizionario e lo distruggiamo
-func _stop_ambience(key: String) -> void:
-    if _ambience_players.has(key):
-        var player = _ambience_players[key]
-        # Rimuoviamo dal dizionario PRIMA di distruggere
-        # Cosi' nessun altro codice puo' usare un player in via di distruzione
-        _ambience_players.erase(key)
-        # Verifichiamo che il player sia ancora valido
-        # (potrebbe essere gia' stato distrutto da un altro evento)
-        if is_instance_valid(player):
-            player.stop()  # fermiamo la riproduzione
-            player.queue_free()  # eliminiamo il nodo
-```
-
-#### 2.5 Aggiungere bounds check audio tracks
-
-**Obiettivo**: Prevenire il crash quando la lista delle tracce e' vuota.
-
-```gdscript
-# Prima di accedere alla lista delle tracce, verifichiamo che non sia vuota
-# e che l'indice sia valido
-func _play_current_track() -> void:
-    # Controllo 1: la lista non deve essere vuota
-    if tracks.is_empty():
-        push_warning("AudioManager: nessuna traccia disponibile")
-        return  # usciamo senza fare nulla
-
-    # Controllo 2: l'indice deve essere nei limiti validi
-    # clampi forza il valore tra 0 e l'ultimo indice valido
-    current_track_index = clampi(current_track_index, 0, tracks.size() - 1)
-
-    # Ora possiamo accedere in sicurezza
-    var track = tracks[current_track_index]
-    # ... riproduzione traccia ...
-```
+1. Esegui `MiniCozyRoom_Setup_v1.0.0.exe`
+2. Verifica:
+   - [x] Wizard di installazione funzionante
+   - [x] Selezione lingua (Inglese/Italiano)
+   - [x] Scelta cartella di installazione
+   - [x] Icona sul desktop (se selezionata)
+   - [x] Il gioco si avvia dopo l'installazione
+   - [x] Disinstallazione da Pannello di Controllo funzionante
 
 ---
 
-### Fase 3 — Gestione Errori e Validazione (MEDIO) — PARZIALMENTE COMPLETATA
+## 19. Build — Export Android (APK)
 
-> **Completati**: A15 (decoration duplicates), A16 (texture cast), A28 (viewport clamp), A29 (null check instantiate).
-> **Ancora aperti**: A12, A13 (Logger — Cristian), A14 (PerformanceManager — Cristian),
-> A18, A24, A25, A26, A27 (Database/Auth — Elia).
+### 19.1 Prerequisiti
 
-#### Concetto: Programmazione Difensiva
+1. **Java Development Kit (JDK) 17** — Scaricabile da https://adoptium.net/
+2. **Android SDK** — Scaricabile tramite Android Studio o command-line tools
+3. **Android Build Tools** e **Platform Tools**
+4. **Godot Export Template per Android**
+5. **Debug Keystore** (generato automaticamente la prima volta)
 
-La **programmazione difensiva** e' una filosofia di sviluppo in cui il codice non si fida di nessuno: non si fida dei dati in ingresso, non si fida che le risorse esistano, non si fida che le operazioni vadano a buon fine. Ogni operazione viene verificata, ogni valore viene validato.
+### 19.2 Configurare l'Ambiente
 
-Pensate a un buttafuori all'ingresso di un locale: controlla il documento di tutti, anche di chi sembra ovviamente maggiorenne. Nel software, questo approccio previene la maggior parte dei crash e dei comportamenti anomali.
+**Passo 1: Installare JDK 17**
 
-#### 3.1 Null check su tutti i riferimenti manager
+```bash
+# Linux (Ubuntu/Debian):
+sudo apt install openjdk-17-jdk
 
-**Obiettivo**: Ogni script che accede a un autoload deve verificare che esista.
-
-Prima (codice senza protezione):
-```gdscript
-# PRIMA: se GameManager e' null, CRASH!
-func _ready() -> void:
-    var room = GameManager.current_room  # crash se GameManager e' null
+# Verifica:
+java -version
 ```
 
-Dopo (codice con protezione):
-```gdscript
-# DOPO: verifichiamo che GameManager esista
-func _ready() -> void:
-    if GameManager == null:
-        # Logghiamo un errore chiaro che spiega il problema
-        push_error("GameManager non inizializzato — verificare ordine autoload")
-        return  # usciamo dalla funzione senza crashare
+**Passo 2: Installare Android SDK**
 
-    var room = GameManager.current_room  # ora e' sicuro
+Opzione A — Via Android Studio:
+1. Scarica Android Studio da https://developer.android.com/studio
+2. Installa e apri
+3. SDK Manager -> installa "Android SDK Platform 34" e "Android SDK Build-Tools 34"
+4. Prendi nota del path SDK (es. `~/.android/sdk` o `C:\Users\[user]\AppData\Local\Android\Sdk`)
+
+Opzione B — Solo command-line tools:
+1. Scarica "Command line tools only" da https://developer.android.com/studio#command-tools
+2. Estrai e usa `sdkmanager` per installare i componenti
+
+**Passo 3: Configurare Godot**
+
+1. Godot Editor -> **Editor -> Editor Settings**
+2. Cerca "Android"
+3. Imposta:
+   - `android/java_sdk_path` = path del JDK (es. `/usr/lib/jvm/java-17-openjdk-amd64`)
+   - `android/android_sdk_path` = path dell'SDK Android
+
+`[SCREENSHOT: Editor Settings di Godot con i path Android configurati]`
+
+**Passo 4: Generare Debug Keystore**
+
+```bash
+keytool -keyalg RSA -genkeypair -alias androiddebugkey \
+  -keypass android -keystore debug.keystore -storepass android \
+  -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 ```
 
-#### 3.2 Validazione texture load
+In Godot: **Editor -> Editor Settings -> Export -> Android**:
+- `debug_keystore` = path al file `debug.keystore`
+- `debug_keystore_user` = `androiddebugkey`
+- `debug_keystore_pass` = `android`
 
-**Obiettivo**: Ogni caricamento di texture deve essere verificato.
+### 19.3 Creare il Preset Android
 
-Prima:
-```gdscript
-# PRIMA: se il percorso e' sbagliato, tex e' null e la riga dopo crasha
-var tex = load(path) as Texture2D
-sprite.texture = tex  # CRASH se tex e' null!
+1. **Project -> Export -> Add -> Android**
+2. Configurare:
+
+```
+Nome:                   Android
+Export Path:            export/android/MiniCozyRoom.apk
+Min SDK:                21 (Android 5.0)
+Target SDK:             34 (Android 14)
+Package Name:           com.minicozyroom.app
+Version Code:           1
+Version Name:           1.0.0
 ```
 
-Dopo:
-```gdscript
-# DOPO: verifichiamo che la texture sia stata caricata correttamente
-var tex := load(path) as Texture2D
-if tex == null:
-    # La texture non e' stata trovata o non e' del tipo giusto
-    push_error("Texture non trovata: %s" % path)
-    return  # usciamo senza crashare
+3. In **Options -> Screen**:
+   - Orientation: `landscape` (il gioco e' 1280x720)
 
-# Ora possiamo usare la texture in sicurezza
-sprite.texture = tex
+4. In **Options -> Permissions**:
+   - Nessun permesso speciale necessario (il gioco non usa internet, camera, ecc.)
+
+### 19.4 Esportare
+
+**Dall'Editor:**
+
+1. **Project -> Export -> Android**
+2. Clicca **Export Project**
+3. Scegli `export/android/MiniCozyRoom.apk`
+4. Seleziona "Export With Debug" per test, deseleziona per release
+
+**Da riga di comando:**
+
+```bash
+cd v1
+godot --headless --export-release "Android" export/android/MiniCozyRoom.apk
 ```
 
-#### 3.3 Validazione struttura dati salvataggio
+### 19.5 Testare su Dispositivo
 
-**Obiettivo**: Aggiungere una funzione che verifica l'integrita' dei dati di salvataggio prima di usarli.
-
-```gdscript
-# Questa funzione verifica che i dati di salvataggio abbiano la struttura corretta
-# Ritorna true se i dati sono validi, false altrimenti
-func _validate_save_data(data: Dictionary) -> bool:
-    # Verifichiamo che il dizionario contenga le chiavi fondamentali
-    var required_keys: Array = ["version", "character", "inventory", "settings"]
-
-    for key in required_keys:
-        if not data.has(key):
-            # Manca una chiave fondamentale
-            AppLogger.error("SaveManager", "Dati salvataggio incompleti", {"chiave_mancante": key})
-            return false  # dati non validi
-
-    # Verifichiamo che la versione sia un numero valido
-    if not str(data["version"]).is_valid_int():
-        AppLogger.error("SaveManager", "Versione salvataggio non valida", {"versione": data["version"]})
-        return false
-
-    # Se arriviamo qui, i dati hanno la struttura base corretta
-    return true
+**Via ADB:**
+```bash
+adb install export/android/MiniCozyRoom.apk
 ```
 
-#### 3.4 Version comparison safety
+**Via file manager**: Copia l'APK sul dispositivo e installalo.
 
-**Obiettivo**: Rendere la comparazione delle versioni robusta contro formati non standard.
+**Checklist test:**
+- [x] Il gioco si avvia
+- [x] Touch input funziona per navigazione menu
+- [x] Il personaggio si muove (virtual joystick necessario — vedi nota sotto)
+- [x] Decorazioni piazzabili tramite touch
+- [x] Audio funzionante
+- [x] Save/load persistono tra riavvii
 
-Prima (codice fragile):
-```gdscript
-# PRIMA: int() crasha se la stringa non e' un numero puro
-func _compare_versions(a: String, b: String) -> int:
-    # Se a = "1.0.0-beta", int("beta") causa errore!
-    return int(a) - int(b)
+> **Nota importante**: Il gioco attualmente usa input da tastiera (`ui_left`, `ui_right`, ecc.)
+> per il movimento del personaggio. Su Android senza tastiera fisica, il personaggio non
+> si muovera'. E' necessario implementare un **virtual joystick** o un sistema di
+> **tap-to-move** per il supporto mobile.
+
+### 19.6 Firma per Release (Google Play)
+
+Per pubblicare su Google Play, e' necessario firmare l'APK con un release keystore:
+
+```bash
+keytool -genkeypair -v -keystore release.keystore -alias minicozyroom \
+  -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-Dopo (codice robusto):
-```gdscript
-# DOPO: gestiamo versioni in qualsiasi formato
-func _compare_versions(a: String, b: String) -> int:
-    # Dividiamo le versioni per punti: "1.2.3" -> ["1", "2", "3"]
-    var parts_a := a.split(".")
-    var parts_b := b.split(".")
+In Godot Export Settings -> Release:
+- `keystore/release` = path al `release.keystore`
+- `keystore/release_user` = alias scelto
+- `keystore/release_password` = password scelta
 
-    # Confrontiamo fino a 3 componenti (major.minor.patch)
-    for i: int in 3:
-        # Per ogni componente, convertiamo a intero solo se e' un numero valido
-        # Altrimenti usiamo 0 come valore di default
-        var va: int = int(parts_a[i]) if i < parts_a.size() and parts_a[i].is_valid_int() else 0
-        var vb: int = int(parts_b[i]) if i < parts_b.size() and parts_b[i].is_valid_int() else 0
+> **ATTENZIONE**: Non perdere il release keystore. Senza di esso non potrai pubblicare
+> aggiornamenti sullo stesso listing Google Play.
 
-        # Se i componenti sono diversi, ritorniamo la differenza
-        if va != vb:
-            return va - vb  # positivo se a > b, negativo se a < b
+Ref: [Exporting for Android](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html)
 
-    # Se tutti i componenti sono uguali, le versioni sono identiche
-    return 0
+---
+
+## 20. Build — Export HTML5 (Web)
+
+### 20.1 Prerequisiti
+
+- Godot Engine 4.6 con export templates installati
+- Un web server per testare (anche locale)
+
+### 20.2 Il Preset Web
+
+Il preset Web e' gia' configurato in `v1/export_presets.cfg`:
+
+```
+Nome:                   Web
+Export Path:            export/html5/index.html
+Canvas Resize Policy:   2 (Adaptive)
+Focus Canvas on Start:  true
+VRAM Compression:       Desktop (S3TC/BPTC)
+PWA:                    disabled
+```
+
+### 20.3 Esportare
+
+**Dall'Editor:**
+
+1. **Project -> Export -> Web**
+2. Clicca **Export Project**
+3. Scegli `export/html5/index.html`
+
+**Da riga di comando:**
+
+```bash
+cd v1
+godot --headless --export-release "Web" export/html5/index.html
+```
+
+### 20.4 File Generati
+
+```
+export/html5/
++-- index.html              # Pagina HTML con il player Godot
++-- index.js                # JavaScript runtime di Godot
++-- index.wasm              # WebAssembly engine
++-- index.pck               # Risorse del gioco compresse
++-- index.png               # Icona/splash (se configurata)
++-- index.icon.png          # Favicon
++-- index.apple-touch-icon.png
+```
+
+### 20.5 Testare Localmente
+
+**IMPORTANTE**: I file Web **non funzionano** aprendoli direttamente con `file://`.
+E' necessario un web server locale.
+
+```bash
+# Python 3 (piu' semplice):
+cd v1/export/html5
+python3 -m http.server 8000
+# Apri http://localhost:8000 nel browser
+
+# Node.js:
+npx serve v1/export/html5
+
+# PHP:
+php -S localhost:8000 -t v1/export/html5
+```
+
+### 20.6 Limitazioni Web
+
+| Funzionalita' | Desktop | Web | Note |
+|---------------|---------|-----|------|
+| SQLite | Si | **NO** | SharedArrayBuffer richiesto, non disponibile ovunque |
+| File system | Si | Limitato | `user://` usa IndexedDB (persistente ma volatile) |
+| Audio autoplay | Si | **NO** | Richiede interazione utente prima di riprodurre audio |
+| Dimensione finestra | Libera | Canvas | Controllata da `canvas_resize_policy` |
+| Performance | 60 FPS | ~30-60 FPS | Dipende dal browser e dalla GPU |
+| Clipboard | Si | Limitato | Solo con HTTPS |
+
+**Problema SQLite**: Il progetto usa `godot-sqlite` GDExtension che richiede threading
+nativo. Su Web con SharedArrayBuffer disabilitato (default senza header COOP/COEP),
+il database potrebbe non funzionare.
+
+**Workaround**: Per la versione Web, considerare:
+1. Disabilitare le funzionalita' database (solo save JSON via `user://`)
+2. Configurare il server con gli header necessari:
+   ```
+   Cross-Origin-Opener-Policy: same-origin
+   Cross-Origin-Embedder-Policy: require-corp
+   ```
+
+### 20.7 Deploy su Server/Hosting
+
+**GitHub Pages** (gratuito):
+
+1. Crea un branch `gh-pages`
+2. Copia i file da `export/html5/` nella root del branch
+3. In GitHub: **Settings -> Pages -> Source -> gh-pages branch**
+4. Il gioco sara' disponibile su `https://[username].github.io/[repo]/`
+
+> **Nota**: Per GitHub Pages, i header COOP/COEP non sono configurabili.
+> SQLite non funzionera'. Usare un hosting che permette header custom.
+
+**itch.io** (gratuito, consigliato per giochi):
+
+1. Vai su https://itch.io e crea un account
+2. Clicca "Upload new project"
+3. Tipo: "HTML"
+4. Carica un `.zip` contenente tutti i file da `export/html5/`
+5. Seleziona "This file will be played in the browser"
+6. Imposta la dimensione embed a 1280x720
+
+Ref: [Exporting for the Web](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html)
+
+---
+
+## 21. Troubleshooting
+
+### 21.1 Problemi Comuni Editor
+
+**Problema**: "Missing export templates"
+```
+Errore: Export template not found at expected path.
+```
+**Soluzione**: Editor -> Manage Export Templates -> Download and Install.
+Assicurarsi che la versione corrisponda esattamente (4.6.stable).
+
+---
+
+**Problema**: "Import errors on first open"
+```
+WARNING: res://assets/... - Not all resources loaded.
+```
+**Soluzione**: Alla prima apertura, Godot reimporta tutte le risorse. Attendere che
+la barra di progresso in basso a destra finisca. Poi chiudere e riaprire il progetto.
+
+---
+
+**Problema**: "Script not found" per gli autoload
+```
+ERROR: res://scripts/autoload/signal_bus.gd - Can't open file.
+```
+**Soluzione**: Verificare che il path in Project Settings -> Autoload corrisponda
+alla posizione effettiva dello script. I path sono case-sensitive su Linux.
+
+---
+
+**Problema**: GDScript lint errors in CI
+```
+gdlint: Error in v1/scripts/...
+```
+**Soluzione**: Installare gdtoolkit localmente e correggere prima del push:
+```bash
+pip install "gdtoolkit>=4,<5"
+gdlint v1/scripts/
+gdformat v1/scripts/    # Auto-formattazione
 ```
 
 ---
 
-### Fase 4 — Allineamento Architetturale (ARCHITETTURALE) — PARZIALMENTE COMPLETATA
+### 21.2 Problemi Runtime
 
-> **Completati**: AR1 (GameManager→SaveManager via segnale), AR2 (parziale — save via segnale, load ancora diretto),
-> AR3 (SaveManager→AudioManager via segnale), AR4 (AudioManager volume via segnale), AR5 (music state via segnale).
-> **Ancora aperti**: AR6-AR10 (PerformanceManager/settings_panel scrivono ancora direttamente in SaveManager,
-> mancano validazione dipendenze autoload, propagazione errori, sistema migrazione schema DB).
+**Problema**: Il gioco non salva
+**Diagnosi**:
+1. Controlla la console per errori "SaveManager"
+2. Verifica che la cartella `user://` sia scrivibile
+3. Su Windows: `%APPDATA%/Godot/app_userdata/Mini Cozy Room/`
+4. Su Linux: `~/.local/share/godot/app_userdata/Mini Cozy Room/`
+5. Su macOS: `~/Library/Application Support/Godot/app_userdata/Mini Cozy Room/`
 
-#### Concetto: Comunicazione Tramite Segnali, Non Tramite Chiamate Dirette
+**Soluzione**: Se il file di salvataggio e' corrotto:
+- Elimina `save_data.json` (perde i progressi)
+- Il file `.backup.json` viene usato automaticamente se il principale e' corrotto
 
-L'architettura signal-driven funziona cosi': i componenti non si chiamano direttamente, ma comunicano tramite segnali. Questo e' fondamentale perche':
+---
 
-1. **Disaccoppiamento**: ogni componente puo' essere modificato senza toccare gli altri
-2. **Testabilita'**: ogni componente puo' essere testato in isolamento
-3. **Flessibilita'**: e' facile aggiungere nuovi "ascoltatori" senza modificare chi emette il segnale
+**Problema**: "Database failed to open"
+```
+ERROR: LocalDatabase: Failed to open database
+```
+**Diagnosi**: Il file `cozy_room.db` in `user://` potrebbe essere corrotto o bloccato.
+**Soluzione**:
+1. Chiudi tutte le istanze del gioco
+2. Elimina `cozy_room.db` nella cartella `user://`
+3. Riavvia il gioco (il DB viene ricreato automaticamente)
 
-Immaginate un'orchestra. Se ogni musicista dovesse dire personalmente al direttore "ho finito il mio assolo", sarebbe caotico. Invece, seguono tutti la partitura (i segnali): quando e' il momento, suonano; quando finiscono, il prossimo musicista sa che tocca a lui.
+---
 
-#### 4.1 Nuovo segnale per settings update
+**Problema**: Decorazioni non visibili dopo il piazzamento
+**Diagnosi**: La texture dello sprite non viene trovata.
+**Soluzione**:
+1. Verifica che il `sprite_path` in `decorations.json` sia corretto
+2. Controlla che il file esista in `v1/assets/decorations/`
+3. Esegui la validazione sprite: `python ci/validate_sprite_paths.py v1`
 
-**Obiettivo**: Sostituire le scritture dirette in `SaveManager.settings` con segnali.
+---
 
-**Passo 1 — Aggiungere il segnale in signal_bus.gd**:
+**Problema**: Audio non funziona
+**Diagnosi**:
+1. Controlla i volumi in Settings (Master, Music, Ambience)
+2. Verifica che i file audio esistano (controlla console per warning)
+3. Su Web: l'audio richiede un'interazione utente prima di partire (click/touch)
+**Soluzione**: Alza i volumi. Se su Web, clicca sullo schermo.
 
-```gdscript
-# In signal_bus.gd
-# Questo segnale viene emesso quando un'impostazione cambia
-# key: il nome dell'impostazione (es. "volume_music")
-# value: il nuovo valore (puo' essere qualsiasi tipo grazie a Variant)
-signal settings_updated(key: String, value: Variant)
+---
+
+**Problema**: Il personaggio non si muove
+**Diagnosi**: Le input action `ui_left/right/up/down` non sono configurate.
+**Soluzione**: Godot usa queste azioni di default. Verificare:
+- Project Settings -> Input Map -> ui_left/right/up/down devono avere i tasti freccia
+- Su Android/touch: non c'e' input da tastiera, serve un virtual joystick
+
+---
+
+### 21.3 Problemi Build
+
+**Problema**: Build Windows fallisce
+```
+ERROR: Export template not found.
+```
+**Soluzione**: Installare i template (Sezione 17.2). Verificare che il preset
+usi la stessa versione dei template installati.
+
+---
+
+**Problema**: Build CI fallisce con "Godot version mismatch"
+**Soluzione**: Verificare che `build.yml` usi l'immagine Docker corretta:
+```yaml
+image: barichello/godot-ci:4.6   # NON 4.5
+```
+Vedi [N-BD1] nella Sezione 13.
+
+---
+
+**Problema**: APK non si installa su dispositivo
+```
+INSTALL_FAILED_NO_MATCHING_ABIS
+```
+**Soluzione**: Il dispositivo non supporta l'architettura del build.
+Esportare con supporto multi-ABI in Godot Export Settings:
+- `architectures/arm64-v8a = true`
+- `architectures/armeabi-v7a = true` (per dispositivi piu' vecchi)
+
+---
+
+**Problema**: Web export mostra schermo nero
+**Diagnosi**: SharedArrayBuffer non disponibile (richiesto per threading).
+**Soluzione**:
+1. Servire con HTTPS (non HTTP)
+2. Aggiungere header al server:
+   ```
+   Cross-Origin-Opener-Policy: same-origin
+   Cross-Origin-Embedder-Policy: require-corp
+   ```
+3. Alternativa: disabilitare threading in Project Settings -> Threading
+
+---
+
+## 22. Statistiche Progetto
+
+### Metriche Codice
+
+```
++---------------------------------+--------+
+| Metrica                         | Valore |
++---------------------------------+--------+
+| Script GDScript totali          |     24 |
+| Righe di codice totali          | ~4.185 |
+| Scene .tscn                     |     37 |
+| Asset (sprite, audio, font)     |  ~490  |
+| File JSON dati                  |      4 |
+| Workflow CI/CD                  |      2 |
+| Script validazione CI           |      4 |
++---------------------------------+--------+
 ```
 
-**Passo 2 — Modificare i componenti che scrivevano direttamente**:
+### Metriche per Modulo
 
-Prima (AudioManager, codice accoppiato):
-```gdscript
-# PRIMA: l'AudioManager modifica direttamente i dati del SaveManager
-# Questo crea una dipendenza diretta = coupling alto
-func _on_volume_changed(bus_name: String, value: float) -> void:
-    SaveManager.settings["volume_" + bus_name] = value  # scrittura diretta!
+```
++--------------+----------+--------+-----------+
+| Modulo       | Script   | Righe  | % Totale  |
++--------------+----------+--------+-----------+
+| Autoload     |     8    | 2.104  |   50.3%   |
+| Menu         |     3    |   531  |   12.7%   |
+| Room/Gameplay|     5    |   576  |   13.8%   |
+| UI           |     5    |   727  |   17.4%   |
+| Utility+Main |     3    |   184  |    4.4%   |
+| Tests        |     0    |     0  |    0.0%   |
++--------------+----------+--------+-----------+
+| TOTALE       |    24    | 4.122* |  100.0%   |
++--------------+----------+--------+-----------+
+```
+*Differenza con ~4.185 dovuta a commenti e righe vuote.
+
+### Metriche Dati
+
+```
++-------------------+--------+
+| Catalogo          | Valore |
++-------------------+--------+
+| Personaggi        |      1 |
+| Stanze            |      1 |
+| Temi colore       |      3 |
+| Decorazioni       |     69 |
+| Categorie deco    |     11 |
+| Tracce musicali   |      2 |
+| Lingue supportate |      2 |
+| Segnali SignalBus |     31 |
+| Tabelle DB        |   9(6) |
++-------------------+--------+
 ```
 
-Dopo (AudioManager, codice disaccoppiato):
-```gdscript
-# DOPO: l'AudioManager emette un segnale
-# Non gli importa chi lo ascolta o cosa fa con il valore
-func _on_volume_changed(bus_name: String, value: float) -> void:
-    # Emettiamo il segnale: "un'impostazione e' cambiata"
-    SignalBus.settings_updated.emit("volume_" + bus_name, value)
+### Metriche Qualita'
+
+```
++--------------------------------+--------+
+| Metrica                        | Valore |
++--------------------------------+--------+
+| Fix primo audit verificate     | 36/36  |
+| Nuovi problemi trovati         |    24  |
+|   - CRITICO                    |     1  |
+|   - MEDIO                      |     7  |
+|   - ARCHITETTURALE             |     8  |
+|   - BASSO                      |     5  |
+|   - POLISHING                  |     3  |
+| Copertura test                 |    0%  |
+| Script con _exit_tree()        | 18/24  |
+| Script senza problemi          | 11/24  |
++--------------------------------+--------+
 ```
 
-**Passo 3 — SaveManager ascolta il segnale**:
+### Distribuzione Severita' (Grafico ASCII)
 
-```gdscript
-# In save_manager.gd _ready()
-# Ci connettiamo al segnale per ricevere gli aggiornamenti
-SignalBus.settings_updated.connect(_on_settings_updated)
-
-# La funzione che riceve gli aggiornamenti
-func _on_settings_updated(key: String, value: Variant) -> void:
-    settings[key] = value  # aggiorniamo il nostro dizionario
-    _mark_dirty()  # segniamo che ci sono modifiche non salvate
 ```
-
-Ripetete lo stesso pattern per PerformanceManager e settings_panel.
-
-#### 4.2 Nuovo segnale per music state
-
-```gdscript
-# In signal_bus.gd
-# Questo segnale viene emesso quando lo stato musicale cambia
-signal music_state_updated(state: Dictionary)
-```
-
-Prima (AudioManager scrive direttamente):
-```gdscript
-# PRIMA
-func _sync_music_state() -> void:
-    SaveManager.music_state = _get_current_state()  # scrittura diretta!
-```
-
-Dopo (AudioManager emette segnale):
-```gdscript
-# DOPO
-func _sync_music_state() -> void:
-    # Emettiamo lo stato, SaveManager lo raccogliera'
-    SignalBus.music_state_updated.emit(_get_current_state())
-```
-
-#### 4.3 SaveManager verso LocalDatabase via segnale
-
-```gdscript
-# In signal_bus.gd
-# Questo segnale richiede il salvataggio dei dati sul database
-signal save_to_database_requested(data: Dictionary)
-```
-
-Prima:
-```gdscript
-# PRIMA: SaveManager chiama direttamente LocalDatabase
-func _save_to_sqlite() -> void:
-    LocalDatabase.upsert_character(char_data)  # chiamata diretta
-```
-
-Dopo:
-```gdscript
-# DOPO: SaveManager emette un segnale
-func _save_to_sqlite() -> void:
-    SignalBus.save_to_database_requested.emit({"character": char_data, "inventory": inv_data})
-
-# In local_database.gd _ready()
-SignalBus.save_to_database_requested.connect(_on_save_requested)
+CRITICO       |#                                       | 1
+MEDIO         |#######                                 | 7
+ARCHITETTURALE|########                                | 8
+BASSO         |#####                                   | 5
+POLISHING     |###                                     | 3
+              +---+---+---+---+---+---+---+---+---+---+
+              0   1   2   3   4   5   6   7   8   9  10
 ```
 
 ---
 
-### Fase 5 — Copertura Test (TEST)
+## 23. Appendice
 
-#### Concetto: Perche' i Test Sono Indispensabili
+### A. Ordine di Lettura Consigliato per Nuovi Sviluppatori
 
-Immaginate di costruire un ponte. Dopo averlo costruito, lo testereste prima di aprirlo al traffico, giusto? Non lascereste passare i camion sperando che regga. I test del software funzionano allo stesso modo: verificano che ogni componente faccia esattamente quello che deve fare, PRIMA che il codice arrivi agli utenti.
+1. `constants.gd` — Tutte le costanti, capire i valori globali
+2. `signal_bus.gd` — Tutti i segnali, capire la comunicazione
+3. `helpers.gd` — Funzioni utilita' condivise
+4. `game_manager.gd` — Stato del gioco, cataloghi
+5. `save_manager.gd` — Persistenza (lo script piu' complesso)
+6. `local_database.gd` — Database SQLite
+7. `auth_manager.gd` — Autenticazione
+8. `main_menu.gd` — Flusso di avvio
+9. `main.gd` — Scena gameplay root
+10. `room_base.gd` — Stanza e decorazioni
+11. Il resto a piacere
 
-L'obiettivo e' portare la copertura dal 15-20% attuale al 50%+.
+### B. Comandi Utili
 
-#### 5.1 Test AudioManager
+```bash
+# Lint GDScript
+pip install "gdtoolkit>=4,<5"
+gdlint v1/scripts/ v1/tests/
+gdformat --check v1/scripts/ v1/tests/
 
-Creare il file `tests/unit/test_audio_manager.gd`:
+# Validazione dati
+python ci/validate_json_catalogs.py v1/data
+python ci/validate_sprite_paths.py v1
+python ci/validate_cross_references.py v1/scripts/utils/constants.gd v1/data
+python ci/validate_db_schema.py v1/scripts/autoload/local_database.gd
 
-```gdscript
-# test_audio_manager.gd
-# Test per il gestore audio del gioco
-# Verifichiamo che la musica, i suoni e le playlist funzionino correttamente
+# Export da CLI
+cd v1
+godot --headless --export-release "Windows Desktop" export/windows/MiniCozyRoom.exe
+godot --headless --export-release "Web" export/html5/index.html
+godot --headless --export-release "Android" export/android/MiniCozyRoom.apk
 
-extends GdUnitTestSuite  # la classe base per i test GdUnit4
+# Test locale build Web
+cd v1/export/html5 && python3 -m http.server 8000
 
-# Test: il bounds check impedisce crash su lista vuota
-func test_empty_tracks_no_crash() -> void:
-    # Simuliamo una lista di tracce vuota
-    AudioManager.tracks = []
-    # Proviamo a riprodurre: non deve crashare
-    AudioManager.play_current()
-    # Se arriviamo qui senza crash, il test e' passato
-    assert_true(true)
-
-# Test: l'indice della traccia resta nei limiti validi
-func test_track_index_bounds() -> void:
-    AudioManager.tracks = ["track1.mp3", "track2.mp3"]
-    AudioManager.current_track_index = 999  # indice fuori range
-    AudioManager._ensure_valid_index()
-    # L'indice deve essere stato corretto al massimo valido (1)
-    assert_eq(AudioManager.current_track_index, 1)
-
-# Test: le modalita' playlist sono tutte gestite
-func test_playlist_modes() -> void:
-    var valid_modes = ["sequential", "shuffle", "repeat"]
-    for mode in valid_modes:
-        AudioManager.playlist_mode = mode
-        # Nessun errore o comportamento inatteso
-        assert_true(AudioManager.playlist_mode in valid_modes)
+# ADB install Android
+adb install v1/export/android/MiniCozyRoom.apk
 ```
 
-#### 5.2 Test LocalDatabase
+### C. Link alla Documentazione Godot
 
-Creare il file `tests/unit/test_local_database.gd`:
+| Argomento | Link |
+|-----------|------|
+| GDScript Reference | https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/ |
+| Signals | https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html |
+| Autoload/Singletons | https://docs.godotengine.org/en/stable/tutorials/scripting/singletons_autoload.html |
+| Export Overview | https://docs.godotengine.org/en/stable/tutorials/export/ |
+| Export Windows | https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_windows.html |
+| Export Android | https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html |
+| Export Web | https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html |
+| Internationalization | https://docs.godotengine.org/en/stable/tutorials/i18n/internationalizing_games.html |
+| Tween | https://docs.godotengine.org/en/stable/classes/class_tween.html |
+| InputEvent | https://docs.godotengine.org/en/stable/tutorials/inputs/inputevent.html |
+| Resource Loading | https://docs.godotengine.org/en/stable/tutorials/io/background_loading.html |
 
-```gdscript
-# test_local_database.gd
-# Test per il database locale
-# Verifichiamo che le operazioni CRUD funzionino e lo schema sia corretto
+### D. Changelog Audit
 
-extends GdUnitTestSuite
-
-# Test: inserimento e lettura di un personaggio
-func test_upsert_and_read_character() -> void:
-    var char_data: Dictionary = {
-        "nome": "Test Hero",
-        "genere": 0,
-        "livello_stress": 3
-    }
-    # Inseriamo il personaggio
-    var result = LocalDatabase.upsert_character(char_data)
-    assert_true(result)  # l'inserimento deve riuscire
-
-    # Leggiamo il personaggio appena inserito
-    var characters = LocalDatabase.get_characters(1)
-    assert_false(characters.is_empty())  # deve esserci almeno un risultato
-    assert_eq(characters[0]["nome"], "Test Hero")  # il nome deve corrispondere
-
-# Test: due personaggi per lo stesso account (dopo fix C3)
-func test_multiple_characters_per_account() -> void:
-    LocalDatabase.upsert_character({"nome": "Eroe 1", "genere": 0})
-    LocalDatabase.upsert_character({"nome": "Eroe 2", "genere": 1})
-    var characters = LocalDatabase.get_characters(1)
-    # Devono esserci 2 personaggi
-    assert_eq(characters.size(), 2)
-
-# Test: foreign key impedisce inserimento di item inesistenti
-func test_foreign_key_integrity() -> void:
-    # Tentiamo di inserire un oggetto con item_id inesistente
-    var result = LocalDatabase.add_inventory_item(1, 99999, 0, 50)
-    # L'inserimento deve fallire per violazione di foreign key
-    assert_false(result)
-```
-
-#### 5.3 Test Room Logic
-
-Creare il file `tests/unit/test_room_base.gd`:
-
-```gdscript
-# test_room_base.gd
-# Test per la logica delle stanze
-# Verifichiamo che decorazioni e personaggi funzionino correttamente
-
-extends GdUnitTestSuite
-
-# Test: piazzamento di una decorazione
-func test_decoration_spawn() -> void:
-    # Simuliamo il piazzamento di una decorazione
-    var room = auto_free(preload("res://scenes/main.tscn").instantiate())
-    add_child(room)
-    # Emettiamo il segnale di piazzamento
-    SignalBus.decoration_placed.emit("lamp_01", Vector2(100, 200))
-    # Verifichiamo che la decorazione sia stata aggiunta
-    # (il numero di figli deve essere aumentato)
-    assert_true(room.get_child_count() > 0)
-
-# Test: cambio personaggio senza crash
-func test_character_swap_no_crash() -> void:
-    var room = auto_free(preload("res://scenes/main.tscn").instantiate())
-    add_child(room)
-    # Cambiamo personaggio rapidamente 5 volte
-    for i in 5:
-        SignalBus.character_changed.emit("female_yellow_shirt")
-        await get_tree().process_frame  # aspettiamo un frame
-    # Se arriviamo qui senza crash, il test e' passato
-    assert_true(true)
-```
-
-#### 5.4 Test UI Panel Lifecycle
-
-Creare il file `tests/unit/test_panel_manager.gd`:
-
-```gdscript
-# test_panel_manager.gd
-# Test per il gestore dei pannelli UI
-# Verifichiamo che apertura, chiusura e pulizia funzionino
-
-extends GdUnitTestSuite
-
-# Test: aprire e chiudere un pannello non causa memory leak
-func test_open_close_no_leak() -> void:
-    var initial_objects = Performance.get_monitor(Performance.OBJECT_COUNT)
-    # Apriamo e chiudiamo il pannello 10 volte
-    for i in 10:
-        PanelManager.open_panel("shop")
-        await get_tree().process_frame
-        PanelManager.close_panel("shop")
-        await get_tree().process_frame
-    var final_objects = Performance.get_monitor(Performance.OBJECT_COUNT)
-    # Il numero di oggetti non deve crescere significativamente
-    assert_true(final_objects - initial_objects < 5)
-
-# Test: un solo pannello alla volta
-func test_mutual_exclusion() -> void:
-    PanelManager.open_panel("shop")
-    PanelManager.open_panel("music")
-    # Solo il secondo pannello deve essere aperto
-    assert_false(PanelManager.is_open("shop"))
-    assert_true(PanelManager.is_open("music"))
-```
-
-#### 5.5 ~~Espandere test ShopPanel~~ — NON PIU' APPLICABILE
-
-> **shop_panel.gd e test_shop_panel.gd sono stati rimossi dal progetto.** Questa sezione e'
-> mantenuta per riferimento storico. I test per il pannello decorazioni (deco_panel.gd) dovranno
-> essere creati da zero quando la suite di test verra' reintrodotta.
+| Data | Versione | Descrizione |
+|------|----------|-------------|
+| 21 Mar 2026 | 1.0.0 | Primo audit — 7 critici, 29 alti, 11 architetturali |
+| 31 Mar 2026 | 1.x | Aggiornamenti incrementali, fix verificate |
+| 01 Apr 2026 | 2.0.0 | Riscrittura completa — ri-audit di tutti i 24 script |
 
 ---
 
-## 12. Istruzioni Dettagliate per Correzione
-
-Questa sezione fornisce istruzioni passo per passo, in stile tutorial, per le correzioni piu' importanti. Per ogni correzione:
-1. Vi spieghiamo cosa vedrete quando aprite il file
-2. Vi spieghiamo il codice esistente riga per riga
-3. Vi spieghiamo la correzione riga per riga
-4. Vi spieghiamo come verificare che funzioni
-
----
-
-### C1 — Inventario non salvato su SQLite — GIA' CORRETTO
-
-**File da modificare**: `scripts/autoload/save_manager.gd`
-
-**Cosa vedrete quando aprite il file**: Il SaveManager e' un file di circa 290 righe che gestisce il salvataggio e il caricamento dei dati. Cercate la funzione `_save_to_sqlite()` — si trova intorno alla riga 115.
-
-**Il codice esistente** (riga ~115-120):
-```gdscript
-func _save_to_sqlite() -> void:
-    # Questa funzione salva i dati sul database SQLite
-    # come backup del file JSON principale
-
-    # Salva i dati del personaggio
-    LocalDatabase.upsert_character(character_data)
-    # ... MA L'INVENTARIO NON VIENE SALVATO!
-    # Qui manca completamente il salvataggio degli oggetti
-```
-
-**La correzione**: Aggiungete il seguente blocco subito dopo `upsert_character()`:
-
-```gdscript
-func _save_to_sqlite() -> void:
-    # Salva i dati del personaggio (codice esistente)
-    LocalDatabase.upsert_character(character_data)
-
-    # === INIZIO NUOVA CORREZIONE ===
-    # Salviamo anche l'inventario, che prima veniva ignorato
-    # Controlliamo che ci siano effettivamente oggetti da salvare
-    if not inventory_data.get("items", []).is_empty():
-        # Iteriamo su ogni oggetto nell'inventario
-        for item: Dictionary in inventory_data["items"]:
-            # Aggiungiamo ogni oggetto al database
-            LocalDatabase.add_inventory_item(
-                1,  # ID dell'account locale (sempre 1 per single-player)
-                item.get("item_id", 0),  # ID dell'oggetto, 0 se non specificato
-                inventory_data.get("coins", 0),  # Monete dell'utente
-                inventory_data.get("capacity", 50)  # Capacita' massima inventario
-            )
-    # === FINE NUOVA CORREZIONE ===
-```
-
-**Prerequisito**: Questa correzione funziona correttamente solo DOPO aver corretto lo schema dell'inventario (C4). Se applicate C1 senza C4, i dati verranno salvati nella struttura sbagliata.
-
-**Come verificare**:
-1. Avviate il gioco e acquistate alcuni oggetti
-2. Salvate il gioco (manualmente o aspettando l'auto-save)
-3. Aprite il database SQLite con uno strumento come DB Browser for SQLite
-4. Eseguite la query: `SELECT * FROM inventario`
-5. Dovreste vedere gli oggetti che avete acquistato
-
----
-
-### C2 — Backup senza error checking — GIA' CORRETTO
-
-**File da modificare**: `scripts/autoload/save_manager.gd`
-
-**Cosa vedrete**: Nella funzione `save_game()`, cercate la riga dove viene copiato il file di backup (intorno alla riga 92-93). Vedrete qualcosa come `DirAccess.copy_absolute(...)` senza nessun controllo del risultato.
-
-**Il codice esistente** (riga ~92-93):
-```gdscript
-# Il codice originale copia il file senza controllare se e' andato bene
-DirAccess.copy_absolute(SAVE_PATH, BACKUP_PATH)
-# Se la copia fallisce (disco pieno, permessi insufficienti),
-# nessuno lo sapra' mai!
-```
-
-**La correzione**:
-```gdscript
-# Apriamo la directory dove si trovano i file di salvataggio
-var dir := DirAccess.open("user://")
-if dir:
-    # Tentiamo di copiare il file corrente come backup
-    var err := dir.copy(SAVE_PATH, BACKUP_PATH)
-    if err != OK:
-        # La copia e' fallita! Logghiamo l'errore con i dettagli
-        # In questo modo lo sviluppatore puo' diagnosticare il problema
-        AppLogger.error("SaveManager", "Backup fallito", {"errore": err})
-        # Nota: NON interrompiamo il salvataggio — proviamo comunque
-        # a salvare il file principale. Meglio un salvataggio senza backup
-        # che nessun salvataggio.
-else:
-    # Non riusciamo nemmeno ad accedere alla directory user://
-    # Questo e' un problema serio: potrebbe indicare un problema
-    # con i permessi del filesystem
-    AppLogger.error("SaveManager", "Directory user:// non accessibile")
-```
-
-**Come verificare**:
-1. Simulate un disco pieno (rinominate la directory di backup con permessi sola-lettura)
-2. Salvate il gioco
-3. Controllate i log: dovreste vedere il messaggio di errore
-4. Verificate che il salvataggio principale sia comunque avvenuto
-
----
-
-### C3 — Characters PRIMARY KEY impedisce multipli personaggi — GIA' CORRETTO (27 Marzo 2026)
-
-**File da modificare**: `scripts/autoload/local_database.gd`
-
-**Cosa vedrete**: Nella funzione `_create_tables()` (intorno alla riga 101-102), troverete la definizione SQL della tabella `characters`.
-
-**Il codice esistente**:
-```sql
--- La tabella characters originale
--- account_id come PRIMARY KEY = UN SOLO personaggio per account
-CREATE TABLE IF NOT EXISTS characters (
-    account_id INTEGER PRIMARY KEY,  -- ERRORE: dovrebbe essere character_id!
-    nome TEXT DEFAULT '',
-    genere INTEGER DEFAULT 0,
-    -- ... altri campi ...
-);
-```
-
-**La correzione**:
-```sql
--- La tabella characters corretta
--- character_id come PRIMARY KEY = MULTIPLI personaggi per account
-CREATE TABLE IF NOT EXISTS characters (
-    character_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- character_id: ogni personaggio ha il suo ID univoco
-    -- AUTOINCREMENT: il database assegna automaticamente il prossimo numero
-    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
-    -- account_id: a quale account appartiene il personaggio
-    -- NOT NULL: obbligatorio (ogni personaggio DEVE appartenere a un account)
-    -- REFERENCES: foreign key verso la tabella accounts
-    -- ON DELETE CASCADE: se l'account viene eliminato, tutti i suoi personaggi
-    --                    vengono eliminati automaticamente
-    nome TEXT DEFAULT '',
-    genere INTEGER DEFAULT 0,
-    colore_occhi_id INTEGER DEFAULT NULL REFERENCES colore(colore_id),
-    colore_capelli_id INTEGER DEFAULT NULL REFERENCES colore(colore_id),
-    colore_pelle_id INTEGER DEFAULT NULL REFERENCES colore(colore_id),
-    livello_stress INTEGER DEFAULT 0,
-    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(account_id, nome)
-    -- UNIQUE su (account_id, nome): nello stesso account,
-    -- non possono esserci due personaggi con lo stesso nome
-);
-```
-
-**Impatto**: Dopo questa modifica, dovrete aggiornare tutte le funzioni che cercano personaggi per `account_id`:
-- `get_character(account_id)` deve diventare `get_characters(account_id)` (plurale) e ritornare un array
-- `upsert_character()` deve includere `account_id` come parametro obbligatorio
-- Le funzioni di caricamento nel SaveManager devono gestire il fatto che un account possa avere piu' personaggi
-
-**Come verificare**:
-1. Create un personaggio "Eroe A" per l'account 1
-2. Create un personaggio "Eroe B" per lo stesso account 1
-3. Eseguite: `SELECT * FROM characters WHERE account_id = 1`
-4. Dovreste vedere 2 righe, non 1
-
----
-
-### C4 — Inventory schema confuso — GIA' CORRETTO (27 Marzo 2026)
-
-**File da modificare**: `scripts/autoload/local_database.gd`
-
-**Cosa vedrete**: La definizione della tabella `inventario` con campi `coins` e `capacita` per ogni riga.
-
-**La correzione** ha due parti:
-
-**Parte A — Aggiungere coins e capacita alla tabella accounts**:
-```sql
--- Aggiungiamo i campi che riguardano l'ACCOUNT (non il singolo oggetto)
-ALTER TABLE accounts ADD COLUMN coins INTEGER DEFAULT 0;
--- coins: le monete dell'utente — un valore per account
-ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;
--- inventario_capacita: quanti oggetti puo' avere — un valore per account
-```
-
-**Parte B — Ristrutturare la tabella inventario**:
-```sql
--- La nuova tabella inventario: semplice relazione account-oggetto
-CREATE TABLE IF NOT EXISTS inventario (
-    inventario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- ID univoco per ogni riga dell'inventario
-    account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
-    -- A quale account appartiene questo oggetto
-    item_id INTEGER NOT NULL REFERENCES items(item_id),
-    -- Quale oggetto e': FOREIGN KEY verso la tabella items
-    -- Questo garantisce integrita' referenziale:
-    -- non si possono inserire oggetti che non esistono nel catalogo
-    quantita INTEGER DEFAULT 1,
-    -- Quanti di questo oggetto ha l'utente
-    aggiunto_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    -- Quando l'oggetto e' stato aggiunto all'inventario
-    UNIQUE(account_id, item_id)
-    -- Un utente non puo' avere due righe per lo stesso oggetto
-    -- Se compra un oggetto che ha gia', si incrementa la quantita'
-);
-```
-
-**Come verificare**:
-1. Acquistate un oggetto nel negozio
-2. Verificate che `coins` nella tabella `accounts` sia diminuito
-3. Verificate che l'oggetto sia presente nella tabella `inventario`
-4. Tentate di inserire un `item_id` inesistente: deve fallire
-
----
-
-### C5 — Array mismatch window_background.gd — GIA' CORRETTO
-
-**File da modificare**: `scripts/rooms/window_background.gd`
-
-**Cosa vedrete**: La funzione `_build_layers()` che carica i layer dello sfondo uno per uno.
-
-Le istruzioni dettagliate per questa correzione sono gia' state fornite nella Fase 1, Sezione 1.2 del Piano di Stabilizzazione. Il principio chiave e': quando un layer fallisce, saltare COMPLETAMENTE quel layer (sia la sprite che il factor), cosi' i due array restano sempre allineati.
-
-**Come verificare**:
-1. Rinominate temporaneamente uno dei file di layer dello sfondo (cosi' non viene trovato)
-2. Avviate il gioco
-3. Il gioco deve funzionare senza crash, con un layer mancante
-4. Nei log deve apparire un avviso che il layer non e' stato trovato
-5. Ripristinate il nome del file originale
-
----
-
-### C6 — Typo percorso sprite characters.json — GIA' CORRETTO (31 Marzo 2026)
-
-**File da modificare**: `data/characters.json`
-
-**Cosa vedrete**: Nel file JSON, cercate la sezione `male_old`. Nelle animazioni di camminata, troverete un percorso sprite con un errore di battitura.
-
-**La correzione**: Cercate `male_walk_down_side_sxt.png` e sostituitelo con `male_walk_down_side_sx.png` (rimuovete la "t" in eccesso).
-
-**Come verificare**:
-1. Avviate il gioco
-2. Selezionate il personaggio `male_old`
-3. Fate camminare il personaggio verso il basso e di lato
-4. L'animazione deve funzionare senza errori
-5. Verificate nei log che non ci siano messaggi di errore per file non trovati
-
----
-
-### C7 — male_black_shirt incompleto — RISOLTO PER RIMOZIONE
-
-> Il personaggio `male_black_shirt` e' stato rimosso dal catalogo characters.json. Restano le
-> costanti orfane in constants.gd (righe 13-16: `CHAR_FEMALE_RED_SHIRT`, `CHAR_MALE_YELLOW_SHIRT`,
-> `CHAR_MALE_BLACK_SHIRT`) che andrebbero rimosse. L'istruzione seguente e' mantenuta per
-> riferimento didattico.
-
-**File da modificare**: `data/characters.json` e/o `scripts/rooms/character_controller.gd`
-
-**La soluzione consigliata** (Opzione A) e' rimuovere temporaneamente il personaggio incompleto:
-
-1. Aprite `data/characters.json`
-2. Rimuovete l'intera sezione dedicata a `male_black_shirt`
-3. Aprite `scripts/constants.gd` (o il file dove sono definiti i personaggi disponibili)
-4. Rimuovete `male_black_shirt` dall'elenco dei personaggi selezionabili
-
-Se preferite mantenere il personaggio con un fallback (Opzione C), aggiungete questa verifica in `character_controller.gd`:
-
-```gdscript
-# Prima di riprodurre qualsiasi animazione, verifichiamo che esista
-# nelle SpriteFrames del personaggio corrente
-func _play_animation(anim_name: String) -> void:
-    # Null check: il nodo AnimatedSprite2D esiste?
-    if _anim == null:
-        push_error("CharacterController: AnimatedSprite2D non trovato")
-        return
-
-    # L'animazione esiste per questo personaggio?
-    if _anim.sprite_frames.has_animation(anim_name):
-        _anim.play(anim_name)  # si, riproduciamola
-    else:
-        # No, usiamo il fallback sicuro
-        # idle_down e' l'unica animazione garantita per tutti i personaggi
-        push_warning("Animazione '%s' non trovata, uso fallback" % anim_name)
-        _anim.play("idle_down")
-```
-
-**Come verificare**:
-- **Opzione A**: Il personaggio `male_black_shirt` non appare piu' nella lista di selezione
-- **Opzione C**: Selezionate `male_black_shirt`, provate a camminare. Invece di crashare, il personaggio mostra l'animazione `idle_down`
-
----
-
-### A1 — Template _exit_tree() per tutti gli script — GIA' CORRETTO (31 Marzo 2026)
-
-**Obiettivo**: Aggiungere la funzione di pulizia a ~10 script (ridotto da 12 dopo rimozione di shop_panel e music_panel).
-
-Per ogni script, il procedimento e':
-
-**Passo 1**: Aprite il file e trovate la funzione `_ready()`. Elencate tutte le righe che contengono `.connect(`:
-
-```gdscript
-# Esempio da room_base.gd _ready()
-func _ready() -> void:
-    SignalBus.room_changed.connect(_on_room_changed)      # segnale 1
-    SignalBus.decoration_placed.connect(_on_decoration_placed)  # segnale 2
-    SignalBus.decoration_removed.connect(_on_decoration_removed)  # segnale 3
-```
-
-**Passo 2**: Per OGNI `.connect` trovato, aggiungete una `.disconnect` corrispondente in `_exit_tree()`:
-
-```gdscript
-# Aggiungere alla fine del file
-func _exit_tree() -> void:
-    # Disconnettiamo OGNI segnale connesso in _ready()
-    # Il check is_connected previene errori se gia' disconnesso
-    if SignalBus.room_changed.is_connected(_on_room_changed):
-        SignalBus.room_changed.disconnect(_on_room_changed)
-    if SignalBus.decoration_placed.is_connected(_on_decoration_placed):
-        SignalBus.decoration_placed.disconnect(_on_decoration_placed)
-    if SignalBus.decoration_removed.is_connected(_on_decoration_removed):
-        SignalBus.decoration_removed.disconnect(_on_decoration_removed)
-```
-
-**Passo 3**: Controllate se ci sono timer o tween creati nel file. Se si', aggiungeteli alla pulizia:
-
-```gdscript
-    # Fermare timer attivi
-    if _timer and not _timer.is_stopped():
-        _timer.stop()
-
-    # Killare tween attivi
-    if _tween and _tween.is_running():
-        _tween.kill()
-```
-
-**Elenco completo degli script da correggere** (~10, aggiornato dopo rimozione di shop_panel e music_panel):
-
-1. **panel_manager.gd**: input handler
-2. **deco_panel.gd**: segnali bottoni (stub vuoto da completare)
-3. **settings_panel.gd**: 4 segnali slider + 1 segnale option (stub vuoto da completare)
-4. **room_base.gd**: 3 segnali SignalBus
-5. **decoration_system.gd**: input handler
-6. **room_grid.gd**: segnale `decoration_mode_changed`
-7. **main_menu.gd**: tween + eventuali pannelli aperti
-8. **menu_character.gd**: timer frame
-9. **main.gd**: segnale `room_changed`
-10. **character_controller.gd**: nessun segnale ma aggiungere null check su `_anim`
-
-**Come verificare**:
-1. Aprite il Profiler di Godot (menu Debug -> Profiler)
-2. Osservate il conteggio degli oggetti in memoria
-3. Cambiate scena (menu -> gioco -> menu) 20 volte
-4. Il conteggio degli oggetti deve tornare al valore iniziale dopo ogni cambio
-5. Se cresce costantemente, c'e' ancora un leak da trovare
-
----
-
-### A2 — ~~FileDialog memory leak music_panel.gd~~ — NON PIU' APPLICABILE
-
-> **music_panel.gd e' stato rimosso dal progetto** (25 Marzo 2026). Questa correzione non e' piu'
-> necessaria. Le istruzioni nella Sezione 2.2 del Piano di Stabilizzazione restano come
-> riferimento didattico.
-
----
-
-## 13. Verifica e Testing
-
-### Come Verificare Ogni Fix
-
-Questa tabella riassume come verificare che ogni correzione funzioni. Per ogni fix, e' descritto il test manuale da eseguire.
-
-| Fix | Come Verificare |
-|-----|-----------------|
-| C1 (inventario SQLite) | Salvare il gioco -> aprire il database SQLite con DB Browser -> eseguire `SELECT * FROM inventario` -> gli oggetti devono essere presenti |
-| C2 (backup check) | Simulare disco pieno (o directory con permessi sola-lettura) -> salvare -> controllare i log per il messaggio di errore -> il salvataggio principale deve comunque funzionare |
-| C3 (characters PK) | Creare 2 personaggi per lo stesso account -> eseguire `SELECT * FROM characters WHERE account_id = 1` -> devono esserci 2 righe |
-| C4 (inventory schema) | Acquistare un oggetto -> verificare che `coins` nella tabella `accounts` sia diminuito e che l'oggetto sia in `inventario` |
-| C5 (array mismatch) | Rinominare un file layer dello sfondo -> avviare il gioco -> non deve crashare |
-| C6 (sprite typo) | Selezionare `male_old` -> farlo camminare verso il basso/lato -> l'animazione deve funzionare |
-| C7 (black shirt) | Selezionare `male_black_shirt` (se ancora presente) -> muoversi in tutte le direzioni -> nessun crash |
-| A1 (_exit_tree) | Aprire/chiudere un pannello 100 volte -> controllare il Profiler -> nessuna crescita costante di memoria |
-| A2 (FileDialog) | Cliccare "Importa" 10 volte -> controllare il Profiler -> un solo FileDialog in memoria |
-| A3 (race condition) | Cambiare personaggio rapidamente 20 volte -> nessun crash, nessun personaggio duplicato |
-
-### Come Usare il Profiler di Godot
-
-Il **Profiler** e' uno strumento integrato in Godot che vi permette di monitorare le prestazioni del gioco in tempo reale. E' fondamentale per verificare l'assenza di memory leak.
-
-**Come accedervi**:
-1. Avviate il gioco dall'editor di Godot (premete F5)
-2. In basso, cliccate sulla tab "Debugger"
-3. Selezionate "Profiler" dalla barra laterale
-4. Abilitate il profiling cliccando "Start"
-
-**Cosa cercare per i memory leak**:
-- Osservate il monitor "Object Count" (conteggio oggetti)
-- Eseguite l'azione sospetta (aprire/chiudere un pannello, cambiare stanza, ecc.) diverse volte
-- Se il conteggio cresce costantemente senza mai scendere, c'e' un memory leak
-- Se il conteggio sale e scende (ritorna a valori simili), la pulizia funziona
-
-**Come controllare i log**:
-- I log vengono salvati in `user://logs/` (la directory varia per sistema operativo)
-- Su Windows: `%APPDATA%/Godot/app_userdata/MiniCozyRoom/logs/`
-- Su Linux: `~/.local/share/godot/app_userdata/MiniCozyRoom/logs/`
-- Su macOS: `~/Library/Application Support/Godot/app_userdata/MiniCozyRoom/logs/`
-
-### Nuovi Test da Scrivere
-
-Oltre ai test gia' descritti nella Fase 5, ecco l'elenco completo dei file di test necessari:
-
-```
-tests/unit/
-    test_audio_manager.gd      — tracce bounds, volume dB, modalita' playlist
-    test_local_database.gd     — operazioni CRUD, schema, foreign keys
-    test_room_base.gd          — spawn decorazioni, swap personaggio
-    test_panel_manager.gd      — open/close lifecycle, mutua esclusione
-    test_game_manager.gd       — caricamento cataloghi, cambiamenti di stato
-    test_window_background.gd  — caricamento layer, allineamento array
-```
-
-### Ordine di Esecuzione dei Test
-
-Per una verifica completa, eseguite i test in questo ordine:
-
-1. **Lint**: `gdlint v1/scripts/` — Verifica lo stile del codice (naming, struttura)
-2. **Format**: `gdformat --check v1/scripts/` — Verifica la formattazione (indentazione, spazi)
-3. **Test automatizzati**: Attualmente non ci sono file di test nel progetto (rimossi). Quando verranno reintrodotti, eseguirli qui
-4. **Test manuale**: Giocate una sessione completa: menu -> stanza -> piazza decorazioni -> cambia personaggio -> ascolta musica -> salva -> chiudi -> riapri -> verifica che tutto sia stato salvato correttamente
-
----
-
-## 14. Riferimenti e Risorse
-
-### Documenti di Studio del Progetto
-
-Il team ha a disposizione **5 documenti di studio** completi nella cartella [`study/`](study/), creati specificamente per fornire le conoscenze necessarie a comprendere e correggere i problemi trovati in questo audit. Ogni documento e' disponibile sia in inglese che in italiano.
-
-| Area di Correzione | Documento di Studio | Sezioni Chiave da Consultare |
-|---------------------|---------------------|------------------------------|
-| Ciclo di vita nodi, `_exit_tree()`, `queue_free()` | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 5 "Scene System" (diagramma lifecycle), Sezione 7 "Tween & Timer" |
-| Segnali, SignalBus, disconnessione | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 6 "Signals & Signal Bus Pattern" — spiega connect/disconnect, is_connected, CONNECT_ONE_SHOT |
-| GDScript, type hints, static typing | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 4 "GDScript Reference" — type system completo, Array/Dictionary tipizzati, `@export` |
-| Pattern architetturali, signal-driven | [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) + [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) | Sezione 13 "Common Patterns" (dirty flag, state machine, call_deferred) + architettura progetto |
-| Save/load, JSON, SQLite, migrazione | [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) | Sezioni "Save System", "Three-Layer Persistence", "Version Migration Chain" |
-| Proiezione isometrica, tile system, depth sorting | [ISOMETRIC_GAMES.md](study/ISOMETRIC_GAMES.md) | Sezioni 2-4 sulle formule di proiezione, Sezione 5 "Depth Sorting & Z-Order" |
-| Pre-modification checklist, errori comuni | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) | Sezione 2 "Pre-Modification Checklist", Sezione 6 "8 Common Beginner Mistakes" |
-| Version control, branching, commit | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) | Sezione 3 "Version Control" — golden rules, branching strategies, merge conflicts |
-| Testing con GdUnit4 | [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) | Sezione 5 "Testing" — Arrange/Act/Assert, test doubles, GdUnit4 specifics |
-| Export, piattaforme, CI/CD | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) | Sezione 4-5 "Platform-Specific Builds", Sezione 6 "CI/CD Pipelines" |
-| Distribuzione, Steam/itch.io | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) | Sezione 7 "Distribution Platforms" |
-| Ottimizzazione, performance | [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md) + [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) | Sezione 8 "Optimization" + Sezione 14 "Performance Tips" |
-
-**Come usare i documenti di studio**: Prima di correggere un problema, leggete la sezione rilevante del documento di studio. I documenti spiegano i concetti teorici con analogie, diagrammi ASCII, e esempi di codice commentati. In questo modo, non state solo copiando la correzione, ma capite il *perche'* dietro ogni modifica.
-
-**Ordine di lettura consigliato**: [PROJECT_DEEP_DIVE.md](study/PROJECT_DEEP_DIVE.md) → [GODOT_ENGINE_STUDY.md](study/GODOT_ENGINE_STUDY.md) → [ISOMETRIC_GAMES.md](study/ISOMETRIC_GAMES.md) → [GAME_DEV_PLANNING.md](study/GAME_DEV_PLANNING.md) → [BUILD_AND_EXPORT.md](study/BUILD_AND_EXPORT.md)
-
-### Guide Operative per il Team
-
-Sono inoltre disponibili **4 guide operative** nella cartella [`guide/`](guide/), create per tradurre le analisi di questo audit in istruzioni passo-passo per ogni membro del team:
-
-| Guida | Per Chi | Contenuto |
-|-------|---------|-----------|
-| [SETUP_AMBIENTE.md](guide/SETUP_AMBIENTE.md) | Tutti | Configurazione ambiente di sviluppo (Godot, Git, VS Code) |
-| [GUIDA_CRISTIAN_CICD.md](guide/GUIDA_CRISTIAN_CICD.md) | Cristian Marino | CI/CD, Logger, PerformanceManager |
-| [GUIDA_ELIA_DATABASE.md](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Schema database, FK, seed data |
-| [GUIDA_RENAN_GAMEPLAY_UI.md](guide/GUIDA_RENAN_GAMEPLAY_UI.md) | Renan Augusto Macena | Gameplay, UI, asset, `_exit_tree()` |
-
-### Documentazione Ufficiale Godot
-
-- **Documentazione Godot 4**: https://docs.godotengine.org/en/stable/
-- **Riferimento API GDScript**: https://docs.godotengine.org/en/stable/classes/index.html
-- **Tutorial Segnali**: https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html
-- **Guida al Salvataggio**: https://docs.godotengine.org/en/stable/tutorials/io/saving_games.html
-- **Guida all'Export**: https://docs.godotengine.org/en/stable/tutorials/export/index.html
-- **Guida alla Performance**: https://docs.godotengine.org/en/stable/tutorials/performance/index.html
-
----
-
-## 15. Riepilogo Statistico
-
-| Categoria | Audit Iniziale (21 Mar) | Aggiornamento (24 Mar) | Aggiornamento (29 Mar) | **Stato Attuale (31 Mar)** |
-|-----------|------------------------|------------------------|------------------------|---------------------------|
-| File analizzati | 48 (26 script + 9 scene + 5 dati + 5 test + 3 CI) | Invariato | **35** (21 script + 8 scene + 4 dati + 0 test + 2 CI) | 35 (invariato) |
-| Righe di codice analizzate | ~3500 (solo script GDScript) | Invariato | ~3000 (script ridotti per rimozioni) | **~4185** (script cresciuti per fix e auth) |
-| Autoload / Componenti | 8 | Invariato | **7** (6 autoload + PerformanceManager) | **8** (7 autoload + PerformanceManager) |
-| Segnali SignalBus | 21 | Invariato | **20** | **31** |
-| Stanze / Temi | 4 stanze, 10 temi | Invariato | **1 stanza** (cozy_studio), **3 temi** | 1 stanza, 3 temi (invariato) |
-| Decorazioni | 118 in 14 categorie | Invariato | **58 in 11 categorie** | **69 in 11 categorie** |
-| Personaggi | 3 | Invariato | **1** (male_old) | 1 (invariato, PNG aggiornati) |
-| Problemi CRITICI | 7 | 5 aperti, **2 corretti** (C1, C2) | **2 aperti** (C6, C7 costante), **5 corretti** | **7/7 corretti** |
-| Problemi ALTI | 18 | 17 aperti, **2 corretti** (A8, A9), **1 nuovo** (A19) | **~8 aperti**, 5 corretti, **5 risolti per rimozione** | **4 aperti** (A12, A13, A24, A25) |
-| Problemi MEDI | — | **3 nuovi** (A20, A21, A22) | A22 **risolto per rimozione** (music_panel) | **4 aperti** (A14, A18, A26, A27) |
-| Violazioni architetturali | 11 | 10 aperti, **1 parzialmente corretto** (AR2) | **~4 aperti**, 1 parz. corretto, **1 risolto per rimozione** (AR11) | **5 aperti** (AR6-AR10) |
-| Copertura test attuale | ~15-20% | Invariata | **0%** (test rimossi, GdUnit4 non installato) | 0% (invariato) |
-| Copertura test target | 50%+ | 50%+ | 50%+ | 50%+ |
-| Fasi di stabilizzazione | 5 | 5 | 5 | 2 completate, 2 parziali, 1 da fare |
-| Documenti di studio disponibili | 0 | **5** (in `study/`) | 5 (in `study/`) + **4 guide** (in `guide/`) | Invariato |
-
----
-
----
-
-## 16. Guide Operative per il Team
-
-Per facilitare il lavoro di ogni membro del team, sono state create guide operative dettagliate e personalizzate. Ogni guida contiene istruzioni passo-passo, pensate per chi ha poca esperienza con Godot, Git o database.
-
-### Come Usare le Guide
-
-1. **Tutti**: Iniziate da [SETUP_AMBIENTE.md](guide/SETUP_AMBIENTE.md) per configurare il vostro ambiente di sviluppo
-2. **Poi**: Aprite la vostra guida personale e seguitela dall'inizio alla fine
-
-### Indice delle Guide
-
-| Guida | Per Chi | Contenuto |
-|-------|---------|-----------|
-| [Setup Ambiente](guide/SETUP_AMBIENTE.md) | Tutti | Installazione Godot, Git, VS Code, clonazione repo, workflow Git |
-| [Guida CI/CD](guide/GUIDA_CRISTIAN_CICD.md) | Cristian Marino | Linting test, Logger flush e session ID, PerformanceManager, configurazione test CI |
-| [Guida Gameplay/UI](guide/GUIDA_RENAN_GAMEPLAY_UI.md) | Renan Augusto Macena | characters.json, `_exit_tree()` per ~6 script, costanti orfane, race condition, null check |
-| [Guida Database](guide/GUIDA_ELIA_DATABASE.md) | Elia Zoccatelli | Verifica schema DB (gia' corretto), seed data, foreign keys |
-
-Le guide si trovano nella cartella [`guide/`](guide/) e sono pensate come versione operativa (il "come fare") di questo audit report (il "cosa fare e perche'").
-
----
-
-## 17. Pratiche di Sviluppo per Prevenire Errori
-
-Questa sezione raccoglie le lezioni apprese dall'audit e le traduce in **regole pratiche** che il team deve seguire per evitare di introdurre gli stessi tipi di errore in futuro. Ogni regola e' collegata ai problemi specifici che avrebbe prevenuto e al documento di studio che la spiega in dettaglio.
-
-### 17.1 Regola d'Oro: Il Ciclo di Vita Completo
-
-**Regola**: Ogni script che connette segnali in `_ready()` **DEVE** avere un `_exit_tree()` che li disconnette.
-
-Questa e' la regola piu' importante del progetto. La sua violazione e' la causa di **13 problemi** su 36 trovati in questo audit (A1, A19, e vari problemi MEDI nei pannelli UI).
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                   CHECKLIST PRE-COMMIT OBBLIGATORIA                 │
-│                                                                     │
-│  Per ogni script modificato, verificare:                            │
-│                                                                     │
-│  [ ] Ogni .connect() in _ready() ha un .disconnect() in            │
-│      _exit_tree() con check is_connected()                         │
-│  [ ] Ogni create_tween() ha una variabile membro, non locale,      │
-│      e viene killato in _exit_tree()                               │
-│  [ ] Ogni Timer avviato viene fermato in _exit_tree()              │
-│  [ ] Ogni nodo creato con .new() viene liberato con                │
-│      .queue_free() in _exit_tree()                                 │
-│  [ ] Nessuna variabile pubblica mutabile (Array, Dictionary)       │
-│      espone lo stato interno                                        │
-│                                                                     │
-│  Riferimento: GODOT_ENGINE_STUDY.md, Sezione 5 "Scene System"      │
-│               GAME_DEV_PLANNING.md, Sezione 6 "Common Mistakes"    │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Template `_exit_tree()` da seguire SEMPRE**:
-
-```gdscript
-func _exit_tree() -> void:
-    # 1. Disconnettere TUTTI i segnali connessi in _ready()
-    if SignalBus.nome_segnale.is_connected(_on_callback):
-        SignalBus.nome_segnale.disconnect(_on_callback)
-
-    # 2. Uccidere TUTTI i tween attivi
-    if _tween and _tween.is_running():
-        _tween.kill()
-        _tween = null
-
-    # 3. Fermare TUTTI i timer
-    if _timer and not _timer.is_stopped():
-        _timer.stop()
-
-    # 4. Liberare nodi creati dinamicamente
-    if _dynamic_node and is_instance_valid(_dynamic_node):
-        _dynamic_node.queue_free()
-```
-
-### 17.2 Programmazione Difensiva: Mai Fidarsi dei Dati
-
-**Regola**: Ogni accesso a dati esterni (file, JSON, array, dictionary) **DEVE** essere protetto da validazione.
-
-Questa regola avrebbe prevenuto: C5 (array mismatch), C6 (typo sprite), A5 (crash tracce vuote), A16 (cast unsafe).
-
-**Pattern per accesso sicuro agli array**:
-
-```gdscript
-# MAI fare cosi':
-var track = tracks[current_index]  # crash se tracks e' vuoto!
-
-# SEMPRE fare cosi':
-if tracks.is_empty():
-    push_warning("Nessuna traccia disponibile")
-    return
-current_index = clampi(current_index, 0, tracks.size() - 1)
-var track = tracks[current_index]  # ora e' sicuro
-```
-
-**Pattern per caricamento risorse sicuro**:
-
-```gdscript
-# MAI fare cosi':
-var tex = load(path) as Texture2D
-sprite.texture = tex  # crash se tex e' null!
-
-# SEMPRE fare cosi':
-var tex := load(path) as Texture2D
-if tex == null:
-    push_error("Risorsa non trovata: %s" % path)
-    return  # o usare una texture placeholder
-sprite.texture = tex
-```
-
-**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 4 "GDScript — Error Handling"; `GAME_DEV_PLANNING.md`, Sezione 6 "Common Mistakes"
-
-### 17.3 Tween Safety: Tracciare, Verificare, Uccidere
-
-**Regola**: I tween **DEVONO** essere salvati come variabili membro della classe, mai come variabili locali, e devono essere uccisi prima di crearne di nuovi.
-
-Questa regola avrebbe prevenuto: A19 (tween orfani in MainMenu) e i problemi tween in panel_manager.
-
-```gdscript
-# MAI fare cosi':
-func _animate_something() -> void:
-    var tween := create_tween()  # variabile LOCALE = persa dopo la funzione!
-    tween.tween_property(...)
-
-# SEMPRE fare cosi':
-var _tween: Tween = null  # variabile MEMBRO della classe
-
-func _animate_something() -> void:
-    # Prima uccidiamo il tween precedente (se esiste e sta girando)
-    if _tween and _tween.is_running():
-        _tween.kill()
-    # Poi ne creiamo uno nuovo e lo salviamo
-    _tween = create_tween()
-    _tween.tween_property(...)
-```
-
-**Perche'?** Un tween locale continua a vivere nel motore Godot anche dopo che la funzione e' terminata. Se il nodo viene distrutto, il tween tenta di animare un nodo inesistente → crash. Un tween membro puo' essere ucciso in `_exit_tree()`.
-
-**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 7 "Tween & Timer"
-
-### 17.4 Incapsulamento: Non Esporre Stato Mutabile
-
-**Regola**: Le variabili Array e Dictionary interne **NON** devono essere pubbliche. Usare metodi getter/setter.
-
-Questa regola avrebbe prevenuto: A20 (`active_ambience` pubblico), AR4-AR7 (scrittura diretta in dizionari di altri autoload).
-
-```gdscript
-# MAI fare cosi':
-var active_ambience: Array = []  # chiunque puo' modificarlo!
-
-# SEMPRE fare cosi':
-var _active_ambience: Array = []  # privato (prefisso _)
-
-# Getter: restituisce una COPIA, non il riferimento
-func get_active_ambience() -> Array:
-    return _active_ambience.duplicate()
-
-# Setter controllato: aggiorna lo stato con la logica appropriata
-func toggle_ambience(amb_id: String, active: bool) -> void:
-    if active and amb_id not in _active_ambience:
-        _active_ambience.append(amb_id)
-        _start_ambience_player(amb_id)
-    elif not active and amb_id in _active_ambience:
-        _active_ambience.erase(amb_id)
-        _stop_ambience_player(amb_id)
-```
-
-**Riferimento**: `GAME_DEV_PLANNING.md`, Sezione 4 "Architecture Patterns"; `GODOT_ENGINE_STUDY.md`, Sezione 13 "Common Patterns"
-
-### 17.5 Comunicazione: Sempre via SignalBus
-
-**Regola**: Gli autoload **NON** devono mai chiamarsi direttamente ne' scrivere nelle variabili di altri autoload. Tutta la comunicazione passa per il SignalBus.
-
-Questa regola avrebbe prevenuto: tutte le 11 violazioni architetturali AR1-AR11.
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                CORRETTO                  SBAGLIATO            │
-│                                                              │
-│  AudioManager                    AudioManager                │
-│       │                               │                      │
-│       ▼                               ▼                      │
-│  SignalBus.emit()            SaveManager.settings["vol"]=0.5 │
-│       │                          (scrittura diretta!)        │
-│       ▼                                                      │
-│  SaveManager._on_update()                                    │
-│                                                              │
-│  "Emetto un segnale,          "Vado direttamente             │
-│   chi ha bisogno              nell'ufficio altrui             │
-│   lo raccogliera'"            e modifico i documenti"        │
-└──────────────────────────────────────────────────────────────┘
-```
-
-**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 6 "Signals & Signal Bus"; `PROJECT_DEEP_DIVE.md`, Sezione "Signal-Driven Architecture"
-
-### 17.6 Testing: Scrivere il Test PRIMA della Correzione
-
-**Regola**: Prima di correggere un bug, scrivere un test che lo riproduce. Poi correggere il bug. Poi verificare che il test passi.
-
-Questo approccio si chiama **Test-Driven Development (TDD)** ed e' spiegato in dettaglio in `GAME_DEV_PLANNING.md`, Sezione 5 "Testing".
-
-```
-1. Scrivere un test che FALLISCE (riproduce il bug)
-2. Correggere il codice
-3. Verificare che il test PASSA
-4. Commit!
-```
-
-**Esempio pratico** per il bug C5 (array mismatch):
-
-```gdscript
-# Passo 1: scriviamo un test che riproduce il crash
-func test_build_layers_missing_file_no_crash() -> void:
-    # Simuliamo un layer mancante
-    var bg = auto_free(WindowBackground.new())
-    # Rinominiamo temporaneamente un file layer
-    # Il gioco non deve crashare, gli array devono essere allineati
-    bg._build_layers()
-    assert_eq(bg._layers.size(), bg._parallax_factors.size())
-
-# Passo 2: correggiamo window_background.gd
-# Passo 3: il test ora passa → commit!
-```
-
-### 17.7 Checklist Prima di Ogni Modifica
-
-Prima di modificare **qualsiasi** file del progetto, rispondete a queste 6 domande (derivate da `GAME_DEV_PLANNING.md`, Sezione 2 "Pre-Modification Checklist"):
-
-```
-1. Ho letto il file INTERO che sto per modificare?
-   (Non modificare codice che non avete letto completamente)
-
-2. Capisco TUTTI i segnali connessi in questo script?
-   (Ogni connect deve avere un disconnect)
-
-3. La mia modifica puo' rompere qualcosa in un ALTRO file?
-   (Cercate il nome della funzione/variabile in tutto il progetto)
-
-4. Ho scritto un test per questa modifica?
-   (Se no, scrivetelo prima)
-
-5. Ho aggiornato il commento/documentazione?
-   (Se la modifica cambia il comportamento)
-
-6. Ho fatto un commit PRIMA di iniziare la modifica?
-   (Cosi' potete tornare indietro se qualcosa va storto)
-```
-
-### 17.8 Convenzioni di Naming per Prevenire Errori
-
-| Tipo | Convenzione | Esempio | Perche' |
-|------|-------------|---------|---------|
-| Variabili private | Prefisso `_` | `_tween`, `_timer`, `_is_saving` | Chiaro che non vanno toccate dall'esterno |
-| Costanti | UPPER_SNAKE_CASE | `MAX_AUDIO_SIZE`, `PANEL_TWEEN_DURATION` | Distinguibili dalle variabili |
-| Segnali callback | `_on_` + nome segnale | `_on_room_changed`, `_on_save_completed` | Facile capire da quale segnale viene invocata |
-| Bool flags | `is_` / `has_` / `can_` | `is_playing`, `has_save`, `can_drop` | Leggibili come domande |
-| Tipi GDScript | Sempre espliciti | `var x: int = 0`, `func f() -> void:` | Prevengono errori di tipo a runtime |
-
-**Riferimento**: `GODOT_ENGINE_STUDY.md`, Sezione 4 "GDScript — Naming Conventions"
-
----
-
-## 18. Matrice di Prioritizzazione e Valutazione Rischio
-
-Questa sezione traduce la classificazione dei problemi (Sezione 10) in una **matrice decisionale** che combina severita', probabilita' di occorrenza, impatto sull'utente e sforzo di correzione. L'obiettivo e' aiutare il team a decidere **in che ordine affrontare le correzioni** quando il tempo e' limitato (scadenza: 22 aprile 2026).
-
-### 18.1 Legenda Valutazione
-
-| Dimensione | Scala | Significato |
-|------------|-------|-------------|
-| **Probabilita'** | Alta / Media / Bassa | Quanto spesso l'utente incontra il problema durante l'uso normale |
-| **Impatto Utente** | Critico / Alto / Medio / Basso | Quanto e' grave per l'utente quando il problema si verifica |
-| **Sforzo** | S (< 30 min) / M (30-90 min) / L (2-4 ore) | Tempo stimato per la correzione completa inclusi test |
-| **Priorita'** | P1 (subito) / P2 (entro 1 sett) / P3 (entro 2 sett) / P4 (se avanza tempo) | Quando deve essere corretto rispetto alla scadenza |
-
-### 18.2 Matrice Problemi CRITICI
-
-| ID | Problema | Probab. | Impatto | Sforzo | Priorita' | Assegnato | Note |
-|----|----------|---------|---------|--------|-----------|-----------|------|
-| C3 | PK characters impedisce multipli PG | Alta | Critico | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
-| C4 | Schema inventario confuso | Media | Alto | M | ~~P1~~ | Elia | **CORRETTO** (27 Mar 2026) |
-| C6 | Typo sprite "sxt" in characters.json | Alta | Critico | S | ~~P1~~ | Renan | **CORRETTO** (31 Mar 2026) |
-| C7 | male_black_shirt incompleto | Media | Critico | S | ~~P1~~ | Renan | **CORRETTO** (31 Mar 2026) — costanti orfane rimosse |
-
-### 18.3 Matrice Problemi ALTI
-
-| ID | Problema | Probab. | Impatto | Sforzo | Priorita' | Assegnato |
-|----|----------|---------|---------|--------|-----------|-----------|
-| A1 | _exit_tree() mancante (~10 script) | Alta | Alto | L | **P2** | Renan + Cristian |
-| A2 | FileDialog memory leak | — | — | — | — | — | **RISOLTO per rimozione** (shop_panel/music_panel rimossi) |
-| A3 | Race condition swap personaggio | Media | Alto | M | **P2** | Renan |
-| A6 | Memory leak drag preview deco_panel | Media | Medio | S | **P2** | Renan |
-| A12 | Logger flush sincrono | Bassa | Medio | M | **P3** | Cristian |
-| A13 | Log persi se file non disponibile | Bassa | Basso | M | **P3** | Cristian |
-| A14 | Posizione finestra non persistita | Media | Basso | S | **P3** | Cristian |
-| A15 | Rimozione duplicati item_id | Bassa | Medio | S | **P3** | Renan |
-| A16 | Cast Texture2D unsafe | Bassa | Alto | S | **P3** | Renan |
-| A17 | Tabelle seed vuote | Alta | Medio | M | ~~P2~~ | Elia | **CORRETTO** (diagnostica DB migliorata) |
-| A18 | Errore DB non propagato | Bassa | Medio | S | **P3** | Elia |
-| A19 | Tween orfani main_menu | Media | Medio | M | **P2** | Renan |
-| A22 | music_panel _exit_tree incompleto | — | — | — | — | — | **RISOLTO per rimozione** (music_panel rimosso) |
-
-### 18.4 Regola Decisionale
-
-Quando il tempo stringe, seguite questa regola:
-
-```text
-1. TUTTO cio' che e' P1 deve essere fatto PRIMA di qualsiasi P2
-2. P2 devono essere completati PRIMA di passare a P3
-3. P3 sono importanti ma il gioco funziona senza
-4. P4 sono bonus — fateli solo se avanzate tempo
-
-Se siete in dubbio su cosa fare: correggete il problema con
-la probabilita' piu' ALTA tra quelli della stessa priorita'.
-Un bug frequente con impatto medio e' peggio di un bug raro
-con impatto alto (per la presentazione del 22 aprile).
-```
-
----
-
-## 19. Stima Ore-Persona per Fase
-
-Questa tabella presenta una stima realistica delle ore necessarie per completare ogni fase del piano di stabilizzazione (Sezione 11), suddivise per responsabile.
-
-### 19.1 Stima per Fase e Responsabile
-
-| Fase | Descrizione | Elia | Cristian | Renan | Totale Fase | Stato |
-|------|-------------|------|----------|-------|-------------|-------|
-| **Fase 1** | Integrita' Dati (CRITICO) | 0h | 0h | 0h | **0h** | COMPLETATA |
-| **Fase 2** | Memoria e Lifecycle (ALTO) | 0h | 0h | 0h | **0h** | COMPLETATA |
-| **Fase 3** | Errori e Validazione (MEDIO) | 2h (A24-A27) | 2h (A12-A14) | 0h | **4h** | Parziale |
-| **Fase 4** | Allineamento Architettura | — | 1h | 4h | **5h** | Parziale |
-| **Fase 5** | Copertura Test | 1h | 3h | 3h | **7h** | Da fare |
-| **Totale rimanente** | | **3h** | **6h** | **7h** | **~16h** | |
-
-> **Nota (31 Marzo 2026)**: Tutti i task di Renan sono completati. Fase 1 e Fase 2 chiuse.
-> Ore rimanenti ridotte da ~25.5h a ~16h. Renan resta disponibile per Fase 4 (architettura)
-> e Fase 5 (test). Elia ha 5 problemi aperti (A18, A24-A27). Cristian ha 3 problemi aperti (A12-A14).
-
-### 19.2 Distribuzione Settimanale (Scadenza 22 Aprile 2026)
-
-| Settimana | Date | Obiettivo | Ore/persona stimate | Stato |
-|-----------|------|-----------|---------------------|-------|
-| Settimana 1 | 28 Mar - 4 Apr | ~~Fase 1 + inizio Fase 2~~ | ~~3-4h~~ | COMPLETATA (Fase 1+2 chiuse al 31 Mar) |
-| Settimana 2 | 5 Apr - 11 Apr | Fase 3: Elia (A24-A27), Cristian (A12-A14) | 3-4h | Da fare |
-| Settimana 3 | 12 Apr - 18 Apr | Fase 4 (AR6-AR10) + inizio Fase 5 | 3-4h | Da fare |
-| Settimana 4 | 19 Apr - 22 Apr | Fase 5 + test finale + fix urgenti | 2-3h | Da fare |
-
-**Nota**: Fase 1 e 2 completate in anticipo (31 Mar). Il team ha piu' tempo per le fasi rimanenti.
-
-### 19.3 Percorso Critico (Dipendenze tra Fasi)
-
-```text
-Fase 1 (Integrita' Dati)
-  │
-  ├── C3/C4 (Elia: schema DB) ── GIA' CORRETTO
-  ├── C6 (Elia: typo characters.json)────────┐
-  │                                           ▼
-  │                                    Fase 2 (Lifecycle)
-  │                                      │
-  │                                      ├── A1 (_exit_tree ~10 script)
-  │                                      ├── A3 (race condition)
-  │                                      ├── A19 (tween orfani)
-  │                                      │
-  │                                      ▼
-  │                                    Fase 3 (Validazione)
-  │                                      │
-  │                                      ├── A12-A13 (Logger)
-  │                                      ├── A15-A16 (decoration, drop_zone)
-  │                                      │
-  │                                      ▼
-  │                                    Fase 4 (Architettura)
-  │                                      │
-  │                                      ├── AR6-AR11 (disaccoppiamento)
-  │                                      │
-  │                                      ▼
-  └──────────────────────────────────► Fase 5 (Test)
-                                         │
-                                         ├── Test per OGNI fase precedente
-                                         ├── CI green su tutti i workflow
-                                         └── Test manuale completo
-
-ATTENZIONE: La Fase 5 (Test) dipende da TUTTE le fasi precedenti.
-Cristian puo' iniziare a preparare i file test durante le Fasi 1-3,
-ma la configurazione CI finale richiede che i file test siano stabili.
-```
-
----
-
-## 20. Piano di Rollback — Cosa Fare se una Correzione Rompe Qualcosa
-
-### 20.1 Strategia di Rollback per Ogni Fase
-
-| Fase | Rischio Rollback | Strategia |
-|------|-----------------|-----------|
-| Fase 1 (Schema DB) | ALTO — Cambio schema puo' rendere il DB esistente incompatibile | Backup DB prima di ogni modifica. Se il nuovo schema rompe il gioco, ripristinare il backup (procedura in GUIDA_ELIA_DATABASE.md) |
-| Fase 2 (Lifecycle) | BASSO — Aggiunta _exit_tree non rompe nulla di esistente | Se un disconnect causa errori, commentare la riga problematica e aprire un issue |
-| Fase 3 (Validazione) | BASSO — Aggiunta di check non modifica il flusso principale | Usare `push_warning` invece di `push_error` se non siete sicuri della gravita' |
-| Fase 4 (Architettura) | MEDIO — Modificare la comunicazione tra autoload puo' rompere catene di segnali | Testare ogni singola modifica isolatamente. Se un segnale non arriva, verificare l'ordine autoload |
-| Fase 5 (Test) | NESSUNO — I test non modificano il codice di produzione | Se un test fallisce, il problema e' nel test o nel codice (non nel processo di testing) |
-
-### 20.2 Procedura di Emergenza
-
-Se dopo un commit il gioco non si avvia o crasha immediatamente:
-
-```text
-1. NON fate git reset --hard (potreste perdere lavoro)
-2. Identificate l'ultimo commit funzionante:
-   git log --oneline -10
-3. Create un branch di backup:
-   git branch backup-prima-del-fix
-4. Revert del singolo commit problematico:
-   git revert <hash-del-commit>
-5. Pushate il revert:
-   git push
-6. Analizzate il problema con calma e riprovate
-```
-
-**Se NON sapete cosa fare: contattate Renan IMMEDIATAMENTE.** Non tentate fix al buio.
-
----
-
-## 21. Appendice — File Modificati per Fase
-
-Elenco completo dei file che ogni fase del piano di stabilizzazione tocchera'. Utile per capire in anticipo i possibili conflitti Git e coordinare il lavoro del team.
-
-### Fase 1 — Integrita' Dati
-
-| File | Modifiche | Chi |
-|------|-----------|-----|
-| `scripts/autoload/local_database.gd` | ~~Schema characters (PK), schema inventario, FK~~ **GIA' CORRETTO** (27 Mar). Rimane: seed data | Elia |
-| `data/characters.json` | Fix typo sprite "sxt"→"sx" (C6 — ancora aperto) | Elia |
-| `scripts/utils/constants.gd` | Rimuovere 3 costanti orfane (CHAR_FEMALE_RED_SHIRT, CHAR_MALE_YELLOW_SHIRT, CHAR_MALE_BLACK_SHIRT) | Elia |
-| ~~`data/supabase_migration.sql`~~ | ~~Allineamento schema PostgreSQL~~ **NON NECESSARIO** — SupabaseClient rimosso | — |
-
-### Fase 2 — Memoria e Lifecycle
-
-| File | Modifiche | Chi |
-|------|-----------|-----|
-| `scripts/ui/panel_manager.gd` | Aggiunta _exit_tree() | Renan |
-| `scripts/ui/deco_panel.gd` | _exit_tree() + fix memory leak drag preview | Renan |
-| `scripts/ui/settings_panel.gd` | Aggiunta _exit_tree() | Renan |
-| ~~`scripts/ui/music_panel.gd`~~ | ~~Fix FileDialog leak + _exit_tree()~~ **RIMOSSO** (25 Mar 2026) | — |
-| `scripts/rooms/room_base.gd` | _exit_tree() + fix race condition swap (call_deferred) | Renan |
-| `scripts/rooms/decoration_system.gd` | _exit_tree() + fix rimozione duplicati | Renan |
-| `scripts/rooms/room_grid.gd` | Aggiunta _exit_tree() | Renan |
-| `scripts/rooms/character_controller.gd` | null check _anim + validazione nomi animazione | Renan |
-| `scripts/menu/main_menu.gd` | _exit_tree() + fix tween orfani (A19) | Renan |
-| `scripts/menu/menu_character.gd` | Aggiunta _exit_tree() | Renan |
-| `scripts/main.gd` | Aggiunta _exit_tree() | Renan |
-| `scripts/autoload/logger.gd` | Fix flush sincrono + log persi | Cristian |
-| `systems/performance_manager.gd` | _exit_tree() + persistenza posizione finestra | Cristian |
-
-### Fase 3 — Errori e Validazione
-
-| File | Modifiche | Chi |
-|------|-----------|-----|
-| `scripts/autoload/save_manager.gd` | _validate_save_data(), safety version comparison | Elia (supporto) |
-| `scripts/rooms/decoration_system.gd` | Fix rimozione duplicati item_id (A15) | Renan |
-| `scripts/ui/drop_zone.gd` | Cast Texture2D safe (A16) | Renan |
-| `scripts/autoload/logger.gd` | Fallback se file log non disponibile (A13) | Cristian |
-
-### Fase 4 — Allineamento Architetturale
-
-| File | Modifiche | Chi |
-|------|-----------|-----|
-| `systems/performance_manager.gd` | Comunicazione via SignalBus (AR6) | Renan |
-| `scripts/ui/settings_panel.gd` | Comunicazione via SignalBus (AR7) | Renan |
-| `scripts/autoload/signal_bus.gd` | Eventuali nuovi segnali per AR6-AR7 | Renan |
-| `scripts/autoload/local_database.gd` | Sistema migrazione schema (AR10) | Renan |
-| ~~`scripts/autoload/supabase_client.gd`~~ | ~~Schema errori consistente (AR11)~~ **RIMOSSO** (27 Mar 2026) | — |
-
-### Fase 5 — Copertura Test
-
-| File | Modifiche | Chi |
-|------|-----------|-----|
-| `tests/unit/test_local_database.gd` | Test schema, FK, seed data | Elia |
-| `tests/unit/test_save_manager.gd` | Test save/load, migrazione, backup | Cristian |
-| `tests/unit/test_signal_bus.gd` | Test emissione/ricezione segnali | Cristian |
-| `tests/unit/test_audio_manager.gd` | Test bounds check, crossfade | Renan |
-| `tests/unit/test_decoration_system.gd` | Test posizionamento, rimozione | Renan |
-| `tests/unit/test_game_manager.gd` | Test caricamento cataloghi | Renan |
-| `.github/workflows/*.yml` | Aggiunta test nella pipeline CI | Cristian |
-
-### Potenziali Conflitti Git
-
-```text
-FILE AD ALTO RISCHIO CONFLITTO (modificati da piu' persone):
-- scripts/autoload/local_database.gd  → Elia (schema) + Renan (migrazione)
-- systems/performance_manager.gd      → Cristian (_exit_tree) + Renan (SignalBus)
-- scripts/ui/settings_panel.gd        → Renan (_exit_tree + SignalBus)
-
-STRATEGIA: Completare prima le modifiche lifecycle (Fase 2), poi quelle
-architetturali (Fase 4). Non lavorare sullo stesso file in parallelo.
-Coordinatevi nel gruppo Teams prima di iniziare un file "conteso".
-```
-
----
-
-*Documento redatto come parte dell'audit pre-rilascio del progetto Mini Cozy Room.*
-*Autore: Renan Augusto Macena*
+*Fine del report. Documento generato il 1 Aprile 2026.*
+*Ultima riga di codice analizzata: helpers.gd:49*
