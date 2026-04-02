@@ -127,3 +127,8 @@ func _on_load_completed() -> void:
 
 func _request_save() -> void:
 	SignalBus.save_requested.emit()
+
+
+func _exit_tree() -> void:
+	if SignalBus.load_completed.is_connected(_on_load_completed):
+		SignalBus.load_completed.disconnect(_on_load_completed)

@@ -558,11 +558,10 @@ oppure introdurre un segnale `state_restored(data: Dictionary)`.
 
 ---
 
-**N-Q5** — Nessun `_exit_tree()` (`BASSO`)
+**N-Q5** — ~~Nessun `_exit_tree()`~~ `RISOLTO` (2 Apr 2026)
 
-GameManager non ha `_exit_tree()`. Come autoload, vive per tutta la vita dell'app,
-quindi la disconnessione del segnale `load_completed` non e' strettamente necessaria.
-Tuttavia, per coerenza con gli altri autoload che lo implementano, sarebbe preferibile aggiungerlo.
+GameManager ora ha `_exit_tree()` che disconnette `SignalBus.load_completed`.
+Aggiunto per coerenza con gli altri autoload che lo implementano.
 
 ---
 
@@ -760,7 +759,7 @@ come parametro, oppure AudioManager dovrebbe richiedere lo stato tramite un meto
 
 **Problema residuo**:
 
-**N-Q3** — Inconsistenza `clean_name` in `register()` (`MEDIO`)
+**N-Q3** — ~~Inconsistenza `clean_name` in `register()`~~ `RISOLTO` (commit 953ad1e, 2 Apr 2026)
 
 ```gdscript
 # Riga 45: username viene pulito
@@ -1191,7 +1190,7 @@ if idx >= 0:
 
 **Problema residuo**:
 
-**N-AR7** — Scrittura diretta in `SaveManager.settings` (`ARCHITETTURALE`)
+**N-AR7** — ~~Scrittura diretta in `SaveManager.settings`~~ `RISOLTO` (commit 953ad1e, 2 Apr 2026)
 
 ```gdscript
 # Riga 128
@@ -1349,14 +1348,14 @@ Ogni tema ha `wall_color` e `floor_color` come hex string. Struttura corretta.
 
 **tracks.json** (19 righe) — 2 tracce musicali (rain loop, rain thunder), array `ambience` vuoto.
 
-**N-P1** — Solo 2 tracce in `tracks.json` ma 18 file MP3 in `assets/audio/` (`POLISHING`)
+**N-P1** — Solo 2 tracce audio disponibili (`POLISHING`)
 
-Il catalogo dichiara solo 2 tracce audio, ma nella cartella `assets/audio/` sono presenti
-circa 18 file MP3. Le tracce aggiuntive non sono referenziate da nessun catalogo JSON e
-quindi non sono disponibili nel gioco.
+Il catalogo `tracks.json` dichiara 2 tracce e nella cartella `assets/audio/music/` sono
+presenti esattamente 2 file WAV (`mixkit-light-rain-loop-1253.wav`,
+`mixkit-light-rain-with-thunderstorm-1290.wav`). Non ci sono altri file audio nel progetto.
 
-**Suggerimento**: Aggiungere le tracce mancanti al catalogo, oppure rimuovere i file MP3
-non utilizzati per ridurre la dimensione del build.
+**Suggerimento**: Per un'esperienza musicale piu' ricca, aggiungere ulteriori tracce lo-fi
+al catalogo e alla cartella `assets/audio/music/`.
 
 ---
 
@@ -1505,13 +1504,13 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 | ID | Severita' | Script | Descrizione |
 |----|-----------|--------|-------------|
 | N-BD1 | `CRITICO` | build.yml | Godot 4.5 container vs 4.6 progetto |
-| N-Q3 | `MEDIO` | auth_manager.gd:60 | `username.strip_edges()` invece di `clean_name` |
+| N-Q3 | ~~MEDIO~~ `RISOLTO` | auth_manager.gd:60 | ~~`username.strip_edges()` invece di `clean_name`~~ Fix: commit 953ad1e |
 | N-DB2 | `MEDIO` | local_database.gd | Nessun indice su colonne FK |
 | N-DB3 | `MEDIO` | local_database.gd | `_select()` ritorno ambiguo |
 | N-Q6 | `MEDIO` | save_manager.gd | Stato pubblico mutabile |
 | N-BD4 | `MEDIO` | export_presets.cfg | Icona applicazione vuota |
 | N-BD3 | `MEDIO` | export_presets.cfg | Nessun preset Android |
-| N-AR7 | `MEDIO` | settings_panel.gd:128 | Scrittura diretta in SaveManager.settings |
+| N-AR7 | ~~MEDIO~~ `RISOLTO` | settings_panel.gd:128 | ~~Scrittura diretta in SaveManager.settings~~ Fix: commit 953ad1e |
 | N-Q1 | `MEDIO` | auth_screen.gd | Nessun _exit_tree() + tween non tracciato |
 | N-AR1 | ARCH | save_manager.gd | SaveManager scrive in GameManager direttamente |
 | N-AR2 | ARCH | save_manager.gd | Accoppiamento bidirezionale SM <-> GM |
@@ -1522,10 +1521,10 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 | N-AR8 | ARCH | profile_panel.gd | Chiamata diretta a LocalDatabase |
 | N-Q2 | `BASSO` | menu_character.gd | Tween non tracciato |
 | N-Q4 | `BASSO` | logger.gd | Flush sincrono (teorico) |
-| N-Q5 | `BASSO` | game_manager.gd | Nessun _exit_tree() |
+| N-Q5 | ~~BASSO~~ `RISOLTO` | game_manager.gd | ~~Nessun _exit_tree()~~ Fix: aggiunto _exit_tree() |
 | N-DB1 | `BASSO` | local_database.gd | Tabelle morte nello schema |
 | N-BD5 | `BASSO` | export_presets.cfg | Versione applicazione vuota |
-| N-P1 | POLISHING | tracks.json | 18 MP3 ma solo 2 in catalogo |
+| N-P1 | POLISHING | tracks.json | Solo 2 tracce audio disponibili |
 | N-P3 | POLISHING | room_base.gd | Collision shape e scala (documentazione) |
 | N-P4 | POLISHING | menu_character.gd | Posizioni hardcoded |
 
@@ -1535,12 +1534,12 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 
 ```
 CRITICO:        1  (build.yml versione Godot)
-MEDIO:          7
+MEDIO:          5  (erano 7, N-Q3 e N-AR7 risolti)
 ARCHITETTURALE: 8  (tutti relativi ad accoppiamento)
-BASSO:          5
+BASSO:          4  (era 5, N-Q5 risolto)
 POLISHING:      3
                 --
-TOTALE:        24 nuovi problemi
+TOTALE:        21 problemi aperti (24 trovati, 3 risolti)
 ```
 
 ---
@@ -1570,10 +1569,10 @@ mkdir -p ~/.local/share/godot/export_templates/4.6.stable
 
 ### Priorita' 2 — MEDIO (entro 8 Aprile)
 
-**[N-Q3] Fix clean_name in auth_manager.gd**
+**[N-Q3] Fix clean_name in auth_manager.gd** — `RISOLTO` (commit 953ad1e)
 
 ```gdscript
-# Riga 59-60: sostituire username.strip_edges() con clean_name
+# Riga 59-60: ora usa clean_name (fix applicato)
 var account_id := LocalDatabase.create_account(
     clean_name, pw_hash     # Era: username.strip_edges()
 )
@@ -1610,10 +1609,10 @@ func _exit_tree() -> void:
         _finish_tween.kill()
 ```
 
-**[N-AR7] Fix settings_panel.gd lingua**
+**[N-AR7] Fix settings_panel.gd lingua** — `RISOLTO` (commit 953ad1e)
 
 ```gdscript
-# Riga 128: sostituire scrittura diretta con segnale
+# Riga 128: ora usa segnale (fix applicato)
 func _on_language_selected(index: int) -> void:
     var lang_code: String = _language_option.get_item_metadata(index)
     SignalBus.settings_updated.emit("language", lang_code)   # Era: SaveManager.settings["language"] = lang_code
