@@ -58,7 +58,7 @@ func _load_tracks() -> void:
 
 
 func _on_load_completed() -> void:
-	var state: Dictionary = SaveManager.music_state
+	var state: Dictionary = SaveManager.get_music_state()
 	current_track_index = state.get("current_track_index", 0)
 	playlist_mode = state.get("playlist_mode", "shuffle")
 	_active_ambience = state.get("active_ambience", [])
@@ -66,9 +66,9 @@ func _on_load_completed() -> void:
 	if not tracks.is_empty():
 		current_track_index = clampi(current_track_index, 0, tracks.size() - 1)
 
-	master_volume = SaveManager.settings.get("master_volume", 0.8)
-	music_volume = SaveManager.settings.get("music_volume", 0.6)
-	ambience_volume = SaveManager.settings.get("ambience_volume", 0.4)
+	master_volume = SaveManager.get_setting("master_volume", 0.8)
+	music_volume = SaveManager.get_setting("music_volume", 0.6)
+	ambience_volume = SaveManager.get_setting("ambience_volume", 0.4)
 
 	_apply_music_volume()
 

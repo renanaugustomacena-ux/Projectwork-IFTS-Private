@@ -96,12 +96,12 @@ func _create_slider(parent: VBoxContainer, label_text: String, default_value: fl
 
 func _load_settings() -> void:
 	_loading = true
-	_master_slider.value = SaveManager.settings.get("master_volume", 0.8)
-	_music_slider.value = SaveManager.settings.get("music_volume", 0.6)
-	_ambience_slider.value = SaveManager.settings.get("ambience_volume", 0.4)
+	_master_slider.value = SaveManager.get_setting("master_volume", 0.8)
+	_music_slider.value = SaveManager.get_setting("music_volume", 0.6)
+	_ambience_slider.value = SaveManager.get_setting("ambience_volume", 0.4)
 	_loading = false
 
-	var current_lang: String = SaveManager.settings.get("language", "en")
+	var current_lang: String = SaveManager.get_setting("language", "en")
 	for i in _language_option.item_count:
 		if _language_option.get_item_metadata(i) == current_lang:
 			_language_option.selected = i

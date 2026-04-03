@@ -10,17 +10,17 @@ const SAVE_VERSION := "5.0.0"
 const AUTO_SAVE_INTERVAL := 60.0
 
 # Room decoration state
-var decorations: Array = []
+var _decorations: Array = []
 
 # Music state
-var music_state: Dictionary = {
+var _music_state: Dictionary = {
 	"current_track_index": 0,
 	"playlist_mode": "shuffle",
 	"active_ambience": [],
 }
 
 # Settings
-var settings: Dictionary = {
+var _settings: Dictionary = {
 	"language": "en",
 	"display_mode": "windowed",
 	"mini_mode_position": "bottom_right",
@@ -28,6 +28,32 @@ var settings: Dictionary = {
 	"music_volume": 0.6,
 	"ambience_volume": 0.4,
 }
+
+
+func get_decorations() -> Array:
+	return _decorations
+
+
+func add_decoration(data: Dictionary) -> void:
+	_decorations.append(data)
+	_mark_dirty()
+
+
+func remove_decoration(data: Dictionary) -> bool:
+	var idx := _decorations.find(data)
+	if idx >= 0:
+		_decorations.remove_at(idx)
+		_mark_dirty()
+		return true
+	return false
+
+
+func get_setting(key: String, default: Variant = null) -> Variant:
+	return _settings.get(key, default)
+
+
+func get_music_state() -> Dictionary:
+	return _music_state
 
 # Character data (maps to CHARACTER table)
 var character_data: Dictionary = {
@@ -67,12 +93,12 @@ func _mark_dirty() -> void:
 
 
 func _on_settings_updated(key: String, value: Variant) -> void:
-	settings[key] = value
+	_settings[key] = value
 	_mark_dirty()
 
 
 func _on_music_state_updated(state: Dictionary) -> void:
-	music_state = state
+	_music_state = state
 	_mark_dirty()
 
 
@@ -97,12 +123,12 @@ func save_game() -> void:
 			"auth_uid": AuthManager.current_auth_uid,
 			"account_id": AuthManager.current_account_id,
 		},
-		"settings": settings,
+		"settings": _settings,
 		"room":
 		{
 			"current_room_id": GameManager.current_room_id,
 			"current_theme": GameManager.current_theme,
-			"decorations": decorations,
+			"decorations": _decorations,
 		},
 		"character":
 		{
@@ -110,7 +136,7 @@ func save_game() -> void:
 			"outfit_id": GameManager.current_outfit_id,
 			"data": character_data,
 		},
-		"music": music_state,
+		"music": _music_state,
 		"inventory": inventory_data,
 	}
 
@@ -231,16 +257,16 @@ func _apply_save_data(data: Dictionary) -> void:
 	# Settings — validate types match defaults
 	if "settings" in data and data["settings"] is Dictionary:
 		for key in data["settings"]:
-			if key in settings:
+			if key in _settings:
 				var loaded = data["settings"][key]
-				if typeof(loaded) == typeof(settings[key]):
-					settings[key] = loaded
+				if typeof(loaded) == typeof(_settings[key]):
+					_settings[key] = loaded
 				else:
 					AppLogger.warn("SaveManager", "Type mismatch in settings", {"key": key})
 	# Clamp volume ranges
-	settings["master_volume"] = clampf(float(settings.get("master_volume", 0.8)), 0.0, 1.0)
-	settings["music_volume"] = clampf(float(settings.get("music_volume", 0.6)), 0.0, 1.0)
-	settings["ambience_volume"] = clampf(float(settings.get("ambience_volume", 0.4)), 0.0, 1.0)
+	_settings["master_volume"] = clampf(float(_settings.get("master_volume", 0.8)), 0.0, 1.0)
+	_settings["music_volume"] = clampf(float(_settings.get("music_volume", 0.6)), 0.0, 1.0)
+	_settings["ambience_volume"] = clampf(float(_settings.get("ambience_volume", 0.4)), 0.0, 1.0)
 
 	# Room state
 	if "room" in data and data["room"] is Dictionary:
@@ -250,7 +276,7 @@ func _apply_save_data(data: Dictionary) -> void:
 		if "current_theme" in room_data and room_data["current_theme"] is String:
 			GameManager.current_theme = room_data["current_theme"]
 		if "decorations" in room_data and room_data["decorations"] is Array:
-			decorations = room_data["decorations"]
+			_decorations = room_data["decorations"]
 
 	# Character state
 	if "character" in data and data["character"] is Dictionary:
@@ -271,10 +297,10 @@ func _apply_save_data(data: Dictionary) -> void:
 	# Music state
 	if "music" in data and data["music"] is Dictionary:
 		for key in data["music"]:
-			if key in music_state:
+			if key in _music_state:
 				var loaded = data["music"][key]
-				if typeof(loaded) == typeof(music_state[key]):
-					music_state[key] = loaded
+				if typeof(loaded) == typeof(_music_state[key]):
+					_music_state[key] = loaded
 
 	# Inventory data — validate types and clamp values
 	if "inventory" in data and data["inventory"] is Dictionary:
@@ -397,7 +423,7 @@ func reset_character_data() -> void:
 		"colore_pelle": 0,
 		"livello_stress": 0,
 	}
-	decorations = []
+	_decorations = []
 	GameManager.current_character_id = "male_old"
 	GameManager.current_outfit_id = ""
 	GameManager.current_room_id = "cozy_studio"
@@ -407,7 +433,7 @@ func reset_character_data() -> void:
 
 func reset_all() -> void:
 	reset_character_data()
-	music_state = {
+	_music_state = {
 		"current_track_index": 0,
 		"playlist_mode": "shuffle",
 		"active_ambience": [],
@@ -417,7 +443,7 @@ func reset_all() -> void:
 		"capacita": 50,
 		"items": [],
 	}
-	settings = {
+	_settings = {
 		"language": "en",
 		"display_mode": "windowed",
 		"mini_mode_position": "bottom_right",

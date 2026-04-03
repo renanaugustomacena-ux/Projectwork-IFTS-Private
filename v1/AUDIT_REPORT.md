@@ -599,22 +599,13 @@ Questo e' lo script piu' complesso del progetto. Gestisce:
 
 **Problemi residui**:
 
-**N-Q6** — Stato pubblico mutabile (`MEDIO`)
+**N-Q6** — ~~Stato pubblico mutabile~~ `RISOLTO` (3 Apr 2026)
 
-```gdscript
-# Righe 13-47: variabili pubbliche senza protezione
-var decorations: Array = []          # Chiunque puo' modificare
-var music_state: Dictionary = { }    # Chiunque puo' modificare
-var settings: Dictionary = { }      # Chiunque puo' modificare
-var character_data: Dictionary = { } # Chiunque puo' modificare
-var inventory_data: Dictionary = { } # Chiunque puo' modificare
-```
-
-**Perche' e' un problema**: Qualsiasi script puo' modificare questi dizionari senza
-passare per il sistema di salvataggio. Modifiche esterne non triggerano il dirty flag,
-quindi possono essere perse.
-
-**Soluzione suggerita**: Rendere le variabili `_private` e fornire getter che ritornano
+Variabili `decorations`, `settings`, `music_state` rinominate con prefisso `_` (private).
+Aggiunti getter (`get_decorations()`, `get_setting()`, `get_music_state()`) e mutator
+(`add_decoration()`, `remove_decoration()`). Aggiornati tutti i 14 access point esterni
+in 5 file: room_base.gd, decoration_system.gd, settings_panel.gd, audio_manager.gd,
+performance_manager.gd.
 copie (`duplicate()`). Le scritture passano per setter che chiamano `_mark_dirty()`.
 
 ---
@@ -1396,17 +1387,10 @@ container image e path dei template di export per entrambi i job (Windows e HTML
 
 ---
 
-**N-BD4** — Icona applicazione vuota (`MEDIO`)
+**N-BD4** — ~~Icona applicazione vuota~~ `RISOLTO` (3 Apr 2026)
 
-```cfg
-# export_presets.cfg riga 27:
-application/icon=""
-```
-
-L'eseguibile Windows non avra' icona personalizzata. Usera' l'icona generica di Godot.
-
-**Suggerimento**: Creare un file `.ico` (256x256, 128x128, 64x64, 32x32, 16x16) e
-impostare il path in `export_presets.cfg`.
+Generato `icon.ico` (256/128/64/48/32/16px) con colori del progetto (#1f1c2e + accento viola).
+Impostato `application/icon="res://icon.ico"` in `export_presets.cfg`.
 
 ---
 
@@ -1466,8 +1450,8 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 | N-Q3 | ~~MEDIO~~ `RISOLTO` | auth_manager.gd:60 | ~~`username.strip_edges()` invece di `clean_name`~~ Fix: commit 953ad1e |
 | N-DB2 | ~~MEDIO~~ `RISOLTO` | local_database.gd | ~~Nessun indice su colonne FK~~ Fix: aggiunto 3 indici FK (3 Apr 2026) |
 | N-DB3 | ~~MEDIO~~ `RISOLTO` | local_database.gd | ~~`_select()` ritorno ambiguo~~ Fix: aggiunto `_last_select_error` flag (3 Apr 2026) |
-| N-Q6 | `MEDIO` | save_manager.gd | Stato pubblico mutabile |
-| N-BD4 | `MEDIO` | export_presets.cfg | Icona applicazione vuota |
+| N-Q6 | ~~MEDIO~~ `RISOLTO` | save_manager.gd | ~~Stato pubblico mutabile~~ Fix: variabili private + getter/mutator (3 Apr 2026) |
+| N-BD4 | ~~MEDIO~~ `RISOLTO` | export_presets.cfg | ~~Icona applicazione vuota~~ Fix: generato icon.ico (3 Apr 2026) |
 | N-BD3 | `MEDIO` | export_presets.cfg | Nessun preset Android |
 | N-AR7 | ~~MEDIO~~ `RISOLTO` | settings_panel.gd:128 | ~~Scrittura diretta in SaveManager.settings~~ Fix: commit 953ad1e |
 | N-Q1 | ~~MEDIO~~ `RISOLTO` | auth_screen.gd | ~~Nessun _exit_tree() + tween non tracciato~~ Fix: aggiunto _exit_tree(), guard _finishing, tween tracking (3 Apr 2026) |
@@ -1493,12 +1477,12 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 
 ```
 CRITICO:        0  (era 1, N-BD1 risolto)
-MEDIO:          2  (erano 7, N-Q3/N-AR7/N-Q1/N-DB2/N-DB3 risolti)
+MEDIO:          0  (erano 7, tutti risolti)
 ARCHITETTURALE: 8  (tutti relativi ad accoppiamento)
 BASSO:          1  (era 5, N-Q5/N-Q2/N-DB1/N-BD5 risolti)
 POLISHING:      3
                 --
-TOTALE:        14 problemi aperti (24 trovati, 10 risolti)
+TOTALE:        12 problemi aperti (24 trovati, 12 risolti)
 ```
 
 ---
@@ -1545,10 +1529,9 @@ func _on_language_selected(index: int) -> void:
     SignalBus.save_requested.emit()
 ```
 
-**[N-BD4] Aggiungere icona applicazione**
+**[N-BD4] Aggiungere icona applicazione** — `RISOLTO` (3 Apr 2026)
 
-1. Creare un file `v1/assets/icon.ico` con le dimensioni standard (256, 128, 64, 32, 16)
-2. In `export_presets.cfg`: `application/icon="res://assets/icon.ico"`
+Generato `icon.ico` e impostato in `export_presets.cfg`.
 
 **[N-BD3] Creare preset Android**
 
@@ -2592,9 +2575,9 @@ Esportare con supporto multi-ABI in Godot Export Settings:
 +--------------------------------+--------+
 | Fix primo audit verificate     | 36/36  |
 | Nuovi problemi trovati         |    24  |
-| Problemi risolti               |    10  |
+| Problemi risolti               |    12  |
 |   - CRITICO                    |  0 (1 risolto)   |
-|   - MEDIO                      |  2 (7-5 risolti) |
+|   - MEDIO                      |  0 (7 risolti)   |
 |   - ARCHITETTURALE             |     8  |
 |   - BASSO                      |  1 (5-4 risolti) |
 |   - POLISHING                  |     3  |
@@ -2608,7 +2591,7 @@ Esportare con supporto multi-ABI in Godot Export Settings:
 
 ```
 CRITICO       |                                        | 0
-MEDIO         |##                                      | 2
+MEDIO         |                                        | 0
 ARCHITETTURALE|########                                | 8
 BASSO         |#                                       | 1
 POLISHING     |###                                     | 3

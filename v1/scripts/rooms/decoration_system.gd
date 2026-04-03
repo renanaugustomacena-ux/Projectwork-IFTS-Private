@@ -215,9 +215,7 @@ func _save_scale(new_scale: float) -> void:
 
 
 func _remove_from_room() -> void:
-	var idx := SaveManager.decorations.find(_deco_data)
-	if idx >= 0:
-		SaveManager.decorations.remove_at(idx)
+	SaveManager.remove_decoration(_deco_data)
 	SignalBus.decoration_removed.emit(item_id)
 	SignalBus.save_requested.emit()
 	queue_free()
