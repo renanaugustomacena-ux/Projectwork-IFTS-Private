@@ -14,15 +14,23 @@ Reference documents for understanding the project, Godot Engine, game developmen
 | [GAME_DEV_PLANNING.md](GAME_DEV_PLANNING.md) | Pre-modification checklist, version control, architecture patterns, testing, common mistakes, refactoring, technical debt, project management | ~750 lines |
 | [BUILD_AND_EXPORT.md](BUILD_AND_EXPORT.md) | Compilation, Godot export system, platform builds, CI/CD, Inno Setup installer, Android APK/AAB, checklist pre-release | ~1000 lines |
 | [DATABASE_AND_PERSISTENCE.md](DATABASE_AND_PERSISTENCE.md) | SQLite best practices, save system patterns, autenticazione, Supabase, sync offline-first, schema PostgreSQL | ~450 lines |
+| [SPRITES_AND_TEXTURES.md](SPRITES_AND_TEXTURES.md) | Sprite2D, AtlasTexture, SpriteFrames, AnimatedSprite2D, texture filtering, pixel art import, spritesheet layout | ~400 lines |
+| [SCENES_AND_NODES.md](SCENES_AND_NODES.md) | Scene tree, ciclo di vita nodi, PackedScene, instancing, CanvasLayer, collision layers, tipi di nodo 2D | ~450 lines |
+| [TILES_AND_TILEMAPS.md](TILES_AND_TILEMAPS.md) | TileMapLayer, TileSet, atlas sources, terrains/autotiling, isometrica, collisioni su tile, confronto col nostro approccio | ~350 lines |
+| [RENDERING_AND_VISUAL_LOGIC.md](RENDERING_AND_VISUAL_LOGIC.md) | Z-ordering, custom _draw(), tweens, parallasse, viewport, temi UI, modulate, costanti di rendering del progetto | ~500 lines |
 
 ## Suggested Reading Order
 
 1. **PROJECT_DEEP_DIVE.md** — Start here to understand what we're building and why
 2. **GODOT_ENGINE_STUDY.md** — Learn the engine that powers our project
-3. **ISOMETRIC_GAMES.md** — Understand the game genre and rendering techniques
-4. **DATABASE_AND_PERSISTENCE.md** — Understand data persistence, auth, and cloud sync
-5. **GAME_DEV_PLANNING.md** — Learn how to plan changes without breaking things
-6. **BUILD_AND_EXPORT.md** — Understand how the game reaches players (export, installer, Android)
+3. **SPRITES_AND_TEXTURES.md** — Understand how sprites, textures and animations work
+4. **SCENES_AND_NODES.md** — Master scene composition and node lifecycle
+5. **RENDERING_AND_VISUAL_LOGIC.md** — Learn 2D rendering, tweens, parallax and theming
+6. **TILES_AND_TILEMAPS.md** — Understand tilemaps (not used yet, but essential knowledge)
+7. **ISOMETRIC_GAMES.md** — Understand the game genre and rendering techniques
+8. **DATABASE_AND_PERSISTENCE.md** — Understand data persistence, auth, and cloud sync
+9. **GAME_DEV_PLANNING.md** — Learn how to plan changes without breaking things
+10. **BUILD_AND_EXPORT.md** — Understand how the game reaches players (export, installer, Android)
 
 ## Glossario Rapido del Progetto
 
@@ -134,6 +142,10 @@ Per prepararvi all'esame, ecco quali documenti coprono quali potenziali argoment
 | Gestione progetto e lavoro in team | GAME_DEV_PLANNING.md | Sez. 8-9 (Quality vs Scope, Pipeline) |
 | Export e distribuzione software | BUILD_AND_EXPORT.md | Sez. 3-7 (Export), Sez. 16-18 (Inno Setup, Android, Checklist) |
 | Grafica 2D e proiezione isometrica | ISOMETRIC_GAMES.md | Tutto il documento |
+| Sprite, texture e animazioni 2D | SPRITES_AND_TEXTURES.md | Sez. 1 (Concetti), Sez. 2 (Nel Progetto) |
+| Composizione scene e nodi Godot | SCENES_AND_NODES.md | Sez. 1 (Concetti), Sez. 2 (Le nostre scene) |
+| TileMap e level design | TILES_AND_TILEMAPS.md | Sez. 1 (TileSet, Terrain), Sez. 2 (Confronto) |
+| Rendering 2D, animazione e temi | RENDERING_AND_VISUAL_LOGIC.md | Sez. 1-2 (Tween, parallax, z-index) |
 
 ## Related Resources
 
