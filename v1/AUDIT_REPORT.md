@@ -651,22 +651,10 @@ Questo crea un accoppiamento bidirezionale stretto tra i due sistemi.
 
 **Problemi residui**:
 
-**N-DB1** — Tabelle morte nello schema (`BASSO`)
+**N-DB1** — ~~Tabelle morte nello schema~~ `RISOLTO` (3 Apr 2026)
 
-Le tabelle `colore`, `categoria` e `shop` sono create nello schema ma:
-- Non hanno dati seed
-- Nessuna query le legge o scrive
-- La UI del negozio e' stata rimossa nella semplificazione
-
-```sql
--- Tabelle create ma mai utilizzate:
-CREATE TABLE IF NOT EXISTS colore (...)   -- Nessuna INSERT, nessuna SELECT
-CREATE TABLE IF NOT EXISTS categoria (...) -- Nessuna INSERT, nessuna SELECT
-CREATE TABLE IF NOT EXISTS shop (...)      -- Nessuna INSERT, nessuna SELECT
-```
-
-**Suggerimento**: Rimuovere o commentare la creazione di queste tabelle. Se servono per
-una fase futura, documentarlo con un commento.
+Le tabelle `colore`, `categoria`, `shop` e `items` e le relative funzioni CRUD sono state
+rimosse da `local_database.gd`. Nessun altro script le referenziava.
 
 ---
 
@@ -909,7 +897,7 @@ crea accoppiamento implicito.
 
 **Problemi residui**:
 
-**N-Q1** — Nessun `_exit_tree()` + tween non tracciato (`MEDIO`)
+**N-Q1** — ~~Nessun `_exit_tree()` + tween non tracciato~~ `RISOLTO` (3 Apr 2026)
 
 ```gdscript
 # Riga 213: tween locale, non salvato come member variable
@@ -950,7 +938,7 @@ Ma per robustezza, il tween dovrebbe essere un member variable con kill in `_exi
 
 **Problemi residui**:
 
-**N-Q2** — Tween non tracciato come member variable (`BASSO`)
+**N-Q2** — ~~Tween non tracciato come member variable~~ `RISOLTO` (3 Apr 2026)
 
 ```gdscript
 # Riga 61: tween locale
@@ -1505,13 +1493,13 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 |----|-----------|--------|-------------|
 | N-BD1 | `CRITICO` | build.yml | Godot 4.5 container vs 4.6 progetto |
 | N-Q3 | ~~MEDIO~~ `RISOLTO` | auth_manager.gd:60 | ~~`username.strip_edges()` invece di `clean_name`~~ Fix: commit 953ad1e |
-| N-DB2 | `MEDIO` | local_database.gd | Nessun indice su colonne FK |
+| N-DB2 | ~~MEDIO~~ `RISOLTO` | local_database.gd | ~~Nessun indice su colonne FK~~ Fix: aggiunto 3 indici FK (3 Apr 2026) |
 | N-DB3 | `MEDIO` | local_database.gd | `_select()` ritorno ambiguo |
 | N-Q6 | `MEDIO` | save_manager.gd | Stato pubblico mutabile |
 | N-BD4 | `MEDIO` | export_presets.cfg | Icona applicazione vuota |
 | N-BD3 | `MEDIO` | export_presets.cfg | Nessun preset Android |
 | N-AR7 | ~~MEDIO~~ `RISOLTO` | settings_panel.gd:128 | ~~Scrittura diretta in SaveManager.settings~~ Fix: commit 953ad1e |
-| N-Q1 | `MEDIO` | auth_screen.gd | Nessun _exit_tree() + tween non tracciato |
+| N-Q1 | ~~MEDIO~~ `RISOLTO` | auth_screen.gd | ~~Nessun _exit_tree() + tween non tracciato~~ Fix: aggiunto _exit_tree(), guard _finishing, tween tracking (3 Apr 2026) |
 | N-AR1 | ARCH | save_manager.gd | SaveManager scrive in GameManager direttamente |
 | N-AR2 | ARCH | save_manager.gd | Accoppiamento bidirezionale SM <-> GM |
 | N-AR3 | ARCH | audio_manager.gd | Lettura diretta da SaveManager |
@@ -1519,10 +1507,10 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 | N-AR5 | ARCH | room_base.gd | Accesso diretto a SaveManager.decorations |
 | N-AR6 | ARCH | decoration_system.gd | Accesso diretto a SaveManager.decorations |
 | N-AR8 | ARCH | profile_panel.gd | Chiamata diretta a LocalDatabase |
-| N-Q2 | `BASSO` | menu_character.gd | Tween non tracciato |
+| N-Q2 | ~~BASSO~~ `RISOLTO` | menu_character.gd | ~~Tween non tracciato~~ Fix: _walk_tween member + kill in _exit_tree (3 Apr 2026) |
 | N-Q4 | `BASSO` | logger.gd | Flush sincrono (teorico) |
 | N-Q5 | ~~BASSO~~ `RISOLTO` | game_manager.gd | ~~Nessun _exit_tree()~~ Fix: aggiunto _exit_tree() |
-| N-DB1 | `BASSO` | local_database.gd | Tabelle morte nello schema |
+| N-DB1 | ~~BASSO~~ `RISOLTO` | local_database.gd | ~~Tabelle morte nello schema~~ Fix: rimosse tabelle e CRUD inutilizzati (3 Apr 2026) |
 | N-BD5 | `BASSO` | export_presets.cfg | Versione applicazione vuota |
 | N-P1 | POLISHING | tracks.json | Solo 2 tracce audio disponibili |
 | N-P3 | POLISHING | room_base.gd | Collision shape e scala (documentazione) |
@@ -1534,12 +1522,12 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 
 ```
 CRITICO:        1  (build.yml versione Godot)
-MEDIO:          5  (erano 7, N-Q3 e N-AR7 risolti)
+MEDIO:          3  (erano 7, N-Q3/N-AR7/N-Q1/N-DB2 risolti)
 ARCHITETTURALE: 8  (tutti relativi ad accoppiamento)
-BASSO:          4  (era 5, N-Q5 risolto)
+BASSO:          2  (era 5, N-Q5/N-Q2/N-DB1 risolti)
 POLISHING:      3
                 --
-TOTALE:        21 problemi aperti (24 trovati, 3 risolti)
+TOTALE:        17 problemi aperti (24 trovati, 7 risolti)
 ```
 
 ---
@@ -1578,36 +1566,13 @@ var account_id := LocalDatabase.create_account(
 )
 ```
 
-**[N-DB2] Aggiungere indici FK in local_database.gd**
+**[N-DB2] Aggiungere indici FK in local_database.gd** — `RISOLTO` (3 Apr 2026)
 
-Aggiungere alla fine di `_create_tables()`:
-```sql
-CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);
-CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);
-CREATE INDEX IF NOT EXISTS idx_rooms_account ON rooms(account_id);
-CREATE INDEX IF NOT EXISTS idx_items_inventario ON items(inventario_id);
-```
+Aggiunti 3 indici FK alla fine di `_create_tables()`.
 
-**[N-Q1] Aggiungere cleanup in auth_screen.gd**
+**[N-Q1] Aggiungere cleanup in auth_screen.gd** — `RISOLTO` (3 Apr 2026)
 
-```gdscript
-var _finish_tween: Tween = null
-
-func _finish() -> void:
-    if _finish_tween and _finish_tween.is_running():
-        _finish_tween.kill()
-    _finish_tween = create_tween()
-    _finish_tween.tween_property(self, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
-    _finish_tween.tween_callback(
-        func() -> void:
-            auth_completed.emit()
-            queue_free()
-    )
-
-func _exit_tree() -> void:
-    if _finish_tween and _finish_tween.is_running():
-        _finish_tween.kill()
-```
+Aggiunti `_finish_tween`, guard `_finishing`, e `_exit_tree()` con kill del tween.
 
 **[N-AR7] Fix settings_panel.gd lingua** — `RISOLTO` (commit 953ad1e)
 
@@ -2667,10 +2632,11 @@ Esportare con supporto multi-ABI in Godot Export Settings:
 +--------------------------------+--------+
 | Fix primo audit verificate     | 36/36  |
 | Nuovi problemi trovati         |    24  |
+| Problemi risolti               |     7  |
 |   - CRITICO                    |     1  |
-|   - MEDIO                      |     7  |
+|   - MEDIO                      |  3 (7-4 risolti) |
 |   - ARCHITETTURALE             |     8  |
-|   - BASSO                      |     5  |
+|   - BASSO                      |  2 (5-3 risolti) |
 |   - POLISHING                  |     3  |
 | Copertura test                 |    0%  |
 | Script con _exit_tree()        | 18/24  |
@@ -2682,9 +2648,9 @@ Esportare con supporto multi-ABI in Godot Export Settings:
 
 ```
 CRITICO       |#                                       | 1
-MEDIO         |#######                                 | 7
+MEDIO         |###                                     | 3
 ARCHITETTURALE|########                                | 8
-BASSO         |#####                                   | 5
+BASSO         |##                                      | 2
 POLISHING     |###                                     | 3
               +---+---+---+---+---+---+---+---+---+---+
               0   1   2   3   4   5   6   7   8   9  10

@@ -113,32 +113,6 @@ func _create_tables() -> void:
 		)
 	)
 
-	_execute("CREATE TABLE IF NOT EXISTS colore (" + "colore_id INTEGER PRIMARY KEY AUTOINCREMENT" + ");")
-
-	_execute("CREATE TABLE IF NOT EXISTS categoria (" + "categoria_id INTEGER PRIMARY KEY AUTOINCREMENT" + ");")
-
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS shop ("
-			+ "shop_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "prezzo_item INTEGER"
-			+ ");"
-		)
-	)
-
-	_execute(
-		(
-			"CREATE TABLE IF NOT EXISTS items ("
-			+ "item_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-			+ "shop_id INTEGER REFERENCES shop(shop_id),"
-			+ "categoria_id INTEGER REFERENCES categoria(categoria_id),"
-			+ "prezzo INTEGER,"
-			+ "disponibilita INTEGER DEFAULT 1,"
-			+ "colore_id INTEGER REFERENCES colore(colore_id)"
-			+ ");"
-		)
-	)
-
 	_execute(
 		(
 			"CREATE TABLE IF NOT EXISTS inventario ("
@@ -190,6 +164,11 @@ func _create_tables() -> void:
 			+ ");"
 		)
 	)
+
+	# Indexes on foreign key columns for query performance
+	_execute("CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_rooms_character ON rooms(character_id);")
 
 
 func _migrate_schema() -> void:
@@ -397,41 +376,6 @@ func _save_inventory(account_id: int, inv_data: Dictionary) -> bool:
 			):
 				return false
 	return true
-
-
-# ---- CRUD: Items ----
-
-
-func get_all_items() -> Array:
-	return _select("SELECT * FROM items WHERE disponibilita = 1;", [])
-
-
-func get_item(item_id: int) -> Dictionary:
-	var rows := _select("SELECT * FROM items WHERE item_id = ?;", [item_id])
-	if rows.is_empty():
-		return {}
-	return rows[0]
-
-
-# ---- CRUD: Shop ----
-
-
-func get_all_shops() -> Array:
-	return _select("SELECT * FROM shop;", [])
-
-
-# ---- CRUD: Colore ----
-
-
-func get_all_colors() -> Array:
-	return _select("SELECT * FROM colore;", [])
-
-
-# ---- CRUD: Categoria ----
-
-
-func get_all_categories() -> Array:
-	return _select("SELECT * FROM categoria;", [])
 
 
 # ---- Account: delete + auth_uid update ----

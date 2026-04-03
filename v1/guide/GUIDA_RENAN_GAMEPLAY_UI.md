@@ -1,6 +1,6 @@
 # Guida Operativa — Renan Augusto Macena (Gameplay, UI & Asset)
 
-**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 1 Aprile 2026)
+**Data**: 21 Marzo 2026 (Ultimo aggiornamento: 3 Aprile 2026)
 **Prerequisito**: Leggere prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare l'ambiente di sviluppo.
 
 **Riferimenti nell'Audit Report v2.0.0**: Sezioni 6-10 (Analisi Codice), 12 (Classificazione — N-Q1, N-Q3, N-AR7)
@@ -56,11 +56,11 @@ Questa guida contiene **tutti** i task, divisi in tre parti:
 | 16 | ~~Clamp decorazioni al viewport (A28)~~ | `scripts/rooms/room_base.gd` | MEDIO | **FATTO** |
 | 17 | ~~Null check instantiate (A29)~~ | `scripts/menu/main_menu.gd` | MEDIO | **FATTO** |
 | 18 | ~~_exit_tree() panel_manager + room_grid (A1)~~ | `scripts/ui/panel_manager.gd`, `scripts/rooms/room_grid.gd` | ALTO | **FATTO** |
-| **19** | **Fix `clean_name` in auth_manager.gd:60 (N-Q3)** | `scripts/autoload/auth_manager.gd` | MEDIO | **DA FARE** |
-| **20** | **Aggiungere `_exit_tree()` + tween in auth_screen.gd (N-Q1)** | `scripts/menu/auth_screen.gd` | MEDIO | **DA FARE** |
-| **21** | **Fix settings_panel.gd: usare SignalBus (N-AR7)** | `scripts/ui/settings_panel.gd` | MEDIO | **DA FARE** |
+| 19 | ~~Fix `clean_name` in auth_manager.gd:60 (N-Q3)~~ | `scripts/autoload/auth_manager.gd` | MEDIO | **FATTO** |
+| 20 | ~~Aggiungere `_exit_tree()` + tween in auth_screen.gd (N-Q1)~~ | `scripts/menu/auth_screen.gd` | MEDIO | **FATTO** |
+| 21 | ~~Fix settings_panel.gd: usare SignalBus (N-AR7)~~ | `scripts/ui/settings_panel.gd` | MEDIO | **FATTO** |
 
-**18 task completati su 21.** Restano 3 nuovi task da Audit v2.0.0.
+**21 task completati su 21.** Tutti i task di competenza Renan sono stati completati.
 
 ---
 
@@ -1198,11 +1198,10 @@ Sono tutti di priorita' MEDIA e richiedono poco tempo.
 
 ---
 
-## Task 19: Fix `clean_name` in auth_manager.gd (N-Q3)
+## Task 19: ~~Fix `clean_name` in auth_manager.gd (N-Q3)~~ FATTO
 
 **Sezione Audit di riferimento**: Sezione 6 (auth_manager.gd), Sezione 12 (N-Q3 — MEDIO)
-**Tempo stimato**: 5 minuti
-**Priorita'**: MEDIO
+**Completato**: 1 Aprile 2026 (commit 953ad1e)
 
 ### Cosa C'e' da Fare
 
@@ -1259,40 +1258,17 @@ git push origin main
 
 ---
 
-## Task 20: (OPZIONALE) Protezione Doppio Click in auth_screen.gd (N-Q1)
+## Task 20: ~~Protezione Doppio Click in auth_screen.gd (N-Q1)~~ FATTO
 
 **Sezione Audit di riferimento**: Sezione 7 (auth_screen.gd), Sezione 12 (N-Q1 — MEDIO)
-**Tempo stimato**: 5 minuti
-**Priorita'**: BASSO (opzionale)
+**Completato**: 3 Aprile 2026
 
-### Analisi Post-Verifica
+### Cosa e' stato fatto
 
-Dopo analisi approfondita del codice, questo task e' stato **ridimensionato**:
-
-1. **`_exit_tree()` NON serve**: auth_screen non si connette a nessun segnale globale (SignalBus). Tutte le connessioni sono a nodi figli (bottoni, LineEdit) che vengono distrutti automaticamente insieme al padre.
-2. **Tween auto-cleanup**: In Godot 4, `create_tween()` crea un tween legato al nodo. Quando il nodo viene rimosso dall'albero, il tween viene automaticamente ucciso. Nessun leak possibile.
-3. **Unico miglioramento possibile**: proteggere `_finish()` dal doppio click (se l'utente clicca due volte velocemente, due tween partirebbero). Ma `queue_free()` e' idempotente in Godot, quindi non causa crash.
-
-### Se Vuoi Comunque Farlo
-
-Aggiungi un guard nella funzione `_finish()`:
-
-**Prima**:
-```gdscript
-func _finish() -> void:
-    var tween := create_tween()
-```
-
-**Dopo**:
-```gdscript
-var _finishing: bool = false
-
-func _finish() -> void:
-    if _finishing:
-        return
-    _finishing = true
-    var tween := create_tween()
-```
+1. Aggiunto membro `_finish_tween: Tween` per tracciare il tween attivo
+2. Aggiunto guard `_finishing: bool` per prevenire doppio click
+3. `_finish()` ora uccide il tween precedente prima di crearne uno nuovo
+4. Aggiunto `_exit_tree()` che uccide il tween se ancora attivo
 
 ### Come Verificare
 
@@ -1303,11 +1279,10 @@ func _finish() -> void:
 
 ---
 
-## Task 21: Fix settings_panel.gd — Usare SignalBus (N-AR7)
+## Task 21: ~~Fix settings_panel.gd — Usare SignalBus (N-AR7)~~ FATTO
 
 **Sezione Audit di riferimento**: Sezione 9 (settings_panel.gd), Sezione 12 (N-AR7 — ARCHITETTURALE)
-**Tempo stimato**: 5 minuti
-**Priorita'**: MEDIO
+**Completato**: 1 Aprile 2026 (commit 953ad1e)
 
 ### Cosa C'e' da Fare
 
@@ -1444,7 +1419,7 @@ Non farli a caso — seguire questo ordine per massimizzare l'efficienza:
 
 ```text
 - [x] Task 19: Fix clean_name in auth_manager.gd (N-Q3) — riusare variabile clean_name
-- [ ] Task 20: (OPZIONALE) Protezione doppio click auth_screen.gd (N-Q1) — ridimensionato dopo analisi
+- [x] Task 20: Protezione doppio click + _exit_tree auth_screen.gd (N-Q1) — aggiunto guard _finishing, tween tracking, _exit_tree
 - [x] Task 21: Fix settings_panel.gd scrittura diretta → SignalBus.settings_updated (N-AR7)
 ```
 
