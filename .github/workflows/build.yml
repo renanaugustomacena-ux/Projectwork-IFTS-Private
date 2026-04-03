@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     container:
-      image: barichello/godot-ci:4.5
+      image: barichello/godot-ci:4.6
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,10 +32,10 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.5.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.5.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.5.stable/* \
-              ~/.local/share/godot/export_templates/4.5.stable/ 2>/dev/null || true
+          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
+          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
+              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
           fi
 
       - name: Export Windows build
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     container:
-      image: barichello/godot-ci:4.5
+      image: barichello/godot-ci:4.6
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,10 +64,10 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.5.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.5.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.5.stable/* \
-              ~/.local/share/godot/export_templates/4.5.stable/ 2>/dev/null || true
+          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
+          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
+              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
           fi
 
       - name: Export HTML5 build

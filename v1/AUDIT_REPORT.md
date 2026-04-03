@@ -680,13 +680,11 @@ CREATE INDEX IF NOT EXISTS idx_items_inventario ON items(inventario_id);
 
 ---
 
-**N-DB3** — `_select()` ritorno ambiguo (`MEDIO`)
+**N-DB3** — ~~`_select()` ritorno ambiguo~~ `RISOLTO` (3 Apr 2026)
 
-Il metodo `_select()` ritorna `[]` (array vuoto) sia quando non ci sono risultati
-sia quando c'e' un errore di query. Il chiamante non puo' distinguere i due casi.
-
-**Suggerimento**: Ritornare `null` in caso di errore e `[]` per risultati vuoti.
-Oppure aggiungere un parametro di output per l'errore.
+Aggiunto flag `_last_select_error: bool` che viene impostato a `true` su errore
+e `false` su successo. I caller esistenti continuano a funzionare senza modifiche;
+il flag e' disponibile per distinguere errore da risultato vuoto quando necessario.
 
 ---
 
@@ -1391,29 +1389,10 @@ Configurazione corretta: `concurrency` group per cancellare run obsolete, `timeo
 
 2 job: Windows export + HTML5 export.
 
-**N-BD1** — Versione Godot mismatch in build.yml (`CRITICO`)
+**N-BD1** — ~~Versione Godot mismatch in build.yml~~ `RISOLTO` (3 Apr 2026)
 
-```yaml
-# build.yml riga 27 e 59:
-container:
-  image: barichello/godot-ci:4.5
-
-# Ma project.godot dichiara:
-config/features=PackedStringArray("4.6", "GL Compatibility")
-```
-
-Il container Docker usa Godot 4.5, ma il progetto e' Godot 4.6.
-Questo causera' un **fallimento del build** o incompatibilita' silenziose.
-
-**Fix necessaria**: Cambiare l'immagine a `barichello/godot-ci:4.6` (quando disponibile)
-o usare un'immagine custom con Godot 4.6. Aggiornare anche i path dei template:
-
-```yaml
-# DA:
-mkdir -p ~/.local/share/godot/export_templates/4.5.stable
-# A:
-mkdir -p ~/.local/share/godot/export_templates/4.6.stable
-```
+Aggiornate tutte le 8 occorrenze di `4.5` a `4.6` in `build.yml`:
+container image e path dei template di export per entrambi i job (Windows e HTML5).
 
 ---
 
@@ -1431,17 +1410,9 @@ impostare il path in `export_presets.cfg`.
 
 ---
 
-**N-BD5** — Versione applicazione vuota (`BASSO`)
+**N-BD5** — ~~Versione applicazione vuota~~ `RISOLTO` (3 Apr 2026)
 
-```cfg
-# export_presets.cfg righe 30-31:
-application/file_version=""
-application/product_version=""
-```
-
-Windows mostra "version not set" nelle proprieta' del file.
-
-**Suggerimento**: Impostare la versione (es. `1.0.0.0`).
+Impostati `application/file_version` e `application/product_version` a `"1.0.0"` in `export_presets.cfg`.
 
 ---
 
@@ -1491,10 +1462,10 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 
 | ID | Severita' | Script | Descrizione |
 |----|-----------|--------|-------------|
-| N-BD1 | `CRITICO` | build.yml | Godot 4.5 container vs 4.6 progetto |
+| N-BD1 | ~~CRITICO~~ `RISOLTO` | build.yml | ~~Godot 4.5 container vs 4.6 progetto~~ Fix: aggiornato a 4.6 (3 Apr 2026) |
 | N-Q3 | ~~MEDIO~~ `RISOLTO` | auth_manager.gd:60 | ~~`username.strip_edges()` invece di `clean_name`~~ Fix: commit 953ad1e |
 | N-DB2 | ~~MEDIO~~ `RISOLTO` | local_database.gd | ~~Nessun indice su colonne FK~~ Fix: aggiunto 3 indici FK (3 Apr 2026) |
-| N-DB3 | `MEDIO` | local_database.gd | `_select()` ritorno ambiguo |
+| N-DB3 | ~~MEDIO~~ `RISOLTO` | local_database.gd | ~~`_select()` ritorno ambiguo~~ Fix: aggiunto `_last_select_error` flag (3 Apr 2026) |
 | N-Q6 | `MEDIO` | save_manager.gd | Stato pubblico mutabile |
 | N-BD4 | `MEDIO` | export_presets.cfg | Icona applicazione vuota |
 | N-BD3 | `MEDIO` | export_presets.cfg | Nessun preset Android |
@@ -1511,7 +1482,7 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 | N-Q4 | `BASSO` | logger.gd | Flush sincrono (teorico) |
 | N-Q5 | ~~BASSO~~ `RISOLTO` | game_manager.gd | ~~Nessun _exit_tree()~~ Fix: aggiunto _exit_tree() |
 | N-DB1 | ~~BASSO~~ `RISOLTO` | local_database.gd | ~~Tabelle morte nello schema~~ Fix: rimosse tabelle e CRUD inutilizzati (3 Apr 2026) |
-| N-BD5 | `BASSO` | export_presets.cfg | Versione applicazione vuota |
+| N-BD5 | ~~BASSO~~ `RISOLTO` | export_presets.cfg | ~~Versione applicazione vuota~~ Fix: impostata "1.0.0" (3 Apr 2026) |
 | N-P1 | POLISHING | tracks.json | Solo 2 tracce audio disponibili |
 | N-P3 | POLISHING | room_base.gd | Collision shape e scala (documentazione) |
 | N-P4 | POLISHING | menu_character.gd | Posizioni hardcoded |
@@ -1521,13 +1492,13 @@ Tutti i problemi identificati nel primo audit (21 Marzo 2026) sono stati **verif
 ### Distribuzione per severita'
 
 ```
-CRITICO:        1  (build.yml versione Godot)
-MEDIO:          3  (erano 7, N-Q3/N-AR7/N-Q1/N-DB2 risolti)
+CRITICO:        0  (era 1, N-BD1 risolto)
+MEDIO:          2  (erano 7, N-Q3/N-AR7/N-Q1/N-DB2/N-DB3 risolti)
 ARCHITETTURALE: 8  (tutti relativi ad accoppiamento)
-BASSO:          2  (era 5, N-Q5/N-Q2/N-DB1 risolti)
+BASSO:          1  (era 5, N-Q5/N-Q2/N-DB1/N-BD5 risolti)
 POLISHING:      3
                 --
-TOTALE:        17 problemi aperti (24 trovati, 7 risolti)
+TOTALE:        14 problemi aperti (24 trovati, 10 risolti)
 ```
 
 ---
@@ -1538,20 +1509,9 @@ Azioni ordinate per priorita'. Completare **prima della deadline del 22 Aprile 2
 
 ### Priorita' 1 — CRITICO (entro 3 Aprile)
 
-**[N-BD1] Fix versione Godot in build.yml**
+**[N-BD1] Fix versione Godot in build.yml** — `RISOLTO` (3 Apr 2026)
 
-```yaml
-# File: .github/workflows/build.yml
-# Cambiare l'immagine del container in ENTRAMBI i job:
-
-container:
-  image: barichello/godot-ci:4.6    # Era: 4.5
-
-# E i path dei template:
-mkdir -p ~/.local/share/godot/export_templates/4.6.stable
-```
-
-**Responsabile**: Cristian (CI/CD)
+Aggiornate tutte le 8 occorrenze di 4.5 a 4.6 in build.yml.
 
 ---
 
@@ -2632,11 +2592,11 @@ Esportare con supporto multi-ABI in Godot Export Settings:
 +--------------------------------+--------+
 | Fix primo audit verificate     | 36/36  |
 | Nuovi problemi trovati         |    24  |
-| Problemi risolti               |     7  |
-|   - CRITICO                    |     1  |
-|   - MEDIO                      |  3 (7-4 risolti) |
+| Problemi risolti               |    10  |
+|   - CRITICO                    |  0 (1 risolto)   |
+|   - MEDIO                      |  2 (7-5 risolti) |
 |   - ARCHITETTURALE             |     8  |
-|   - BASSO                      |  2 (5-3 risolti) |
+|   - BASSO                      |  1 (5-4 risolti) |
 |   - POLISHING                  |     3  |
 | Copertura test                 |    0%  |
 | Script con _exit_tree()        | 18/24  |
@@ -2647,10 +2607,10 @@ Esportare con supporto multi-ABI in Godot Export Settings:
 ### Distribuzione Severita' (Grafico ASCII)
 
 ```
-CRITICO       |#                                       | 1
-MEDIO         |###                                     | 3
+CRITICO       |                                        | 0
+MEDIO         |##                                      | 2
 ARCHITETTURALE|########                                | 8
-BASSO         |##                                      | 2
+BASSO         |#                                       | 1
 POLISHING     |###                                     | 3
               +---+---+---+---+---+---+---+---+---+---+
               0   1   2   3   4   5   6   7   8   9  10
