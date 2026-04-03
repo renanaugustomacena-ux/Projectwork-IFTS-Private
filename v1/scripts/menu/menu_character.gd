@@ -20,6 +20,7 @@ const WALKABLE_CHARACTERS := [
 
 var _sprite: Sprite2D
 var _frame_timer: Timer
+var _walk_tween: Tween
 var _hframes: int = 4
 var _walk_row: int = 0
 var _current_frame: int = 0
@@ -58,11 +59,13 @@ func walk_in() -> void:
 	add_child(_frame_timer)
 	_frame_timer.start()
 
-	var tween := create_tween()
-	tween.set_ease(Tween.EASE_OUT)
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(self, "position", end_pos, WALK_DURATION)
-	tween.tween_callback(_on_walk_finished)
+	if _walk_tween and _walk_tween.is_running():
+		_walk_tween.kill()
+	_walk_tween = create_tween()
+	_walk_tween.set_ease(Tween.EASE_OUT)
+	_walk_tween.set_trans(Tween.TRANS_QUAD)
+	_walk_tween.tween_property(self, "position", end_pos, WALK_DURATION)
+	_walk_tween.tween_callback(_on_walk_finished)
 
 
 func _next_frame() -> void:
@@ -77,6 +80,8 @@ func _on_walk_finished() -> void:
 
 
 func _exit_tree() -> void:
+	if _walk_tween and _walk_tween.is_running():
+		_walk_tween.kill()
 	if _frame_timer != null:
 		if _frame_timer.timeout.is_connected(_next_frame):
 			_frame_timer.timeout.disconnect(_next_frame)

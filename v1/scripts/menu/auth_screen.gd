@@ -9,6 +9,8 @@ var _confirm_input: LineEdit = null
 var _error_label: Label = null
 var _login_form: VBoxContainer = null
 var _register_form: VBoxContainer = null
+var _finish_tween: Tween = null
+var _finishing: bool = false
 
 
 func _ready() -> void:
@@ -210,12 +212,22 @@ func _show_error(msg: String) -> void:
 
 
 func _finish() -> void:
-	var tween := create_tween()
-	tween.tween_property(
+	if _finishing:
+		return
+	_finishing = true
+	if _finish_tween and _finish_tween.is_running():
+		_finish_tween.kill()
+	_finish_tween = create_tween()
+	_finish_tween.tween_property(
 		self, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION
 	)
-	tween.tween_callback(
+	_finish_tween.tween_callback(
 		func() -> void:
 			auth_completed.emit()
 			queue_free()
 	)
+
+
+func _exit_tree() -> void:
+	if _finish_tween and _finish_tween.is_running():
+		_finish_tween.kill()
