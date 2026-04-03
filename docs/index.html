@@ -1,211 +1,332 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Cozy Room — Il tuo rifugio digitale</title>
-  <meta name="description" content="Mini Cozy Room: un desktop companion 2D rilassante con stanze pixel art personalizzabili, musica lo-fi e zero competizione.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Cozy Room — Il tuo rifugio digitale</title>
+    <meta name="description" content="Mini Cozy Room: un desktop companion 2D rilassante con stanze pixel art personalizzabili, musica lo-fi e zero competizione.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Particles.js -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-container">
-      <a href="#" class="nav-logo">Mini Cozy Room</a>
-      <button class="hamburger" id="hamburger" aria-label="Menu">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <ul class="nav-links" id="nav-links">
-        <li><a href="#vision">Visione</a></li>
-        <li><a href="#features">Caratteristiche</a></li>
-        <li><a href="#team">Team</a></li>
-        <li><a href="#download" class="nav-cta">Download</a></li>
-      </ul>
-    </div>
-  </nav>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <i data-lucide="sparkles"></i>
+                Mini Cozy Room
+            </a>
+            
+            <!-- Desktop Menu -->
+            <div class="nav-links">
+                <a href="#vision" class="nav-link">Visione</a>
+                <a href="#features" class="nav-link">Caratteristiche</a>
+                <a href="#team" class="nav-link">Team</a>
+                <a href="#download" class="nav-cta">Download</a>
+            </div>
+            
+            <!-- Mobile Menu Button -->
+            <button class="hamburger" id="hamburger" aria-label="Menu">
+                <i data-lucide="menu" id="menu-icon"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobile-menu">
+            <a href="#vision" class="mobile-link">Visione</a>
+            <a href="#features" class="mobile-link">Caratteristiche</a>
+            <a href="#team" class="mobile-link">Team</a>
+            <a href="#download" class="mobile-link">Download</a>
+        </div>
+    </nav>
 
-  <!-- Hero -->
-  <section class="hero" id="hero">
-    <div class="hero-content">
-      <h1 class="hero-title">Mini Cozy Room</h1>
-      <p class="hero-subtitle">Il tuo rifugio digitale.<br>Rilassati, personalizza, divertiti.</p>
-      <a href="#download" class="btn btn-primary">Scarica Ora</a>
-    </div>
-    <div class="hero-decoration">
-      <div class="pixel-star" style="--delay: 0s; --x: 15%; --y: 20%;"></div>
-      <div class="pixel-star" style="--delay: 1.5s; --x: 80%; --y: 15%;"></div>
-      <div class="pixel-star" style="--delay: 3s; --x: 60%; --y: 70%;"></div>
-      <div class="pixel-star" style="--delay: 0.8s; --x: 25%; --y: 75%;"></div>
-      <div class="pixel-star" style="--delay: 2.2s; --x: 90%; --y: 50%;"></div>
-      <div class="pixel-star" style="--delay: 4s; --x: 45%; --y: 30%;"></div>
-    </div>
-  </section>
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <!-- Particles Background -->
+        <div id="particles-hero"></div>
+        
+        <!-- Background Image -->
+        <div class="hero-bg"></div>
+        <div class="hero-overlay"></div>
+        
+        <div class="hero-container">
+            <div class="hero-content" data-aos="fade-up" data-aos-duration="800">
+                <div class="hero-badge">
+                    <i data-lucide="star" class="badge-icon"></i>
+                    <span>Project Work IFTS 2026</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    Mini Cozy
+                    <span class="hero-title-accent">Room</span>
+                </h1>
+                
+                <p class="hero-subtitle">
+                    Il tuo rifugio digitale. Rilassati, personalizza la tua stanza pixel art, e lasciati avvolgere dalla musica lo-fi.
+                </p>
+                
+                <div class="hero-buttons">
+                    <a href="#download" class="btn btn-primary">
+                        <i data-lucide="download"></i>
+                        Scarica Ora
+                    </a>
+                    <a href="#features" class="btn btn-secondary">
+                        Scopri di più
+                    </a>
+                </div>
+            </div>
+            
+            <div class="hero-image" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
+                <div class="hero-image-glow"></div>
+                <img src="https://static.prod-images.emergentagent.com/jobs/65fd861e-d54d-45a0-9015-f372d001031b/images/34d254e2ee874e04c6c35ca57068c2404fabb898c8b149a26af4a36da648635a.png" alt="Cozy Pixel Art Room" class="floating-image">
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+            <div class="scroll-mouse">
+                <div class="scroll-dot"></div>
+            </div>
+        </div>
+    </section>
 
-  <!-- Vision -->
-  <section class="section vision" id="vision">
-    <div class="container">
-      <h2 class="section-title fade-in">La Nostra Visione</h2>
-      <p class="section-intro fade-in">
-        Non tutti i giochi devono essere una competizione.<br>
-        Mini Cozy Room e' per chi cerca un passatempo che non chieda nulla in cambio.
-      </p>
-      <div class="pillar-grid">
-        <div class="pillar-card fade-in">
-          <div class="pillar-icon">&#127760;</div>
-          <h3>Community, non ranking</h3>
-          <p>Non ci sono punteggi, non c'e' un "migliore". Condividi la tua stanza e la tua creativita'. L'interazione e' costruttiva, mai competitiva.</p>
+    <!-- Vision Section -->
+    <section class="section vision" id="vision">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2 class="section-title">La Nostra Visione</h2>
+                <p class="section-intro">
+                    Non tutti i giochi devono essere una competizione. Mini Cozy Room è per chi cerca un passatempo che non chieda nulla in cambio.
+                </p>
+            </div>
+            
+            <div class="vision-grid">
+                <div class="vision-card vision-card-large" data-aos="fade-up" data-aos-delay="100">
+                    <div class="vision-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <h3>Community, non ranking</h3>
+                    <p>Non ci sono punteggi, non c'è un "migliore". Condividi la tua stanza e la tua creatività.</p>
+                </div>
+                
+                <div class="vision-card vision-card-large" data-aos="fade-up" data-aos-delay="200">
+                    <div class="vision-icon">
+                        <i data-lucide="gift"></i>
+                    </div>
+                    <h3>Tutto disponibile, subito</h3>
+                    <p>Nessun grind, nessun paywall. Ogni decorazione è accessibile dal primo momento.</p>
+                </div>
+                
+                <div class="vision-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="vision-icon">
+                        <i data-lucide="trophy"></i>
+                    </div>
+                    <h3>Achievement umani</h3>
+                    <p>Traguardi che parlano di te. Trofei di creatività, non di grinding. Sono ricordi, non ricompense.</p>
+                </div>
+                
+                <div class="vision-card" data-aos="fade-up" data-aos-delay="400">
+                    <div class="vision-icon">
+                        <i data-lucide="heart"></i>
+                    </div>
+                    <h3>Presente, non invadente</h3>
+                    <p>Niente notifiche aggressive. Apri quando vuoi, chiudi quando vuoi. Zero sensi di colpa.</p>
+                </div>
+                
+                <div class="vision-card vision-card-image" data-aos="fade-up" data-aos-delay="500">
+                    <img src="https://static.prod-images.emergentagent.com/jobs/65fd861e-d54d-45a0-9015-f372d001031b/images/6e25a2caefec0464790e4c5b3aaa13ba567bc4ad0d223a7aeb7945702266bc99.png" alt="Pixel Art Cat" class="vision-mascot">
+                </div>
+            </div>
+            
+            <p class="vision-quote" data-aos="fade-up" data-aos-delay="600">
+                "Ci si diverte rilassandosi — senza pressioni, senza confronti, senza sensi di colpa."
+            </p>
         </div>
-        <div class="pillar-card fade-in">
-          <div class="pillar-icon">&#127873;</div>
-          <h3>Tutto disponibile, subito</h3>
-          <p>Nessun grind, nessun paywall. Ogni decorazione, ogni stanza, ogni personalizzazione e' accessibile dal primo momento. Il gioco e' completo dal giorno in cui lo apri.</p>
-        </div>
-        <div class="pillar-card fade-in">
-          <div class="pillar-icon">&#127942;</div>
-          <h3>Achievement che parlano di te</h3>
-          <p>Traguardi con un feeling umano: trofei della community, riconoscimenti di creativita'. Non misurano quanto hai giocato, ma come hai giocato. Sono ricordi, non ricompense.</p>
-        </div>
-        <div class="pillar-card fade-in">
-          <div class="pillar-icon">&#128156;</div>
-          <h3>Presente, non invadente</h3>
-          <p>Il gioco non ti punisce se non giochi per una settimana. Niente notifiche aggressive, timer che scadono, o energie da ricaricare. Apri quando vuoi, chiudi quando vuoi.</p>
-        </div>
-      </div>
-      <p class="vision-quote fade-in">
-        "Ci si diverte rilassandosi &mdash; senza pressioni, senza confronti, senza sensi di colpa."
-      </p>
-    </div>
-  </section>
+    </section>
 
-  <!-- Features -->
-  <section class="section features" id="features">
-    <div class="container">
-      <h2 class="section-title fade-in">Caratteristiche</h2>
-      <div class="feature-grid">
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#127968;</div>
-          <h3>Stanze personalizzabili</h3>
-          <p>Stanze pixel art con temi colore intercambiabili. Crea il tuo angolo digitale perfetto.</p>
+    <!-- Features Section -->
+    <section class="section features" id="features">
+        <div class="features-bg"></div>
+        <div class="features-overlay"></div>
+        
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2 class="section-title">Caratteristiche</h2>
+                <p class="section-intro">
+                    Tutto ciò di cui hai bisogno per creare il tuo rifugio digitale perfetto.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon">
+                        <i data-lucide="palette"></i>
+                    </div>
+                    <h3>Stanze personalizzabili</h3>
+                    <p>Stanze pixel art con temi colore intercambiabili. Crea il tuo angolo digitale perfetto.</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon">
+                        <i data-lucide="box"></i>
+                    </div>
+                    <h3>69+ decorazioni</h3>
+                    <p>Piante, letti, scrivanie, finestre e molto altro. Drag-and-drop libero, impilabili e ruotabili.</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-icon">
+                        <i data-lucide="music"></i>
+                    </div>
+                    <h3>Musica lo-fi</h3>
+                    <p>Suoni ambientali e tracce rilassanti. Il sottofondo perfetto per lavorare o rilassarsi.</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+                    <div class="feature-icon">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <h3>Personaggio interattivo</h3>
+                    <p>Un personaggio pixel art che cammina nella tua stanza. Controllalo con WASD o le frecce.</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
+                    <div class="feature-icon">
+                        <i data-lucide="save"></i>
+                    </div>
+                    <h3>Salvataggio automatico</h3>
+                    <p>I tuoi progressi si salvano ogni 60 secondi. Chiudi e riapri senza perdere nulla.</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="600">
+                    <div class="feature-icon">
+                        <i data-lucide="feather"></i>
+                    </div>
+                    <h3>Leggero e discreto</h3>
+                    <p>Pensato per restare in background. FPS dinamici: 60 in focus, 15 in background.</p>
+                </div>
+            </div>
         </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#127891;</div>
-          <h3>69+ decorazioni</h3>
-          <p>Piante, letti, scrivanie, finestre e molto altro. Drag-and-drop libero, impilabili, ruotabili e ridimensionabili.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#127925;</div>
-          <h3>Musica lo-fi</h3>
-          <p>Suoni ambientali e tracce rilassanti che partono automaticamente. Il sottofondo perfetto per lavorare o rilassarsi.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#128694;</div>
-          <h3>Personaggio interattivo</h3>
-          <p>Un personaggio pixel art che cammina nella tua stanza. Controllalo con WASD o le frecce direzionali.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#128190;</div>
-          <h3>Salvataggio automatico</h3>
-          <p>I tuoi progressi si salvano ogni 60 secondi. Chiudi e riapri senza perdere nulla.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#128640;</div>
-          <h3>Leggero e discreto</h3>
-          <p>Pensato per restare aperto in background. FPS dinamici: 60 in focus, 15 in background per risparmiare risorse.</p>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Team -->
-  <section class="section team" id="team">
-    <div class="container">
-      <h2 class="section-title fade-in">Il Team</h2>
-      <p class="section-intro fade-in">
-        Tre studenti, un'idea, tanta passione.
-      </p>
-      <div class="team-grid">
-        <div class="team-card fade-in">
-          <div class="team-avatar">R</div>
-          <h3>Renan Augusto Macena</h3>
-          <p class="team-role">System Architect &amp; Project Supervisor</p>
-          <a href="https://github.com/renanaugustomacena-ux" target="_blank" rel="noopener" class="team-github">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            GitHub
-          </a>
+    <!-- Team Section -->
+    <section class="section team" id="team">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2 class="section-title">Il Team</h2>
+                <p class="section-intro">
+                    Tre studenti, un'idea, tanta passione.
+                </p>
+            </div>
+            
+            <div class="team-grid">
+                <div class="team-card" data-aos="fade-up" data-aos-delay="100">
+                    <div class="team-avatar">R</div>
+                    <h3>Renan Augusto Macena</h3>
+                    <p class="team-role">System Architect & Project Supervisor</p>
+                    <a href="https://github.com/renanaugustomacena-ux" target="_blank" rel="noopener" class="team-github">
+                        <i data-lucide="github"></i>
+                        GitHub
+                    </a>
+                </div>
+                
+                <div class="team-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="team-avatar">C</div>
+                    <h3>Cristian Marino</h3>
+                    <p class="team-role">CI/CD & Documentation Lead</p>
+                    <a href="https://github.com/cristianmari777-art" target="_blank" rel="noopener" class="team-github">
+                        <i data-lucide="github"></i>
+                        GitHub
+                    </a>
+                </div>
+                
+                <div class="team-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="team-avatar">E</div>
+                    <h3>Elia Zoccatelli</h3>
+                    <p class="team-role">Database Support</p>
+                    <a href="https://github.com/eliaozccatelli" target="_blank" rel="noopener" class="team-github">
+                        <i data-lucide="github"></i>
+                        GitHub
+                    </a>
+                </div>
+            </div>
+            
+            <div class="team-badge" data-aos="fade-up" data-aos-delay="400">
+                <p><strong>Project Work</strong> — 1° anno IFTS IT Cybersecurity</p>
+                <span>Centro 311 · Verona</span>
+            </div>
         </div>
-        <div class="team-card fade-in">
-          <div class="team-avatar">C</div>
-          <h3>Cristian Marino</h3>
-          <p class="team-role">CI/CD &amp; Documentation Lead</p>
-          <a href="https://github.com/cristianmari777-art" target="_blank" rel="noopener" class="team-github">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            GitHub
-          </a>
-        </div>
-        <div class="team-card fade-in">
-          <div class="team-avatar">E</div>
-          <h3>Elia Zoccatelli</h3>
-          <p class="team-role">Database Support</p>
-          <a href="https://github.com/eliaozccatelli" target="_blank" rel="noopener" class="team-github">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            GitHub
-          </a>
-        </div>
-      </div>
-      <div class="team-badge fade-in">
-        <p>
-          <strong>Project Work</strong> &mdash; 1&deg; anno IFTS IT Cybersecurity<br>
-          <span class="badge-location">Centro 311 &middot; Verona</span>
-        </p>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Download -->
-  <section class="section download" id="download">
-    <div class="container">
-      <h2 class="section-title fade-in">Prova Mini Cozy Room</h2>
-      <p class="section-intro fade-in">
-        Disponibile presto per Windows e Web.
-      </p>
-      <div class="download-buttons fade-in">
-        <a href="#" class="btn btn-primary btn-large btn-disabled" onclick="return false;">
-          &#128187; Windows &mdash; Coming Soon
-        </a>
-        <a href="#" class="btn btn-secondary btn-large btn-disabled" onclick="return false;">
-          &#127760; Gioca nel Browser &mdash; Coming Soon
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-brand">
-          <p class="footer-logo">Mini Cozy Room</p>
-          <p class="footer-tagline">Un piccolo rifugio digitale.</p>
+    <!-- Download Section -->
+    <section class="section download" id="download">
+        <!-- Particles Background -->
+        <div id="particles-download"></div>
+        
+        <div class="download-bg"></div>
+        <div class="download-overlay"></div>
+        
+        <div class="container">
+            <div class="download-content" data-aos="fade-up">
+                <h2 class="download-title">Prova Mini Cozy Room</h2>
+                <p class="download-subtitle">
+                    Disponibile presto per Windows, Android e Web. Entra nel tuo rifugio digitale.
+                </p>
+                
+                <div class="download-buttons">
+                    <button class="btn btn-download disabled">
+                        <i data-lucide="download"></i>
+                        Windows — Coming Soon
+                    </button>
+                    <button class="btn btn-download disabled">
+                        <i data-lucide="globe"></i>
+                        Gioca nel Browser — Coming Soon
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="footer-links">
-          <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private" target="_blank" rel="noopener">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            Repository
-          </a>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p>&copy; 2026 Mini Cozy Room &mdash; Project Work IFTS IT Cybersecurity, Centro 311 Verona</p>
-      </div>
-    </div>
-  </footer>
+    </section>
 
-  <script src="js/main.js"></script>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3 class="footer-logo">
+                        <i data-lucide="sparkles"></i>
+                        Mini Cozy Room
+                    </h3>
+                    <p class="footer-tagline">Un piccolo rifugio digitale.</p>
+                </div>
+                
+                <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private" target="_blank" rel="noopener" class="footer-github">
+                    <i data-lucide="github"></i>
+                    Repository
+                </a>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>© 2026 Mini Cozy Room — Project Work IFTS IT Cybersecurity, Centro 311 Verona</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
 </body>
 </html>
