@@ -20,8 +20,8 @@ func _on_focus_exited() -> void:
 
 
 func _on_load_completed() -> void:
-	var win_pos_x: int = SaveManager.settings.get("window_pos_x", -1)
-	var win_pos_y: int = SaveManager.settings.get("window_pos_y", -1)
+	var win_pos_x: int = SaveManager.get_setting("window_pos_x", -1)
+	var win_pos_y: int = SaveManager.get_setting("window_pos_y", -1)
 	if win_pos_x >= 0 and win_pos_y >= 0:
 		var pos := Vector2i(win_pos_x, win_pos_y)
 		if _is_position_on_screen(pos):

@@ -54,7 +54,7 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 		"rotation": 0.0,
 		"flip_h": false,
 	}
-	SaveManager.decorations.append(deco_data)
+	SaveManager.add_decoration(deco_data)
 	_spawn_decoration(item_id, pos, item_scale, 0.0, false, deco_data)
 	SignalBus.save_requested.emit()
 
@@ -63,7 +63,7 @@ func _reload_decorations() -> void:
 	for child in decorations_container.get_children():
 		child.queue_free()
 
-	for deco_data in SaveManager.decorations:
+	for deco_data in SaveManager.get_decorations():
 		var item_id: String = deco_data.get("item_id", "")
 		if _find_item_data(item_id).is_empty():
 			push_warning("RoomBase: skipping unknown decoration '%s'" % item_id)
