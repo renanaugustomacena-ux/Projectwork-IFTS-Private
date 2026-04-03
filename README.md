@@ -5,6 +5,7 @@
 > Prossimo passo: integrazione Supabase per cloud sync cross-device.
 > - **Documentazione:** Tutta la documentazione e' nelle cartelle `v1/study` e `v1/guide`.
 > - **Branch Renan:** Contiene tutto cio' che trovate nel branch *main* piu' le ultime modifiche.
+> - **Landing Page:** [https://mini-cozy-room.netlify.app](https://mini-cozy-room.netlify.app)
 
 Desktop companion 2D realizzato con **Godot 4.6** (GDScript, GL Compatibility renderer).
 
@@ -34,6 +35,7 @@ cd Projectwork-IFTS-Private
 ├── .github/workflows/     # CI/CD (lint + export)
 │   ├── ci.yml             # gdlint + gdformat (solo lint)
 │   └── build.yml          # Export Windows (.exe) + HTML5
+├── docs/                  # Landing page (deploy: mini-cozy-room.netlify.app)
 ├── v1/                    # Codice sorgente del progetto Godot
 │   ├── addons/            # Plugin (godot-sqlite v4.7, virtual_joystick)
 │   ├── assets/            # 1400+ asset (sprite, audio, UI, sfondi)
