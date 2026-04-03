@@ -130,8 +130,23 @@ tween.tween_property(self, "position", target_pos, 2.0)
 **Ciclo di vita del Tween in Godot 4:**
 - `create_tween()` su un nodo → il tween e' **legato** a quel nodo
 - Quando il nodo esce dall'albero → il tween viene **automaticamente killato**
-- NON serve pulizia manuale (a differenza di Godot 3)
 - Per killare un tween anticipatamente: `tween.kill()`
+
+**Attenzione — lezione dal nostro audit (N-Q1, N-Q2):**
+Anche se Godot 4 uccide i tween quando il nodo viene distrutto, ci sono due casi problematici:
+1. **Tween non salvato in variabile**: Se crei un tween locale (`var tween := create_tween()`) e non lo salvi come membro della classe, non puoi killarlo anticipatamente se serve (es. l'utente chiude un pannello durante il fade-in).
+2. **Chiamate multiple**: Se `walk_in()` viene chiamato due volte, il primo tween continua in parallelo col secondo.
+
+**Best practice:** Salva i tween come variabili membro e killa il precedente prima di crearne uno nuovo:
+```gdscript
+var _tween: Tween
+
+func fade_in() -> void:
+    if _tween:
+        _tween.kill()           # Killa il tween precedente
+    _tween = create_tween()
+    _tween.tween_property(self, "modulate:a", 1.0, 0.3)
+```
 
 ### 1.5 Viewport e Camera2D
 
@@ -443,7 +458,7 @@ Tabella riepilogativa dei valori chiave usati nel rendering:
 | PARALLAX_STRENGTH | 8.0 | window_background.gd:5 | Movimento parallasse |
 | PANEL_TWEEN_DURATION | 0.3 | constants.gd | Durata fade pannelli |
 | FADE_DURATION | 0.5 | constants.gd | Durata fade scene |
-| Character scale | 3.0 - 4.0 | *.tscn | Upscaling personaggio |
+| Character scale | 3.0 (in-game) / 4.0 (menu) | *.tscn, menu_character.gd | Upscaling personaggio |
 | Furniture scale | 3.0 | decorations.json | Scala mobili |
 | Plants scale | 6.0 | decorations.json | Scala piante |
 | Pet scale | 4.0 | decorations.json | Scala animali |
