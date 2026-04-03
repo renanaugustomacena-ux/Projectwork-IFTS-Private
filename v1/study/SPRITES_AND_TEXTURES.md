@@ -174,7 +174,7 @@ process/fix_alpha_border=true  # Corregge artefatti sui bordi trasparenti
 
 ### 2.1 Sistema Personaggio — 8 Direzioni
 
-Il nostro personaggio principale (`male_old`) ha **13 animazioni** organizzate in 8 direzioni:
+Il nostro personaggio principale (`male_old`) ha **16 animazioni** organizzate in 8 direzioni:
 
 **Struttura degli spritesheet:**
 ```
@@ -201,7 +201,11 @@ Ogni strip e' larga 128px con 4 frame da 32x32. L'eccezione e' `rotate` che ha 8
 Il nodo `AnimatedSprite2D` ha:
 - `texture_filter = 0` (Nearest)
 - `scale = Vector2(3, 3)` — i 32px diventano 96px sullo schermo
-- `SpriteFrames` con tutte le 13 animazioni, ciascuna usando `AtlasTexture` regions
+- `SpriteFrames` con tutte le 16 animazioni, ciascuna usando `AtlasTexture` regions:
+  - **idle** (5): idle_down, idle_side, idle_up, idle_vertical_down, idle_vertical_up
+  - **walk** (5): walk_down, walk_side, walk_up, walk_side_down, walk_side_up
+  - **interact** (5): interact_down, interact_side, interact_up, interact_vertical_down, interact_vertical_up
+  - **rotate** (1): 8 frame a 3.0 fps (tutte le altre sono a 5.0 fps)
 
 **Come viene controllato (`scripts/rooms/character_controller.gd`):**
 

@@ -309,6 +309,20 @@ AuthScreen (Control) → z_index: 100, fullscreen
 
 5. **Disconnetti i segnali in `_exit_tree()`**: Per segnali globali (SignalBus), disconnetti esplicitamente. Per segnali padre-figlio, Godot li pulisce automaticamente.
 
+   **Esempio reale dal nostro codice** (pattern usato in tutti gli autoload e script con segnali globali):
+   ```gdscript
+   # Da room_base.gd — pulizia segnali SignalBus
+   func _exit_tree() -> void:
+       if SignalBus.character_changed.is_connected(_on_character_changed):
+           SignalBus.character_changed.disconnect(_on_character_changed)
+       if SignalBus.decoration_placed.is_connected(_on_decoration_placed):
+           SignalBus.decoration_placed.disconnect(_on_decoration_placed)
+   ```
+
+   **Perche'?** Se il nodo viene distrutto ma SignalBus (un autoload) sopravvive, il segnale punta a un oggetto morto → crash. L'audit ha trovato e risolto 3 casi simili (N-Q3, N-Q5, N-AR7).
+
+   **Quando NON serve:** Connessioni padre→figlio (es. `$Timer.timeout.connect(...)`) vengono pulite automaticamente da Godot quando il padre viene distrutto.
+
 6. **CanvasLayer per UI**: Metti TUTTA la UI in un CanvasLayer cosi' non e' influenzata dalla camera o dalla posizione del mondo.
 
 7. **Collision layer logici**: Definisci layer chiari (1=muri, 2=decorazioni, 4=trigger, ecc.) e documentali. Evita di usare `collision_mask = -1` (collide con tutto).
