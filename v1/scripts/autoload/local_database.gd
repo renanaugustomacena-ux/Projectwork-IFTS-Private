@@ -6,6 +6,7 @@ const DB_PATH := "user://cozy_room"
 
 var _db: SQLite = null
 var _is_open: bool = false
+var _last_select_error: bool = false
 
 
 func _ready() -> void:
@@ -524,13 +525,17 @@ func _execute_bound(sql: String, bindings: Array) -> bool:
 
 
 func _select(sql: String, bindings: Array) -> Array:
+	_last_select_error = false
 	if _db == null or not _is_open:
 		AppLogger.error("LocalDatabase", "Database not open", {"sql": sql.left(80)})
+		_last_select_error = true
 		return []
 	if bindings.is_empty():
 		if not _db.query(sql):
+			_last_select_error = true
 			return []
 	else:
 		if not _db.query_with_bindings(sql, bindings):
+			_last_select_error = true
 			return []
 	return _db.query_result
