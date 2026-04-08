@@ -15,6 +15,8 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if not visible:
+		return
 	_update_parallax()
 
 

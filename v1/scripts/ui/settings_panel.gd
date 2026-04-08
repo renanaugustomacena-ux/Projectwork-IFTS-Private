@@ -72,6 +72,28 @@ func _build_ui() -> void:
 	_language_option.item_selected.connect(_on_language_selected)
 	lang_row.add_child(_language_option)
 
+	# Separator
+	var sep2 := HSeparator.new()
+	vbox.add_child(sep2)
+
+	# Replay Tutorial
+	var tutorial_btn := Button.new()
+	tutorial_btn.text = "Replay Tutorial"
+	tutorial_btn.pressed.connect(_on_replay_tutorial)
+	vbox.add_child(tutorial_btn)
+
+
+func _on_replay_tutorial() -> void:
+	SignalBus.settings_updated.emit("tutorial_completed", false)
+	SignalBus.save_requested.emit()
+	# Close the panel and restart scene
+	SignalBus.panel_closed.emit("settings")
+	call_deferred("_restart_scene")
+
+
+func _restart_scene() -> void:
+	get_tree().change_scene_to_file("res://scenes/main/main.tscn")
+
 
 func _create_slider(parent: VBoxContainer, label_text: String, default_value: float) -> HSlider:
 	var row := HBoxContainer.new()

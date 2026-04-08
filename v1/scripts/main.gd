@@ -14,6 +14,13 @@ var _panel_manager: PanelManager
 @onready var _baseboard: ColorRect = $Baseboard
 
 
+const TUTORIAL_SCRIPT := preload(
+	"res://scripts/menu/tutorial_manager.gd"
+)
+const TOAST_SCRIPT := preload(
+	"res://scripts/ui/toast_manager.gd"
+)
+
 func _ready() -> void:
 	_panel_manager = PanelManager.new()
 	_panel_manager.name = "PanelManager"
@@ -23,8 +30,20 @@ func _ready() -> void:
 	_wire_hud_buttons()
 	_fit_background_to_viewport()
 	SignalBus.room_changed.connect(_on_room_changed)
-	_apply_theme(GameManager.current_room_id, GameManager.current_theme)
+	_apply_theme(
+		GameManager.current_room_id,
+		GameManager.current_theme,
+	)
 	AppLogger.info("Main", "Scene initialized, HUD buttons wired")
+
+	# Launch tutorial on first play
+	call_deferred("_check_tutorial")
+
+	# Toast notifications
+	var toast_layer := CanvasLayer.new()
+	toast_layer.set_script(TOAST_SCRIPT)
+	toast_layer.name = "ToastManager"
+	add_child(toast_layer)
 
 
 func _wire_hud_buttons() -> void:
@@ -76,6 +95,30 @@ func _fit_background_to_viewport() -> void:
 	var scale_factor := maxf(vp_size.x / tex_size.x, vp_size.y / tex_size.y)
 	_room_bg.scale = Vector2(scale_factor, scale_factor)
 	_room_bg.position = vp_size / 2.0
+
+
+func _check_tutorial() -> void:
+	var completed: bool = SaveManager.get_setting(
+		"tutorial_completed", false
+	)
+	if completed:
+		return
+	var tutorial := CanvasLayer.new()
+	tutorial.set_script(TUTORIAL_SCRIPT)
+	tutorial.name = "TutorialManager"
+	tutorial.tutorial_completed.connect(
+		_on_tutorial_done, CONNECT_ONE_SHOT
+	)
+	tutorial.tutorial_skipped.connect(
+		_on_tutorial_done, CONNECT_ONE_SHOT
+	)
+	add_child(tutorial)
+	tutorial.start()
+
+
+func _on_tutorial_done() -> void:
+	SignalBus.settings_updated.emit("tutorial_completed", true)
+	SignalBus.save_requested.emit()
 
 
 func _exit_tree() -> void:

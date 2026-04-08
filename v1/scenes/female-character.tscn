@@ -548,7 +548,7 @@ animations = [{
 "texture": SubResource("AtlasTexture_5wlfp")
 }],
 "loop": true,
-"name": &"walk_vertical_down",
+"name": &"walk_side_down",
 "speed": 5.0
 }, {
 "frames": [{
@@ -565,7 +565,7 @@ animations = [{
 "texture": SubResource("AtlasTexture_p7647")
 }],
 "loop": true,
-"name": &"walk_vertical_up",
+"name": &"walk_side_up",
 "speed": 5.0
 }]
 

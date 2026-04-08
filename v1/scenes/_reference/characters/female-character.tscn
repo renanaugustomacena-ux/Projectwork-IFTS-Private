@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://bsctegqwk4fe3"]
+[gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://d000tp8ghkhqx" path="res://scripts/female_character.gd" id="1_8yly0"]
 [ext_resource type="Texture2D" uid="uid://cp2cg3oki56oc" path="res://assets/charachters/female/female_red_shirt/female_idle.png" id="1_gvmuv"]

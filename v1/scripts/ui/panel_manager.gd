@@ -49,6 +49,7 @@ func open_panel(panel_name: String) -> void:
 	_current_panel_name = panel_name
 	_current_panel.modulate.a = 0.0
 	_ui_layer.add_child(_current_panel)
+	_grab_focus_recursive(_current_panel)
 
 	# Fade in
 	if _tween and _tween.is_running():
@@ -59,6 +60,16 @@ func open_panel(panel_name: String) -> void:
 
 	SignalBus.panel_opened.emit(panel_name)
 	AppLogger.info("PanelManager", "Panel opened", {"name": panel_name})
+
+
+func _grab_focus_recursive(node: Node) -> bool:
+	if node is Control and node.focus_mode != Control.FOCUS_NONE and node.visible:
+		node.grab_focus()
+		return true
+	for child in node.get_children():
+		if _grab_focus_recursive(child):
+			return true
+	return false
 
 
 func close_current_panel() -> void:

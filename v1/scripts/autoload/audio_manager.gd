@@ -34,12 +34,12 @@ var _ambience_players: Dictionary = {}
 func _ready() -> void:
 	_music_player_a = AudioStreamPlayer.new()
 	_music_player_a.bus = "Master"
-	_music_player_a.finished.connect(_on_track_finished)
+	_music_player_a.finished.connect(_on_track_finished.bind(_music_player_a))
 	add_child(_music_player_a)
 
 	_music_player_b = AudioStreamPlayer.new()
 	_music_player_b.bus = "Master"
-	_music_player_b.finished.connect(_on_track_finished)
+	_music_player_b.finished.connect(_on_track_finished.bind(_music_player_b))
 	add_child(_music_player_b)
 
 	_active_player = _music_player_a
@@ -210,8 +210,11 @@ func _crossfade_to(stream: AudioStream) -> void:
 	_active_player = next_player
 
 
-func _on_track_finished() -> void:
-	next_track()
+func _on_track_finished(player: AudioStreamPlayer) -> void:
+	# Only advance if the player that finished is the active one.
+	# During crossfade, the old player's stop() fires finished — ignore it.
+	if player == _active_player:
+		next_track()
 
 
 func get_active_ambience() -> Array:

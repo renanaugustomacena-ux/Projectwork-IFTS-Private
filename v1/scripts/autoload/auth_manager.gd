@@ -177,9 +177,16 @@ func _hash_password(password: String) -> String:
 
 
 func _hash_with_salt(password: String, salt_hex: String) -> String:
-	# PBKDF2-style iterated SHA-256
+	# PBKDF2-style iterated SHA-256 using HashingContext
 	var data := (salt_hex + password).to_utf8_buffer()
-	var result := data.sha256_buffer()
+	var result := _sha256(data)
 	for i in range(_HASH_ITERATIONS - 1):
-		result = (result + data).sha256_buffer()
+		result = _sha256(result + data)
 	return result.hex_encode()
+
+
+static func _sha256(input: PackedByteArray) -> PackedByteArray:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(input)
+	return ctx.finish()

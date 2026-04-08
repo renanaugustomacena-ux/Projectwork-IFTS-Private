@@ -10,6 +10,9 @@ signal decoration_moved(item_id: String, new_position: Vector2)
 
 # Character signals
 signal character_changed(character_id: String)
+signal interaction_available(item_id: String, interaction_type: String)
+signal interaction_unavailable
+signal interaction_started(item_id: String, interaction_type: String)
 signal outfit_changed(outfit_id: String)
 
 # Music/Audio signals
@@ -28,6 +31,7 @@ signal decoration_scaled(item_id: String, new_scale: float)
 # UI signals
 signal panel_opened(panel_name: String)
 signal panel_closed(panel_name: String)
+signal toast_requested(message: String, toast_type: String)
 # Save/Load signals
 signal save_requested
 signal save_completed
