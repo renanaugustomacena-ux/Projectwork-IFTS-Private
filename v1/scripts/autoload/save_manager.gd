@@ -27,6 +27,7 @@ var _settings: Dictionary = {
 	"master_volume": 0.8,
 	"music_volume": 0.6,
 	"ambience_volume": 0.4,
+	"pet_variant": "iso",
 }
 
 
@@ -496,9 +497,16 @@ func _compute_hmac(message: String) -> String:
 	for i in range(block_size):
 		ipad[i] = padded_key[i] ^ 0x36
 		opad[i] = padded_key[i] ^ 0x5c
-	var inner_hash := (ipad + msg_bytes).sha256_buffer()
-	var outer_hash := (opad + inner_hash).sha256_buffer()
+	var inner_hash := _sha256(ipad + msg_bytes)
+	var outer_hash := _sha256(opad + inner_hash)
 	return outer_hash.hex_encode()
+
+
+static func _sha256(input: PackedByteArray) -> PackedByteArray:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(input)
+	return ctx.finish()
 
 
 func _exit_tree() -> void:
