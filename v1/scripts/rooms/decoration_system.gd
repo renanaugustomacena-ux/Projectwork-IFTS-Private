@@ -7,7 +7,7 @@ const SCALE_STEPS := [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
 
 var item_id: String = ""
 var base_item_scale: float = 1.0
-var _deco_data: Dictionary = {}
+var deco_data: Dictionary = {}
 
 var _is_dragging: bool = false
 var _drag_offset: Vector2 = Vector2.ZERO
@@ -36,7 +36,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 				else:
 					if _popup != null:
-						_dismiss_popup()
+						dismiss_popup()
 			else:
 				if _mouse_pressed:
 					_mouse_pressed = false
@@ -53,26 +53,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			)
 			if dist > DRAG_THRESHOLD and GameManager.is_decoration_mode:
 				_is_dragging = true
-				_dismiss_popup()
+				dismiss_popup()
 		if _is_dragging:
 			var raw_pos := get_global_mouse_position() + _drag_offset
-			var snapped := Helpers.snap_to_grid(raw_pos)
+			var snap_pos := Helpers.snap_to_grid(raw_pos)
 			global_position = Helpers.clamp_to_viewport(
-				snapped, 0.0, get_viewport().get_visible_rect().size
+				snap_pos, 0.0, get_viewport().get_visible_rect().size
 			)
 
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE and _popup != null:
-			_dismiss_popup()
+			dismiss_popup()
 
 
 func _toggle_popup() -> void:
 	if _popup != null:
-		_dismiss_popup()
+		dismiss_popup()
 		return
 	if _active_popup_owner != null and _active_popup_owner != self:
 		if is_instance_valid(_active_popup_owner):
-			_active_popup_owner._dismiss_popup()
+			_active_popup_owner.dismiss_popup()
 	_active_popup_owner = self
 	_show_popup()
 
@@ -138,7 +138,7 @@ func _show_popup() -> void:
 	SignalBus.decoration_selected.emit(item_id)
 
 
-func _dismiss_popup() -> void:
+func dismiss_popup() -> void:
 	if _popup_layer != null and is_instance_valid(_popup_layer):
 		_popup_layer.queue_free()
 	_popup_layer = null
@@ -173,7 +173,7 @@ func _on_scale() -> void:
 
 
 func _on_delete() -> void:
-	_dismiss_popup()
+	dismiss_popup()
 	_remove_from_room()
 
 
@@ -186,40 +186,40 @@ func _is_mouse_over() -> bool:
 
 
 func _save_position() -> void:
-	if _deco_data.is_empty():
+	if deco_data.is_empty():
 		return
-	_deco_data["position"] = Helpers.vec2_to_array(position)
+	deco_data["position"] = Helpers.vec2_to_array(position)
 	SignalBus.decoration_moved.emit(item_id, position)
 	SignalBus.save_requested.emit()
 
 
 func _save_rotation() -> void:
-	if _deco_data.is_empty():
+	if deco_data.is_empty():
 		return
-	_deco_data["rotation"] = rotation_degrees
+	deco_data["rotation"] = rotation_degrees
 	SignalBus.save_requested.emit()
 
 
 func _save_flip() -> void:
-	if _deco_data.is_empty():
+	if deco_data.is_empty():
 		return
-	_deco_data["flip_h"] = flip_h
+	deco_data["flip_h"] = flip_h
 	SignalBus.save_requested.emit()
 
 
 func _save_scale(new_scale: float) -> void:
-	if _deco_data.is_empty():
+	if deco_data.is_empty():
 		return
-	_deco_data["item_scale"] = new_scale
+	deco_data["item_scale"] = new_scale
 	SignalBus.save_requested.emit()
 
 
 func _remove_from_room() -> void:
-	SaveManager.remove_decoration(_deco_data)
+	SaveManager.remove_decoration(deco_data)
 	SignalBus.decoration_removed.emit(item_id)
 	SignalBus.save_requested.emit()
 	queue_free()
 
 
 func _exit_tree() -> void:
-	_dismiss_popup()
+	dismiss_popup()

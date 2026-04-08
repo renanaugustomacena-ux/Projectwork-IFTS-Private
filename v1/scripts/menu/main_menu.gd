@@ -6,9 +6,11 @@ const GAMEPLAY_SCENE := "res://scenes/main/main.tscn"
 const SETTINGS_SCENE := "res://scenes/ui/settings_panel.tscn"
 const AUTH_SCREEN_SCENE := "res://scenes/menu/auth_screen.tscn"
 const LOADING_SCREEN_SCENE := "res://scenes/menu/loading_screen.tscn"
+const CHARACTER_SELECT_SCENE := "res://scenes/menu/character_select.tscn"
 const LOADING_PAUSE := 0.4
 
 var _settings_panel: PanelContainer = null
+var _profile_panel: PanelContainer = null
 var _transitioning: bool = false
 var _intro_tween: Tween = null
 var _panel_tween: Tween = null
@@ -83,8 +85,33 @@ func _on_walk_in_done() -> void:
 func _on_nuova_partita() -> void:
 	if _transitioning:
 		return
-	_transitioning = true
 	SaveManager.reset_character_data()
+	_show_character_select()
+
+
+func _show_character_select() -> void:
+	var scene := load(CHARACTER_SELECT_SCENE) as PackedScene
+	if scene == null:
+		push_warning("MainMenu: character select not found")
+		_transitioning = true
+		_transition_to_scene(GAMEPLAY_SCENE)
+		return
+	var select_screen := scene.instantiate() as Control
+	if select_screen == null:
+		push_warning("MainMenu: failed to instantiate select")
+		_transitioning = true
+		_transition_to_scene(GAMEPLAY_SCENE)
+		return
+	select_screen.character_selected.connect(
+		_on_character_chosen, CONNECT_ONE_SHOT
+	)
+	$UILayer.add_child(select_screen)
+
+
+func _on_character_chosen(character_id: String) -> void:
+	GameManager.current_character_id = character_id
+	SignalBus.character_changed.emit(character_id)
+	_transitioning = true
 	_transition_to_scene(GAMEPLAY_SCENE)
 
 
@@ -128,23 +155,26 @@ func _on_auth_completed() -> void:
 
 
 func _on_profilo() -> void:
+	if _profile_panel != null and is_instance_valid(_profile_panel):
+		_close_profile()
+		return
 	if _settings_panel != null and is_instance_valid(_settings_panel):
 		_close_settings()
 	var scene := load("res://scenes/ui/profile_panel.tscn") as PackedScene
 	if scene == null:
 		push_warning("MainMenu: profile panel scene not found")
 		return
-	var panel := scene.instantiate() as PanelContainer
-	if panel == null:
+	_profile_panel = scene.instantiate() as PanelContainer
+	if _profile_panel == null:
 		push_warning("MainMenu: failed to instantiate profile panel")
 		return
-	panel.modulate.a = 0.0
-	$UILayer.add_child(panel)
+	_profile_panel.modulate.a = 0.0
+	$UILayer.add_child(_profile_panel)
 	if _panel_tween and _panel_tween.is_running():
 		_panel_tween.kill()
 	_panel_tween = create_tween()
 	_panel_tween.tween_property(
-		panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION
+		_profile_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION
 	)
 
 
@@ -152,6 +182,8 @@ func _on_opzioni() -> void:
 	if _settings_panel != null and is_instance_valid(_settings_panel):
 		_close_settings()
 		return
+	if _profile_panel != null and is_instance_valid(_profile_panel):
+		_close_profile()
 	var scene := load(SETTINGS_SCENE) as PackedScene
 	if scene == null:
 		push_warning("MainMenu: settings scene not found")
@@ -184,10 +216,25 @@ func _close_settings() -> void:
 	_panel_tween.tween_callback(panel.queue_free)
 
 
+func _close_profile() -> void:
+	if _profile_panel == null:
+		return
+	var panel := _profile_panel
+	_profile_panel = null
+	if _panel_tween and _panel_tween.is_running():
+		_panel_tween.kill()
+	_panel_tween = create_tween()
+	_panel_tween.tween_property(panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
+	_panel_tween.tween_callback(panel.queue_free)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if _settings_panel != null and is_instance_valid(_settings_panel):
 			_close_settings()
+			get_viewport().set_input_as_handled()
+		elif _profile_panel != null and is_instance_valid(_profile_panel):
+			_close_profile()
 			get_viewport().set_input_as_handled()
 
 
@@ -196,6 +243,10 @@ func _exit_tree() -> void:
 		_intro_tween.kill()
 	if _panel_tween and _panel_tween.is_running():
 		_panel_tween.kill()
+	if _settings_panel and is_instance_valid(_settings_panel):
+		_settings_panel.queue_free()
+	if _profile_panel and is_instance_valid(_profile_panel):
+		_profile_panel.queue_free()
 	if _nuova_btn and _nuova_btn.pressed.is_connected(_on_nuova_partita):
 		_nuova_btn.pressed.disconnect(_on_nuova_partita)
 	if _carica_btn and _carica_btn.pressed.is_connected(_on_carica_partita):

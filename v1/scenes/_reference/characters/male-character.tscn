@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://cboy4uryuyrwc"]
+[gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://vg2pvhat325p" path="res://scripts/male_character.gd" id="1_opfsr"]
 [ext_resource type="Texture2D" uid="uid://bp8lkj82b53yi" path="res://assets/charachters/male/male_yellow_shirt/male_idle.png" id="1_y6b3s"]
