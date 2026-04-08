@@ -8,14 +8,25 @@
 ```
 pets/
 ├── aseprite_pets/
-│   └── cat_void_simple.aseprite    # Sorgente Aseprite (~1 KB)
+│   ├── cat_void_simple.aseprite                # Sorgente Aseprite cat simple
+│   ├── cat_void_iso.aseprite                   # Sorgente Aseprite cat iso (TBD, da rifinire)
+│   └── reference/
+│       └── cat_void_isometric_reference.jpg    # Concept art 1024x1024 (reference)
 ├── cat_void_simple.png             # 80x16 — sprite strip (5 frame da 16x16)
-└── cat_void_simple.png.import      # Metadati import Godot
+├── cat_void_simple.png.import
+├── cat_void_iso.png                # 160x32 — sprite strip (5 frame da 32x32)
+└── cat_void_iso.png.import
 ```
 
-**Totale**: 3 file
+## Reference / Concept Art
+
+`aseprite_pets/reference/cat_void_isometric_reference.jpg` — concept art ad alta risoluzione
+(JPEG 1024x1024) usato come guida visiva per la variante isometrica del gatto. **Non viene
+caricato dal gioco**: serve solo come riferimento di stile per chi rifinisce lo sprite in Aseprite.
 
 ## Specifiche Sprite
+
+### `cat_void_simple.png`
 
 | Proprieta' | Valore |
 |------------|--------|
@@ -24,6 +35,19 @@ pets/
 | Numero frame | 5 |
 | Formato | PNG 8-bit RGBA |
 | Tipo | Strip orizzontale |
+
+### `cat_void_iso.png`
+
+| Proprieta' | Valore |
+|------------|--------|
+| Dimensione PNG | 160x32 pixel |
+| Frame singolo | 32x32 pixel |
+| Numero frame | 5 |
+| Formato | PNG 8-bit RGBA |
+| Tipo | Strip orizzontale (idle bobbing) |
+
+> Generato a partire dal reference isometrico tramite downscale + leggero bobbing.
+> Va rifinito a mano in Aseprite per ottenere un'animazione idle vera (orecchie/coda).
 
 ## Come e' Usato nel Gioco
 
