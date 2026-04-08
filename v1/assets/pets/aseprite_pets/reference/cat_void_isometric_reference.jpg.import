@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bxdmryfm5grk4"
-path="res://.godot/imported/cat_void_iso.png-e4af40226d8176aaeb378ed58d4b59ab.ctex"
+uid="uid://6r5umt5t7qe3"
+path="res://.godot/imported/cat_void_isometric_reference.jpg-be41a076574600d4e5df6b1753291444.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/pets/cat_void_iso.png"
-dest_files=["res://.godot/imported/cat_void_iso.png-e4af40226d8176aaeb378ed58d4b59ab.ctex"]
+source_file="res://assets/pets/aseprite_pets/reference/cat_void_isometric_reference.jpg"
+dest_files=["res://.godot/imported/cat_void_isometric_reference.jpg-be41a076574600d4e5df6b1753291444.ctex"]
 
 [params]
 

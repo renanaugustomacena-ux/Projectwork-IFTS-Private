@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://i0qjx0y8ogfp"]
 
-[ext_resource type="Script" path="res://scripts/rooms/pet_controller.gd" id="1_ctrl"]
 [ext_resource type="Texture2D" uid="uid://bid5ef55w4sbk" path="res://assets/pets/cat_void_simple.png" id="1_7xtjs"]
+[ext_resource type="Script" uid="uid://ohr66b73163j" path="res://scripts/rooms/pet_controller.gd" id="1_ctrl"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jtm4s"]
-radius = 5.0
+radius = 15.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ujsnv"]
 atlas = ExtResource("1_7xtjs")
@@ -51,7 +51,6 @@ animations = [{
 
 [node name="CharacterBody2D" type="CharacterBody2D" unique_id=656322203]
 collision_layer = 0
-collision_mask = 1
 motion_mode = 1
 script = ExtResource("1_ctrl")
 
@@ -60,8 +59,7 @@ position = Vector2(1, 2)
 shape = SubResource("CircleShape2D_jtm4s")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1079891382]
-texture_filter = 0
+position = Vector2(1, -1)
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_1lj14")
-animation = &"default"
 autoplay = "default"
