@@ -21,7 +21,7 @@ const PET_SCENES := {
 	"simple": "res://scenes/cat_void.tscn",
 	"iso": "res://scenes/cat_void_iso.tscn",
 }
-const PET_VARIANT_DEFAULT := "iso"
+const PET_VARIANT_DEFAULT := "simple"
 
 @onready var decorations_container: Node2D = $Decorations
 @onready var character_node: Node2D = $Character

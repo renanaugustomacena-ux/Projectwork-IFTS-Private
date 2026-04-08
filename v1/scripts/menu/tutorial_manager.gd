@@ -282,17 +282,24 @@ func _advance_step() -> void:
 	_animate_dialog_in()
 
 
-func _on_signal_received(args: Variant = null, _sig_name: String = "") -> void:
-	# Check filter if present
+## Variadic-style signal handler. The signal can emit 0..2 args; the bind()
+## appends `sig_name` always as the LAST arg. So the callable is invoked as:
+##   0-arg signal -> (sig_name)
+##   1-arg signal -> (a, sig_name)
+##   2-arg signal -> (a, b, sig_name)
+## Accept up to 3 args with defaults so any signal arity works without crash.
+func _on_signal_received(
+	a: Variant = null,
+	b: Variant = null,
+	c: Variant = null,
+) -> void:
 	var step: Dictionary = _steps[_current_step]
 	var filter: String = step.get("signal_filter", "")
 	if not filter.is_empty():
-		# For panel_opened/closed signals, first arg is panel name
 		var received: String = ""
-		if args is String:
-			received = args
+		if a is String:
+			received = a
 		if filter not in received:
-			# Re-connect for next signal
 			var sig_name: String = step.get("signal_name", "")
 			if SignalBus.has_signal(sig_name):
 				var sig: Signal = SignalBus.get(sig_name)
@@ -301,6 +308,7 @@ func _on_signal_received(args: Variant = null, _sig_name: String = "") -> void:
 					CONNECT_ONE_SHOT
 				)
 			return
+	var _unused := [a, b, c]
 	_advance_step()
 
 
