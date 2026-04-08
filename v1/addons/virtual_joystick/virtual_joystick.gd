@@ -95,7 +95,7 @@ enum Modes {
 # Visual Group
 @export_group("Visual")
 ## The texture used for the virtual joystick base.
-@export var base_texture: Texture2D = preload("uid://dss01ljguvr3s"):
+@export var base_texture: Texture2D = preload("uid://ixchpybe0p45"):
 	set(value):
 		base_texture = value
 		if not is_node_ready():
@@ -111,7 +111,7 @@ enum Modes {
 			update_configuration_warnings()
 
 ## The texture used for the virtual joystick stick.
-@export var stick_texture: Texture2D = preload("uid://bkpqg1ekq7uuj"):
+@export var stick_texture: Texture2D = preload("uid://r21y3tmucn75"):
 	set(value):
 		stick_texture = value
 		if not is_node_ready():

@@ -3,9 +3,9 @@
 [ext_resource type="Script" uid="uid://c7xwqp5iegw1n" path="res://scripts/rooms/room_base.gd" id="1_room"]
 [ext_resource type="Script" uid="uid://v4251evgwcg2" path="res://scripts/main.gd" id="2_main"]
 [ext_resource type="Script" uid="uid://1q0vbiub785f" path="res://scripts/ui/drop_zone.gd" id="3_dropzone"]
-[ext_resource type="PackedScene" path="res://scenes/male-old-character.tscn" id="5_char"]
+[ext_resource type="PackedScene" uid="uid://cklce05qabno0" path="res://scenes/male-old-character.tscn" id="5_char"]
 [ext_resource type="Texture2D" uid="uid://cv5hfbq1fmecf" path="res://assets/room/room.png" id="6_room_bg"]
-[ext_resource type="Script" uid="uid://c40e6rx2673ds" path="res://scripts/rooms/room_grid.gd" id="7_grid"]
+[ext_resource type="Script" uid="uid://c507lrjbs4xoi" path="res://scripts/rooms/room_grid.gd" id="7_grid"]
 
 [node name="Main" type="Node2D" unique_id=606292546]
 script = ExtResource("2_main")
@@ -25,22 +25,10 @@ color = Color(0.165, 0.145, 0.208, 0.6)
 [node name="FloorRect" type="ColorRect" parent="." unique_id=204112985]
 anchors_preset = -1
 anchor_top = 0.4
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchor_bottom = 0.4
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.239, 0.2, 0.278, 0.6)
-
-[node name="Baseboard" type="ColorRect" parent="." unique_id=1170622796]
-anchors_preset = -1
-anchor_top = 0.4
-anchor_right = 1.0
-anchor_bottom = 0.4
-offset_top = -1.0
-offset_right = 290.0
-offset_bottom = 657.0
-grow_horizontal = 2
-color = Color(0.29, 0.259, 0.333, 1)
 
 [node name="Room" type="Node2D" parent="." unique_id=160373693]
 script = ExtResource("1_room")
@@ -49,15 +37,19 @@ script = ExtResource("1_room")
 position = Vector2(8, 25)
 
 [node name="Character" parent="Room" unique_id=285538804 instance=ExtResource("5_char")]
-position = Vector2(640, 450)
+position = Vector2(640, 448)
+wall_min_slide_angle = 0.08726646
 
 [node name="RoomBounds" type="StaticBody2D" parent="Room" unique_id=682674769]
 
 [node name="FloorBounds" type="CollisionPolygon2D" parent="Room/RoomBounds" unique_id=1607978129]
-position = Vector2(226.14706, -108.80913)
-scale = Vector2(0.64430153, 1.0141051)
+position = Vector2(226.14706, -396.67682)
+scale = Vector2(0.64430153, 1.345612)
 build_mode = 1
-polygon = PackedVector2Array(96, 582.5916, 643.8801, 411.99786, 1193.3123, 583.5777, 645.4321, 763.04626)
+polygon = PackedVector2Array(-434.80737, 675.2888, 664.057, 407.00943, 1747.4005, 676.77515, 656.29663, 950.25665)
+
+[node name="wallBounds" type="CollisionPolygon2D" parent="Room" unique_id=285143505]
+polygon = PackedVector2Array(654, -339, 1333, 15, 1345, 512, 654, 152, -39, 508, -35, 12)
 
 [node name="RoomGrid" type="Node2D" parent="." unique_id=1832241696]
 script = ExtResource("7_grid")
@@ -67,13 +59,24 @@ layer = 10
 
 [node name="DropZone" type="Control" parent="UILayer" unique_id=792991348]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchor_left = -0.238
+anchor_top = -0.514
+anchor_right = 1.1010001
+anchor_bottom = 1.2780001
+offset_left = -315.36
+offset_top = -46.920013
+offset_right = 495.1643
+offset_bottom = 82.839905
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
 script = ExtResource("3_dropzone")
+
+[node name="Tree" type="Tree" parent="UILayer/DropZone" unique_id=891527627]
+layout_mode = 0
+offset_right = 16.0
+offset_bottom = 17.0
+columns = 3
 
 [node name="HUD" type="HBoxContainer" parent="UILayer" unique_id=1520605615]
 anchors_preset = 12
@@ -95,7 +98,7 @@ custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Settings"
 
-[node name="ProfileButton" type="Button" parent="UILayer/HUD"]
+[node name="ProfileButton" type="Button" parent="UILayer/HUD" unique_id=1292888094]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
 text = "Profile"

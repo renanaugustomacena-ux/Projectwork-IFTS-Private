@@ -208,6 +208,12 @@ func _migrate_schema() -> void:
 				"ALTER TABLE accounts"
 				+ " ADD COLUMN deleted_at TEXT DEFAULT NULL;"
 			)
+		if "coins" not in acc_schema:
+			_execute("ALTER TABLE accounts ADD COLUMN coins INTEGER DEFAULT 0;")
+		if "inventario_capacita" not in acc_schema:
+			_execute(
+				"ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;"
+			)
 
 	AppLogger.info("LocalDatabase", "Schema migration completed")
 
