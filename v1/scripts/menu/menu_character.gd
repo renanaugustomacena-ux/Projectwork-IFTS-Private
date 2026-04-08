@@ -6,6 +6,11 @@ signal walk_in_completed
 const WALK_DURATION := 2.0
 const FRAME_INTERVAL := 0.15
 
+## Walk-in trajectory in screen-space coordinates.
+## Y is fixed at floor level; X starts off-screen left and ends near horizontal center.
+const WALK_START_POS := Vector2(-100.0, 530.0)
+const WALK_END_POS := Vector2(640.0, 530.0)
+
 const WALKABLE_CHARACTERS := [
 	{
 		"id": "male_old",
@@ -49,9 +54,7 @@ func walk_in() -> void:
 	_sprite.scale = Vector2(char_data["char_scale"], char_data["char_scale"])
 	add_child(_sprite)
 
-	var start_pos := Vector2(-100, 530)
-	var end_pos := Vector2(640, 530)
-	position = start_pos
+	position = WALK_START_POS
 
 	_frame_timer = Timer.new()
 	_frame_timer.wait_time = FRAME_INTERVAL
@@ -64,7 +67,7 @@ func walk_in() -> void:
 	_walk_tween = create_tween()
 	_walk_tween.set_ease(Tween.EASE_OUT)
 	_walk_tween.set_trans(Tween.TRANS_QUAD)
-	_walk_tween.tween_property(self, "position", end_pos, WALK_DURATION)
+	_walk_tween.tween_property(self, "position", WALK_END_POS, WALK_DURATION)
 	_walk_tween.tween_callback(_on_walk_finished)
 
 

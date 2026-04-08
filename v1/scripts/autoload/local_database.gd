@@ -194,9 +194,10 @@ func _migrate_schema() -> void:
 		if "display_name" not in acc_schema:
 			_execute("ALTER TABLE accounts ADD COLUMN display_name TEXT DEFAULT '';")
 		if "updated_at" not in acc_schema:
-			_execute(
-				"ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT (datetime('now'));"
-			)
+			# SQLite vieta DEFAULT non-costanti in ALTER TABLE ADD COLUMN.
+			# Aggiungiamo la colonna con default vuoto e poi popoliamo le righe esistenti.
+			_execute("ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT '';")
+			_execute("UPDATE accounts SET updated_at = datetime('now') WHERE updated_at = '';")
 		if "password_hash" not in acc_schema:
 			_execute(
 				"ALTER TABLE accounts"
