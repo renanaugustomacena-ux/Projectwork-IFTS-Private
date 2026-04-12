@@ -52,7 +52,7 @@ func _physics_process(delta: float) -> void:
 func _process_idle(_delta: float) -> void:
 	velocity = Vector2.ZERO
 	move_and_slide()
-	_play_anim("default")
+	_play_anim("idle")
 
 	if _state_timer > _random_duration():
 		var roll := randf()
@@ -76,7 +76,7 @@ func _process_wander(_delta: float) -> void:
 	move_and_slide()
 
 	_anim.flip_h = dir.x < 0
-	_play_anim("default")
+	_play_anim("walk")
 
 	# Reached target or timeout
 	if position.distance_to(_wander_target) < 8.0:
@@ -107,7 +107,7 @@ func _process_follow(_delta: float) -> void:
 	move_and_slide()
 
 	_anim.flip_h = dir.x < 0
-	_play_anim("default")
+	_play_anim("walk")
 
 	if _state_timer > 10.0:
 		_set_state(State.IDLE)
@@ -116,7 +116,7 @@ func _process_follow(_delta: float) -> void:
 func _process_sleep(_delta: float) -> void:
 	velocity = Vector2.ZERO
 	move_and_slide()
-	_play_anim("default")
+	_play_anim("sleep")
 
 	# Slight scale pulse to simulate breathing
 	if _anim:
@@ -148,7 +148,7 @@ func _process_play(_delta: float) -> void:
 			_state_timer, 0.5
 		) < 0.02 else _anim.flip_h
 
-	_play_anim("default")
+	_play_anim("idle")
 
 	if _state_timer > 3.0:
 		_reset_anim_position()
@@ -213,8 +213,10 @@ func _play_anim(anim_name: String) -> void:
 		return
 	if anim_name != _last_anim:
 		_last_anim = anim_name
-		if _anim.sprite_frames.has_animation(anim_name):
+		if _anim.sprite_frames and _anim.sprite_frames.has_animation(anim_name):
 			_anim.play(anim_name)
+		elif _anim.sprite_frames and _anim.sprite_frames.has_animation("default"):
+			_anim.play("default")
 
 
 func _reset_anim_scale() -> void:
