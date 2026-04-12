@@ -2,9 +2,6 @@
 
 [ext_resource type="Texture2D" uid="uid://bid5ef55w4sbk" path="res://assets/pets/cat_void_simple.png" id="1_7xtjs"]
 [ext_resource type="Script" uid="uid://ohr66b73163j" path="res://scripts/rooms/pet_controller.gd" id="1_ctrl"]
-[ext_resource type="Texture2D" path="res://assets/pets/cat_idle.png" id="3_idle"]
-[ext_resource type="Texture2D" path="res://assets/pets/cat_walk.png" id="4_walk"]
-[ext_resource type="Texture2D" path="res://assets/pets/cat_sleep.png" id="5_sleep"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jtm4s"]
 radius = 15.0
@@ -29,66 +26,6 @@ region = Rect2(48, 0, 16, 16)
 atlas = ExtResource("1_7xtjs")
 region = Rect2(64, 0, 16, 16)
 
-[sub_resource type="AtlasTexture" id="idle_0"]
-atlas = ExtResource("3_idle")
-region = Rect2(0, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="idle_1"]
-atlas = ExtResource("3_idle")
-region = Rect2(16, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="idle_2"]
-atlas = ExtResource("3_idle")
-region = Rect2(32, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="idle_3"]
-atlas = ExtResource("3_idle")
-region = Rect2(48, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="idle_4"]
-atlas = ExtResource("3_idle")
-region = Rect2(64, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="walk_0"]
-atlas = ExtResource("4_walk")
-region = Rect2(0, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="walk_1"]
-atlas = ExtResource("4_walk")
-region = Rect2(16, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="walk_2"]
-atlas = ExtResource("4_walk")
-region = Rect2(32, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="walk_3"]
-atlas = ExtResource("4_walk")
-region = Rect2(48, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="walk_4"]
-atlas = ExtResource("4_walk")
-region = Rect2(64, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="sleep_0"]
-atlas = ExtResource("5_sleep")
-region = Rect2(0, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="sleep_1"]
-atlas = ExtResource("5_sleep")
-region = Rect2(16, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="sleep_2"]
-atlas = ExtResource("5_sleep")
-region = Rect2(32, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="sleep_3"]
-atlas = ExtResource("5_sleep")
-region = Rect2(48, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="sleep_4"]
-atlas = ExtResource("5_sleep")
-region = Rect2(64, 0, 16, 16)
-
 [sub_resource type="SpriteFrames" id="SpriteFrames_1lj14"]
 animations = [{
 "frames": [{
@@ -110,66 +47,6 @@ animations = [{
 "loop": true,
 "name": &"default",
 "speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("idle_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("idle_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("idle_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("idle_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("idle_4")
-}],
-"loop": true,
-"name": &"idle",
-"speed": 4.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("walk_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("walk_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("walk_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("walk_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("walk_4")
-}],
-"loop": true,
-"name": &"walk",
-"speed": 8.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("sleep_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("sleep_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("sleep_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("sleep_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("sleep_4")
-}],
-"loop": true,
-"name": &"sleep",
-"speed": 3.0
 }]
 
 [node name="CharacterBody2D" type="CharacterBody2D" unique_id=656322203]
@@ -186,4 +63,4 @@ position = Vector2(1, -1)
 scale = Vector2(3, 3)
 texture_filter = 1
 sprite_frames = SubResource("SpriteFrames_1lj14")
-autoplay = "idle"
+autoplay = "default"

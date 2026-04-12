@@ -11,7 +11,6 @@ var _panel_manager: PanelManager
 @onready var _room_bg: Sprite2D = $RoomBackground
 @onready var _wall_rect: ColorRect = $WallRect
 @onready var _floor_rect: ColorRect = $FloorRect
-@onready var _baseboard: ColorRect = $Baseboard
 
 
 const TUTORIAL_SCRIPT := preload(
@@ -80,8 +79,6 @@ func _apply_theme(room_id: String, theme_id: String) -> void:
 	var floor_color := Color(floor_hex)
 	floor_color.a = OVERLAY_ALPHA
 	_floor_rect.color = floor_color
-
-	_baseboard.color = Color(wall_hex).lightened(0.1)
 
 
 func _fit_background_to_viewport() -> void:
