@@ -63,7 +63,7 @@ func _build_ui() -> void:
 
 	# Title
 	_title_label = Label.new()
-	_title_label.text = "Choose Your Character"
+	_title_label.text = "Scegli il tuo Personaggio"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 28)
 	_title_label.add_theme_color_override(
@@ -143,7 +143,7 @@ func _build_ui() -> void:
 
 	# Start button
 	_start_btn = Button.new()
-	_start_btn.text = "Start Playing"
+	_start_btn.text = "Inizia a Giocare"
 	_start_btn.custom_minimum_size = Vector2(200, 48)
 	_start_btn.pressed.connect(_on_start)
 	var start_container := CenterContainer.new()

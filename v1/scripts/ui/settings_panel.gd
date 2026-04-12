@@ -28,13 +28,13 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Settings"
+	title.text = "Impostazioni"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	# Audio section
 	var audio_label := Label.new()
-	audio_label.text = "Audio"
+	audio_label.text = "Volume"
 	audio_label.add_theme_font_size_override("font_size", 11)
 	audio_label.modulate.a = 0.7
 	vbox.add_child(audio_label)
@@ -52,7 +52,7 @@ func _build_ui() -> void:
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
-	# Language — hidden until translation files are added
+	# Language — hidden until translation files (.po) are added
 	var lang_row := HBoxContainer.new()
 	lang_row.add_theme_constant_override("separation", 8)
 	lang_row.visible = false
@@ -77,11 +77,14 @@ func _build_ui() -> void:
 	var sep2 := HSeparator.new()
 	vbox.add_child(sep2)
 
-	# Replay Tutorial
-	var tutorial_btn := Button.new()
-	tutorial_btn.text = "Replay Tutorial"
-	tutorial_btn.pressed.connect(_on_replay_tutorial)
-	vbox.add_child(tutorial_btn)
+	# Replay Tutorial — only show in-game, not from main menu
+	var current_scene := get_tree().current_scene
+	var in_game := current_scene and current_scene.scene_file_path == "res://scenes/main/main.tscn"
+	if in_game:
+		var tutorial_btn := Button.new()
+		tutorial_btn.text = "Ripeti Tutorial"
+		tutorial_btn.pressed.connect(_on_replay_tutorial)
+		vbox.add_child(tutorial_btn)
 
 
 func _on_replay_tutorial() -> void:
@@ -93,7 +96,10 @@ func _on_replay_tutorial() -> void:
 
 
 func _restart_scene() -> void:
-	get_tree().change_scene_to_file("res://scenes/main/main.tscn")
+	var current := get_tree().current_scene
+	if current and current.scene_file_path == "res://scenes/main/main.tscn":
+		get_tree().reload_current_scene()
+	# From main menu: do nothing — user starts game via New Game button
 
 
 func _create_slider(parent: VBoxContainer, label_text: String, default_value: float) -> HSlider:

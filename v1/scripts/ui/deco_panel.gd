@@ -28,7 +28,7 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Decorations"
+	title.text = "Decorazioni"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer_vbox.add_child(title)
 
@@ -65,7 +65,7 @@ func _populate_catalog() -> void:
 
 	if items.is_empty():
 		var empty := Label.new()
-		empty.text = "No decorations available."
+		empty.text = "Nessuna decorazione disponibile."
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.modulate.a = 0.6
 		_vbox.add_child(empty)
@@ -123,6 +123,7 @@ func _create_drag_button(
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(68, 56)
 	btn.tooltip_text = item_name
+	btn.focus_mode = Control.FOCUS_NONE
 
 	var tex: Texture2D = null
 	if not sprite_path.is_empty():
@@ -190,9 +191,9 @@ func _on_mode_toggled() -> void:
 
 func _update_mode_button() -> void:
 	if GameManager.is_decoration_mode:
-		_mode_button.text = "Exit Edit Mode"
+		_mode_button.text = "Esci Modalità Modifica"
 	else:
-		_mode_button.text = "Enter Edit Mode"
+		_mode_button.text = "Modalità Modifica"
 
 
 func _exit_tree() -> void:

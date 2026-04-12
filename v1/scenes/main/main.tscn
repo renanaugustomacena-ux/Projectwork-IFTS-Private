@@ -34,7 +34,6 @@ color = Color(0.239, 0.2, 0.278, 0.6)
 script = ExtResource("1_room")
 
 [node name="Decorations" type="Node2D" parent="Room" unique_id=849325290]
-position = Vector2(8, 25)
 
 [node name="Character" parent="Room" unique_id=285538804 instance=ExtResource("5_char")]
 position = Vector2(640, 448)
@@ -43,13 +42,8 @@ wall_min_slide_angle = 0.08726646
 [node name="RoomBounds" type="StaticBody2D" parent="Room" unique_id=682674769]
 
 [node name="FloorBounds" type="CollisionPolygon2D" parent="Room/RoomBounds" unique_id=1607978129]
-position = Vector2(226.14706, -396.67682)
-scale = Vector2(0.64430153, 1.345612)
 build_mode = 1
-polygon = PackedVector2Array(-434.80737, 675.2888, 664.057, 407.00943, 1747.4005, 676.77515, 656.29663, 950.25665)
-
-[node name="wallBounds" type="CollisionPolygon2D" parent="Room" unique_id=285143505]
-polygon = PackedVector2Array(654, -339, 1333, 15, 1345, 512, 654, 152, -39, 508, -35, 12)
+polygon = PackedVector2Array(640, 265, 1100, 480, 640, 685, 180, 480)
 
 [node name="RoomGrid" type="Node2D" parent="." unique_id=1832241696]
 script = ExtResource("7_grid")
@@ -83,19 +77,24 @@ grow_horizontal = 2
 grow_vertical = 0
 alignment = 1
 
+[node name="MenuButton" type="Button" parent="UILayer/HUD"]
+custom_minimum_size = Vector2(60, 36)
+layout_mode = 2
+text = "Menu"
+
 [node name="DecoButton" type="Button" parent="UILayer/HUD" unique_id=1409501704]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
-text = "Decor"
+text = "Decora"
 
 [node name="SettingsButton" type="Button" parent="UILayer/HUD" unique_id=777371810]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
-text = "Settings"
+text = "Opzioni"
 
 [node name="ProfileButton" type="Button" parent="UILayer/HUD" unique_id=1292888094]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
-text = "Profile"
+text = "Profilo"
 
 [node name="AudioStreams" type="Node" parent="." unique_id=364661636]

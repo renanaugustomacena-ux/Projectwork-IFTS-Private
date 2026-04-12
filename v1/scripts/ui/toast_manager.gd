@@ -19,15 +19,15 @@ func _ready() -> void:
 	_build_container()
 	SignalBus.toast_requested.connect(_on_toast_requested)
 	SignalBus.save_completed.connect(
-		func() -> void: show_toast("Game saved ✓", "success")
+		func() -> void: show_toast("Partita salvata ✓", "success")
 	)
 	SignalBus.decoration_placed.connect(
 		func(item_id: String, _pos: Vector2) -> void:
-			show_toast("Placed: %s" % item_id, "info")
+			show_toast("Posizionato: %s" % item_id, "info")
 	)
 	SignalBus.decoration_removed.connect(
 		func(item_id: String) -> void:
-			show_toast("Removed: %s" % item_id, "warning")
+			show_toast("Rimosso: %s" % item_id, "warning")
 	)
 
 

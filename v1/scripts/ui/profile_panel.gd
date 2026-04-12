@@ -32,7 +32,7 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Profile"
+	title.text = "Profilo"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -43,28 +43,28 @@ func _build_ui() -> void:
 	info_label.modulate.a = 0.7
 	vbox.add_child(info_label)
 
-	_account_type_label = _create_info_row(vbox, "Type")
-	_email_label = _create_info_row(vbox, "User")
-	_coins_label = _create_info_row(vbox, "Coins")
+	_account_type_label = _create_info_row(vbox, "Tipo")
+	_email_label = _create_info_row(vbox, "Utente")
+	_coins_label = _create_info_row(vbox, "Monete")
 
 	# Separator
 	vbox.add_child(HSeparator.new())
 
 	# Actions section
 	var actions_label := Label.new()
-	actions_label.text = "Actions"
+	actions_label.text = "Azioni"
 	actions_label.add_theme_font_size_override("font_size", 11)
 	actions_label.modulate.a = 0.7
 	vbox.add_child(actions_label)
 
 	# Delete Character
 	_delete_char_btn = Button.new()
-	_delete_char_btn.text = "Delete Character"
+	_delete_char_btn.text = "Elimina Personaggio"
 	_delete_char_btn.custom_minimum_size = Vector2(0, 32)
 	_delete_char_btn.pressed.connect(
 		_confirm_action.bind(
-			"Delete Character?",
-			"This will remove your character and room. Your account and coins will be kept.",
+			"Eliminare il personaggio?",
+			"Il personaggio e la stanza verranno rimossi. Account e monete restano.",
 			_on_delete_character_confirmed,
 		)
 	)
@@ -72,12 +72,12 @@ func _build_ui() -> void:
 
 	# Delete Account
 	_delete_account_btn = Button.new()
-	_delete_account_btn.text = "Delete Account"
+	_delete_account_btn.text = "Elimina Account"
 	_delete_account_btn.custom_minimum_size = Vector2(0, 32)
 	_delete_account_btn.pressed.connect(
 		_confirm_action.bind(
-			"Delete Account?",
-			"This will permanently delete your account and all data. This cannot be undone.",
+			"Eliminare l'account?",
+			"Tutti i dati verranno eliminati permanentemente.",
 			_on_delete_account_confirmed,
 		)
 	)
@@ -88,7 +88,7 @@ func _build_ui() -> void:
 
 	# Logout
 	var logout_btn := Button.new()
-	logout_btn.text = "Logout"
+	logout_btn.text = "Esci dall'account"
 	logout_btn.custom_minimum_size = Vector2(0, 32)
 	logout_btn.pressed.connect(_on_logout_pressed)
 	vbox.add_child(logout_btn)
@@ -123,13 +123,13 @@ func _create_info_row(parent: VBoxContainer, label_text: String) -> Label:
 
 func _update_info() -> void:
 	if AuthManager.auth_state == AuthManager.AuthState.GUEST:
-		_account_type_label.text = "Guest"
+		_account_type_label.text = "Ospite"
 		_email_label.text = "—"
 	elif AuthManager.auth_state == AuthManager.AuthState.AUTHENTICATED:
-		_account_type_label.text = "Registered"
+		_account_type_label.text = "Registrato"
 		_email_label.text = AuthManager.current_username
 	else:
-		_account_type_label.text = "Not logged in"
+		_account_type_label.text = "Non connesso"
 		_email_label.text = "—"
 
 	var coins := LocalDatabase.get_coins(AuthManager.current_account_id)
