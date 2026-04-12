@@ -3,7 +3,7 @@
 **Data**: 21 Marzo 2026 (Aggiornamento: 1 Aprile 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
-**Riferimenti nell'Audit Report v2.0.0**: Sezioni 6 (Autoload — local_database.gd, auth_manager.gd), 11 (Dati/DB/CI), 12 (Classificazione — N-DB1, N-DB2)
+**Riferimenti nel Report Consolidato**: [CONSOLIDATED_PROJECT_REPORT.md](../docs/CONSOLIDATED_PROJECT_REPORT.md) — Parte IV §13.4 (local_database.gd), Parte VI §24 (Findings), Appendice B (Schema DB)
 
 > **Nota Importante — Godot 4.6 Richiesto** (1 Aprile 2026):
 > Il plugin godot-sqlite (GDExtension) richiede **Godot 4.6**. Il progetto e' stato aggiornato
@@ -33,8 +33,8 @@
 | A25 | _save_inventory() ritorna void, errori non propagati | **CORRETTO** | Elia (31 Mar) |
 | A26 | _set_state() non verifica LocalDatabase.is_open() | **CORRETTO** | Elia (31 Mar) |
 | A27 | register() non valida ritorno di create_account() | **CORRETTO** | Renan (31 Mar) |
-| **N-DB2** | **Colonne FK senza indici (performance)** | **DA FARE** | Elia |
-| **N-DB1** | **Tabelle morte (shop, colore, categoria) non usate** | **DA FARE** | Elia |
+| N-DB2 | ~~Colonne FK senza indici (performance)~~ | **CORRETTO** | Renan (3 Apr) |
+| N-DB1 | ~~Tabelle morte (shop, colore, categoria) rimosse~~ | **CORRETTO** | Renan (3 Apr) |
 
 ## Task per Elia
 
@@ -46,10 +46,10 @@
 | 4 | ~~A26: Check is_open() in _set_state()~~ | `scripts/autoload/auth_manager.gd` | — | — | FATTO (31 Mar) |
 | 5 | ~~A27: Validare create_account() in register()~~ | `scripts/autoload/auth_manager.gd` | — | — | GIA' FATTO |
 | 6 | Supabase: Creare progetto, tabelle, RLS | Dashboard Supabase | ALTO | 1.5 ore | DA FARE |
-| **7** | **N-DB2: Aggiungere indici su colonne FK** | `scripts/autoload/local_database.gd` | **MEDIO** | **15 min** | **DA FARE** |
-| **8** | **N-DB1: Documentare/rimuovere tabelle morte** | `scripts/autoload/local_database.gd` | **BASSO** | **10 min** | **DA FARE** |
+| 7 | ~~N-DB2: Indici FK aggiunti~~ | `scripts/autoload/local_database.gd` | — | — | FATTO (3 Apr) |
+| 8 | ~~N-DB1: Tabelle morte rimosse~~ | `scripts/autoload/local_database.gd` | — | — | FATTO (3 Apr) |
 
-**Restano**: Task 6 (Supabase) + Task 7-8 (nuovi da audit v2.0.0)
+**Restano**: Task 6 (Supabase)
 
 ---
 
@@ -656,9 +656,9 @@ Task completati:
 - [x] Task 4: Check is_open() in _set_state() (A26) — FATTO 31 Mar
 - [x] Task 5: Validazione create_account() in register() (A27) — GIA' FATTO
 
-Nuovi task da audit v2.0.0:
-- [ ] Task 7: Indici FK creati (N-DB2) — verificare con query sqlite_master
-- [ ] Task 8: Tabelle morte documentate/rimosse (N-DB1)
+Task da audit v2.0.0:
+- [x] Task 7: Indici FK creati (N-DB2) — FATTO 3 Apr
+- [x] Task 8: Tabelle morte rimosse (N-DB1) — FATTO 3 Apr
 - [ ] Task 6: Progetto Supabase creato con tabelle e RLS
 - [ ] Consegnati URL e anon key a Renan
 ```

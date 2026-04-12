@@ -1,13 +1,12 @@
 # Guide Operative per il Team — Mini Cozy Room
 
-> **Aggiornamento 1 Aprile 2026**:
-> - **Audit Report v2.0.0**: riscrittura completa dell'audit. Le sezioni sono cambiate (vedi sotto)
-> - **Team**: 3 membri — Renan (Gameplay/UI/Architect), Cristian (CI/CD + Asset), Elia (Database + Supabase)
-> - **Supabase**: reintrodotto come servizio cloud. Elia prepara il progetto, Renan implementa il client
-> - **CI/CD**: pipeline unificata 5 job (lint, JSON, sprites, crossrefs, DB). Task 1-5 di Cristian FATTI
-> - **Asset**: tutti integrati in v1/ (Tasks 8-11 di Renan GIA' FATTI). README creati per ogni sottocartella
-> - **Schema DB**: C3/C4 completati (27 Mar). A24-A27 completati (31 Mar). Resta Supabase + nuovi task da audit v2
-> - **Nuovi problemi**: audit v2.0.0 ha trovato 24 nuovi problemi (N-BD1 CRITICO, N-Q1-Q6, N-DB1-DB3, N-AR1-AR8, N-P1-P4)
+> **Aggiornamento 10 Aprile 2026**:
+> - **Report consolidato**: i 5 documenti originali (AUDIT_REPORT, SPRINT_AUDIT_REPORT, architecture-review, SPRINT_TASKS, SPRINT_UX_PERFECTION_PLAN) sono stati unificati in [CONSOLIDATED_PROJECT_REPORT.md](../docs/CONSOLIDATED_PROJECT_REPORT.md)
+> - **Sprint 6-11 Aprile**: completati 39 task sprint (character selection, tutorial 10 step, pet controller, toast system, keyboard nav, ecc.)
+> - **Task Renan 19-21**: COMPLETATI (fix clean_name, auth_screen _exit_tree, settings_panel SignalBus)
+> - **Task Cristian 9-11**: COMPLETATI (build.yml 4.6, icona app, versione 1.0.0)
+> - **Task Elia 7-8**: COMPLETATI (indici FK, tabelle morte rimosse)
+> - **Nuovi bug runtime**: floor bounds inesistenti (CRITICO), pet animation singola, character flicker — vedi Parte V del report
 > - **Branch**: si lavora SOLO su `main`
 
 ---
@@ -36,11 +35,19 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 | 11 | Task 16 | ~~Tween orfani in main_menu.gd (A19)~~ | **FATTO** |
 | 12 | Task 17 | ~~Clamp posizione decorazioni al viewport (A28)~~ | **FATTO** |
 | 13 | Task 18 | ~~Null check dopo scene.instantiate() (A29)~~ | **FATTO** |
-| **14** | **Task 19** | **Fix `clean_name` in auth_manager.gd:60 (N-Q3)** | **DA FARE** |
-| **15** | **Task 20** | **Aggiungere `_exit_tree()` + tween tracciato in auth_screen.gd (N-Q1)** | **DA FARE** |
-| **16** | **Task 21** | **Fix settings_panel.gd: usare SignalBus.settings_updated (N-AR7)** | **DA FARE** |
+| 14 | Task 19 | ~~Fix `clean_name` in auth_manager.gd:60 (N-Q3)~~ | **FATTO** (commit 953ad1e) |
+| 15 | Task 20 | ~~Aggiungere `_exit_tree()` + tween tracciato in auth_screen.gd (N-Q1)~~ | **FATTO** (3 Apr) |
+| 16 | Task 21 | ~~Fix settings_panel.gd: usare SignalBus.settings_updated (N-AR7)~~ | **FATTO** (commit 953ad1e) |
 
-**18 task completati su 21.** Restano 3 nuovi task da Audit v2.0.0.
+**21 task completati su 21.** Tutti i task audit v2.0.0 completati.
+
+**Nuovi task post-sprint** (vedi Parte VIII del report consolidato):
+| Ordine | Task | Cosa Fare | Stato |
+|:------:|------|-----------|:-----:|
+| **17** | **PR 1** | **CRITICO — Floor bounds unificate (risolve bug decor invisibili + player fuori stanza)** | **DA FARE** |
+| **18** | **PR 2** | **Pet animations separate per stato (risolve pet che slitta dormendo)** | **DA FARE** |
+| 19 | PR 3 | Investigare character flicker (bug #4) | DA FARE |
+| 20 | PR 4 | Decor categories UX (bug #3 — da chiarire) | DA FARE |
 **Guida**: [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md)
 
 ### Cristian — CI/CD, Logger & Asset
@@ -52,15 +59,16 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 | — | Task 4 | ~~Logger: buffer mantiene ultimi 100 msg~~ | — | `scripts/autoload/logger.gd` | **FATTO (31 Mar)** |
 | — | Task 5 | ~~`_exit_tree()` al PerformanceManager~~ | — | `scripts/systems/performance_manager.gd` | **FATTO (31 Mar)** |
 | — | CI+ | ~~Pipeline unificata 5 job + 4 script Python~~ | — | `ci/`, `.github/workflows/ci.yml` | **FATTO (31 Mar)** |
-| **1** | **Task 9** | **CRITICO — Fix build.yml: Godot 4.5 → 4.6 (N-BD1)** | **15 min** | `.github/workflows/build.yml` | **DA FARE** |
-| 2 | **Task 10** | **Icona applicazione Windows (N-BD4)** | 30 min | `export_presets.cfg` | **DA FARE** |
-| 3 | **Task 11** | **Versione applicazione (N-BD5)** | 10 min | `export_presets.cfg` | **DA FARE** |
-| 4 | Task 7 | **Trovare/creare nuovo personaggio pixel art** (8 direzioni, 32x32) | 2-3 ore | `assets/charachters/male/old/` | DA FARE |
-| 5 | Task 8 | Trovare asset grafici aggiuntivi (loading screen, decorazioni, icone) | 1-2 ore | `assets/` | DA FARE |
-| 6 | Task 6 | Aggiornare documentazione (DOPO che tutti finiscono) | 1 ora | Vari README | DA FARE |
+| — | Task 9 | ~~CRITICO — Fix build.yml: Godot 4.5 → 4.6 (N-BD1)~~ | — | `.github/workflows/build.yml` | **FATTO** (3 Apr) |
+| — | Task 10 | ~~Icona applicazione Windows (N-BD4)~~ | — | `export_presets.cfg` | **FATTO** (3 Apr) |
+| — | Task 11 | ~~Versione applicazione 1.0.0 (N-BD5)~~ | — | `export_presets.cfg` | **FATTO** (3 Apr) |
+| **1** | Task 7 | **Trovare/creare nuovo personaggio pixel art** (8 direzioni, 32x32) | 2-3 ore | `assets/charachters/male/old/` | **DA FARE** |
+| **2** | Task 8 | **Trovare asset grafici aggiuntivi** (loading screen, decorazioni, icone) | 1-2 ore | `assets/` | **DA FARE** |
+| **3** | **Task 12** | **Trovare/creare sprite pet** (idle, walk, sleep — almeno 3 animazioni) | 1-2 ore | `assets/pets/` | **DA FARE** |
+| 4 | Task 6 | Aggiornare documentazione (DOPO che tutti finiscono) | 1 ora | Vari README | DA FARE |
 
-**Task 3-5 completati + CI espansa con 4 validatori Python.** Restano Task 6-11 (3 nuovi da Audit v2).
-**PRIORITA' ASSOLUTA**: Task 9 (N-BD1) — la build GitHub Actions e' rotta perche' usa Godot 4.5 invece di 4.6.
+**Task 3-5 + 9-11 completati.** Restano Task 6-8 + nuovo Task 12 (sprite pet).
+**PRIORITA'**: Task 7 (personaggio) e Task 12 (pet sprites) — servono per risolvere i bug runtime.
 **Guida**: [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md)
 **Riferimento asset personaggio**: [`assets/charachters/README.md`](../assets/charachters/README.md)
 
@@ -73,11 +81,11 @@ Poi aprite la vostra guida e seguite i task nell'ordine indicato qui sotto.
 | — | Task 3 | ~~A25: `_save_inventory()` ritorna bool~~ | — | `scripts/autoload/local_database.gd` | **FATTO (31 Mar)** |
 | — | Task 4 | ~~A26: Check `is_open()` in `_set_state()`~~ | — | `scripts/autoload/auth_manager.gd` | **FATTO (31 Mar)** |
 | — | Task 5 | ~~A27: Validare `create_account()` in `register()`~~ | — | `scripts/autoload/auth_manager.gd` | **GIA' FATTO** |
-| **1** | **Task 7** | **Aggiungere indici FK al database (N-DB2)** | **15 min** | `scripts/autoload/local_database.gd` | **DA FARE** |
-| 2 | **Task 8** | **Documentare/rimuovere tabelle morte (N-DB1)** | 10 min | `scripts/autoload/local_database.gd` | **DA FARE** |
-| 3 | **Task 6** | **Supabase**: creare progetto, 3 tabelle, RLS | 1.5 ore | Dashboard Supabase | DA FARE |
+| — | Task 7 | ~~N-DB2: Aggiungere indici FK al database~~ | — | `scripts/autoload/local_database.gd` | **FATTO** (3 Apr) |
+| — | Task 8 | ~~N-DB1: Tabelle morte rimosse~~ | — | `scripts/autoload/local_database.gd` | **FATTO** (3 Apr) |
+| **1** | **Task 6** | **Supabase**: creare progetto, 3 tabelle, RLS | 1.5 ore | Dashboard Supabase | **DA FARE** |
 
-**Task 1-5 completati.** Restano Task 6 (Supabase) + 2 nuovi task da Audit v2.
+**Task 1-5 + 7-8 completati.** Resta Task 6 (Supabase).
 **Dopo Task 6**: consegnare URL e anon key a Renan per implementazione client.
 **Guida**: [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md)
 **Riferimento asset menu**: [`assets/menu/README.md`](../assets/menu/README.md)
@@ -123,22 +131,27 @@ e `auth_manager.gd`. Coordinarsi per non lavorare sullo stesso file contemporane
 
 | Guida | Per Chi | Contenuto | Task Rimasti |
 |-------|---------|-----------|:------------:|
-| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~Bug fix gameplay, `_exit_tree()` x8, popup decorazioni, tween fix, viewport clamp~~, **fix clean_name, auth_screen _exit_tree, settings_panel** | 3 |
-| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | ~~Logger fix, PerformanceManager, CI 5 job~~, **CRITICO fix build.yml**, icona, versione, personaggio, asset, documentazione | 6 |
-| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ~~ROLLBACK, _save_inventory, is_open(), create_account~~, **indici FK**, **tabelle morte**, **setup Supabase** | 3 |
+| [GUIDA_RENAN_GAMEPLAY_UI.md](GUIDA_RENAN_GAMEPLAY_UI.md) | **Renan** | ~~21 task audit completati~~, **PR 1 floor bounds (CRITICO)**, PR 2 pet animations, PR 3-4 bug fix | 4 |
+| [GUIDA_CRISTIAN_CICD.md](GUIDA_CRISTIAN_CICD.md) | **Cristian** | ~~Logger, PerformanceManager, CI, build.yml, icona, versione~~, **personaggio pixel art**, **sprite pet**, asset, documentazione | 4 |
+| [GUIDA_ELIA_DATABASE.md](GUIDA_ELIA_DATABASE.md) | **Elia** | ~~ROLLBACK, _save_inventory, is_open(), create_account, indici FK, tabelle morte~~, **setup Supabase** | 1 |
 
 ## Relazione con l'Audit Report
 
-Queste guide sono la versione operativa (il "come fare") del documento [AUDIT_REPORT.md](../AUDIT_REPORT.md) (il "cosa fare e perche'").
+Queste guide sono la versione operativa (il "come fare") del [CONSOLIDATED_PROJECT_REPORT.md](../docs/CONSOLIDATED_PROJECT_REPORT.md) (il "cosa fare e perche'").
 
-**Versione audit**: **v2.0.0** — Riscrittura completa (1 Aprile 2026). L'audit ha 23 sezioni:
-- Sezioni 6-10: Analisi codice (autoload, menu, gameplay, UI, utility)
-- Sezione 11: Dati, database e CI/CD
-- Sezione 12: Classificazione problemi (24 nuovi: N-BD1-BD5, N-Q1-Q6, N-DB1-DB3, N-AR1-AR8, N-P1-P4)
-- Sezione 13-14: Piano di stabilizzazione e polishing
-- Sezioni 15-20: Guide frontend, Godot Editor, build (Windows, Inno Setup, Android, HTML5)
+**Versione report**: **v3.0.0** — Consolidamento completo (10 Aprile 2026). Il report ha 12 parti:
+- Parte I: Panoramica progetto + metodologia audit
+- Parte II: Architettura (diagrammi, flussi, segnali)
+- Parte III-IV: Stato componenti + analisi codice riga per riga
+- Parte V: Diagnosi bug runtime (floor bounds, pet, character flicker)
+- Parte VI: Registro audit completo 12 pass
+- Parte VII: Piano UX con acceptance criteria
+- Parte VIII: Sprint tasks + piano PR post-sprint
+- Parte IX-X: Build/deployment + troubleshooting
+- Parte XI-XII: Statistiche + guide operative (Godot Editor, frontend)
+- Appendici A-K: Glossario, schema DB, segnali, comandi utili, link Godot
 
-Se avete dubbi sul *perche'* di una correzione, consultate la sezione dell'audit report indicata all'inizio di ogni task.
+Se avete dubbi sul *perche'* di una correzione, consultate la parte del report indicata all'inizio di ogni task.
 
 ---
 
@@ -188,8 +201,8 @@ INTEGRITA' DATI (Elia + Renan)
 - [x] Database: _save_inventory() propaga errori (Task 3 Elia — FATTO 31 Mar)
 - [x] Database: is_open() check prima di query (Task 4 Elia — FATTO 31 Mar)
 - [x] Database: create_account() validato in register() (Task 5 Elia — GIA' FATTO)
-- [ ] Database: indici su colonne FK (Task 7 Elia — N-DB2)
-- [ ] Database: tabelle morte documentate/rimosse (Task 8 Elia — N-DB1)
+- [x] Database: indici su colonne FK (Task 7 Elia — N-DB2) — FATTO 3 Apr
+- [x] Database: tabelle morte rimosse (Task 8 Elia — N-DB1) — FATTO 3 Apr
 
 STABILITA' E LIFECYCLE (Renan + Cristian)
 - [x] _exit_tree() in 8 script di Renan (Task 6+14 Renan — FATTO) + PerformanceManager (Cristian — FATTO 31 Mar)
@@ -201,14 +214,14 @@ STABILITA' E LIFECYCLE (Renan + Cristian)
 - [x] Decorazioni: posizioni clampate al viewport al reload (Task 17 Renan — FATTO)
 - [x] Logger: session ID con Crypto (Task 3 Cristian — FATTO 31 Mar)
 - [x] Logger: buffer non perso se file non disponibile (Task 4 Cristian — FATTO 31 Mar)
-- [ ] Fix clean_name in auth_manager.gd (Task 19 Renan — N-Q3)
-- [ ] _exit_tree() + tween in auth_screen.gd (Task 20 Renan — N-Q1)
-- [ ] settings_panel.gd usa SignalBus (Task 21 Renan — N-AR7)
+- [x] Fix clean_name in auth_manager.gd (Task 19 Renan — N-Q3) — FATTO commit 953ad1e
+- [x] _exit_tree() + tween in auth_screen.gd (Task 20 Renan — N-Q1) — FATTO 3 Apr
+- [x] settings_panel.gd usa SignalBus (Task 21 Renan — N-AR7) — FATTO commit 953ad1e
 
 BUILD & CI/CD (Cristian)
-- [ ] CRITICO: build.yml usa Godot 4.6 (non 4.5) (Task 9 Cristian — N-BD1)
-- [ ] Icona applicazione Windows configurata (Task 10 Cristian — N-BD4)
-- [ ] Versione applicazione impostata (Task 11 Cristian — N-BD5)
+- [x] build.yml usa Godot 4.6 (Task 9 Cristian — N-BD1) — FATTO 3 Apr
+- [x] Icona applicazione Windows configurata (Task 10 Cristian — N-BD4) — FATTO 3 Apr
+- [x] Versione applicazione 1.0.0 impostata (Task 11 Cristian — N-BD5) — FATTO 3 Apr
 - [x] CI attiva su branch main (GIA' FATTO)
 - [x] gdlint + gdformat controllano v1/scripts/ e v1/tests/ (GIA' FATTO)
 
@@ -262,6 +275,6 @@ Ogni sottocartella di `assets/` ha un proprio README con origine, licenza e istr
 
 ---
 
-*Queste guide fanno parte del progetto Mini Cozy Room — Audit Pre-Rilascio v2.0.0.*
+*Queste guide fanno parte del progetto Mini Cozy Room — Consolidated Project Report v3.0.0.*
 *Scadenza progetto: 22 Aprile 2026.*
-*Ultimo aggiornamento: 1 Aprile 2026*
+*Ultimo aggiornamento: 10 Aprile 2026*

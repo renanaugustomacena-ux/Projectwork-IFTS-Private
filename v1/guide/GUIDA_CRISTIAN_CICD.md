@@ -3,19 +3,14 @@
 **Data**: 21 Marzo 2026 (Aggiornamento: 1 Aprile 2026)
 **Prerequisito**: Leggi prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare il tuo ambiente di sviluppo.
 
-**Riferimenti nell'Audit Report v2.0.0**: Sezioni 6 (Autoload), 11 (Dati/DB/CI), 12 (Classificazione), 13 (Stabilizzazione)
+**Riferimenti nel Report Consolidato**: [CONSOLIDATED_PROJECT_REPORT.md](../docs/CONSOLIDATED_PROJECT_REPORT.md) — Parte IV §18 (CI/CD), Parte IX (Build), Parte VI §23 (Audit CI Pass 11)
 
-> **⚠️ Nota Aggiornamento (1 Aprile 2026)**:
-> **Audit v2.0.0**: il report e' stato riscritto da zero. Le sezioni di riferimento sono cambiate.
-> **CRITICO — N-BD1**: la pipeline `build.yml` usa l'immagine Docker `godot-ci:4.5` ma il progetto
-> e' su **Godot 4.6**. Le build GitHub Actions sono **rotte**. Questo e' il fix piu' urgente.
-> **Nuovi task**: 9 (fix build.yml), 10 (icona Windows), 11 (versione app).
-> **CI/CD Unificata**: la pipeline e' stata espansa da 1 a 5 job paralleli:
-> lint (gdlint+gdformat), validate-json (cataloghi), validate-sprites (percorsi file),
-> validate-crossrefs (costanti vs cataloghi), validate-db (schema SQL).
-> Script di validazione in `ci/` (Python, stdlib only).
-> **Task completati**: 1-5 (CI, Logger, PerformanceManager), **CI unificata** (31 Mar).
-> **Restano**: Task 6 (documentazione, per ultimo), Task 7-8 (asset personaggio + grafici), **Task 9-11 (nuovi da audit v2)**.
+> **Nota Aggiornamento (10 Aprile 2026)**:
+> **Task 9-11 COMPLETATI**: build.yml aggiornato a Godot 4.6, icona generata, versione 1.0.0 impostata.
+> **CI/CD Unificata**: pipeline 5 job paralleli (lint, JSON, sprites, crossrefs, DB) — funzionante.
+> **Task completati**: 1-5 (CI, Logger, PerformanceManager) + 9-11 (build.yml, icona, versione).
+> **Restano**: Task 6 (documentazione, per ultimo), Task 7-8 (asset personaggio + grafici), **Task 12 (nuovo — sprite pet per 3 animazioni)**.
+> **PRIORITA'**: Task 7 (personaggio) e Task 12 (pet) — servono per risolvere bug runtime.
 
 ---
 
