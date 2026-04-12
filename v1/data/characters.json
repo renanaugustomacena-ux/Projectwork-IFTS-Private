@@ -39,6 +39,20 @@
 				},
 				"rotate": "res://assets/charachters/male/old/male_rotate/male_rotate.png"
 			}
+		},
+		{
+			"id": "female",
+			"name": "Ragazza Rossa",
+			"gender": "female",
+			"sprite_path": "res://assets/charachters/female/female_red_shirt/female_idle.png",
+			"sprite_type": "compact"
+		},
+		{
+			"id": "male",
+			"name": "Ragazzo Giallo",
+			"gender": "male",
+			"sprite_path": "res://assets/charachters/male/male_yellow_shirt/male_idle.png",
+			"sprite_type": "compact"
 		}
 	]
 }
