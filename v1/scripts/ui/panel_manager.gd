@@ -81,16 +81,20 @@ func close_current_panel() -> void:
 	var closing_name := _current_panel_name
 	var closing_panel := _current_panel
 
-	_current_panel = null
-	_current_panel_name = ""
-
 	if _tween and _tween.is_running():
 		_tween.kill()
 		_tween = null
 	_tween = create_tween()
 	_tween.tween_property(closing_panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
-	_tween.tween_callback(closing_panel.queue_free)
+	_tween.tween_callback(func() -> void:
+		closing_panel.queue_free()
+		# Clear state only after fade-out completes to prevent double-open
+		if _current_panel == closing_panel:
+			_current_panel = null
+			_current_panel_name = ""
+	)
 
+	# Mark as "closing" so toggle_panel sees it as still active during fade
 	SignalBus.panel_closed.emit(closing_name)
 	AppLogger.info("PanelManager", "Panel closed", {"name": closing_name})
 
