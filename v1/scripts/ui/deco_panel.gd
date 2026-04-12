@@ -111,12 +111,13 @@ func _populate_catalog() -> void:
 			var placement_type: String = item_data.get("placement_type", "any")
 
 			var drag_btn := _create_drag_button(item_id, item_name, sprite_path, item_scale, placement_type)
-			grid.add_child(drag_btn)
+			if drag_btn:
+				grid.add_child(drag_btn)
 
 
 func _create_drag_button(
 	item_id: String, item_name: String, sprite_path: String, item_scale: float, placement_type: String
-) -> Button:
+) -> Button:  # Returns null if texture missing
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(68, 56)
 	btn.tooltip_text = item_name
@@ -124,10 +125,11 @@ func _create_drag_button(
 	var tex: Texture2D = null
 	if not sprite_path.is_empty():
 		tex = load(sprite_path) as Texture2D
-		if tex:
-			btn.icon = tex
-			btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			btn.expand_icon = true
+	if tex == null:
+		return null
+	btn.icon = tex
+	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn.expand_icon = true
 
 	# Store drag data as metadata
 	(

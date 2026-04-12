@@ -58,15 +58,10 @@ script = ExtResource("7_grid")
 layer = 10
 
 [node name="DropZone" type="Control" parent="UILayer" unique_id=792991348]
-layout_mode = 3
-anchor_left = -0.238
-anchor_top = -0.514
-anchor_right = 1.1010001
-anchor_bottom = 1.2780001
-offset_left = -315.36
-offset_top = -46.920013
-offset_right = 495.1643
-offset_bottom = 82.839905
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1

@@ -27,7 +27,14 @@ func _deferred_load() -> void:
 	var scene := get_tree().current_scene
 	if scene and scene.scene_file_path == "res://scenes/menu/main_menu.tscn":
 		return
+	# Preserve character selection made during character_select screen —
+	# load_game() would overwrite it with the previously saved value.
+	var selected_character := current_character_id
+	var selected_outfit := current_outfit_id
 	SaveManager.load_game()
+	if selected_character != "male_old" or selected_outfit != "":
+		current_character_id = selected_character
+		current_outfit_id = selected_outfit
 
 
 func _load_catalogs() -> void:

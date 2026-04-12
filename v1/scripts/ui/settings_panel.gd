@@ -52,9 +52,10 @@ func _build_ui() -> void:
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
-	# Language
+	# Language — hidden until translation files are added
 	var lang_row := HBoxContainer.new()
 	lang_row.add_theme_constant_override("separation", 8)
+	lang_row.visible = false
 	vbox.add_child(lang_row)
 
 	var lang_label := Label.new()
