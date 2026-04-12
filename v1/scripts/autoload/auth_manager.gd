@@ -18,7 +18,8 @@ var _lockout_until: float = 0.0
 
 
 func _ready() -> void:
-	try_auto_login()
+	if not try_auto_login():
+		play_as_guest()
 
 
 func try_auto_login() -> bool:

@@ -25,14 +25,26 @@ const PET_VARIANT_DEFAULT := "simple"
 
 @onready var decorations_container: Node2D = $Decorations
 @onready var character_node: Node2D = $Character
+@onready var _floor_bounds_node: CollisionPolygon2D = $RoomBounds/FloorBounds
 
 
 func _ready() -> void:
 	SignalBus.character_changed.connect(_on_character_changed)
 	SignalBus.decoration_placed.connect(_on_decoration_placed)
 	SignalBus.load_completed.connect(_on_load_completed)
+	_setup_floor_bounds()
 	_reload_decorations()
 	_spawn_pet()
+	# Apply character chosen in main menu (signal fired before this scene loaded)
+	if GameManager.current_character_id != "male_old":
+		call_deferred("_on_character_changed", GameManager.current_character_id)
+
+
+func _setup_floor_bounds() -> void:
+	if _floor_bounds_node == null:
+		push_warning("RoomBase: FloorBounds node not found at $RoomBounds/FloorBounds")
+		return
+	Helpers.set_floor_polygon_from_node(_floor_bounds_node)
 
 
 func _on_load_completed() -> void:
@@ -99,8 +111,10 @@ func _reload_decorations() -> void:
 		var rot: float = deco_data.get("rotation", 0.0)
 		var flipped: bool = deco_data.get("flip_h", false)
 		var pos_vec := Helpers.array_to_vec2(pos)
-		var viewport_size := Vector2(Constants.VIEWPORT_WIDTH, Constants.VIEWPORT_HEIGHT)
-		pos_vec = Helpers.clamp_to_viewport(pos_vec, 0.0, viewport_size)
+		# Clamp to floor polygon (not viewport rect) so saved decorations from
+		# older builds — placed against the broken viewport clamp — get pulled
+		# back inside the visible room on reload.
+		pos_vec = Helpers.clamp_inside_floor(pos_vec)
 		_spawn_decoration(item_id, pos_vec, item_scale, rot, flipped, deco_data)
 
 

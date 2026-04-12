@@ -60,6 +60,11 @@ func _wire_hud_buttons() -> void:
 			continue
 		button.pressed.connect(_panel_manager.toggle_panel.bind(panel_name))
 
+	# Menu button — return to main menu
+	var menu_btn := _hud.get_node_or_null("MenuButton") as Button
+	if menu_btn:
+		menu_btn.pressed.connect(_on_menu_pressed)
+
 
 func _on_room_changed(room_id: String, theme: String) -> void:
 	_apply_theme(room_id, theme)
@@ -111,6 +116,11 @@ func _check_tutorial() -> void:
 	)
 	add_child(tutorial)
 	tutorial.start()
+
+
+func _on_menu_pressed() -> void:
+	SignalBus.save_requested.emit()
+	get_tree().change_scene_to_file("res://scenes/menu/main_menu.tscn")
 
 
 func _on_tutorial_done() -> void:

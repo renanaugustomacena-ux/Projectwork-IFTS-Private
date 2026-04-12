@@ -51,19 +51,17 @@ func _physics_process(delta: float) -> void:
 
 func _process_idle(_delta: float) -> void:
 	velocity = Vector2.ZERO
-	move_and_slide()
-	_play_anim("idle")
+	# Show first frame, stopped — cat looks still and alive
+	if _anim and _anim.is_playing():
+		_anim.stop()
 
 	if _state_timer > _random_duration():
 		var roll := randf()
-		if _idle_timer > SLEEP_COOLDOWN and roll < 0.2:
+		if _idle_timer > SLEEP_COOLDOWN and roll < 0.3:
 			_set_state(State.SLEEP)
-		elif roll < 0.5:
-			_set_state(State.WANDER)
 		elif _character_ref and _is_far_from_character():
 			_set_state(State.FOLLOW)
 		else:
-			# Reset timer for another idle period
 			_state_timer = 0.0
 
 
@@ -76,7 +74,7 @@ func _process_wander(_delta: float) -> void:
 	move_and_slide()
 
 	_anim.flip_h = dir.x < 0
-	_play_anim("walk")
+	_play_anim("default")
 
 	# Reached target or timeout
 	if position.distance_to(_wander_target) < 8.0:
@@ -107,7 +105,7 @@ func _process_follow(_delta: float) -> void:
 	move_and_slide()
 
 	_anim.flip_h = dir.x < 0
-	_play_anim("walk")
+	_play_anim("default")
 
 	if _state_timer > 10.0:
 		_set_state(State.IDLE)
@@ -115,40 +113,29 @@ func _process_follow(_delta: float) -> void:
 
 func _process_sleep(_delta: float) -> void:
 	velocity = Vector2.ZERO
-	move_and_slide()
-	_play_anim("sleep")
-
-	# Slight scale pulse to simulate breathing
-	if _anim:
-		var breath := sin(_state_timer * 1.5) * 0.03
-		_anim.scale = Vector2(
-			_anim.scale.x,
-			absf(_anim.scale.x) + breath
-		)
+	# No move_and_slide — sleeping pet must not drift
+	# Stop animation so cat looks still (no walk frames while sleeping)
+	if _anim and _anim.is_playing():
+		_anim.stop()
 
 	# Wake up after a while or if character is nearby
 	if _state_timer > 15.0:
-		_reset_anim_scale()
 		_set_state(State.IDLE)
 	elif _character_ref and _is_close_to_character():
-		_reset_anim_scale()
 		_set_state(State.PLAY)
 		_idle_timer = 0.0
 
 
 func _process_play(_delta: float) -> void:
 	velocity = Vector2.ZERO
-	move_and_slide()
+	# No move_and_slide — playing pet stays in place
 
 	# Bounce animation
 	if _anim:
 		var bounce := absf(sin(_state_timer * 4.0)) * 3.0
 		_anim.position.y = -bounce
-		_anim.flip_h = not _anim.flip_h if fmod(
-			_state_timer, 0.5
-		) < 0.02 else _anim.flip_h
 
-	_play_anim("idle")
+	_play_anim("default")
 
 	if _state_timer > 3.0:
 		_reset_anim_position()
@@ -168,13 +155,8 @@ func _pick_wander_target() -> void:
 		randf_range(-WANDER_RANGE * 0.3, WANDER_RANGE * 0.3),
 	)
 	_wander_target = _home_position + offset
-	# Clamp to room bounds
-	_wander_target.x = clampf(
-		_wander_target.x, 100.0, 1180.0
-	)
-	_wander_target.y = clampf(
-		_wander_target.y, 300.0, 650.0
-	)
+	# Clamp to floor polygon instead of hardcoded rect
+	_wander_target = Helpers.clamp_inside_floor(_wander_target)
 
 
 func _find_character() -> void:

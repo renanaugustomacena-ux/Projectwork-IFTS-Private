@@ -8,10 +8,7 @@ const WALL_ZONE_RATIO := 0.4
 func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 	if not _is_valid_drop(data):
 		return false
-
-	if not _is_zone_valid(at_position, data.get("placement_type", "any")):
-		return false
-
+	# Accept all valid drops — position gets clamped inside floor in _drop_data
 	return true
 
 
@@ -31,14 +28,29 @@ func _is_zone_valid(at_position: Vector2, placement_type: String) -> bool:
 
 func _drop_data(at_position: Vector2, data: Variant) -> void:
 	var item_id: String = data.get("item_id", "")
-	var item_scale: float = data.get("item_scale", 1.0)
 	at_position = Helpers.snap_to_grid(at_position)
-	var tex := _get_texture_for_item(item_id)
-	if tex:
-		var tex_size := tex.get_size() * item_scale
-		at_position.x = clampf(at_position.x, 0.0, size.x - tex_size.x)
-		at_position.y = clampf(at_position.y, 0.0, size.y - tex_size.y)
 	SignalBus.decoration_placed.emit(item_id, at_position)
+
+
+## DropZone is inside a CanvasLayer with no Camera2D, so canvas coordinates
+## equal world coordinates. We add the Control's global position to lift a
+## local point into world space.
+func _to_world(local_point: Vector2) -> Vector2:
+	return global_position + local_point
+
+
+func _from_world(world_point: Vector2) -> Vector2:
+	return world_point - global_position
+
+
+func _floor_anchor_for(at_position: Vector2, data: Variant) -> Vector2:
+	var item_id: String = data.get("item_id", "")
+	var item_scale: float = data.get("item_scale", 1.0)
+	var tex := _get_texture_for_item(item_id)
+	if tex == null:
+		return at_position
+	var tex_size := tex.get_size() * item_scale
+	return at_position + Vector2(tex_size.x * 0.5, tex_size.y)
 
 
 func _get_texture_for_item(item_id: String) -> Texture2D:

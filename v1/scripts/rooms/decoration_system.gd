@@ -57,13 +57,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _is_dragging:
 			var raw_pos := get_global_mouse_position() + _drag_offset
 			var snap_pos := Helpers.snap_to_grid(raw_pos)
-			global_position = Helpers.clamp_to_viewport(
-				snap_pos, 0.0, get_viewport().get_visible_rect().size
-			)
+			# The decoration's anchor for "is on the floor?" is the bottom-center
+			# of its texture (sprites are non-centered in this project — see
+			# room_base.gd._spawn_decoration). We clamp that anchor inside the
+			# floor polygon, then translate the result back to the sprite origin.
+			var anchor_offset := _floor_anchor_offset()
+			var clamped_anchor: Vector2 = Helpers.clamp_inside_floor(snap_pos + anchor_offset)
+			global_position = clamped_anchor - anchor_offset
 
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE and _popup != null:
 			dismiss_popup()
+
+
+func _floor_anchor_offset() -> Vector2:
+	if texture == null:
+		return Vector2.ZERO
+	var tex_size := texture.get_size() * scale
+	return Vector2(tex_size.x * 0.5, tex_size.y)
 
 
 func _toggle_popup() -> void:

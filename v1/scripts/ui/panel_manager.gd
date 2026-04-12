@@ -83,6 +83,7 @@ func close_current_panel() -> void:
 
 	_current_panel = null
 	_current_panel_name = ""
+	closing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	if _tween and _tween.is_running():
 		_tween.kill()

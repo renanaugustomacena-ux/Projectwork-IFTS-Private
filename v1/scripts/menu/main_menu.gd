@@ -83,7 +83,9 @@ func _on_walk_in_done() -> void:
 
 
 func _on_nuova_partita() -> void:
+	print("[MENU] Nuova Partita cliccato. _transitioning=%s" % str(_transitioning))
 	if _transitioning:
+		print("[MENU] BLOCCATO — _transitioning e' true")
 		return
 	SaveManager.reset_character_data()
 	_show_character_select()
@@ -116,7 +118,10 @@ func _on_character_chosen(character_id: String) -> void:
 
 
 func _on_carica_partita() -> void:
+	print("[MENU] Carica cliccato. trans=%s dis=%s" % [
+		str(_transitioning), str(_carica_btn.disabled)])
 	if _transitioning:
+		print("[MENU] BLOCCATO — _transitioning e' true")
 		return
 	_transitioning = true
 	SaveManager.load_game()
@@ -209,6 +214,7 @@ func _close_settings() -> void:
 		return
 	var panel := _settings_panel
 	_settings_panel = null
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _panel_tween and _panel_tween.is_running():
 		_panel_tween.kill()
 	_panel_tween = create_tween()
@@ -221,6 +227,7 @@ func _close_profile() -> void:
 		return
 	var panel := _profile_panel
 	_profile_panel = null
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _panel_tween and _panel_tween.is_running():
 		_panel_tween.kill()
 	_panel_tween = create_tween()
