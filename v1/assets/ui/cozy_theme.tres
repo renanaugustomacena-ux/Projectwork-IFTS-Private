@@ -6,12 +6,17 @@
 [ext_resource type="Texture2D" uid="uid://qy4ga2hm3rcn" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/tan_pressed.png" id="4_tan_pressed"]
 [ext_resource type="Texture2D" uid="uid://bbirlmwxg0yg0" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/grey.png" id="5_grey"]
 [ext_resource type="Texture2D" uid="uid://ditripwojra4q" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/grey_pressed.png" id="6_grey_pressed"]
+[ext_resource type="Texture2D" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/white.png" id="7_white"]
+[ext_resource type="Texture2D" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/white_pressed.png" id="8_white_pressed"]
+[ext_resource type="Texture2D" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/brown_pressed.png" id="9_brown_pressed"]
+[ext_resource type="Texture2D" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/grey_inlay.png" id="10_grey_inlay"]
 
+; --- Button styles ---
 [sub_resource type="StyleBoxTexture" id="btn_normal"]
-content_margin_left = 8.0
-content_margin_top = 4.0
-content_margin_right = 8.0
-content_margin_bottom = 4.0
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
 texture = ExtResource("3_tan")
 texture_margin_left = 5.0
 texture_margin_top = 5.0
@@ -20,11 +25,24 @@ texture_margin_bottom = 5.0
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
 
+[sub_resource type="StyleBoxTexture" id="btn_hover"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+texture = ExtResource("7_white")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
 [sub_resource type="StyleBoxTexture" id="btn_pressed"]
-content_margin_left = 8.0
-content_margin_top = 4.0
-content_margin_right = 8.0
-content_margin_bottom = 4.0
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
 texture = ExtResource("4_tan_pressed")
 texture_margin_left = 5.0
 texture_margin_top = 5.0
@@ -33,16 +51,11 @@ texture_margin_bottom = 5.0
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
 
-[sub_resource type="StyleBoxTexture" id="slider_grabber"]
-texture = ExtResource("6_grey_pressed")
-texture_margin_left = 5.0
-texture_margin_top = 5.0
-texture_margin_right = 5.0
-texture_margin_bottom = 5.0
-axis_stretch_horizontal = 2
-axis_stretch_vertical = 2
-
-[sub_resource type="StyleBoxTexture" id="slider_bg"]
+[sub_resource type="StyleBoxTexture" id="btn_disabled"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
 texture = ExtResource("5_grey")
 texture_margin_left = 5.0
 texture_margin_top = 5.0
@@ -50,8 +63,27 @@ texture_margin_right = 5.0
 texture_margin_bottom = 5.0
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
+modulate_color = Color(0.6, 0.6, 0.6, 0.7)
 
+[sub_resource type="StyleBoxTexture" id="btn_focus"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+texture = ExtResource("7_white")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+; --- Panel styles ---
 [sub_resource type="StyleBoxTexture" id="panel_bg"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
 texture = ExtResource("1_brown")
 texture_margin_left = 5.0
 texture_margin_top = 5.0
@@ -60,7 +92,12 @@ texture_margin_bottom = 5.0
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
 
+; --- Scroll & list styles ---
 [sub_resource type="StyleBoxTexture" id="scroll_bg"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
 texture = ExtResource("2_brown_inlay")
 texture_margin_left = 4.0
 texture_margin_top = 4.0
@@ -69,16 +106,226 @@ texture_margin_bottom = 4.0
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
 
+; --- Slider styles ---
+[sub_resource type="StyleBoxTexture" id="slider_bg"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+texture = ExtResource("5_grey")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="slider_grabber"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+texture = ExtResource("6_grey_pressed")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+; --- LineEdit styles (for auth screen) ---
+[sub_resource type="StyleBoxTexture" id="lineedit_normal"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+texture = ExtResource("10_grey_inlay")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="lineedit_focus"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+texture = ExtResource("8_white_pressed")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+; --- OptionButton (dropdown) ---
+[sub_resource type="StyleBoxTexture" id="option_normal"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+texture = ExtResource("5_grey")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+; --- Tooltip ---
+[sub_resource type="StyleBoxTexture" id="tooltip_bg"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+texture = ExtResource("9_brown_pressed")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+; --- Popup menu (dropdown list) ---
+[sub_resource type="StyleBoxTexture" id="popup_bg"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+texture = ExtResource("1_brown")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="popup_hover"]
+content_margin_left = 6.0
+content_margin_top = 2.0
+content_margin_right = 6.0
+content_margin_bottom = 2.0
+texture = ExtResource("9_brown_pressed")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+; --- Scrollbar ---
+[sub_resource type="StyleBoxTexture" id="scrollbar_bg"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+texture = ExtResource("2_brown_inlay")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="scrollbar_grabber"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+texture = ExtResource("3_tan")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+; --- Separator ---
+[sub_resource type="StyleBoxFlat" id="separator_style"]
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.6, 0.5, 0.4, 0.3)
+border_width_top = 1
+border_color = Color(0.8, 0.7, 0.6, 0.2)
+
+; ============================================================================
+; THEME RESOURCE — Global application
+; ============================================================================
 [resource]
+
+; --- Colors (warm cozy palette) ---
+default_font_color = Color(0.95, 0.9, 0.8, 1)
+
+; --- Button ---
 Button/colors/font_color = Color(0.95, 0.9, 0.8, 1)
-Button/colors/font_hover_color = Color(1, 0.95, 0.85, 1)
-Button/colors/font_pressed_color = Color(0.85, 0.8, 0.7, 1)
-Button/styles/focus = SubResource("btn_normal")
-Button/styles/hover = SubResource("btn_normal")
+Button/colors/font_hover_color = Color(1, 0.98, 0.9, 1)
+Button/colors/font_pressed_color = Color(0.8, 0.75, 0.65, 1)
+Button/colors/font_disabled_color = Color(0.5, 0.48, 0.45, 0.7)
+Button/colors/font_focus_color = Color(1, 0.98, 0.9, 1)
+Button/font_sizes/font_size = 16
 Button/styles/normal = SubResource("btn_normal")
+Button/styles/hover = SubResource("btn_hover")
 Button/styles/pressed = SubResource("btn_pressed")
-HSlider/styles/grabber_area = SubResource("slider_grabber")
-HSlider/styles/slider = SubResource("slider_bg")
+Button/styles/disabled = SubResource("btn_disabled")
+Button/styles/focus = SubResource("btn_focus")
+
+; --- Label ---
 Label/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+Label/colors/font_shadow_color = Color(0.1, 0.08, 0.06, 0.3)
+Label/constants/shadow_offset_x = 1
+Label/constants/shadow_offset_y = 1
+
+; --- PanelContainer ---
 PanelContainer/styles/panel = SubResource("panel_bg")
+
+; --- ScrollContainer ---
 ScrollContainer/styles/panel = SubResource("scroll_bg")
+
+; --- HSlider ---
+HSlider/styles/slider = SubResource("slider_bg")
+HSlider/styles/grabber_area = SubResource("slider_grabber")
+HSlider/styles/grabber_area_highlight = SubResource("slider_grabber")
+
+; --- LineEdit ---
+LineEdit/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+LineEdit/colors/font_placeholder_color = Color(0.7, 0.65, 0.55, 0.5)
+LineEdit/colors/caret_color = Color(0.95, 0.85, 0.7, 1)
+LineEdit/colors/selection_color = Color(0.6, 0.45, 0.3, 0.4)
+LineEdit/styles/normal = SubResource("lineedit_normal")
+LineEdit/styles/focus = SubResource("lineedit_focus")
+
+; --- OptionButton (language dropdown, etc.) ---
+OptionButton/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+OptionButton/colors/font_hover_color = Color(1, 0.98, 0.9, 1)
+OptionButton/styles/normal = SubResource("option_normal")
+OptionButton/styles/hover = SubResource("btn_hover")
+OptionButton/styles/pressed = SubResource("btn_pressed")
+OptionButton/styles/focus = SubResource("btn_focus")
+
+; --- PopupMenu (dropdown list) ---
+PopupMenu/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+PopupMenu/colors/font_hover_color = Color(1, 0.98, 0.9, 1)
+PopupMenu/styles/panel = SubResource("popup_bg")
+PopupMenu/styles/hover = SubResource("popup_hover")
+
+; --- TooltipPanel ---
+TooltipPanel/styles/panel = SubResource("tooltip_bg")
+TooltipLabel/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+
+; --- VScrollBar ---
+VScrollBar/styles/scroll = SubResource("scrollbar_bg")
+VScrollBar/styles/grabber = SubResource("scrollbar_grabber")
+VScrollBar/styles/grabber_highlight = SubResource("scrollbar_grabber")
+VScrollBar/styles/grabber_pressed = SubResource("scrollbar_grabber")
+
+; --- HSeparator ---
+HSeparator/styles/separator = SubResource("separator_style")
+
+; --- RichTextLabel ---
+RichTextLabel/colors/default_color = Color(0.95, 0.9, 0.8, 1)
+
+; --- CheckButton ---
+CheckButton/colors/font_color = Color(0.95, 0.9, 0.8, 1)
+CheckButton/colors/font_hover_color = Color(1, 0.98, 0.9, 1)
