@@ -3,7 +3,7 @@
 **Data**: 21 Marzo 2026 (Ultimo aggiornamento: 3 Aprile 2026)
 **Prerequisito**: Leggere prima [SETUP_AMBIENTE.md](SETUP_AMBIENTE.md) per configurare l'ambiente di sviluppo.
 
-**Riferimenti nell'Audit Report v2.0.0**: Sezioni 6-10 (Analisi Codice), 12 (Classificazione — N-Q1, N-Q3, N-AR7)
+**Riferimenti nel Report Consolidato**: [CONSOLIDATED_PROJECT_REPORT.md](../docs/CONSOLIDATED_PROJECT_REPORT.md) — Parte IV (Analisi Codice), Parte V (Bug Runtime), Parte VII (Piano UX), Parte VIII (Sprint + PR Plan)
 
 > **Stato Supabase (aggiornamento 31 Marzo 2026)**:
 > Il vecchio `SupabaseClient` (codice morto) e' stato rimosso il 27 Mar.

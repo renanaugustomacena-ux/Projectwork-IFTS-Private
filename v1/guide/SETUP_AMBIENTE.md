@@ -5,10 +5,9 @@ Seguitela dall'inizio alla fine prima di iniziare qualsiasi lavoro sul progetto.
 
 **Tempo stimato**: 30-45 minuti
 
-> **Nota per il team (27 Marzo 2026)**: SupabaseClient e' stato rimosso dal progetto.
-> Il gioco funziona esclusivamente offline con JSON + SQLite.
-> Alcuni sistemi (Logger, SaveManager) sono piu' complessi del necessario ma funzionano
-> e non richiedono modifiche. Concentratevi sui vostri task principali.
+> **Nota per il team (10 Aprile 2026)**: Il gioco funziona offline con JSON + SQLite.
+> Supabase e' pianificato come Phase 4 (cloud sync). Elia prepara il progetto Supabase,
+> Renan implementa il client GDScript. Concentratevi sui vostri task principali.
 
 ---
 
@@ -361,8 +360,9 @@ v1/                              <-- Cartella principale del progetto Godot
 │
 ├── guide/                       <-- Guide operative per il team (QUESTA cartella)
 │
-├── AUDIT_REPORT.md              <-- Report di audit v2.0.0 (1 Aprile 2026 — 23 sezioni, 24 script)
-└── AUDIT_REPORT.pdf             <-- Versione PDF del report
+├── docs/
+│   └── CONSOLIDATED_PROJECT_REPORT.md  <-- Report consolidato v3.0.0 (10 Aprile 2026 — 12 parti + appendici)
+└── AUDIT_REPORT.pdf             <-- Versione PDF del report originale (archivio)
 ```
 
 ### Dove Trovo Cosa?
