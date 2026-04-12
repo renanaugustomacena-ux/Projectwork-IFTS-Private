@@ -74,28 +74,20 @@ func _define_steps() -> void:
 			"message": (
 				"Browse the categories and [b]drag[/b] "
 				+ "a decoration into your room!\n"
-				+ "Try adding a bed or desk."
+				+ "Try adding a plant or a desk."
 			),
 			"signal_name": "decoration_placed",
 		},
 		{
 			"message": (
-				"Excellent! Click on any decoration "
+				"Nice! You can click on any decoration "
 				+ "to select it.\n"
-				+ "Then use [b]R[/b] to rotate, "
-				+ "[b]+/-[/b] to resize, "
-				+ "or [b]Del[/b] to remove it."
+				+ "Try [b]R[/b] to rotate, "
+				+ "[b]F[/b] to flip, "
+				+ "[b]S[/b] to resize, "
+				+ "or [b]X[/b] to delete."
 			),
 			"signal_name": "decoration_selected",
-		},
-		{
-			"message": (
-				"Walk up to furniture and press "
-				+ "[b]E[/b] to interact!\n"
-				+ "Try sitting on a chair "
-				+ "or laying on a bed."
-			),
-			"signal_name": "interaction_started",
 		},
 		{
 			"message": (

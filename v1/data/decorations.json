@@ -10,7 +10,7 @@
 		{"id": "plants", "name": "Plants"},
 		{"id": "accessories", "name": "Accessories"},
 		{"id": "room_elements", "name": "Room Elements"},
-		{"id": "pets", "name": "Pets"}
+		{"id": "pets", "name": "Pets", "hidden": true}
 	],
 	"decorations": [
 		{"id": "bed_1", "name": "Classic Bed", "category": "beds", "sprite_path": "res://assets/sprites/rooms/Individuals/Bed_1.png", "placement_type": "floor", "item_scale": 3.0},
