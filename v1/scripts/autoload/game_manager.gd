@@ -23,18 +23,21 @@ func _ready() -> void:
 	call_deferred("_deferred_load")
 
 
+## Character selected in character_select but not yet applied (load would overwrite).
+var _pending_character: String = ""
+var _pending_outfit: String = ""
+
+
 func _deferred_load() -> void:
 	var scene := get_tree().current_scene
 	if scene and scene.scene_file_path == "res://scenes/menu/main_menu.tscn":
 		return
-	# Preserve character selection made during character_select screen —
-	# load_game() would overwrite it with the previously saved value.
-	var selected_character := current_character_id
-	var selected_outfit := current_outfit_id
+	# If a character was chosen in character_select, remember it before load
+	# overwrites current_character_id with the old save value.
+	if current_character_id != "male_old":
+		_pending_character = current_character_id
+		_pending_outfit = current_outfit_id
 	SaveManager.load_game()
-	if selected_character != "male_old" or selected_outfit != "":
-		current_character_id = selected_character
-		current_outfit_id = selected_outfit
 
 
 func _load_catalogs() -> void:
@@ -128,6 +131,12 @@ func toggle_decoration_mode() -> void:
 
 
 func _on_load_completed() -> void:
+	# If user just selected a character, override what the save loaded.
+	if _pending_character != "":
+		current_character_id = _pending_character
+		current_outfit_id = _pending_outfit
+		_pending_character = ""
+		_pending_outfit = ""
 	SignalBus.room_changed.emit(current_room_id, current_theme)
 	SignalBus.character_changed.emit(current_character_id)
 
