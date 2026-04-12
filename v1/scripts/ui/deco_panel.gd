@@ -74,6 +74,8 @@ func _populate_catalog() -> void:
 	for cat_data in categories:
 		if cat_data is not Dictionary:
 			continue
+		if cat_data.get("hidden", false):
+			continue
 		var cat_id: String = cat_data.get("id", "")
 		var cat_name: String = cat_data.get("name", cat_id)
 
