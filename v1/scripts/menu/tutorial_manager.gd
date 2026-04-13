@@ -240,6 +240,10 @@ func _advance_step() -> void:
 	# Disconnect previous signal listeners
 	_disconnect_all_signals()
 
+	# Final step — show "Fine!" button that closes tutorial
+	if step.get("is_final", false):
+		_skip_btn.text = "Fine!"
+
 	# Auto-advance step (timed, no signal)
 	var auto_time: float = step.get("auto_advance", 0.0)
 	if auto_time > 0.0:
@@ -384,7 +388,6 @@ func _finish() -> void:
 	if _tween and _tween.is_running():
 		_tween.kill()
 	_tween = create_tween()
-	_tween.tween_interval(1.0)
 	_tween.tween_property(_dialog_panel, "modulate:a", 0.0, 0.5)
 	_tween.tween_callback(_on_tutorial_done)
 
