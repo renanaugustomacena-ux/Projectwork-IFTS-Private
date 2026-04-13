@@ -59,3 +59,17 @@ v1/SUPERVISOR_WORKPLAN.md
 
 # PDF export artifacts (generated, not versioned)
 v1/export_pdf/
+
+# Netlify local state (auto-generated, not versioned)
+.netlify/
+
+# Old integration materials (already merged into v1/)
+files/
+
+# Loose screenshots/images at repo root
+/1234.png
+/567.png
+/890.png
+/DioB.png
+/DioC.png
+/cozyico.png
