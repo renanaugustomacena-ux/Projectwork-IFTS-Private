@@ -35,8 +35,21 @@ func _ready() -> void:
 	)
 	AppLogger.info("Main", "Scene initialized, HUD buttons wired")
 
-	# Launch tutorial on first play
-	call_deferred("_check_tutorial")
+	# Launch tutorial AFTER save data is loaded (so tutorial_completed is read)
+	SignalBus.load_completed.connect(_check_tutorial, CONNECT_ONE_SHOT)
+
+	# Disable DropZone mouse capture while panels are open so panel
+	# buttons are clickable. Re-enable when panels close.
+	var drop_zone := _ui_layer.get_node_or_null("DropZone") as Control
+	if drop_zone:
+		SignalBus.panel_opened.connect(
+			func(_name: String) -> void:
+				drop_zone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		)
+		SignalBus.panel_closed.connect(
+			func(_name: String) -> void:
+				drop_zone.mouse_filter = Control.MOUSE_FILTER_PASS
+		)
 
 	# Toast notifications
 	var toast_layer := CanvasLayer.new()

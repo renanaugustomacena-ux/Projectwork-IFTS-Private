@@ -111,10 +111,7 @@ func _reload_decorations() -> void:
 		var rot: float = deco_data.get("rotation", 0.0)
 		var flipped: bool = deco_data.get("flip_h", false)
 		var pos_vec := Helpers.array_to_vec2(pos)
-		# Clamp to floor polygon (not viewport rect) so saved decorations from
-		# older builds — placed against the broken viewport clamp — get pulled
-		# back inside the visible room on reload.
-		pos_vec = Helpers.clamp_inside_floor(pos_vec)
+		# Trust saved positions — don't re-clamp on reload (causes position shift)
 		_spawn_decoration(item_id, pos_vec, item_scale, rot, flipped, deco_data)
 
 
