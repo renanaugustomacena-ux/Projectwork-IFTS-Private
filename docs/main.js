@@ -5,9 +5,12 @@
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Theme (before anything else to avoid flash)
+    initTheme();
+
     // Initialize Lucide Icons
     lucide.createIcons();
-    
+
     // Initialize AOS (Animate on Scroll)
     AOS.init({
         duration: 800,
@@ -15,21 +18,106 @@ document.addEventListener('DOMContentLoaded', function() {
         once: true,
         offset: 100
     });
-    
+
     // Initialize Particles
     initParticles();
-    
+
     // Initialize Navbar
     initNavbar();
-    
+
     // Initialize Smooth Scroll
     initSmoothScroll();
 });
 
 /* ============================================
+   THEME TOGGLE
+   ============================================ */
+function initTheme() {
+    const saved = localStorage.getItem('mcr-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+
+    applyTheme(theme);
+
+    // Desktop toggle
+    const toggle = document.getElementById('theme-toggle');
+    if (toggle) {
+        toggle.addEventListener('click', function() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = current === 'light' ? 'dark' : 'light';
+            applyTheme(next);
+            localStorage.setItem('mcr-theme', next);
+            // Re-init particles with new colors
+            reinitParticles();
+        });
+    }
+
+    // Mobile toggle
+    const mobileToggle = document.getElementById('mobile-theme-toggle');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = current === 'light' ? 'dark' : 'light';
+            applyTheme(next);
+            localStorage.setItem('mcr-theme', next);
+            reinitParticles();
+        });
+    }
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        if (!localStorage.getItem('mcr-theme')) {
+            applyTheme(e.matches ? 'dark' : 'light');
+            reinitParticles();
+        }
+    });
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    updateToggleIcons(theme);
+}
+
+function updateToggleIcons(theme) {
+    const icons = document.querySelectorAll('.theme-icon');
+    // Sun (&#9788;) for dark mode button (click to go light), Moon (&#9790;) for light mode button
+    const symbol = theme === 'light' ? '\u263E' : '\u2604';
+    const label = theme === 'light' ? 'Tema Scuro' : 'Tema Chiaro';
+
+    icons.forEach(function(icon) { icon.textContent = symbol; });
+
+    var desktopBtn = document.getElementById('theme-toggle');
+    if (desktopBtn) desktopBtn.setAttribute('aria-label', label);
+
+    var mobileBtn = document.getElementById('mobile-theme-toggle');
+    if (mobileBtn) {
+        mobileBtn.innerHTML = '<span class="theme-icon">' + symbol + '</span> ' + label;
+    }
+}
+
+function reinitParticles() {
+    // Destroy existing particle instances and re-create with theme colors
+    if (window.pJSDom && window.pJSDom.length > 0) {
+        // Clear all particle instances
+        window.pJSDom.forEach(function(p) {
+            if (p.pJS && p.pJS.fn && p.pJS.fn.vendors && p.pJS.fn.vendors.destroypJS) {
+                p.pJS.fn.vendors.destroypJS();
+            }
+        });
+        window.pJSDom = [];
+    }
+    initParticles();
+}
+
+/* ============================================
    PARTICLES CONFIGURATION
    ============================================ */
 function initParticles() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var colors = isDark
+        ? ["#FFD700", "#f4a261", "#b8a9c9", "#f0e6d3"]
+        : ["#FFD700", "#FF8C61", "#B5A1D6", "#ffffff"];
+
     const particlesConfig = {
         particles: {
             number: {
@@ -40,7 +128,7 @@ function initParticles() {
                 }
             },
             color: {
-                value: ["#FFD700", "#FF8C61", "#B5A1D6", "#ffffff"]
+                value: colors
             },
             shape: {
                 type: "circle"
