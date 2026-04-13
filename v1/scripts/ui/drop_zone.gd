@@ -8,7 +8,10 @@ const WALL_ZONE_RATIO := 0.4
 func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 	if not _is_valid_drop(data):
 		return false
-	# Accept all valid drops — position gets clamped inside floor in _drop_data
+	# Enforce wall vs floor placement zones
+	var placement_type: String = data.get("placement_type", "any")
+	if not _is_zone_valid(at_position, placement_type):
+		return false
 	return true
 
 
@@ -29,6 +32,8 @@ func _is_zone_valid(at_position: Vector2, placement_type: String) -> bool:
 func _drop_data(at_position: Vector2, data: Variant) -> void:
 	var item_id: String = data.get("item_id", "")
 	at_position = Helpers.snap_to_grid(at_position)
+	# Clamp inside room floor polygon so decorations can't escape
+	at_position = Helpers.clamp_inside_floor(at_position)
 	SignalBus.decoration_placed.emit(item_id, at_position)
 
 

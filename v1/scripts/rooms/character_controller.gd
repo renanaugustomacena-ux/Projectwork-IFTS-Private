@@ -30,6 +30,12 @@ func _on_decoration_mode_changed(active: bool) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	# Block movement when a UI panel is open (prevents WASD from
+	# moving the character while interacting with deco panel, etc.)
+	if get_viewport().gui_get_focus_owner() != null:
+		velocity = Vector2.ZERO
+		_update_animation(Vector2.ZERO)
+		return
 	var direction := Input.get_vector(
 		"ui_left", "ui_right", "ui_up", "ui_down"
 	)
