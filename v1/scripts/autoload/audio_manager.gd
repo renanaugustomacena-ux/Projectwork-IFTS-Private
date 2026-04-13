@@ -326,7 +326,27 @@ func _sync_music_state() -> void:
 	})
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+		_release_streams()
+
+
+func _release_streams() -> void:
+	if _music_player_a and is_instance_valid(_music_player_a):
+		_music_player_a.stop()
+		_music_player_a.stream = null
+	if _music_player_b and is_instance_valid(_music_player_b):
+		_music_player_b.stop()
+		_music_player_b.stream = null
+	for amb_id in _ambience_players.keys():
+		var player: AudioStreamPlayer = _ambience_players[amb_id]
+		if is_instance_valid(player):
+			player.stop()
+			player.stream = null
+
+
 func _exit_tree() -> void:
+	_release_streams()
 	if SignalBus.volume_changed.is_connected(_on_volume_changed):
 		SignalBus.volume_changed.disconnect(_on_volume_changed)
 	if SignalBus.ambience_toggled.is_connected(_on_ambience_toggled):
