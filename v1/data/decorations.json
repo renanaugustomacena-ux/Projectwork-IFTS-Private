@@ -10,6 +10,8 @@
 		{"id": "plants", "name": "Plants"},
 		{"id": "accessories", "name": "Accessories"},
 		{"id": "room_elements", "name": "Room Elements"},
+		{"id": "tables", "name": "Tables"},
+		{"id": "doors", "name": "Doors"},
 		{"id": "pets", "name": "Pets", "hidden": true}
 	],
 	"decorations": [
@@ -89,6 +91,27 @@
 		{"id": "room_window_1", "name": "Small Window", "category": "room_elements", "sprite_path": "res://assets/room/window1.png", "placement_type": "wall", "item_scale": 3.0},
 		{"id": "room_window_2", "name": "Medium Window", "category": "room_elements", "sprite_path": "res://assets/room/window2.png", "placement_type": "wall", "item_scale": 3.0},
 		{"id": "room_window_3", "name": "Large Window", "category": "room_elements", "sprite_path": "res://assets/room/window3.png", "placement_type": "wall", "item_scale": 3.0},
+
+		{"id": "bongseng_bed_wood_double_blue", "name": "Letto Matrimoniale Legno", "category": "beds", "sprite_path": "res://assets/sprites/rooms/bongseng/beds/wood double bed blue left.png", "placement_type": "floor", "item_scale": 0.35},
+		{"id": "bongseng_bed_modern_single_red", "name": "Letto Singolo Moderno", "category": "beds", "sprite_path": "res://assets/sprites/rooms/bongseng/beds/modern single bed red left.png", "placement_type": "floor", "item_scale": 0.45},
+
+		{"id": "bongseng_table_wood", "name": "Tavolo Legno", "category": "tables", "sprite_path": "res://assets/sprites/rooms/bongseng/tables/table wood left.png", "placement_type": "floor", "item_scale": 0.5},
+		{"id": "bongseng_table_glass", "name": "Tavolo Vetro", "category": "tables", "sprite_path": "res://assets/sprites/rooms/bongseng/tables/table glass left.png", "placement_type": "floor", "item_scale": 0.5},
+		{"id": "bongseng_table_small_wood", "name": "Tavolino Legno", "category": "tables", "sprite_path": "res://assets/sprites/rooms/bongseng/tables/small table wood leftt.png", "placement_type": "floor", "item_scale": 0.8},
+		{"id": "bongseng_table_small_glass", "name": "Tavolino Vetro", "category": "tables", "sprite_path": "res://assets/sprites/rooms/bongseng/tables/small table glass left.png", "placement_type": "floor", "item_scale": 0.8},
+
+		{"id": "bongseng_chair_wood", "name": "Sedia Legno", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/Chair wood left.png", "placement_type": "floor", "item_scale": 1.0},
+		{"id": "bongseng_chair_blue", "name": "Sedia Blu", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/chair blue left.png", "placement_type": "floor", "item_scale": 1.0},
+		{"id": "bongseng_chair_white", "name": "Sedia Bianca", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/chair white left.png", "placement_type": "floor", "item_scale": 1.0},
+
+		{"id": "bongseng_wardrobe_wood", "name": "Armadio Legno", "category": "wardrobes", "sprite_path": "res://assets/sprites/rooms/bongseng/wardrobes/wooden closet left.png", "placement_type": "floor", "item_scale": 0.6},
+		{"id": "bongseng_wardrobe_bookshelf", "name": "Libreria con Armadio", "category": "wardrobes", "sprite_path": "res://assets/sprites/rooms/bongseng/wardrobes/tall bookshelf and closet left.png", "placement_type": "floor", "item_scale": 0.6},
+
+		{"id": "bongseng_window_standard", "name": "Finestra", "category": "windows", "sprite_path": "res://assets/sprites/rooms/bongseng/windows/window closed left.png", "placement_type": "wall", "item_scale": 0.5},
+		{"id": "bongseng_window_sliding_double", "name": "Porta Scorrevole Doppia", "category": "windows", "sprite_path": "res://assets/sprites/rooms/bongseng/windows/double sliding door closed left.png", "placement_type": "wall", "item_scale": 0.45},
+
+		{"id": "bongseng_door_wood", "name": "Porta Legno", "category": "doors", "sprite_path": "res://assets/sprites/rooms/bongseng/doors/wooden door entrance left.png", "placement_type": "wall", "item_scale": 0.4},
+		{"id": "bongseng_door_black", "name": "Porta Nera", "category": "doors", "sprite_path": "res://assets/sprites/rooms/bongseng/doors/black door entrance left.png", "placement_type": "wall", "item_scale": 0.4},
 
 		{"id": "pet_cat_void", "name": "Void Cat", "category": "pets", "sprite_path": "res://assets/pets/cat_void_simple.png", "placement_type": "floor", "item_scale": 4.0},
 
