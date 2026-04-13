@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -22,6 +22,14 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     
     <link rel="stylesheet" href="style.css">
+    <!-- Prevent flash of wrong theme -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('mcr-theme') ||
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 <body>
 
@@ -39,6 +47,9 @@
                 <a href="#features" class="nav-link">Caratteristiche</a>
                 <a href="#team" class="nav-link">Team</a>
                 <a href="#download" class="nav-cta">Download</a>
+                <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambia tema">
+                    <span class="theme-icon">&#9788;</span>
+                </button>
             </div>
             
             <!-- Mobile Menu Button -->
@@ -53,6 +64,9 @@
             <a href="#features" class="mobile-link">Caratteristiche</a>
             <a href="#team" class="mobile-link">Team</a>
             <a href="#download" class="mobile-link">Download</a>
+            <button type="button" class="mobile-theme-toggle" id="mobile-theme-toggle">
+                <span class="theme-icon">&#9788;</span> Cambia Tema
+            </button>
         </div>
     </nav>
 
@@ -60,7 +74,21 @@
     <section class="hero" id="hero">
         <!-- Particles Background -->
         <div id="particles-hero"></div>
-        
+
+        <!-- Pixel Stars (visible only in dark mode) -->
+        <div class="pixel-stars">
+            <div class="pixel-star" style="--delay: 0s; --x: 10%; --y: 15%;"></div>
+            <div class="pixel-star" style="--delay: 1.2s; --x: 25%; --y: 8%;"></div>
+            <div class="pixel-star" style="--delay: 2.5s; --x: 45%; --y: 22%;"></div>
+            <div class="pixel-star" style="--delay: 0.6s; --x: 65%; --y: 12%;"></div>
+            <div class="pixel-star" style="--delay: 1.8s; --x: 80%; --y: 18%;"></div>
+            <div class="pixel-star" style="--delay: 3.2s; --x: 90%; --y: 8%;"></div>
+            <div class="pixel-star" style="--delay: 0.3s; --x: 15%; --y: 65%;"></div>
+            <div class="pixel-star" style="--delay: 2.1s; --x: 55%; --y: 72%;"></div>
+            <div class="pixel-star" style="--delay: 4s; --x: 35%; --y: 45%;"></div>
+            <div class="pixel-star" style="--delay: 1.5s; --x: 75%; --y: 55%;"></div>
+        </div>
+
         <!-- Background Image -->
         <div class="hero-bg"></div>
         <div class="hero-overlay"></div>
@@ -286,17 +314,21 @@
             <div class="download-content" data-aos="fade-up">
                 <h2 class="download-title">Prova Mini Cozy Room</h2>
                 <p class="download-subtitle">
-                    Disponibile presto per Windows, Android e Web. Entra nel tuo rifugio digitale.
+                    Il gioco è attualmente in fase di sviluppo. Al momento non abbiamo ancora buildato e reso disponibile al download la versione Windows (.exe) o la versione Android (.apk) del gioco. Quando saranno pronte, i link per il download appariranno qui.
                 </p>
-                
+
                 <div class="download-buttons">
                     <button class="btn btn-download disabled">
                         <i data-lucide="download"></i>
-                        Windows — Coming Soon
+                        Windows (.exe) — In Sviluppo
+                    </button>
+                    <button class="btn btn-download disabled">
+                        <i data-lucide="smartphone"></i>
+                        Android (.apk) — In Sviluppo
                     </button>
                     <button class="btn btn-download disabled">
                         <i data-lucide="globe"></i>
-                        Gioca nel Browser — Coming Soon
+                        Gioca nel Browser — In Sviluppo
                     </button>
                 </div>
             </div>
