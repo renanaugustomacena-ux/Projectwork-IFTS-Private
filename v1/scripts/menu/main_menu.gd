@@ -83,9 +83,7 @@ func _on_walk_in_done() -> void:
 
 
 func _on_nuova_partita() -> void:
-	print("[MENU] Nuova Partita cliccato. _transitioning=%s" % str(_transitioning))
 	if _transitioning:
-		print("[MENU] BLOCCATO — _transitioning e' true")
 		return
 	SaveManager.reset_character_data()
 	_show_character_select()
@@ -118,17 +116,14 @@ func _on_character_chosen(character_id: String) -> void:
 
 
 func _on_carica_partita() -> void:
-	print("[MENU] Carica cliccato. trans=%s dis=%s" % [
-		str(_transitioning), str(_carica_btn.disabled)])
 	if _transitioning:
-		print("[MENU] BLOCCATO — _transitioning e' true")
 		return
 	_transitioning = true
-	SaveManager.load_game()
 	SignalBus.load_completed.connect(
 		func() -> void: _transition_to_scene(GAMEPLAY_SCENE),
 		CONNECT_ONE_SHOT,
 	)
+	SaveManager.load_game()
 
 
 func _show_auth_screen() -> void:

@@ -1,52 +1,175 @@
 [gd_scene format=3 uid="uid://i0qjx0y8ogfp"]
 
 [ext_resource type="Texture2D" uid="uid://bid5ef55w4sbk" path="res://assets/pets/cat_void_simple.png" id="1_7xtjs"]
+[ext_resource type="Texture2D" uid="uid://dw1rhuta3a7uw" path="res://assets/pets/cat_idle.png" id="2_idle"]
+[ext_resource type="Texture2D" uid="uid://7w2bx0ft8v07" path="res://assets/pets/cat_walk.png" id="3_walk"]
+[ext_resource type="Texture2D" uid="uid://cickmjy5jcnqe" path="res://assets/pets/cat_sleep.png" id="4_sleep"]
 [ext_resource type="Script" uid="uid://ohr66b73163j" path="res://scripts/rooms/pet_controller.gd" id="1_ctrl"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jtm4s"]
 radius = 15.0
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_ujsnv"]
+[sub_resource type="AtlasTexture" id="at_default_0"]
 atlas = ExtResource("1_7xtjs")
 region = Rect2(0, 0, 16, 16)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_5d48p"]
+[sub_resource type="AtlasTexture" id="at_default_1"]
 atlas = ExtResource("1_7xtjs")
 region = Rect2(16, 0, 16, 16)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_3gee8"]
+[sub_resource type="AtlasTexture" id="at_default_2"]
 atlas = ExtResource("1_7xtjs")
 region = Rect2(32, 0, 16, 16)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_6b0n0"]
+[sub_resource type="AtlasTexture" id="at_default_3"]
 atlas = ExtResource("1_7xtjs")
 region = Rect2(48, 0, 16, 16)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_nqf37"]
+[sub_resource type="AtlasTexture" id="at_default_4"]
 atlas = ExtResource("1_7xtjs")
+region = Rect2(64, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_idle_0"]
+atlas = ExtResource("2_idle")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_idle_1"]
+atlas = ExtResource("2_idle")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_idle_2"]
+atlas = ExtResource("2_idle")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_idle_3"]
+atlas = ExtResource("2_idle")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_idle_4"]
+atlas = ExtResource("2_idle")
+region = Rect2(64, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_walk_0"]
+atlas = ExtResource("3_walk")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_walk_1"]
+atlas = ExtResource("3_walk")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_walk_2"]
+atlas = ExtResource("3_walk")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_walk_3"]
+atlas = ExtResource("3_walk")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_walk_4"]
+atlas = ExtResource("3_walk")
+region = Rect2(64, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_sleep_0"]
+atlas = ExtResource("4_sleep")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_sleep_1"]
+atlas = ExtResource("4_sleep")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_sleep_2"]
+atlas = ExtResource("4_sleep")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_sleep_3"]
+atlas = ExtResource("4_sleep")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="at_sleep_4"]
+atlas = ExtResource("4_sleep")
 region = Rect2(64, 0, 16, 16)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_1lj14"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_ujsnv")
+"texture": SubResource("at_default_0")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_5d48p")
+"texture": SubResource("at_default_1")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_3gee8")
+"texture": SubResource("at_default_2")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_6b0n0")
+"texture": SubResource("at_default_3")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_nqf37")
+"texture": SubResource("at_default_4")
 }],
 "loop": true,
 "name": &"default",
 "speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_idle_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_idle_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_idle_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_idle_4")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_walk_4")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("at_sleep_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_sleep_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_sleep_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_sleep_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("at_sleep_4")
+}],
+"loop": true,
+"name": &"sleep",
+"speed": 3.0
 }]
 
 [node name="CharacterBody2D" type="CharacterBody2D" unique_id=656322203]
@@ -63,4 +186,4 @@ position = Vector2(1, -1)
 scale = Vector2(3, 3)
 texture_filter = 1
 sprite_frames = SubResource("SpriteFrames_1lj14")
-autoplay = "default"
+autoplay = "idle"

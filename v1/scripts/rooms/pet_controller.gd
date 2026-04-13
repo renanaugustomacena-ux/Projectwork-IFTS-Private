@@ -51,9 +51,7 @@ func _physics_process(delta: float) -> void:
 
 func _process_idle(_delta: float) -> void:
 	velocity = Vector2.ZERO
-	# Show first frame, stopped — cat looks still and alive
-	if _anim and _anim.is_playing():
-		_anim.stop()
+	_play_anim("idle")
 
 	if _state_timer > _random_duration():
 		var roll := randf()
@@ -74,7 +72,7 @@ func _process_wander(_delta: float) -> void:
 	move_and_slide()
 
 	_anim.flip_h = dir.x < 0
-	_play_anim("default")
+	_play_anim("walk")
 
 	# Reached target or timeout
 	if position.distance_to(_wander_target) < 8.0:
@@ -105,18 +103,22 @@ func _process_follow(_delta: float) -> void:
 	move_and_slide()
 
 	_anim.flip_h = dir.x < 0
-	_play_anim("default")
+	_play_anim("walk")
 
 	if _state_timer > 10.0:
 		_set_state(State.IDLE)
 
 
-func _process_sleep(_delta: float) -> void:
+func _process_sleep(delta: float) -> void:
 	velocity = Vector2.ZERO
 	# No move_and_slide — sleeping pet must not drift
-	# Stop animation so cat looks still (no walk frames while sleeping)
-	if _anim and _anim.is_playing():
-		_anim.stop()
+	_play_anim("sleep")
+
+	# Gentle breathing scale pulse
+	if _anim:
+		var breath := 1.0 + sin(_state_timer * 1.5) * 0.03
+		var base := absf(_anim.scale.x)
+		_anim.scale = Vector2(base, base * breath)
 
 	# Wake up after a while or if character is nearby
 	if _state_timer > 15.0:
@@ -135,7 +137,7 @@ func _process_play(_delta: float) -> void:
 		var bounce := absf(sin(_state_timer * 4.0)) * 3.0
 		_anim.position.y = -bounce
 
-	_play_anim("default")
+	_play_anim("idle")
 
 	if _state_timer > 3.0:
 		_reset_anim_position()
@@ -143,6 +145,8 @@ func _process_play(_delta: float) -> void:
 
 
 func _set_state(new_state: State) -> void:
+	if _state == State.SLEEP and new_state != State.SLEEP:
+		_reset_anim_scale()
 	_state = new_state
 	_state_timer = 0.0
 	if new_state == State.WANDER:
