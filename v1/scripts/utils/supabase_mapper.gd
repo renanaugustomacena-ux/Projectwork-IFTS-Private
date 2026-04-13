@@ -15,9 +15,9 @@ static func profile_to_cloud(
 		"display_name": account.get("display_name", ""),
 		"avatar_character_id": character.get("character_id", "male_old"),
 		"avatar_outfit_id": character.get("outfit_id", ""),
-		"current_room_id": "cozy_studio",
-		"current_theme": "modern",
-		"locale": "it",
+		"current_room_id": GameManager.current_room_id,
+		"current_theme": GameManager.current_theme,
+		"locale": SaveManager.get_setting("language", "en"),
 		"updated_at": Time.get_datetime_string_from_system(),
 	}
 
@@ -50,7 +50,7 @@ static func currency_to_cloud(
 	return {
 		"user_id": supabase_uid,
 		"coins": account.get("coins", 0),
-		"total_earned": account.get("coins", 0),
+		"total_earned": account.get("coins", 0),  # TODO: track lifetime earnings separately (needs DB column)
 		"updated_at": Time.get_datetime_string_from_system(),
 	}
 

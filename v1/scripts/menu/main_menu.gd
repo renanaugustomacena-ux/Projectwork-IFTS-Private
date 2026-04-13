@@ -273,3 +273,7 @@ func _transition_to_scene(scene_path: String) -> void:
 	_intro_tween = create_tween()
 	_intro_tween.tween_property(_loading_screen, "modulate:a", 1.0, Constants.FADE_DURATION)
 	_intro_tween.tween_callback(get_tree().change_scene_to_file.bind(scene_path))
+	# Safety: reset _transitioning after 5s in case scene change fails silently
+	get_tree().create_timer(5.0).timeout.connect(
+		func() -> void: _transitioning = false, CONNECT_ONE_SHOT
+	)
