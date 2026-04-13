@@ -28,6 +28,7 @@ LocalDatabase="*res://scripts/autoload/local_database.gd"
 AuthManager="*res://scripts/autoload/auth_manager.gd"
 GameManager="*res://scripts/autoload/game_manager.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
+SupabaseClient="*res://scripts/autoload/supabase_client.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 PerformanceManager="*res://scripts/systems/performance_manager.gd"
 

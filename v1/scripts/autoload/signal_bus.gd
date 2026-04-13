@@ -59,3 +59,5 @@ signal character_deleted
 # Cloud sync
 signal sync_started
 signal sync_completed(success: bool)
+signal cloud_auth_completed(success: bool)
+signal cloud_connection_changed(state: int)
