@@ -1,5 +1,6 @@
 # Projectwork — Mini Cozy Room
 
+> **Landing Page:** [https://renanaugustomacena-ux.github.io/Projectwork-IFTS-Private/](https://renanaugustomacena-ux.github.io/Projectwork-IFTS-Private/)
 > **Work in Progress — Fase 4 (Supabase) in preparazione**
 > Il progetto e' in sviluppo attivo. Il sistema account locale (username + password) e' funzionante.
 > Prossimo passo: integrazione Supabase per cloud sync cross-device.
