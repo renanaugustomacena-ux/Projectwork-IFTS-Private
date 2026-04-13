@@ -47,6 +47,11 @@ const AUTH_MAX_FAILED_ATTEMPTS := 5
 const AUTH_LOCKOUT_SECONDS := 300  # 5 minutes
 const AUTH_MAX_USERNAME_LENGTH := 50
 
+# Supabase sync
+const SUPABASE_SYNC_INTERVAL := 120.0
+const SUPABASE_REQUEST_TIMEOUT := 15.0
+const SUPABASE_MAX_RETRY := 5
+
 # Viewport resolution
 const VIEWPORT_WIDTH := 1280
 const VIEWPORT_HEIGHT := 720
