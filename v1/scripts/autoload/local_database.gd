@@ -166,10 +166,77 @@ func _create_tables() -> void:
 		)
 	)
 
+	_execute(
+		(
+			"CREATE TABLE IF NOT EXISTS settings ("
+			+ "settings_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "account_id INTEGER NOT NULL UNIQUE REFERENCES accounts(account_id) ON DELETE CASCADE,"
+			+ "master_volume REAL NOT NULL DEFAULT 1.0,"
+			+ "music_volume REAL NOT NULL DEFAULT 0.8,"
+			+ "sfx_volume REAL NOT NULL DEFAULT 0.8,"
+			+ "display_mode TEXT NOT NULL DEFAULT 'windowed',"
+			+ "language TEXT NOT NULL DEFAULT 'it',"
+			+ "ui_scale REAL NOT NULL DEFAULT 1.0,"
+			+ "updated_at TEXT NOT NULL DEFAULT (datetime('now'))"
+			+ ");"
+		)
+	)
+
+	_execute(
+		(
+			"CREATE TABLE IF NOT EXISTS save_metadata ("
+			+ "save_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "account_id INTEGER NOT NULL UNIQUE REFERENCES accounts(account_id) ON DELETE CASCADE,"
+			+ "save_version TEXT NOT NULL DEFAULT '1.0',"
+			+ "save_slot INTEGER NOT NULL DEFAULT 1,"
+			+ "play_time_sec INTEGER NOT NULL DEFAULT 0,"
+			+ "last_saved_at TEXT NOT NULL DEFAULT (datetime('now')),"
+			+ "created_at TEXT NOT NULL DEFAULT (datetime('now'))"
+			+ ");"
+		)
+	)
+
+	_execute(
+		(
+			"CREATE TABLE IF NOT EXISTS music_state ("
+			+ "music_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "account_id INTEGER NOT NULL UNIQUE REFERENCES accounts(account_id) ON DELETE CASCADE,"
+			+ "current_track_id TEXT DEFAULT NULL,"
+			+ "track_position_sec REAL NOT NULL DEFAULT 0.0,"
+			+ "playlist_mode TEXT NOT NULL DEFAULT 'sequential',"
+			+ "ambience_enabled INTEGER NOT NULL DEFAULT 1,"
+			+ "active_ambiences TEXT NOT NULL DEFAULT '[]',"
+			+ "updated_at TEXT NOT NULL DEFAULT (datetime('now'))"
+			+ ");"
+		)
+	)
+
+	_execute(
+		(
+			"CREATE TABLE IF NOT EXISTS placed_decorations ("
+			+ "placement_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "room_id INTEGER NOT NULL REFERENCES rooms(room_id) ON DELETE CASCADE,"
+			+ "decoration_catalog_id TEXT NOT NULL,"
+			+ "pos_x REAL NOT NULL DEFAULT 0.0,"
+			+ "pos_y REAL NOT NULL DEFAULT 0.0,"
+			+ "rotation_deg REAL NOT NULL DEFAULT 0.0,"
+			+ "flip_h INTEGER NOT NULL DEFAULT 0,"
+			+ "item_scale REAL NOT NULL DEFAULT 1.0,"
+			+ "z_order INTEGER NOT NULL DEFAULT 0,"
+			+ "placement_zone TEXT NOT NULL DEFAULT 'floor',"
+			+ "placed_at TEXT NOT NULL DEFAULT (datetime('now'))"
+			+ ");"
+		)
+	)
+
 	# Indexes on foreign key columns for query performance
 	_execute("CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);")
 	_execute("CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);")
 	_execute("CREATE INDEX IF NOT EXISTS idx_rooms_character ON rooms(character_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_settings_account ON settings(account_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_save_metadata_account ON save_metadata(account_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_music_state_account ON music_state(account_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_placed_decorations_room ON placed_decorations(room_id);")
 
 
 func _migrate_schema() -> void:
@@ -214,6 +281,20 @@ func _migrate_schema() -> void:
 			_execute(
 				"ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;"
 			)
+
+	# Migration 3: add extra columns to inventario if missing
+	var inv_rows := _select(
+		"SELECT sql FROM sqlite_master WHERE type='table' AND name='inventario';", []
+	)
+	if not inv_rows.is_empty():
+		var inv_schema: String = inv_rows[0].get("sql", "")
+		if "item_type" not in inv_schema:
+			_execute("ALTER TABLE inventario ADD COLUMN item_type TEXT DEFAULT '';")
+		if "is_unlocked" not in inv_schema:
+			_execute("ALTER TABLE inventario ADD COLUMN is_unlocked INTEGER DEFAULT 1;")
+		if "acquired_at" not in inv_schema:
+			_execute("ALTER TABLE inventario ADD COLUMN acquired_at TEXT DEFAULT '';")
+			_execute("UPDATE inventario SET acquired_at = datetime('now') WHERE acquired_at = '';")
 
 	AppLogger.info("LocalDatabase", "Schema migration completed")
 
@@ -505,6 +586,187 @@ func get_pending_sync() -> Array:
 func clear_sync_item(queue_id: int) -> bool:
 	return _execute_bound(
 		"DELETE FROM sync_queue WHERE queue_id = ?;", [queue_id]
+	)
+
+
+# ---- CRUD: Settings ----
+
+
+func get_settings(account_id: int) -> Dictionary:
+	var rows := _select("SELECT * FROM settings WHERE account_id = ?;", [account_id])
+	if rows.is_empty():
+		return {}
+	return rows[0]
+
+
+func upsert_settings(account_id: int, data: Dictionary) -> bool:
+	var existing := get_settings(account_id)
+	if not existing.is_empty():
+		return _execute_bound(
+			(
+				"UPDATE settings SET master_volume = ?, music_volume = ?,"
+				+ " sfx_volume = ?, display_mode = ?, language = ?,"
+				+ " ui_scale = ?, updated_at = datetime('now')"
+				+ " WHERE account_id = ?;"
+			),
+			[
+				data.get("master_volume", 1.0),
+				data.get("music_volume", 0.8),
+				data.get("sfx_volume", 0.8),
+				data.get("display_mode", "windowed"),
+				data.get("language", "it"),
+				data.get("ui_scale", 1.0),
+				account_id,
+			]
+		)
+	return _execute_bound(
+		(
+			"INSERT INTO settings"
+			+ " (account_id, master_volume, music_volume, sfx_volume,"
+			+ " display_mode, language, ui_scale)"
+			+ " VALUES (?, ?, ?, ?, ?, ?, ?);"
+		),
+		[
+			account_id,
+			data.get("master_volume", 1.0),
+			data.get("music_volume", 0.8),
+			data.get("sfx_volume", 0.8),
+			data.get("display_mode", "windowed"),
+			data.get("language", "it"),
+			data.get("ui_scale", 1.0),
+		]
+	)
+
+
+# ---- CRUD: Save Metadata ----
+
+
+func get_save_metadata(account_id: int) -> Dictionary:
+	var rows := _select("SELECT * FROM save_metadata WHERE account_id = ?;", [account_id])
+	if rows.is_empty():
+		return {}
+	return rows[0]
+
+
+func upsert_save_metadata(account_id: int, data: Dictionary) -> bool:
+	var existing := get_save_metadata(account_id)
+	if not existing.is_empty():
+		return _execute_bound(
+			(
+				"UPDATE save_metadata SET save_version = ?, save_slot = ?,"
+				+ " play_time_sec = ?, last_saved_at = datetime('now')"
+				+ " WHERE account_id = ?;"
+			),
+			[
+				data.get("save_version", "1.0"),
+				data.get("save_slot", 1),
+				data.get("play_time_sec", 0),
+				account_id,
+			]
+		)
+	return _execute_bound(
+		(
+			"INSERT INTO save_metadata"
+			+ " (account_id, save_version, save_slot, play_time_sec)"
+			+ " VALUES (?, ?, ?, ?);"
+		),
+		[
+			account_id,
+			data.get("save_version", "1.0"),
+			data.get("save_slot", 1),
+			data.get("play_time_sec", 0),
+		]
+	)
+
+
+# ---- CRUD: Music State ----
+
+
+func get_music_state(account_id: int) -> Dictionary:
+	var rows := _select("SELECT * FROM music_state WHERE account_id = ?;", [account_id])
+	if rows.is_empty():
+		return {}
+	return rows[0]
+
+
+func upsert_music_state(account_id: int, data: Dictionary) -> bool:
+	var existing := get_music_state(account_id)
+	if not existing.is_empty():
+		return _execute_bound(
+			(
+				"UPDATE music_state SET current_track_id = ?,"
+				+ " track_position_sec = ?, playlist_mode = ?,"
+				+ " ambience_enabled = ?, active_ambiences = ?,"
+				+ " updated_at = datetime('now')"
+				+ " WHERE account_id = ?;"
+			),
+			[
+				data.get("current_track_id", ""),
+				data.get("track_position_sec", 0.0),
+				data.get("playlist_mode", "sequential"),
+				1 if data.get("ambience_enabled", true) else 0,
+				JSON.stringify(data.get("active_ambiences", [])),
+				account_id,
+			]
+		)
+	return _execute_bound(
+		(
+			"INSERT INTO music_state"
+			+ " (account_id, current_track_id, track_position_sec,"
+			+ " playlist_mode, ambience_enabled, active_ambiences)"
+			+ " VALUES (?, ?, ?, ?, ?, ?);"
+		),
+		[
+			account_id,
+			data.get("current_track_id", ""),
+			data.get("track_position_sec", 0.0),
+			data.get("playlist_mode", "sequential"),
+			1 if data.get("ambience_enabled", true) else 0,
+			JSON.stringify(data.get("active_ambiences", [])),
+		]
+	)
+
+
+# ---- CRUD: Placed Decorations ----
+
+
+func get_placed_decorations(room_id: int) -> Array:
+	return _select("SELECT * FROM placed_decorations WHERE room_id = ?;", [room_id])
+
+
+func add_placed_decoration(room_id: int, data: Dictionary) -> bool:
+	return _execute_bound(
+		(
+			"INSERT INTO placed_decorations"
+			+ " (room_id, decoration_catalog_id, pos_x, pos_y,"
+			+ " rotation_deg, flip_h, item_scale, z_order, placement_zone)"
+			+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"
+		),
+		[
+			room_id,
+			data.get("decoration_catalog_id", ""),
+			data.get("pos_x", 0.0),
+			data.get("pos_y", 0.0),
+			data.get("rotation_deg", 0.0),
+			1 if data.get("flip_h", false) else 0,
+			data.get("item_scale", 1.0),
+			data.get("z_order", 0),
+			data.get("placement_zone", "floor"),
+		]
+	)
+
+
+func remove_placed_decoration(placement_id: int) -> bool:
+	return _execute_bound(
+		"DELETE FROM placed_decorations WHERE placement_id = ?;",
+		[placement_id]
+	)
+
+
+func clear_room_decorations(room_id: int) -> bool:
+	return _execute_bound(
+		"DELETE FROM placed_decorations WHERE room_id = ?;",
+		[room_id]
 	)
 
 
