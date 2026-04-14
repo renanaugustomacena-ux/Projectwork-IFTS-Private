@@ -55,12 +55,22 @@ func _process_idle(_delta: float) -> void:
 
 	if _state_timer > _random_duration():
 		var roll := randf()
+		# Priorita` 1: dopo cooldown lungo, chance di dormire
 		if _idle_timer > SLEEP_COOLDOWN and roll < 0.3:
 			_set_state(State.SLEEP)
-		elif _character_ref and _is_far_from_character():
+			return
+		# Priorita` 2: se il personaggio si e` allontanato, vai a seguirlo
+		if _character_ref and _is_far_from_character():
 			_set_state(State.FOLLOW)
-		else:
-			_state_timer = 0.0
+			return
+		# Priorita` 3: altrimenti ~55% di probabilita` di iniziare a vagare
+		# nella stanza (fix del gap pre-esistente: senza questa transizione
+		# il gatto restava bloccato in idle fino al cooldown di 2 minuti).
+		if roll < 0.55:
+			_set_state(State.WANDER)
+			return
+		# Fallback: resetta il timer e resta idle ancora un momento
+		_state_timer = 0.0
 
 
 func _process_wander(_delta: float) -> void:

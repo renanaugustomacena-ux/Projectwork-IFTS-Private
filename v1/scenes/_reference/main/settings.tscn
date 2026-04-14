@@ -1,8 +1,0 @@
-[gd_scene format=3 uid="uid://dsu3648qmn636"]
-
-[ext_resource type="Texture2D" uid="uid://cp8aj07auhl6n" path="res://assets/menu/buttons_static/button_settings_static.png" id="1_bym2s"]
-[ext_resource type="Texture2D" uid="uid://cpggjgin3jw2a" path="res://assets/menu/buttons_pressed/button_settings_pressed.png" id="2_p7dqi"]
-
-[node name="settings" type="TouchScreenButton" unique_id=1104318527]
-texture_normal = ExtResource("1_bym2s")
-texture_pressed = ExtResource("2_p7dqi")
