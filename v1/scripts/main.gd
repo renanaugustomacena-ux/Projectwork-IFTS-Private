@@ -5,6 +5,11 @@ extends Node2D
 const OVERLAY_ALPHA := 0.6
 
 var _panel_manager: PanelManager
+# Reference membro al DropZone Control del UILayer. E` salvato come field
+# (invece di variabile locale) perche` le connessioni SignalBus al
+# panel_opened/closed usano metodi che devono poterlo leggere in modo
+# is_instance_valid-safe anche dopo eventuali free parziali.
+var _drop_zone: Control = null
 
 @onready var _ui_layer: CanvasLayer = $UILayer
 @onready var _hud: HBoxContainer = $UILayer/HUD
@@ -43,16 +48,18 @@ func _ready() -> void:
 
 	# Disable DropZone mouse capture while panels are open so panel
 	# buttons are clickable. Re-enable when panels close.
-	var drop_zone := _ui_layer.get_node_or_null("DropZone") as Control
-	if drop_zone:
-		SignalBus.panel_opened.connect(
-			func(_name: String) -> void:
-				drop_zone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		)
-		SignalBus.panel_closed.connect(
-			func(_name: String) -> void:
-				drop_zone.mouse_filter = Control.MOUSE_FILTER_PASS
-		)
+	# Uso method references (non lambda con capture) perche` SignalBus e`
+	# autoload permanente: al reload della scena Main, una lambda con
+	# capture locale diventerebbe un callable zombie con puntatore a
+	# drop_zone freed, e alla prossima emissione di panel_opened il
+	# motore crasha con "Lambda capture at index 0 was freed". Il pattern
+	# corretto (mirror di character_controller.gd::_ready/_exit_tree) e`
+	# salvare il nodo come field, connettere metodi, disconnettere
+	# simmetricamente in _exit_tree.
+	_drop_zone = _ui_layer.get_node_or_null("DropZone") as Control
+	if _drop_zone:
+		SignalBus.panel_opened.connect(_on_drop_zone_panel_opened)
+		SignalBus.panel_closed.connect(_on_drop_zone_panel_closed)
 
 	# Toast notifications
 	var toast_layer := CanvasLayer.new()
@@ -150,6 +157,20 @@ func _on_tutorial_done() -> void:
 	SignalBus.save_requested.emit()
 
 
+func _on_drop_zone_panel_opened(_panel_name: String) -> void:
+	if is_instance_valid(_drop_zone):
+		_drop_zone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _on_drop_zone_panel_closed(_panel_name: String) -> void:
+	if is_instance_valid(_drop_zone):
+		_drop_zone.mouse_filter = Control.MOUSE_FILTER_PASS
+
+
 func _exit_tree() -> void:
 	if SignalBus.room_changed.is_connected(_on_room_changed):
 		SignalBus.room_changed.disconnect(_on_room_changed)
+	if SignalBus.panel_opened.is_connected(_on_drop_zone_panel_opened):
+		SignalBus.panel_opened.disconnect(_on_drop_zone_panel_opened)
+	if SignalBus.panel_closed.is_connected(_on_drop_zone_panel_closed):
+		SignalBus.panel_closed.disconnect(_on_drop_zone_panel_closed)
