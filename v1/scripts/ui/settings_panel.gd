@@ -89,7 +89,11 @@ func _build_ui() -> void:
 
 func _on_replay_tutorial() -> void:
 	SignalBus.settings_updated.emit("tutorial_completed", false)
-	SignalBus.save_requested.emit()
+	# Flush sincrono su disco: save_requested setta solo dirty flag con
+	# auto-save ogni 60s, ma qui ricarichiamo subito la scena, quindi
+	# dobbiamo forzare il save immediato altrimenti il tutorial_completed
+	# resetta nel save file solo al prossimo tick di auto-save.
+	SaveManager.save_game()
 	# Close the panel and restart scene
 	SignalBus.panel_closed.emit("settings")
 	call_deferred("_restart_scene")

@@ -89,6 +89,11 @@ func _on_nuova_partita() -> void:
 	if _transitioning:
 		return
 	SaveManager.reset_character_data()
+	# Ripristina il flag tutorial cosi` una nuova partita riavvia sempre
+	# la sessione di onboarding, indipendentemente da precedenti completamenti.
+	# Flush sincrono necessario prima della scene transition.
+	SignalBus.settings_updated.emit("tutorial_completed", false)
+	SaveManager.save_game()
 	_show_character_select()
 
 

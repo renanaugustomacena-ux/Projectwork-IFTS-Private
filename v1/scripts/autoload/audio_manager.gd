@@ -423,5 +423,3 @@ func _exit_tree() -> void:
 			player.queue_free()
 	_ambience_players.clear()
 	_active_ambience.clear()
-
-

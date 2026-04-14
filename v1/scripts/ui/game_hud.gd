@@ -38,33 +38,41 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
+	# La HUD NON deve mai intercettare il mouse: tutti i Control sono
+	# impostati su MOUSE_FILTER_IGNORE in modo che i click sottostanti
+	# (decoration panel, drop zone, furniture drag&drop) arrivino
+	# normalmente al gameplay. La HUD e` puramente informativa.
 	_root = MarginContainer.new()
 	_root.name = "GameHudRoot"
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.anchor_left = 0.0
 	_root.anchor_top = 0.0
-	_root.anchor_right = 1.0
+	_root.anchor_right = 0.0
 	_root.anchor_bottom = 0.0
 	_root.add_theme_constant_override("margin_left", int(HUD_MARGIN))
 	_root.add_theme_constant_override("margin_top", int(HUD_MARGIN))
-	_root.add_theme_constant_override("margin_right", int(HUD_MARGIN))
 	add_child(_root)
 
 	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 18)
 	_root.add_child(row)
 
 	# --- Serenity bar block ---
 	var serenity_block := VBoxContainer.new()
+	serenity_block.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	serenity_block.add_theme_constant_override("separation", 2)
 	row.add_child(serenity_block)
 
 	var serenity_header := Label.new()
 	serenity_header.text = "Serenita"
+	serenity_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	serenity_header.add_theme_font_size_override("font_size", 12)
 	serenity_header.add_theme_color_override("font_color", Color(1, 1, 1, 0.92))
 	serenity_block.add_child(serenity_header)
 
 	_serenity_bar = ProgressBar.new()
+	_serenity_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_serenity_bar.custom_minimum_size = Vector2(BAR_WIDTH, BAR_HEIGHT)
 	_serenity_bar.min_value = 0.0
 	_serenity_bar.max_value = 1.0
@@ -85,27 +93,31 @@ func _build_ui() -> void:
 
 	_mood_label = Label.new()
 	_mood_label.text = "calm"
+	_mood_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mood_label.add_theme_font_size_override("font_size", 10)
 	_mood_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
 	serenity_block.add_child(_mood_label)
 
-	# --- Coin counter block ---
-	var coin_block := HBoxContainer.new()
-	coin_block.add_theme_constant_override("separation", 6)
-	coin_block.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(coin_block)
+	# --- Achievement points block (NON e` denaro, non c'e` shop) ---
+	var points_block := HBoxContainer.new()
+	points_block.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	points_block.add_theme_constant_override("separation", 6)
+	points_block.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(points_block)
 
-	var coin_icon := Label.new()
-	coin_icon.text = "$"
-	coin_icon.add_theme_font_size_override("font_size", 20)
-	coin_icon.add_theme_color_override("font_color", Color(1.0, 0.82, 0.24, 1.0))
-	coin_block.add_child(coin_icon)
+	var points_icon := Label.new()
+	points_icon.text = "\u2605"  # Black star: simbolo achievement, non valuta
+	points_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	points_icon.add_theme_font_size_override("font_size", 20)
+	points_icon.add_theme_color_override("font_color", Color(1.0, 0.82, 0.24, 1.0))
+	points_block.add_child(points_icon)
 
 	_coin_label = Label.new()
 	_coin_label.text = "0"
+	_coin_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_coin_label.add_theme_font_size_override("font_size", 18)
 	_coin_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
-	coin_block.add_child(_coin_label)
+	points_block.add_child(_coin_label)
 
 
 func _on_stress_changed(stress_value: float, level: String) -> void:
