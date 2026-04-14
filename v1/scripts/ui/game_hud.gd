@@ -72,6 +72,13 @@ func _build_ui() -> void:
 	serenity_block.add_child(serenity_header)
 
 	_serenity_bar = ProgressBar.new()
+	# ProgressBar deriva da Range e in Godot 4.5 ha focus_mode di default
+	# non uguale a FOCUS_NONE. Se lasciato al default diventerebbe il focus
+	# owner implicito del viewport al primo frame, bloccando a catena il
+	# check get_viewport().gui_get_focus_owner() in character_controller.gd
+	# e impedendo al personaggio di muoversi. Forzare FOCUS_NONE risolve
+	# la regressione alla radice senza alterare la logica di movimento.
+	_serenity_bar.focus_mode = Control.FOCUS_NONE
 	_serenity_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_serenity_bar.custom_minimum_size = Vector2(BAR_WIDTH, BAR_HEIGHT)
 	_serenity_bar.min_value = 0.0
