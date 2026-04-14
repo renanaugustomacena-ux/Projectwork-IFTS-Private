@@ -19,6 +19,9 @@ const TUTORIAL_SCRIPT := preload(
 const TOAST_SCRIPT := preload(
 	"res://scripts/ui/toast_manager.gd"
 )
+const GAME_HUD_SCRIPT := preload(
+	"res://scripts/ui/game_hud.gd"
+)
 
 func _ready() -> void:
 	_panel_manager = PanelManager.new()
@@ -56,6 +59,12 @@ func _ready() -> void:
 	toast_layer.set_script(TOAST_SCRIPT)
 	toast_layer.name = "ToastManager"
 	add_child(toast_layer)
+
+	# In-game HUD (serenity bar + point counter)
+	var hud_layer := CanvasLayer.new()
+	hud_layer.set_script(GAME_HUD_SCRIPT)
+	hud_layer.name = "GameHud"
+	add_child(hud_layer)
 
 
 func _wire_hud_buttons() -> void:
