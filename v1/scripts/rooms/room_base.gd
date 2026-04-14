@@ -2,6 +2,7 @@
 extends Node2D
 
 const DecorationScript := preload("res://scripts/rooms/decoration_system.gd")
+const MessSpawnerScript := preload("res://scripts/systems/mess_spawner.gd")
 
 ## Collision footprint ratios — only the bottom portion blocks movement.
 const COLLISION_WIDTH_RATIO := 0.7
@@ -27,6 +28,9 @@ const PET_VARIANT_DEFAULT := "simple"
 @onready var character_node: Node2D = $Character
 @onready var _floor_bounds_node: CollisionPolygon2D = $RoomBounds/FloorBounds
 
+var mess_container: Node2D
+var mess_spawner: MessSpawner
+
 
 func _ready() -> void:
 	SignalBus.character_changed.connect(_on_character_changed)
@@ -35,6 +39,7 @@ func _ready() -> void:
 	_setup_floor_bounds()
 	_reload_decorations()
 	_spawn_pet()
+	_setup_mess_spawner()
 	# Apply character chosen in main menu (signal fired before this scene loaded)
 	if GameManager.current_character_id != "male_old":
 		call_deferred("_on_character_changed", GameManager.current_character_id)
@@ -225,6 +230,17 @@ func _get_texture_for_id(item_id: String) -> Texture2D:
 	if path.is_empty():
 		return null
 	return load(path) as Texture2D
+
+
+func _setup_mess_spawner() -> void:
+	mess_container = Node2D.new()
+	mess_container.name = "Mess"
+	add_child(mess_container)
+
+	mess_spawner = MessSpawnerScript.new()
+	mess_spawner.name = "MessSpawner"
+	add_child(mess_spawner)
+	mess_spawner.set_container(mess_container)
 
 
 func _spawn_pet() -> void:

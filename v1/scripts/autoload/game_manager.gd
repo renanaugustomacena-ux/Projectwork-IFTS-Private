@@ -14,6 +14,7 @@ var rooms_catalog: Dictionary = {}
 var decorations_catalog: Dictionary = {}
 var characters_catalog: Dictionary = {}
 var tracks_catalog: Dictionary = {}
+var mess_catalog: Dictionary = {}
 
 
 func _ready() -> void:
@@ -45,6 +46,7 @@ func _load_catalogs() -> void:
 	decorations_catalog = _load_json("res://data/decorations.json")
 	characters_catalog = _load_json("res://data/characters.json")
 	tracks_catalog = _load_json("res://data/tracks.json")
+	mess_catalog = _load_json("res://data/mess_catalog.json")
 
 
 func _validate_catalogs() -> void:
@@ -53,6 +55,7 @@ func _validate_catalogs() -> void:
 		"decorations": decorations_catalog.get("decorations", []).size(),
 		"characters": characters_catalog.get("characters", []).size(),
 		"tracks": tracks_catalog.get("tracks", []).size(),
+		"mess": mess_catalog.get("mess", []).size(),
 	}
 	AppLogger.info("GameManager", "Catalogs loaded", counts)
 
@@ -143,6 +146,22 @@ func _on_load_completed() -> void:
 
 func _request_save() -> void:
 	SignalBus.save_requested.emit()
+
+
+## Restituisce l'entry del mess catalog associata all'id, o un Dictionary vuoto.
+func get_mess_entry(mess_id: String) -> Dictionary:
+	for entry in mess_catalog.get("mess", []):
+		if entry is Dictionary and entry.get("id", "") == mess_id:
+			return entry
+	return {}
+
+
+## Peso di stress per un mess (default 0.10 se id sconosciuto).
+func get_mess_stress_weight(mess_id: String) -> float:
+	var entry := get_mess_entry(mess_id)
+	if entry.is_empty():
+		return 0.10
+	return float(entry.get("stress_weight", 0.10))
 
 
 func _exit_tree() -> void:
