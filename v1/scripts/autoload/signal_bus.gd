@@ -61,3 +61,15 @@ signal sync_started
 signal sync_completed(success: bool)
 signal cloud_auth_completed(success: bool)
 signal cloud_connection_changed(state: int)
+
+# Stress / Mood (stress_value is continuous 0.0-1.0; level is calm/neutral/tense)
+signal stress_changed(stress_value: float, level: String)
+signal stress_threshold_crossed(level: String)
+signal mood_changed(mood: String)
+
+# Mess / Cleanup
+signal mess_spawned(mess_id: String, mess_position: Vector2)
+signal mess_cleaned(mess_id: String)
+
+# Economy
+signal coins_changed(delta: int, total: int)
