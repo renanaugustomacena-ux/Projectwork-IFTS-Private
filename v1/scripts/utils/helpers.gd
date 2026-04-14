@@ -153,6 +153,17 @@ static func get_floor_polygon_world() -> PackedVector2Array:
 	return _floor_polygon_world
 
 
+## Bounding box (Rect2) del floor polygon in world coordinates. Rect2() vuoto
+## se il polygon non e` stato inizializzato.
+static func get_floor_bounds() -> Rect2:
+	if _floor_polygon_world.size() < 3:
+		return Rect2()
+	var bounds := Rect2(_floor_polygon_world[0], Vector2.ZERO)
+	for i in range(1, _floor_polygon_world.size()):
+		bounds = bounds.expand(_floor_polygon_world[i])
+	return bounds
+
+
 static func _polygon_centroid(poly: PackedVector2Array) -> Vector2:
 	var sum := Vector2.ZERO
 	for p in poly:
