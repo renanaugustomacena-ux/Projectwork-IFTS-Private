@@ -30,6 +30,10 @@ var _active_player: AudioStreamPlayer
 var _crossfade_tween: Tween
 var _ambience_players: Dictionary = {}
 
+# Stato mood per il crossfade dinamico pilotato da StressManager
+var current_mood: String = "calm"
+var _mood_rng := RandomNumberGenerator.new()
+
 
 func _ready() -> void:
 	_music_player_a = AudioStreamPlayer.new()
@@ -47,7 +51,9 @@ func _ready() -> void:
 	SignalBus.volume_changed.connect(_on_volume_changed)
 	SignalBus.ambience_toggled.connect(_on_ambience_toggled)
 	SignalBus.load_completed.connect(_on_load_completed)
+	SignalBus.mood_changed.connect(_on_mood_changed)
 
+	_mood_rng.randomize()
 	_load_tracks()
 	call_deferred("_auto_start_music")
 
@@ -172,6 +178,58 @@ func _load_audio_stream(path: String) -> AudioStream:
 
 	# Resource paths (res:// and user:// wav/ogg)
 	return load(path) as AudioStream
+
+
+## Reagisce al cambio di mood emesso da StressManager: filtra i tracks
+## del catalog su quelli che includono il nuovo mood nell'array `moods`,
+## sceglie una traccia a caso (escludendo quella attualmente suonata se
+## possibile) e avvia il crossfade. Se non ci sono tracce matching, no-op.
+func _on_mood_changed(mood: String) -> void:
+	if mood == current_mood:
+		return
+	current_mood = mood
+	var candidates: Array = []
+	var current_path: String = ""
+	if current_track_index >= 0 and current_track_index < tracks.size():
+		var curr := tracks[current_track_index]
+		if curr is Dictionary:
+			current_path = String(curr.get("path", ""))
+	for i in range(tracks.size()):
+		var t = tracks[i]
+		if not (t is Dictionary):
+			continue
+		var moods: Array = t.get("moods", [])
+		if moods is Array and mood in moods:
+			candidates.append(i)
+
+	if candidates.is_empty():
+		return
+
+	# Prova a escludere la traccia gia` in riproduzione per aumentare varieta`
+	var filtered: Array = []
+	for idx in candidates:
+		var t = tracks[idx]
+		if t is Dictionary and String(t.get("path", "")) != current_path:
+			filtered.append(idx)
+	if not filtered.is_empty():
+		candidates = filtered
+
+	var choice: int = candidates[_mood_rng.randi_range(0, candidates.size() - 1)]
+	var chosen_track = tracks[choice]
+	if not (chosen_track is Dictionary):
+		return
+	var stream_path := String(chosen_track.get("path", ""))
+	if stream_path.is_empty():
+		return
+	var stream := _load_audio_stream(stream_path)
+	if stream == null:
+		return
+
+	current_track_index = choice
+	is_playing = true
+	_crossfade_to(stream)
+	SignalBus.track_changed.emit(current_track_index)
+	_sync_music_state()
 
 
 func _crossfade_to(stream: AudioStream) -> void:
@@ -353,6 +411,8 @@ func _exit_tree() -> void:
 		SignalBus.ambience_toggled.disconnect(_on_ambience_toggled)
 	if SignalBus.load_completed.is_connected(_on_load_completed):
 		SignalBus.load_completed.disconnect(_on_load_completed)
+	if SignalBus.mood_changed.is_connected(_on_mood_changed):
+		SignalBus.mood_changed.disconnect(_on_mood_changed)
 	if _crossfade_tween != null and _crossfade_tween.is_running():
 		_crossfade_tween.kill()
 		_crossfade_tween = null

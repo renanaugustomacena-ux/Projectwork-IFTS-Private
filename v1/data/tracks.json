@@ -5,14 +5,16 @@
 			"title": "Light Rain",
 			"artist": "Mixkit",
 			"path": "res://assets/audio/music/mixkit-light-rain-loop-1253.wav",
-			"genre": "ambient"
+			"genre": "ambient",
+			"moods": ["calm", "neutral"]
 		},
 		{
 			"id": "rain_thunder",
 			"title": "Rain & Thunder",
 			"artist": "Mixkit",
 			"path": "res://assets/audio/music/mixkit-light-rain-with-thunderstorm-1290.wav",
-			"genre": "ambient"
+			"genre": "ambient",
+			"moods": ["tense"]
 		}
 	],
 	"ambience": []
