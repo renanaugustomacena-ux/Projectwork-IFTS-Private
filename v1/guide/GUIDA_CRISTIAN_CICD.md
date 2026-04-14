@@ -1106,6 +1106,481 @@ Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare 
 
 ---
 
+## Build Locale su Windows — Dalla Sorgente all'.exe
+
+> **Contesto**: siamo nella fase finale del progetto (scadenza **22 Aprile 2026**). Oltre alla CI su GitHub Actions, devi essere in grado di produrre **build locali** su Windows per i test interni e per la release finale (Windows `.exe` con installer Inno Setup, e Android `.apk`).
+>
+> Questa sezione e' pensata per essere eseguita **passo-passo** su Windows 10/11. Non saltare i prerequisiti.
+
+---
+
+### Passo 0 — Prerequisiti Windows (una sola volta)
+
+Installa in quest'ordine **esatto**. Dopo ogni installazione, **riavvia il Terminal** (PowerShell/Windows Terminal) per aggiornare le variabili d'ambiente.
+
+1. **Git for Windows** — <https://git-scm.com/download/win>
+   - In fase di installazione scegli "Git from the command line and also from 3rd-party software".
+2. **Python 3.11+** — <https://www.python.org/downloads/windows/>
+   - **SPUNTA** "Add python.exe to PATH" durante l'installer. Se lo dimentichi, disinstalla e reinstalla.
+3. **Godot 4.6 Stable (Standard, non .NET)** — <https://godotengine.org/download/windows/>
+   - Scarica `Godot_v4.6-stable_win64.exe.zip`, estrai in `C:\Godot\` e rinomina in `Godot_v4.6.exe`.
+4. **Export Templates Godot 4.6** — dall'interno di Godot: `Editor -> Manage Export Templates -> Download and Install`. Devono essere **esattamente la stessa versione** dell'eseguibile (4.6.stable). Questo e' l'errore N°1 delle build rotte.
+5. **Inno Setup 6.x** — <https://jrsoftware.org/isdl.php>
+   - Scarica `innosetup-6.x.x.exe`, installa con opzioni di default. Verifica che `ISCC.exe` sia in `C:\Program Files (x86)\Inno Setup 6\`.
+6. **Java JDK 17 (Temurin)** — <https://adoptium.net/> (necessario solo per Android)
+   - Installa la versione LTS 17. **Non** usare JDK 21+: il Gradle di Godot 4.6 non lo supporta.
+7. **Android SDK Command-Line Tools** — <https://developer.android.com/studio#command-tools>
+   - Scompatta in `C:\Android\cmdline-tools\latest\` (il sottopath `latest` e' obbligatorio).
+8. **gdtoolkit** (per lintare in locale prima del push):
+
+   ```powershell
+   python -m pip install --upgrade pip
+   python -m pip install "gdtoolkit>=4,<5"
+   ```
+
+**Variabili d'ambiente Windows** (`Pannello di Controllo -> Sistema -> Impostazioni avanzate -> Variabili d'ambiente`):
+
+| Nome | Valore | Necessario per |
+| ---- | ------ | -------------- |
+| `GODOT_BIN` | `C:\Godot\Godot_v4.6.exe` | Script di build |
+| `JAVA_HOME` | `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot` | Android |
+| `ANDROID_HOME` | `C:\Android` | Android |
+| `ANDROID_SDK_ROOT` | `C:\Android` | Android (legacy) |
+| `PATH` (aggiungi) | `%ANDROID_HOME%\cmdline-tools\latest\bin;%ANDROID_HOME%\platform-tools;%JAVA_HOME%\bin` | Android |
+
+**Verifica installazione** (PowerShell, tutti devono rispondere con una versione):
+
+```powershell
+git --version
+python --version
+& $env:GODOT_BIN --version
+java -version
+sdkmanager --version
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /?
+```
+
+Se uno di questi fallisce, **fermati** e risolvi prima di proseguire. Non proseguire con "tanto funzionera'": non funzionera'.
+
+---
+
+### Passo 1 — Clonare il Repository e Aggiornare
+
+```powershell
+cd C:\dev
+git clone https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private.git
+cd Projectwork-IFTS-Private
+git checkout main
+git pull origin main
+```
+
+Il progetto Godot e' dentro `v1\`. **Tutti i path `res://` sono relativi a `v1\`.**
+
+---
+
+### Passo 2 — Aprire il Progetto in Godot (prima volta)
+
+1. Avvia `Godot_v4.6.exe`.
+2. `Import -> Browse -> C:\dev\Projectwork-IFTS-Private\v1\project.godot -> Import & Edit`.
+3. Attendi l'importazione degli asset (prima volta: 1-3 minuti, vedi la progress bar in basso a destra).
+4. `Project -> Export...` deve mostrare i preset `Windows Desktop`, `Android`, `HTML5`. Se mancano o sono in rosso, vedi la sezione Troubleshooting.
+
+---
+
+### Passo 3 — Lint e Format in Locale (obbligatorio prima del push)
+
+Dalla root del repo:
+
+```powershell
+gdlint v1\scripts\ v1\tests\
+gdformat --check v1\scripts\ v1\tests\
+```
+
+Entrambi devono uscire con **exit code 0**. Se `gdformat --check` fallisce, esegui `gdformat v1\scripts\ v1\tests\` (senza `--check`) per riformattare, poi rifai il `--check`.
+
+> **Perche'**: la CI su GitHub esegue esattamente questi due comandi. Fallire in locale prima del push ti fa risparmiare i 5 minuti di attesa della CI.
+
+---
+
+### Passo 4 — Build Windows (.exe grezzo da Godot)
+
+**Opzione A — da GUI Godot** (consigliata la prima volta, cosi' vedi gli errori):
+
+1. `Project -> Export...`
+2. Seleziona il preset **Windows Desktop**.
+3. Clicca **Export Project** (NON Export PCK/Zip).
+4. Path: `C:\dev\Projectwork-IFTS-Private\build\windows\MiniCozyRoom.exe`
+5. **Togli** la spunta da "Export With Debug" (per la release finale).
+6. Clicca Save. Attendi 30-90 secondi.
+
+Alla fine in `build\windows\` troverai:
+
+```
+MiniCozyRoom.exe
+MiniCozyRoom.pck
+```
+
+Avvia `MiniCozyRoom.exe` con doppio click e verifica che:
+- La finestra si apra a 1280x720.
+- Il menu principale compaia senza errori.
+- I font/sprite non siano sfocati (texture filter Nearest attivo — vedi `CLAUDE.md`).
+
+**Opzione B — da riga di comando** (per automazione/CI locale):
+
+```powershell
+cd C:\dev\Projectwork-IFTS-Private\v1
+mkdir ..\build\windows -Force
+& $env:GODOT_BIN --headless --export-release "Windows Desktop" "..\build\windows\MiniCozyRoom.exe"
+```
+
+Exit code atteso: **0**. Se e' diverso da 0, leggi l'output: Godot e' molto esplicito sugli errori di export.
+
+---
+
+### Passo 5 — Creare l'Installer con Inno Setup
+
+L'.exe "nudo" richiede che l'utente tenga `MiniCozyRoom.exe` + `MiniCozyRoom.pck` nella stessa cartella. Per la release vogliamo un **vero installer** che crei shortcut nel menu Start, gestisca la disinstallazione, installi in `Program Files`.
+
+#### 5.1 — Crea lo script Inno Setup
+
+Crea il file `installer\MiniCozyRoom.iss` (se la cartella `installer\` non esiste, creala) con questo contenuto:
+
+```iss
+; MiniCozyRoom — Inno Setup Script
+; Genera l'installer Windows a partire dall'export Godot
+
+#define MyAppName "Mini Cozy Room"
+#define MyAppVersion "1.0.0"
+#define MyAppPublisher "IFTS Team — Renan, Cristian, Elia"
+#define MyAppURL "https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private"
+#define MyAppExeName "MiniCozyRoom.exe"
+#define SourceBuildDir "..\build\windows"
+#define OutputDir "..\build\installer"
+
+[Setup]
+AppId={{A7F3B2E4-9C1D-4F5A-8B6E-2D3C4F5A6B7C}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}/issues
+DefaultDirName={autopf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+OutputDir={#OutputDir}
+OutputBaseFilename=MiniCozyRoom-Setup-{#MyAppVersion}
+SetupIconFile=..\v1\icon.ico
+Compression=lzma2/ultra64
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+UninstallDisplayIcon={app}\{#MyAppExeName}
+MinVersion=10.0.17763
+
+[Languages]
+Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+Source: "{#SourceBuildDir}\MiniCozyRoom.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceBuildDir}\MiniCozyRoom.pck"; DestDir: "{app}"; Flags: ignoreversion
+; Se in futuro l'export genera altri file (DLL, cartelle), aggiungili qui.
+; Esempio wildcard sicuro:
+; Source: "{#SourceBuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{userappdata}\Godot\app_userdata\{#MyAppName}"
+```
+
+**Note importanti**:
+- `PrivilegesRequired=lowest` permette l'installazione **senza diritti di admin** (in `%LOCALAPPDATA%`). L'utente puo' comunque scegliere "Install for all users" nel wizard.
+- `AppId` e' un GUID **permanente**: non cambiarlo tra le versioni, altrimenti gli update diventano nuove installazioni parallele. Se devi generare un GUID nuovo per un altro progetto, usa PowerShell: `[guid]::NewGuid()`.
+- `SetupIconFile=..\v1\icon.ico` richiede che esista `v1\icon.ico`. Se hai solo `icon.png`, convertilo con <https://icoconvert.com/> (dimensioni 16/32/48/256).
+- `[UninstallDelete]` rimuove anche i save del gioco (`%APPDATA%\Godot\app_userdata\Mini Cozy Room`). Se preferisci preservarli, elimina quella sezione.
+
+#### 5.2 — Compila l'installer
+
+Da PowerShell, dalla root del repo:
+
+```powershell
+cd installer
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" MiniCozyRoom.iss
+```
+
+Se tutto va bene, l'output sara':
+
+```
+Compiler Version 6.x.x
+...
+Successful compile (n.nnn sec). Resulting Setup program: ..\build\installer\MiniCozyRoom-Setup-1.0.0.exe
+```
+
+Esegui l'installer con doppio click, completa il wizard, avvia il gioco dal menu Start, poi **disinstalla** da `Impostazioni -> App` per verificare la pulizia.
+
+#### 5.3 — Checklist pre-rilascio installer
+
+- [ ] L'installer si lancia su una macchina Windows 10 **pulita** (senza Godot installato)
+- [ ] L'applicazione parte al termine dell'installazione (checkbox finale)
+- [ ] Il shortcut nel menu Start esiste e funziona
+- [ ] La disinstallazione rimuove interamente `%LOCALAPPDATA%\Programs\Mini Cozy Room` (o `Program Files`)
+- [ ] Il save game viene preservato o rimosso coerentemente con la scelta del `[UninstallDelete]`
+- [ ] L'installer e' firmato (per la release finale — opzionale ma riduce i warning SmartScreen). Se non abbiamo un certificato, documenta nel README che gli utenti vedranno "Windows ha protetto il tuo PC" e devono cliccare "Ulteriori informazioni -> Esegui comunque"
+
+---
+
+### Passo 6 — Build Android (.apk)
+
+> **Ordine critico**: Android ha **molti** step di setup. Se salti uno, fallisce tutto silenziosamente. Segui in ordine.
+
+#### 6.1 — Installare i pacchetti SDK Android
+
+```powershell
+sdkmanager --licenses
+# accetta tutte con "y"
+sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34" "cmdline-tools;latest"
+```
+
+**Path attesi dopo il completamento**:
+- `C:\Android\platform-tools\adb.exe`
+- `C:\Android\build-tools\34.0.0\apksigner.bat`
+
+#### 6.2 — Generare il debug keystore (una sola volta)
+
+Godot richiede un keystore per firmare l'APK **anche** in debug:
+
+```powershell
+cd $env:USERPROFILE
+mkdir .android -Force
+keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore .android\debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+```
+
+#### 6.3 — Configurare Godot per Android
+
+In Godot: `Editor -> Editor Settings -> Export -> Android`:
+
+| Campo | Valore |
+| ----- | ------ |
+| Android SDK Path | `C:\Android` |
+| Debug Keystore | `C:\Users\<tuo_utente>\.android\debug.keystore` |
+| Debug Keystore User | `androiddebugkey` |
+| Debug Keystore Pass | `android` |
+
+Poi: `Project -> Install Android Build Template` (genera la cartella `android\build\` dentro `v1\` — la **committa** nel repo? NO, e' gia' in `.gitignore`).
+
+#### 6.4 — Verifica il preset Android in export_presets.cfg
+
+Apri `v1\export_presets.cfg` e controlla che il preset Android abbia almeno:
+
+```ini
+[preset.X]
+name="Android"
+platform="Android"
+package/unique_name="com.ifts.minicozyroom"
+package/name="Mini Cozy Room"
+package/signed=true
+version/code=1
+version/name="1.0.0"
+screen/immersive_mode=true
+architectures/arm64-v8a=true
+architectures/armeabi-v7a=false
+```
+
+**`arm64-v8a=true` + `armeabi-v7a=false`** e' la configurazione corretta per device moderni (2019+). Se devi supportare device piu' vecchi, abilita anche `armeabi-v7a`.
+
+#### 6.5 — Esporta l'APK
+
+**Da GUI**:
+1. `Project -> Export... -> Android -> Export Project`
+2. Path: `C:\dev\Projectwork-IFTS-Private\build\android\MiniCozyRoom.apk`
+3. Togli "Export With Debug" per la release.
+
+**Da CLI**:
+
+```powershell
+cd C:\dev\Projectwork-IFTS-Private\v1
+mkdir ..\build\android -Force
+& $env:GODOT_BIN --headless --export-release "Android" "..\build\android\MiniCozyRoom.apk"
+```
+
+#### 6.6 — Testare l'APK su dispositivo fisico
+
+```powershell
+# Collega il telefono via USB con "Debug USB" attivato nelle Opzioni Sviluppatore
+adb devices                    # deve elencare il tuo dispositivo
+adb install -r ..\build\android\MiniCozyRoom.apk
+adb logcat -s godot:* *:E      # filtra solo log Godot + errori, Ctrl+C per fermare
+```
+
+Sul telefono cerca l'icona "Mini Cozy Room" e avvia. Verifica:
+- [ ] L'app si apre in **landscape** (non ruota a portrait)
+- [ ] Il touch input funziona sui pulsanti del menu
+- [ ] Il save game si scrive su `/storage/emulated/0/Android/data/com.ifts.minicozyroom/` (non crasha al primo save)
+
+---
+
+### Passo 7 — Firmare l'APK per la Release (keystore di produzione)
+
+Per distribuire l'APK fuori da "debug" serve un **keystore di produzione** dedicato. **Non committarlo mai nel repo.**
+
+```powershell
+keytool -genkey -v -keystore minicozyroom-release.keystore -alias minicozyroom -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Salva `minicozyroom-release.keystore` **fuori dal repo** (es. `C:\keystores\`) e annota la password in un password manager (non in Slack, non in un txt sul desktop). Se la perdi **non** potrai piu' pubblicare aggiornamenti con lo stesso package name.
+
+In Godot, nel preset Android:
+- `Keystore Release`: path assoluto al file
+- `Keystore Release User`: `minicozyroom`
+- `Keystore Release Password`: la password scelta
+
+Poi riesporta con "Export With Debug" **disattivato**.
+
+Verifica la firma:
+
+```powershell
+& "C:\Android\build-tools\34.0.0\apksigner.bat" verify --verbose ..\build\android\MiniCozyRoom.apk
+```
+
+Deve rispondere `Verified using v1 scheme: true` (o v2/v3). Se risponde `DOES NOT VERIFY`, la firma e' rotta.
+
+---
+
+## Troubleshooting Esteso — Build Locale
+
+### Windows — "Export template not found" in Godot
+
+**Causa**: gli export template installati non corrispondono alla versione dell'eseguibile Godot (es. hai 4.6.stable ma i template sono 4.5.stable).
+
+**Soluzione**:
+1. `Editor -> Manage Export Templates -> Remove`
+2. `Download and Install` — Godot li riscarica dal mirror ufficiale
+3. Se il download fallisce per timeout: scaricali manualmente da <https://godotengine.org/download/archive/4.6-stable/> (`Godot_v4.6-stable_export_templates.tpz`) e installali con `Install from File`.
+
+### Windows — "MSVCP140.dll is missing" all'avvio dell'.exe
+
+**Causa**: l'utente finale non ha il **Visual C++ Redistributable 2015-2022**.
+
+**Soluzione**: includi `vc_redist.x64.exe` (scaricabile da Microsoft) nell'installer Inno Setup come prerequisito. Aggiungi nello script `.iss`:
+
+```iss
+[Files]
+Source: "redist\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
+
+[Run]
+Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/quiet /norestart"; StatusMsg: "Installing Visual C++ Redistributable..."; Check: VCRedistNeedsInstall
+
+[Code]
+function VCRedistNeedsInstall: Boolean;
+var
+  Version: String;
+begin
+  Result := not RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Version', Version);
+end;
+```
+
+### Windows — L'installer viene segnalato come "virus" da SmartScreen / Chrome
+
+**Causa**: l'eseguibile non e' **firmato digitalmente** (code signing). Qualsiasi `.exe` nuovo e non firmato viene messo in quarantena dalla reputazione Microsoft finche' non raggiunge un certo numero di download.
+
+**Soluzione** (progetto studentesco, senza budget per certificato EV):
+- Documenta nel README utente che e' normale
+- L'utente deve: `Ulteriori informazioni -> Esegui comunque`
+- Alternativa pagata: certificato OV Sectigo (~80 EUR/anno) o EV (~300 EUR/anno). Per un progetto IFTS **non vale la spesa**.
+
+### Windows — Inno Setup: "The system cannot find the file specified" su icon.ico
+
+**Causa**: stai passando un `.png` invece di un `.ico`, oppure il path e' sbagliato.
+
+**Soluzione**:
+1. Genera un vero `.ico` multi-size (16/32/48/256) da <https://icoconvert.com/> o con ImageMagick:
+   ```powershell
+   magick convert v1\icon.png -define icon:auto-resize=256,48,32,16 v1\icon.ico
+   ```
+2. Verifica che `v1\icon.ico` esista **prima** di lanciare `ISCC.exe`.
+
+### Windows — Godot: "Could not find template file" — path con spazi
+
+**Causa**: Windows tratta male i path con spazi quando Godot li interpola per chiamare `rcedit` durante l'export.
+
+**Soluzione**: **mai** mettere il progetto in `C:\Users\Nome Cognome\Documents\...`. Usa `C:\dev\` o qualsiasi path senza spazi. Stesso discorso per `GODOT_BIN`.
+
+### Android — "ANDROID_HOME not set"
+
+**Causa**: la variabile d'ambiente non e' propagata al processo Godot.
+
+**Soluzione**: **chiudi e riapri completamente Godot** (non basta ricaricare il progetto) dopo aver impostato le variabili in Windows. Le variabili d'ambiente sono lette solo all'avvio del processo.
+
+### Android — "apksigner: command not found"
+
+**Causa**: `build-tools` non installati o non in PATH.
+
+**Soluzione**:
+```powershell
+sdkmanager "build-tools;34.0.0"
+# aggiungi C:\Android\build-tools\34.0.0 al PATH Windows
+```
+
+### Android — "INSTALL_FAILED_UPDATE_INCOMPATIBLE" su `adb install`
+
+**Causa**: stai reinstallando un APK firmato con un keystore diverso dal precedente (es. hai alternato debug e release).
+
+**Soluzione**: disinstalla prima l'app dal telefono, poi reinstalla:
+```powershell
+adb uninstall com.ifts.minicozyroom
+adb install ..\build\android\MiniCozyRoom.apk
+```
+
+### Android — APK esportato ma crasha subito all'avvio
+
+**Causa tipica**: architettura sbagliata (stai provando un APK `armeabi-v7a` su un device `arm64-v8a` senza fallback, o viceversa).
+
+**Soluzione**:
+1. `adb logcat -s godot:* AndroidRuntime:E` subito dopo il crash
+2. Cerca righe come `FATAL EXCEPTION` o `dlopen failed: library ... not found`
+3. Nel preset Android abilita **entrambe** le architetture (`arm64-v8a=true`, `armeabi-v7a=true`) e riesporta. L'APK diventa piu' pesante ma funziona ovunque.
+
+### Android — Gradle fallisce con "Unsupported class file major version 65"
+
+**Causa**: stai usando JDK 21+ dove Godot 4.6 si aspetta JDK 17.
+
+**Soluzione**: reinstalla JDK 17 Temurin, aggiorna `JAVA_HOME`, **riavvia Godot**. Verifica con `java -version` che mostri `17.x.x`.
+
+### CI/CD — La build locale funziona ma GitHub Actions fallisce
+
+**Causa classica**: hai file che esistono solo sulla tua macchina (es. `export_presets.cfg` modificato ma non committato, o `v1\icon.ico` non aggiunto a git).
+
+**Soluzione**:
+```powershell
+git status --ignored
+git add v1\icon.ico v1\export_presets.cfg
+git commit --author="Renan Augusto Macena <renanaugustomacena@gmail.com>" -m "build: aggiunti asset mancanti per export Windows e Android"
+git push
+```
+
+### Tutto funzionava ieri, oggi non compila piu'
+
+**Debug protocol** (dall'istruzione globale — approccio senior):
+
+1. **Cosa e' cambiato?** `git log --oneline -20` e `git diff HEAD~1 v1\project.godot v1\export_presets.cfg`
+2. **Ambiente o codice?** Prova a fare checkout del commit precedente (`git checkout HEAD~1`) e riesportare. Se funziona -> il problema e' nel tuo commit. Se non funziona -> il problema e' nell'ambiente (aggiornamento Windows, SDK, driver).
+3. **Cache sporca?** Elimina `v1\.godot\` (viene rigenerata al prossimo avvio di Godot) e riprova.
+4. **Export template corrotti?** Rimuovi e reinstalla (vedi primo troubleshooting Windows).
+5. **Non ripetere il comando fallito 5 volte sperando cambi risultato.** Cambia approccio o bisezione binaria dei commit (`git bisect`).
+
+---
+
 ## Risorse Utili
 
 - **README Asset Personaggi**: [`assets/charachters/README.md`](../assets/charachters/README.md) — Formato sprite, 8 direzioni, come sostituire il personaggio, come aggiungerne uno nuovo
@@ -1115,6 +1590,12 @@ Quando la CI fallisce (o volete verificare che sia passata), ecco come navigare 
 - **Riferimento YAML**: <https://yaml.org/spec/> (per il file ci.yml)
 - **Validatore YAML online**: <https://www.yamllint.com/>
 - **Docker Hub godot-ci**: <https://hub.docker.com/r/barichello/godot-ci/tags> — per verificare i tag disponibili
+- **Godot — Exporting for Windows**: <https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_windows.html>
+- **Godot — Exporting for Android**: <https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html>
+- **Inno Setup — Documentazione ufficiale**: <https://jrsoftware.org/ishelp/>
+- **Inno Setup — Esempi script**: `C:\Program Files (x86)\Inno Setup 6\Examples\` (installati localmente)
+- **Android Developer — Command-line tools**: <https://developer.android.com/tools>
+- **Adoptium (Temurin JDK 17)**: <https://adoptium.net/temurin/releases/?version=17>
 
 ---
 
