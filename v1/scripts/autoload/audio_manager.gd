@@ -191,7 +191,7 @@ func _on_mood_changed(mood: String) -> void:
 	var candidates: Array = []
 	var current_path: String = ""
 	if current_track_index >= 0 and current_track_index < tracks.size():
-		var curr := tracks[current_track_index]
+		var curr: Variant = tracks[current_track_index]
 		if curr is Dictionary:
 			current_path = String(curr.get("path", ""))
 	for i in range(tracks.size()):
