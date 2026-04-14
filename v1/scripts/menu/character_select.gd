@@ -18,11 +18,6 @@ const CHARACTERS := [
 		"name": "Ragazza Rossa",
 		"scene": "res://scenes/female-character.tscn",
 	},
-	{
-		"id": "male",
-		"name": "Ragazzo Giallo",
-		"scene": "res://scenes/male-character.tscn",
-	},
 ]
 
 var _current_index: int = 0

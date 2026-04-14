@@ -50,6 +50,9 @@ func _ready() -> void:
 
 
 func _setup_graphical_loading_screen() -> void:
+	if not ResourceLoader.exists(LOADING_SCREEN_SCENE):
+		push_warning("MainMenu: loading screen scene not present, using fallback color")
+		return
 	var scene := load(LOADING_SCREEN_SCENE) as PackedScene
 	if scene == null:
 		push_warning("MainMenu: loading screen scene not found, using fallback color")
