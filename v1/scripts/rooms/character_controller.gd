@@ -7,7 +7,7 @@ const DIRECTION_THRESHOLD := 1.2
 var _last_direction := Vector2.DOWN
 var _last_anim: String = ""
 var _ui_panel_open: bool = false
-var _debug_input_logs_remaining: int = 10
+var _debug_input_logs_remaining: int = 500
 var _debug_block_logs_remaining: int = 5
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
