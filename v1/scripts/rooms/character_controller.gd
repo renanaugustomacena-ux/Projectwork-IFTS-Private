@@ -7,6 +7,8 @@ const DIRECTION_THRESHOLD := 1.2
 var _last_direction := Vector2.DOWN
 var _last_anim: String = ""
 var _ui_panel_open: bool = false
+var _debug_input_logs_remaining: int = 10
+var _debug_block_logs_remaining: int = 5
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -53,12 +55,36 @@ func _physics_process(_delta: float) -> void:
 	# signal-driven riflette l'intent reale (l'utente sta interagendo con
 	# un pannello) senza dipendere dal focus chain.
 	if _ui_panel_open:
+		if _debug_block_logs_remaining > 0:
+			_debug_block_logs_remaining -= 1
+			AppLogger.info(
+				"CharCtrl",
+				"blocked by ui_panel_open",
+				{"pos": position}
+			)
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
 		return
 	var direction := Input.get_vector(
 		"ui_left", "ui_right", "ui_up", "ui_down"
 	)
+	if direction != Vector2.ZERO and _debug_input_logs_remaining > 0:
+		_debug_input_logs_remaining -= 1
+		var focus_node := get_viewport().gui_get_focus_owner()
+		var focus_name: String = "null"
+		if focus_node != null:
+			focus_name = "%s (%s)" % [focus_node.name, focus_node.get_class()]
+		AppLogger.info(
+			"CharCtrl",
+			"input received",
+			{
+				"dir": direction,
+				"pos": position,
+				"collision_mask": collision_mask,
+				"focus_owner": focus_name,
+				"panel_open_flag": _ui_panel_open,
+			}
+		)
 	velocity = direction.normalized() * SPEED
 	move_and_slide()
 	_update_animation(direction)
