@@ -6,8 +6,6 @@ const DIRECTION_THRESHOLD := 1.2
 
 var _last_direction := Vector2.DOWN
 var _last_anim: String = ""
-var _dbg_boot_logs := 5
-var _dbg_move_logs := 30
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -16,17 +14,6 @@ func _ready() -> void:
 	# Collide with room walls (layer 1) and decorations (layer 2)
 	collision_mask = 3
 	SignalBus.decoration_mode_changed.connect(_on_decoration_mode_changed)
-	AppLogger.info(
-		"CharCtrl",
-		"ready",
-		{
-			"start_pos": position,
-			"collision_layer": collision_layer,
-			"collision_mask": collision_mask,
-			"motion_mode": motion_mode,
-			"anim_node": "ok" if _anim != null else "NULL",
-		}
-	)
 
 
 func _exit_tree() -> void:
@@ -45,42 +32,13 @@ func _on_decoration_mode_changed(active: bool) -> void:
 func _physics_process(_delta: float) -> void:
 	# Block movement when a UI panel is open (prevents WASD from
 	# moving the character while interacting with deco panel, etc.)
-	var focus_node := get_viewport().gui_get_focus_owner()
-	if focus_node != null:
-		if _dbg_boot_logs > 0:
-			_dbg_boot_logs -= 1
-			AppLogger.info(
-				"CharCtrl",
-				"GATE BLOCKING",
-				{
-					"focus_owner": "%s (%s)" % [focus_node.name, focus_node.get_class()],
-					"pos": position,
-				}
-			)
+	if get_viewport().gui_get_focus_owner() != null:
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
 		return
 	var direction := Input.get_vector(
 		"ui_left", "ui_right", "ui_up", "ui_down"
 	)
-	if direction != Vector2.ZERO and _dbg_move_logs > 0:
-		_dbg_move_logs -= 1
-		var pos_before := position
-		velocity = direction.normalized() * SPEED
-		move_and_slide()
-		AppLogger.info(
-			"CharCtrl",
-			"input + move",
-			{
-				"dir": direction,
-				"pos_before": pos_before,
-				"pos_after": position,
-				"delta": position - pos_before,
-				"velocity_after": velocity,
-			}
-		)
-		_update_animation(direction)
-		return
 	velocity = direction.normalized() * SPEED
 	move_and_slide()
 	_update_animation(direction)
