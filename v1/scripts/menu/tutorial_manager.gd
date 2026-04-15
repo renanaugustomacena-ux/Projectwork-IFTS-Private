@@ -202,6 +202,7 @@ func _build_ui() -> void:
 	_skip_btn = Button.new()
 	_skip_btn.text = "Skip Tutorial"
 	_skip_btn.flat = true
+	_skip_btn.focus_mode = Control.FOCUS_NONE
 	_skip_btn.add_theme_font_size_override("font_size", 12)
 	_skip_btn.add_theme_color_override(
 		"font_color", Color(0.6, 0.55, 0.5, 0.8)

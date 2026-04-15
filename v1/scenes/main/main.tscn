@@ -82,21 +82,25 @@ alignment = 1
 [node name="MenuButton" type="Button" parent="UILayer/HUD"]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
+focus_mode = 0
 text = "Menu"
 
 [node name="DecoButton" type="Button" parent="UILayer/HUD" unique_id=1409501704]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
+focus_mode = 0
 text = "Decora"
 
 [node name="SettingsButton" type="Button" parent="UILayer/HUD" unique_id=777371810]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
+focus_mode = 0
 text = "Opzioni"
 
 [node name="ProfileButton" type="Button" parent="UILayer/HUD" unique_id=1292888094]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2
+focus_mode = 0
 text = "Profilo"
 
 [node name="AudioStreams" type="Node" parent="." unique_id=364661636]

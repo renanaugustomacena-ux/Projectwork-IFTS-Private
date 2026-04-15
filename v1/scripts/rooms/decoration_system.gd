@@ -105,6 +105,7 @@ func _show_popup() -> void:
 	rotate_btn.text = "R"
 	rotate_btn.tooltip_text = "Rotate"
 	rotate_btn.custom_minimum_size = Vector2(28, 28)
+	rotate_btn.focus_mode = Control.FOCUS_NONE
 	rotate_btn.pressed.connect(_on_rotate)
 	hbox.add_child(rotate_btn)
 
@@ -113,6 +114,7 @@ func _show_popup() -> void:
 	flip_btn.text = "F"
 	flip_btn.tooltip_text = "Flip"
 	flip_btn.custom_minimum_size = Vector2(28, 28)
+	flip_btn.focus_mode = Control.FOCUS_NONE
 	flip_btn.pressed.connect(_on_flip)
 	hbox.add_child(flip_btn)
 
@@ -121,6 +123,7 @@ func _show_popup() -> void:
 	scale_btn.text = "S"
 	scale_btn.tooltip_text = "Scale"
 	scale_btn.custom_minimum_size = Vector2(28, 28)
+	scale_btn.focus_mode = Control.FOCUS_NONE
 	scale_btn.pressed.connect(_on_scale)
 	hbox.add_child(scale_btn)
 
@@ -130,6 +133,7 @@ func _show_popup() -> void:
 		delete_btn.text = "X"
 		delete_btn.tooltip_text = "Delete"
 		delete_btn.custom_minimum_size = Vector2(28, 28)
+		delete_btn.focus_mode = Control.FOCUS_NONE
 		delete_btn.add_theme_color_override(
 			"font_color", Color(0.9, 0.3, 0.3)
 		)

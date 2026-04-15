@@ -35,6 +35,7 @@ func _build_ui() -> void:
 	# Mode toggle button
 	_mode_button = Button.new()
 	_mode_button.custom_minimum_size = Vector2(0, 32)
+	_mode_button.focus_mode = Control.FOCUS_NONE
 	_mode_button.pressed.connect(_on_mode_toggled)
 	outer_vbox.add_child(_mode_button)
 	_update_mode_button()
@@ -84,6 +85,7 @@ func _populate_catalog() -> void:
 		header.text = "+ %s" % cat_name
 		header.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		header.flat = true
+		header.focus_mode = Control.FOCUS_NONE
 		header.add_theme_font_size_override("font_size", 13)
 		header.pressed.connect(_on_category_toggled.bind(cat_id))
 		_vbox.add_child(header)
