@@ -85,6 +85,16 @@ func close_current_panel() -> void:
 	_current_panel_name = ""
 	closing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	# Rilascia focus esplicito se il panel che si sta chiudendo lo aveva grabbato.
+	# Godot 4.5 non auto-rilascia il focus al queue_free, e il focus residuo su un
+	# Button figlio del panel blocca Input.get_vector() del character_controller
+	# (root cause di B-001 movimento personaggio).
+	var viewport := closing_panel.get_viewport()
+	if viewport != null:
+		var focus_owner := viewport.gui_get_focus_owner()
+		if focus_owner != null and closing_panel.is_ancestor_of(focus_owner):
+			viewport.gui_release_focus()
+
 	if _tween and _tween.is_running():
 		_tween.kill()
 		_tween = null
