@@ -1,7 +1,7 @@
 ## CharacterController — Top-down movement for the cozy room character.
 extends CharacterBody2D
 
-const SPEED := 120.0
+const SPEED := 800.0  # DIAGNOSTICA TEMPORANEA: era 120.0, alzato per rendere il movimento impossibile da missare visivamente. Riabbassare dopo conferma fix.
 const DIRECTION_THRESHOLD := 1.2
 
 var _last_direction := Vector2.DOWN
