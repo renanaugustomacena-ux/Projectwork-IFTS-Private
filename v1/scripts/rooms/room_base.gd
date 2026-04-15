@@ -60,6 +60,21 @@ func _on_character_changed(character_id: String) -> void:
 	if scene_path.is_empty():
 		push_warning("RoomBase: no scene for character '%s'" % character_id)
 		return
+	# Idempotency guard: se il character_node attuale e' gia' istanza della
+	# scena richiesta, NON re-istanziare. Senza questo guard, il segnale
+	# character_changed emesso da game_manager._on_load_completed dopo il
+	# save load duplicava il character (si creava un secondo CharacterBody2D
+	# alla stessa posizione, le due capsule collidevano, e move_and_slide
+	# spingeva uno dei due a circa (608, 448) — invisibile sotto/dietro
+	# l'originale. L'utente vedeva un character fermo mentre l'altro
+	# rispondeva all'input. Root cause documentata in detail nel log
+	# diagnostico del 2026-04-15.
+	if (
+		character_node != null
+		and is_instance_valid(character_node)
+		and character_node.scene_file_path == scene_path
+	):
+		return
 	var scene := load(scene_path) as PackedScene
 	if scene == null:
 		push_warning("RoomBase: failed to load scene '%s'" % scene_path)
