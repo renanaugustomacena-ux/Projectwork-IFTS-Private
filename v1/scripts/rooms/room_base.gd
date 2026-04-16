@@ -83,15 +83,21 @@ func _on_character_changed(character_id: String) -> void:
 		push_warning("RoomBase: failed to load scene '%s'" % scene_path)
 		return
 	var old_pos := character_node.position
-	var old_scale := character_node.scale
 	character_node.queue_free()
 	var new_char := scene.instantiate()
 	new_char.name = "Character"
 	new_char.position = old_pos
-	new_char.scale = old_scale
+	# Preserva la scala intrinseca della scena del nuovo personaggio:
+	# male_old.tscn usa Vector2(3,3) perche` sprite 32x32, female-character.tscn
+	# usa Vector2(4,4) perche` sprite 23x23. Override con old_scale rendeva
+	# la female molto piu` piccola del previsto (fix extra BUG-B-6).
 	add_child(new_char)
 	character_node = new_char
-	AppLogger.info("RoomBase", "character_changed", {"id": character_id, "pos": old_pos})
+	AppLogger.info(
+		"RoomBase",
+		"character_changed",
+		{"id": character_id, "pos": old_pos, "scale": new_char.scale}
+	)
 
 
 func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
