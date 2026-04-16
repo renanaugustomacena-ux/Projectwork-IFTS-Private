@@ -73,3 +73,8 @@ signal mess_cleaned(mess_id: String)
 
 # Economy
 signal coins_changed(delta: int, total: int)
+
+# Profile HUD (feature T-R-015 — minipanel in alto con profilo + mood bar)
+signal profile_hud_requested
+signal profile_hud_closed
+signal mood_level_changed(mood: float)  # 0.0=gloomy/stormy, 1.0=cozy original

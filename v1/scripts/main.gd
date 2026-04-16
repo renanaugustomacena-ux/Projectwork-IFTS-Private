@@ -66,6 +66,11 @@ func _ready() -> void:
 		SignalBus.panel_opened.connect(_on_drop_zone_panel_opened)
 		SignalBus.panel_closed.connect(_on_drop_zone_panel_closed)
 
+	# Profile HUD mini-panel (T-R-015): icona in GameHud apre panel_hud
+	# e richiesta da settings_btn interno chiude e apre il settings classico.
+	SignalBus.profile_hud_requested.connect(_on_profile_hud_requested)
+	SignalBus.profile_hud_closed.connect(_on_profile_hud_close_to_settings)
+
 	# Toast notifications
 	var toast_layer := CanvasLayer.new()
 	toast_layer.set_script(TOAST_SCRIPT)
@@ -172,6 +177,21 @@ func _on_drop_zone_panel_closed(_panel_name: String) -> void:
 		_drop_zone.mouse_filter = Control.MOUSE_FILTER_PASS
 
 
+func _on_profile_hud_requested() -> void:
+	if _panel_manager != null:
+		_panel_manager.toggle_panel("profile_hud")
+
+
+func _on_profile_hud_close_to_settings() -> void:
+	# User ha cliccato il bottone ⚙ dentro il profile_hud → chiudi profile
+	# e apri settings panel standalone.
+	if _panel_manager == null:
+		return
+	if _panel_manager.get_current_panel_name() == "profile_hud":
+		_panel_manager.toggle_panel("profile_hud")
+	_panel_manager.toggle_panel("settings")
+
+
 func _exit_tree() -> void:
 	if SignalBus.room_changed.is_connected(_on_room_changed):
 		SignalBus.room_changed.disconnect(_on_room_changed)
@@ -179,3 +199,7 @@ func _exit_tree() -> void:
 		SignalBus.panel_opened.disconnect(_on_drop_zone_panel_opened)
 	if SignalBus.panel_closed.is_connected(_on_drop_zone_panel_closed):
 		SignalBus.panel_closed.disconnect(_on_drop_zone_panel_closed)
+	if SignalBus.profile_hud_requested.is_connected(_on_profile_hud_requested):
+		SignalBus.profile_hud_requested.disconnect(_on_profile_hud_requested)
+	if SignalBus.profile_hud_closed.is_connected(_on_profile_hud_close_to_settings):
+		SignalBus.profile_hud_closed.disconnect(_on_profile_hud_close_to_settings)

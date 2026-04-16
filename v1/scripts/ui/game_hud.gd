@@ -126,6 +126,24 @@ func _build_ui() -> void:
 	_coin_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
 	points_block.add_child(_coin_label)
 
+	# Profile HUD button (feature T-R-015a): icona cliccabile che apre
+	# il mini pannello profilo+mood. Qui MOUSE_FILTER default (STOP) per
+	# ricevere click, diversamente dal resto della HUD che e` IGNORE.
+	var profile_btn := Button.new()
+	profile_btn.name = "ProfileHUDButton"
+	profile_btn.text = "👤"
+	profile_btn.flat = true
+	profile_btn.focus_mode = Control.FOCUS_NONE
+	profile_btn.custom_minimum_size = Vector2(36, 32)
+	profile_btn.add_theme_font_size_override("font_size", 20)
+	profile_btn.tooltip_text = "Profilo + Mood"
+	profile_btn.pressed.connect(_on_profile_hud_pressed)
+	row.add_child(profile_btn)
+
+
+func _on_profile_hud_pressed() -> void:
+	SignalBus.profile_hud_requested.emit()
+
 
 func _on_stress_changed(stress_value: float, level: String) -> void:
 	_refresh_serenity(stress_value, level)
