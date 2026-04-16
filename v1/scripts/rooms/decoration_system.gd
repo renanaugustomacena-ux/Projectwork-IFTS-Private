@@ -56,7 +56,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				dismiss_popup()
 		if _is_dragging:
 			var raw_pos := get_global_mouse_position() + _drag_offset
-			var snap_pos := Helpers.snap_to_grid(raw_pos)
+			# Shift tenuto premuto → salta snap to grid per placement fine
+			# (fix B-005). Default rimane snap 64px.
+			var snap_pos := raw_pos
+			if not Input.is_key_pressed(KEY_SHIFT):
+				snap_pos = Helpers.snap_to_grid(raw_pos)
 			# The decoration's anchor for "is on the floor?" is the bottom-center
 			# of its texture (sprites are non-centered in this project — see
 			# room_base.gd._spawn_decoration). We clamp that anchor inside the

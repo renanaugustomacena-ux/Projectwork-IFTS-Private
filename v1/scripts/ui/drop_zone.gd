@@ -32,7 +32,9 @@ func _is_zone_valid(at_position: Vector2, placement_type: String) -> bool:
 func _drop_data(at_position: Vector2, data: Variant) -> void:
 	var item_id: String = data.get("item_id", "")
 	var raw_pos := at_position
-	at_position = Helpers.snap_to_grid(at_position)
+	# Shift tenuto premuto al drop → no snap grid (placement fine, fix B-005)
+	if not Input.is_key_pressed(KEY_SHIFT):
+		at_position = Helpers.snap_to_grid(at_position)
 	# Clamp inside room floor polygon so decorations can't escape. Se floor
 	# polygon non e` stato inizializzato (RoomBase._setup_floor_bounds ha fallito),
 	# clamp_inside_floor ritorna il punto invariato → decorazione puo` finire
