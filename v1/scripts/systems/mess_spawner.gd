@@ -57,8 +57,11 @@ func _count_active_mess() -> int:
 	if mess_container == null:
 		return 0
 	var n := 0
+	# Usa confronto script preloadato invece di `is MessNode` perche` il
+	# class_name cache di Godot puo` andare stale e causare parse error
+	# "Could not find type MessNode" (stesso pattern gia fixato per MessSpawner).
 	for child in mess_container.get_children():
-		if child is MessNode:
+		if child.get_script() == MessNodeScript:
 			n += 1
 	return n
 
