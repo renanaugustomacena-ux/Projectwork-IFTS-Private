@@ -1,7 +1,7 @@
 # Relax Room — Consolidated Project Report
 
-**Versione report**: 3.0 (audit sprint 2026-04-15)
-**Ultimo aggiornamento**: 2026-04-15
+**Versione report**: 3.1 (consolidamento 5-review automatiche + web research 2026-04-16)
+**Ultimo aggiornamento**: 2026-04-16
 **Supervisore / Team Lead**: Renan Augusto Macena
 **Repository**: `github.com/renanaugustomacena-ux/Projectwork-IFTS-Private` (privata, branch `main`)
 **Engine**: Godot 4.6.1 stable
@@ -27,6 +27,7 @@ Sezioni dell'audit (Parti I-II, sezioni 1-15):
 - Sez. 12 — [Audit Round 2 — re-audit focus-diversi](#12-audit-round-2--re-audit-focus-diversi)
 - Sez. 13 — [Audit Round 3 — scene, data, addon](#13-audit-round-3--scene-data-addon)
 - Sez. 14 — [Audit Round 5 — web research findings](#14-audit-round-5--web-research-findings)
+- Sez. 14.5 — [Sprint automatico 5-review + web research (2026-04-16)](#145-sprint-automatico-5-review--web-research-2026-04-16) 🆕
 - Sez. 15 — [Piano fix unificato](#15-piano-fix-unificato-da-applicare-in-ordine)
 
 Diagrammi, pattern, reference, storia (Parti III-IV, sezioni 16-21):
@@ -38,12 +39,13 @@ Diagrammi, pattern, reference, storia (Parti III-IV, sezioni 16-21):
 - Sez. 20 — [Changelog file-by-file](#20-changelog-file-by-file)
 - Sez. 21 — [Cronologia commit rilevanti](#21-cronologia-commit-rilevanti)
 
-Appendici operative (sezioni 22-25):
+Appendici operative (sezioni 22-27):
 
 - App. A — [Schema SQLite completo](#22-appendice-a--schema-sqlite-completo)
-- App. B — [Lista completa dei 41 segnali SignalBus](#23-appendice-b--lista-completa-dei-41-segnali-signalbus)
+- App. B — [Lista completa dei 43 segnali SignalBus](#23-appendice-b--lista-completa-dei-41-segnali-signalbus)
 - App. C — [Inventario JSON catalog](#24-appendice-c--inventario-json-catalog)
 - App. D — [Metriche codebase](#25-appendice-d--metriche-codebase)
+- App. E — [Pitfall Godot 4.6 (web research 2026-04-16)](#27-appendice-e--pitfall-godot-46-da-web-research-2026-04-16) 🆕
 
 > **NOTA PER IL LETTORE** — Questo documento è prodotto da un audit massivo multi-round condotto il 2026-04-15. Ogni affermazione tecnica cita file:line del codebase v1/. Le sezioni 5, 7, 12, 13, 14 sono i findings degli audit round paralleli (12 sub-agent Round 1, 12 sub-agent Round 2, 6 sub-agent scene/data/addon Round 3, 2 sub-agent reference repo Round 4, 1 sub-agent web research Round 5, sintesi finale Round 6). La sezione 15 è la lista ordinata dei fix proposti. Le sezioni 16-25 sono di questa release (v3.1) e contengono diagrammi, pattern, repo reference letti integralmente, changelog per-file e appendici operative. Non modificare senza aggiornare il version bump.
 
@@ -51,9 +53,9 @@ Appendici operative (sezioni 22-25):
 
 ## 1. Executive summary
 
-**Stato progetto in 10 righe.** Relax Room è un'applicazione desktop Godot 4.5 che trasforma il PC in una stanza cozy pixel art decorabile con musica lofi, sistema stress dinamico, pet autonomo e salvataggio dual JSON+SQLite. L'architettura è signal-driven tramite `SignalBus` autoload (41 segnali globali). Il contenuto è data-driven tramite JSON catalogs in `v1/data/`. La persistenza è offline-first con mirror SQLite opzionale via godot-sqlite GDExtension e cloud sync Supabase graceful-degradable.
+**Stato progetto in 10 righe.** Relax Room è un'applicazione desktop Godot 4.6 che trasforma il PC in una stanza cozy pixel art decorabile con musica lofi, sistema stress dinamico, pet autonomo e salvataggio dual JSON+SQLite. L'architettura è signal-driven tramite `SignalBus` autoload (**43 segnali globali** — valore verificato in `v1/scripts/autoload/signal_bus.gd`). Il contenuto è data-driven tramite JSON catalogs in `v1/data/`. La persistenza è offline-first con mirror SQLite opzionale via godot-sqlite GDExtension e cloud sync Supabase graceful-degradable.
 
-**Al 2026-04-15**, il gameplay è **parzialmente bloccato** da 3 regressioni: (a) il movimento del personaggio via WASD/arrow keys non funziona, con `Input.is_action_pressed()` che ritorna sempre `false` (raccolti 120 frame di log debug che confermano il pattern); (b) il drag & drop delle decorazioni dal `DecoPanel` al pavimento fallisce silenziosamente con lo sprite che sparisce al release; (c) alcune tab di categoria del `DecoPanel` non rispondono al click del mouse (solo a keyboard navigation). Lo sprint di audit 2026-04-15 ha identificato candidate root cause primarie per tutti e 3 i bug (vedi sezione 7). Nessun fix è stato applicato in questo sprint: l'obiettivo è la diagnosi definitiva da documentare.
+**Al 2026-04-16**: i fix diagnosticati per i 3 BLOCKER (B-001, B-002, B-003) sono stati **applicati in codice** (commit `9ed81db` Fix focus chain, commit `bd4026a` character_controller gate signal-driven, commit `8ebc0ff` guard idempotente room_base). **Runtime da RI-VERIFICARE**: user report di bug "brutti e strani" ancora presenti — possibili regressioni o root cause multiple non tutte coperte. **Nuovo sprint automatico 2026-04-16**: 5 review tecniche eseguite (design-review, devsecops-gate, correctness-check, resilience-check, complexity-check) piu web research; hanno prodotto **12 nuovi bug ID** (B-023 → B-034) e raccomandazioni di semplificazione. Output salvato in `v1/docs/reviews/`. Vedi sezione **14.5** per consolidamento nuove findings.
 
 Il backend è solido: StressManager + MessSpawner + AudioManager mood trigger (sprint recente) sono mathematically correct e signal-driven. I tre bug blocker sono tutti riconducibili al focus chain Godot 4.5 e a difetti di persistenza nel JSON catalog decorations (orphan entries già risolte in sprint precedenti).
 
@@ -73,21 +75,23 @@ Il backend è solido: StressManager + MessSpawner + AudioManager mood trigger (s
 - **Candidato #1**: `tutorial_manager.gd:202` — `_skip_btn = Button.new()` senza `focus_mode = FOCUS_NONE` (default Button = FOCUS_ALL in Godot 4.5)
 - **Candidato #2**: `panel_manager.gd:52` `_grab_focus_recursive()` assegna focus al primo Control con `focus_mode != FOCUS_NONE`, e non rilascia il focus in `close_current_panel` (linee 75-96)
 - **Candidato #3**: `deco_panel.gd:83` header Button creato con focus_mode default (FOCUS_ALL)
-- **Stato**: Diagnosi in corso, fix dopo Round 2 audit
+- **Stato**: **FIX APPLICATI IN CODICE** (commit `9ed81db` focus chain + `bd4026a` character_controller gate signal-driven + `8ebc0ff` guard idempotente room_base). **Runtime da ri-verificare** — user riporta bug ancora presenti, possibile root cause residua o regressione. Verificare manualmente in Godot F5: se ancora bloccato, aggiungere diagnostica `character_controller._physics_process` come da sez. 8.2
 
-### B-002 — Drag & drop decorazioni sparisce (P0 BLOCKER)
+### B-002 — Drag & drop decorazioni sparisce (P0 BLOCKER — ANCORA APERTO)
 
 - **Componente**: `deco_panel.gd` → `drop_zone.gd` → `room_base.gd`
 - **Sintomo**: Utente trascina, rilascia, sprite scompare, nessun spawn nella stanza
-- **Candidato #1**: `room_base.gd:79-81` `_find_item_data()` ritorna `{}` per item_id sconosciuto → early return silenzioso
-- **Candidato #2**: `main.gd:162` `_drop_zone.mouse_filter = MOUSE_FILTER_IGNORE` quando panel aperto. Race possibile durante transizione
-- **Candidato #3**: `room_base.gd:134-135` `if texture == null: return` — silent return se sprite_path corrotto
+- **Candidato #1**: `room_base.gd:94-96` `_on_decoration_placed` silent return se `_find_item_data(item_id).is_empty()` → confermato da correctness-check 2026-04-16
+- **Candidato #2**: `room_base.gd:141-143` `_spawn_decoration` silent return stesso pattern
+- **Candidato #3**: `room_base.gd:144-145` sprite_path empty silent return
+- **Nuova ipotesi (web research 2026-04-16)**: drop OUTSIDE `DropZone` bounds → Godot dispose data on `NOTIFICATION_DRAG_END` SENZA cleanup nel `_drop_data`. Sprite disappears = standard Godot drag-drop behavior quando drop target non valido. Potrebbe NON essere un bug codice, ma UX: manca feedback all'utente "drop fuori zona valida"
+- **Stato**: **NON fixato**. Fix F8-F11 proposti in sez 15. Prima di editare: **user deve testare in Godot e dire** se il drop sparisce SEMPRE o solo quando rilascia fuori dalla floor zone
 
 ### B-003 — Tab DecoPanel non cliccabili col mouse (P1 HIGH)
 
 - **Componente**: `deco_panel.gd:83`
 - **Root cause**: header Button senza `focus_mode = FOCUS_NONE`. In Godot 4.5 i Button con focus_mode ALL possono non ricevere mouse click quando un altro Control ha focus
-- **Fix proposto**: Aggiungere `header.focus_mode = Control.FOCUS_NONE` (mirror del pattern già usato per i drag button a deco_panel.gd:126)
+- **Fix APPLICATO**: `deco_panel.gd:88` ora ha `header.focus_mode = Control.FOCUS_NONE` (verificato 2026-04-16). Stato: **risolto in codice**, da confermare runtime
 
 ### B-004 — Edit mode grid quadrati giganti (P2)
 
@@ -201,17 +205,95 @@ Il backend è solido: StressManager + MessSpawner + AudioManager mood trigger (s
 - **Root cause**: `cloud_profile_to_local`, `cloud_decorations_to_local`, `cloud_settings_to_local` definite ma mai chiamate. Pull sync mai implementato
 - **Fix proposto**: Decidere remove or implement
 
-### Riepilogo bug count
+### B-023 — virtual_joystick addon + scene dead code (NUOVO 2026-04-16, P2)
+
+- **Componente**: `v1/addons/virtual_joystick/` (509 righe) + `v1/scenes/ui/virtual_joystick.tscn`
+- **Root cause**: scena e addon installati ma mai istanziati in `main.tscn`. Se accidentalmente aggiunti, l'addon chiama `Input.action_press("ui_*")` a ogni touch/drag — interferisce col focus chain → **riproduce B-001**
+- **Evidenza**: complexity-check audit + `FIGMA_DESIGN_RULES.md` sez 2 lo lista come "component" con uso mobile. Conflitto di intento: se non serve desktop, rimuoverlo; se serve per futura port mobile, isolarlo dietro condizionale `if OS.has_feature("mobile")`
+- **Fix proposto**: decidere USE/REMOVE. Se remove, backup `/media/renan/backup/` prima di eliminare
+
+### B-024 — deco_panel.tscn bare container, child generated runtime (NUOVO 2026-04-16, P3)
+
+- **Componente**: `v1/scenes/ui/deco_panel.tscn` e script correlato `v1/scripts/ui/deco_panel.gd`
+- **Root cause**: PanelContainer vuoto, tutti i child (Title, _mode_button, ScrollContainer, headers, grid) creati in `_build_ui()` a runtime. Pattern valido ma se script non esplicita `focus_mode` su NUOVI child aggiunti in future feature, re-introduce B-001/B-003. Fragile
+- **Fix proposto**: aggiungere linter rule `grep "Button.new()" | grep -v "focus_mode"` nel CI
+
+### B-025 — SupabaseHttp queue unbounded in RAM (NUOVO 2026-04-16, P2)
+
+- **Componente**: `v1/scripts/utils/supabase_http.gd:12`
+- **Root cause**: `_queue: Array[Dictionary] = []` senza cap; se app offline lungo tempo e utente fa molte azioni, la coda cresce senza limite
+- **Fix proposto**: `MAX_QUEUE = 500`, drop oldest o reject nuove request con log
+
+### B-026 — SQLite busy_timeout pragma mancante (NUOVO 2026-04-16, P2)
+
+- **Componente**: `v1/scripts/autoload/local_database.gd` init
+- **Root cause**: default busy_timeout varia tra versioni SQLite; se altro processo ha lock, query blocca main thread Godot
+- **Fix proposto**: `_db.query("PRAGMA busy_timeout = 5000")` dopo apertura, 5 secondi timeout
+
+### B-027 — `_select()` silent query fail (riclassificato da B-014, NUOVO 2026-04-16, P1 HIGH)
+
+- **Componente**: `v1/scripts/autoload/local_database.gd:796-810`
+- **Root cause**: `_select()` su query fallita ritorna `[]` con `_last_select_error = true`, ma flag **mai letta** da caller e **nessun AppLogger.error**. Il bug B-014 originario aveva identificato il target sbagliato (`_execute()` invece di `_select()`). `_execute()` e `_execute_bound()` loggano correttamente (linee 776-793)
+- **Fix proposto**: aggiungere `AppLogger.error("LocalDatabase", "select_failed", {"sql": sql.left(80), "bindings": bindings})` prima di `return []`. Rimuovere variabile dead `_last_select_error`
+
+### B-028 — AppLogger no redaction su context dict (NUOVO 2026-04-16, P1 HIGH security)
+
+- **Componente**: `v1/scripts/autoload/logger.gd:102`
+- **Root cause**: `JSON.stringify(context)` serializza la Dictionary tale-quale; se qualcuno passa `{"password": pwd}` o `{"jwt": token}` come context, finiscono in chiaro nei log
+- **Fix proposto**: redact keys sensibili `["password", "token", "jwt", "refresh_token", "password_hash", "hmac_key"]` → `"***"` prima di stringify
+
+### B-029 — PBKDF2 iter count basso (NUOVO 2026-04-16, P1 HIGH security)
+
+- **Componente**: `v1/scripts/autoload/auth_manager.gd` `_hash_password()`
+- **Root cause**: 10.000 iterazioni SHA-256. OWASP 2023 raccomanda ≥600.000 per SHA-256 (o ≥100k con Argon2). Brute force con GPU moderna puo crackare in minuti
+- **Fix proposto**: portare a 100.000 iter; migration on-login con upgrade hash esistenti (v2 → v3 format con iter count nel prefix)
+- **Rischio pre-demo**: NO fix — rischio regressione login. Documentare come roadmap
+
+### B-030 — Non-determinism RNG senza seed (NUOVO 2026-04-16, P2)
+
+- **Componente**: `pet_controller.gd:57` (`randf()`), `audio_manager.gd:56,136` (`_mood_rng.randomize()`, `randi()`), `mess_spawner.gd:24`
+- **Root cause**: RandomNumberGenerator senza seed esplicito. Bug pet/audio/mess non riproducibili dai bug report
+- **Fix proposto**: debug build `_rng.seed = Constants.DEBUG_RNG_SEED`; release build `_rng.randomize()` OK per gameplay variety
+
+### B-031 — `.pre-commit-config.yaml` mancante (NUOVO 2026-04-16, P1 HIGH)
+
+- **Componente**: repo root
+- **Root cause**: sez 9.4 di questo report dichiara pre-commit come prassi (`gdlint + gdformat --check`) ma il file `.pre-commit-config.yaml` NON ESISTE nel repo (verificato `ls` + Python pre-commit framework)
+- **Impatto**: sviluppatori non hanno hook automatico; rischia regressioni lint/format tra commit
+- **Fix proposto**: creare file stub minimo con hook `gdtoolkit` e `detect-secrets`
+
+### B-032 — Supabase schema cloud non versionato (NUOVO 2026-04-16, P1 HIGH)
+
+- **Componente**: repo — directory `supabase/migrations/` **NON ESISTE**
+- **Root cause**: le 15 tabelle cloud dichiarate (profiles, rooms, friends, chat, pomodoro, ...) sono descritte solo in documentazione; nessun DDL versionato. Impossibile ricostruire DB cloud da zero
+- **Fix proposto**: estrarre DDL da Supabase dashboard, versionare in `supabase/migrations/0001_initial.sql`, documentare processo migration
+
+### B-033 — 2 file sforano limite 500 righe (NUOVO 2026-04-16, P3)
+
+- **Componente**: `local_database.gd` (810 righe, 62% sopra limite), `save_manager.gd` (523 righe, 4.6% sopra)
+- **Root cause**: violazione esplicita convenzione dichiarata in sez 9.2
+- **Fix proposto post-demo**: split `local_database.gd` → connection+migration / CRUD per tabella. `save_manager.gd` accettabile
+
+### B-034 — Docs/run-state drift (NUOVO 2026-04-16, P2 coerenza)
+
+- **Componente**: vari docs
+- **Root cause**: numeri/claim drift:
+  - Signal count: pptx 33, md presentazione 43, sez 1 vecchia 41, FIGMA_RULES "~31" → **source of truth = 43** (verificato `signal_bus.gd`)
+  - Autoload count: sez 3.2 del report correttamente lista 10 (StressManager incluso); chiusura sez 1 vecchia diceva 9 — rettificato
+  - Test coverage: docs vecchi citano GdUnit4 come usato; reale = 0% (48 test rimossi)
+- **Fix**: allineare tutti i docs al source-of-truth verificato. Aggiungere sezione "Correzioni fattuali 2026-04-16" in sez 1 (gia fatto)
+
+### Riepilogo bug count (aggiornato 2026-04-16)
 
 | Severità | Count | IDs |
 |---|---|---|
-| **P0 BLOCKER** | 2 | B-001, B-002 |
-| **P1 HIGH** | 3 | B-003, B-016, B-019 |
-| **P2 MEDIUM** | 9 | B-004, B-005, B-008, B-009, B-010, B-011, B-015, B-018, B-020 |
-| **P3 LOW** | 8 | B-006, B-007, B-012, B-013, B-014, B-017, B-021, B-022 |
-| **TOTALE** | 22 | |
+| **P0 BLOCKER** | 2 | B-001 (fix applicato, verify), B-002 (aperto) |
+| **P1 HIGH** | 7 | B-003 (fix), B-016, B-019, B-027, B-028, B-029, B-031, B-032 |
+| **P2 MEDIUM** | 13 | B-004, B-005, B-008, B-009, B-010, B-011, B-015, B-018, B-020, B-023, B-024, B-025, B-026, B-030, B-034 |
+| **P3 LOW** | 10 | B-006, B-007, B-012, B-013, B-014, B-017, B-021, B-022, B-033 |
+| **TOTALE** | **34** | (22 originali + 12 nuovi da sprint automatico 2026-04-16) |
 
-> I round R2, R3, R4 aggiungeranno nuovi bug man mano che emergono.
+> Numeri aggiornati. B-001 e B-003 fix applicati in codice ma runtime da verificare. B-002 ancora aperto, richiede test user prima di nuovi fix.
 
 ---
 
@@ -963,41 +1045,140 @@ Le `ui_*` restano solo per UI navigation (Tab, Enter, Escape).
 
 ---
 
+## 14.5 Sprint automatico 5-review + web research (2026-04-16)
+
+### 14.5.1 Review eseguite
+
+5 skill review lanciate sequenzialmente su tutto il codebase `v1/scripts/` (36 file, 7372 righe). Output salvato in `v1/docs/reviews/`:
+
+| # | Skill | File output | Verdict globale | Issue totali |
+|---|---|---|---|---|
+| 1 | design-review | `01_design_review.md` | 1 BLOCK (tecnico), 6 WARNING | 7 sezioni A-G |
+| 2 | devsecops-gate | `02_devsecops_gate.md` | CONDITIONAL PASS | 14 (0 CRIT, 6 HIGH, 5 MED, 3 LOW) |
+| 3 | correctness-check | `03_correctness_check.md` | 2 CRITICAL | 16 (2 CRIT, 6 HIGH, 5 MED, 3 LOW) |
+| 4 | resilience-check | `04_resilience_check.md` | 5 HIGH | 12 (0 CRIT, 5 HIGH, 5 MED, 2 LOW) |
+| 5 | complexity-check | `05_complexity_check.md` | 4 HIGH | 14 (4 HIGH, 7 MED, 3 LOW) |
+| — | consolidato | `00_consolidated.md` | — | aggregato + confronto con questo report |
+
+### 14.5.2 Nuovi bug identificati
+
+12 nuovi ID (B-023 → B-034) aggiunti alla sezione 2. Top 5 da considerare pre-demo:
+
+| ID | Titolo | Severity | Quick-win |
+|---|---|---|---|
+| B-027 | `_select()` silent query fail | HIGH | 10 min add AppLogger.error |
+| B-023 | virtual_joystick dead + rischio B-001 | HIGH | 5 min rimuovere addon + scene |
+| B-002 | Drag drop silent return (riclassificato) | P0 | 15 min + test user in Godot |
+| B-028 | Log no redaction | HIGH | 20 min redact keys |
+| B-025 | HTTP queue unbounded | HIGH | 10 min cap 500 |
+
+### 14.5.3 Conferme e smentite vs audit manuale
+
+**Conferme**: B-001, B-002, B-003, B-016, B-018, B-019, B-020, B-021, B-022 tutti riconfermati dalle review automatiche.
+
+**Smentite/correzioni**:
+- B-014 target sbagliato: variabile dead e `_last_select_error` usata in `_select()`, non `_execute()`. `_execute()` logga correttamente. Riclassificato come B-027.
+- "41 segnali" (sez 16.1) → real = 43 (verificato `signal_bus.gd`)
+- "9 autoload" (sez 3) → real = 10 (StressManager incluso)
+- "pre-commit config presente" (sez 9.4) → file NON esiste (B-031)
+- "Supabase operativo" (sez 16) → stub non attivo, 464 righe dead-until-activated (complexity-check B-023)
+
+### 14.5.4 Web research — pitfall Godot 4.6
+
+Query duckduckgo 2026-04-16 su: pitfall generali Godot 4.6, CharacterBody2D move_and_slide, drag-drop `_get_drag_data/_drop_data`. Fonti in appendice E.
+
+**Findings chiave**:
+
+1. **Godot 4.6 breaking changes minimi**: GDScript + shader + project struttura restano validi. Backup progetto prima upgrade raccomandato.
+2. **Overuse di `_ready()`**: heavy task + signal connect + child modification in `_ready` degradano performance. Preferire `call_deferred` o `_enter_tree`.
+3. **Physics layer > Node Groups**: `if area.is_in_group("enemies")` e piu lento e piu fragile di collision mask/layer. Applicabile a mess_spawner e pet collision?
+4. **State machine split per concern**: non mischiare stati movimento + combat + audio in un'unica FSM. Nostro pet ha FSM isolata ✓, nostro auth idem ✓.
+5. **CharacterBody2D velocity reset**: `move_and_slide()` puo resettare velocity dopo collision o in modalita Grounded. Se B-001 residuale, verificare che `velocity` sia settata PRIMA di `move_and_slide()`.
+6. **Drag-drop disposal su failed drop**: Godot dispone i data in `NOTIFICATION_DRAG_END` SENZA passare da `_drop_data`. Se drop avviene fuori zona valida, data sparisce **senza log e senza rollback**. **Molto rilevante per B-002**: se utente rilascia fuori dalla floor polygon, il drag "sparisce" e questo e comportamento standard Godot.
+7. **`_get_drag_data` in autoload non chiamato**: se il source del drag e un node figlio di un autoload/singleton, il metodo puo non essere invocato. DecoPanel nostro e scene-based, non singleton, OK.
+
+### 14.5.5 Raccomandazioni pre-demo (NON urgent fix codice)
+
+Pre-demo (oggi):
+1. **User testa in Godot e conferma**: movimento char + drag&drop + tab click funzionano o no
+2. Se B-002 riproduce solo con drop fuori zona → **UX fix**: feedback visuale "area valida evidenziata" durante drag (1 ora lavoro) + AppLogger.info su `_can_drop_data` returning false
+3. Se movimento ancora bloccato → **diagnostica mirata** con log ogni frame su focus_owner
+4. **Nessun refactor**. Solo cose che fanno funzionare.
+
+Post-demo:
+- B-027 log fix
+- B-023 cleanup virtual_joystick (decisione: keep per mobile port o remove)
+- B-028 redaction logger
+- B-031 .pre-commit-config.yaml stub
+- B-032 Supabase migration SQL
+- B-033 split local_database.gd
+- Test suite re-introduction minima
+
+---
+
 ## 15. Piano fix unificato (da applicare in ordine)
 
-Consolidamento di R2 + R3 + R5.
+Consolidamento di R2 + R3 + R5 + sprint automatico 2026-04-16.
 
-### Fix F1 (critico): panel_manager.gd release focus on close
+### Fix F1 (critico) — panel_manager.gd release focus on close — **APPLICATO**
 
-File: `v1/scripts/ui/panel_manager.gd`
-Linee: 75-96 (funzione `close_current_panel`)
+Commit: `9ed81db` Fix focus chain.
 
-Aggiungere dopo riga 86 (`closing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE`):
+File: `v1/scripts/ui/panel_manager.gd:88-96` ora contiene:
 
 ```gdscript
-# Rilascia focus esplicito se il panel owner lo aveva grabbato
 var viewport := closing_panel.get_viewport()
-if viewport:
+if viewport != null:
     var focus_owner := viewport.gui_get_focus_owner()
-    if focus_owner and closing_panel.is_ancestor_of(focus_owner):
+    if focus_owner != null and closing_panel.is_ancestor_of(focus_owner):
         viewport.gui_release_focus()
 ```
 
 **Razionale**: Godot non rilascia automaticamente focus quando un Control viene freed. Questo lo forza.
 
-### Fix F2-F6 (focus_mode explicit)
+### Fix F2-F6 (focus_mode explicit) — **APPLICATI**
 
-Multipli file con stesso pattern: aggiungere `focus_mode = Control.FOCUS_NONE` esplicito sui Button dinamicamente creati.
+Commit: `9ed81db`. Verificati in codice:
 
-- F2: `deco_panel.gd:36` — `_mode_button`
-- F3: `deco_panel.gd:83` — header Button per categoria (anche risolve B-003)
-- F4: `decoration_system.gd:104-137` — popup rotate/flip/scale/delete buttons
-- F5: `tutorial_manager.gd:202` — `_skip_btn`
-- F6: `main.tscn:82-100` — i 4 HUD Button (MenuButton, DecoButton, SettingsButton, ProfileButton), editare direttamente il .tscn per aggiungere `focus_mode = 0`
+- F2: `deco_panel.gd:38` — `_mode_button.focus_mode = Control.FOCUS_NONE` ✓
+- F3: `deco_panel.gd:88` — `header.focus_mode = Control.FOCUS_NONE` ✓ (B-003 risolto)
+- F4: `decoration_system.gd:108,117,126,136` — 4 popup button ✓
+- F5: `tutorial_manager.gd:205` — `_skip_btn.focus_mode = Control.FOCUS_NONE` ✓
+- F6: `main.tscn` HUD Button — da verificare manualmente (file .tscn non letto in auto-audit)
 
-### Fix F7 (architetturale, lungo termine)
+### Fix F7 (architetturale, lungo termine) — **NON applicato**
 
-Creare action custom `player_move_*` in project.godot e usarle in character_controller.gd invece di `ui_*`. Disaccoppia UI navigation da gameplay input.
+Creare action custom `player_move_*` in project.godot e usarle in character_controller.gd invece di `ui_*`. Disaccoppia UI navigation da gameplay input. Raccomandazione web research 2026-04-16 punto 6 della sez 14.5.4.
+
+### Fix F8 (demo-ready, P0) — B-002 drag drop silent returns
+
+File: `v1/scripts/rooms/room_base.gd`
+
+Linee 94-96: sostituire `return` con log + toast:
+```gdscript
+if item_data.is_empty():
+    AppLogger.warn("RoomBase", "decoration_unknown", {"item_id": item_id})
+    SignalBus.toast_requested.emit("Decorazione sconosciuta: %s" % item_id, "error")
+    return
+```
+
+Stesso pattern per linee 141-143 e 144-145. **Test user pre-fix**: confermare che sparisce per drop-fuori-zona (standard Godot) o per altro motivo.
+
+### Fix F9 (demo-ready, P0) — UX feedback drop zone
+
+Aggiungere highlight visuale DropZone durante drag attivo. Risolve il "buco informativo" di Godot drag-drop: utente vede dove puo rilasciare.
+
+File: `v1/scripts/ui/drop_zone.gd` override `_can_drop_data` per set `modulate` verde/rosso al hover.
+
+### Fix F10 (quick-win) — B-027 `_select()` log
+
+File: `v1/scripts/autoload/local_database.gd:803-809`
+
+Aggiungere `AppLogger.error("LocalDatabase", "select_failed", {"sql": sql.left(80), "bindings": bindings})` prima di ogni `return []` su query fail. Rimuovere `_last_select_error` dead var.
+
+### Fix F11 (pulizia) — B-023 virtual_joystick
+
+Decisione USE/REMOVE da utente. Se REMOVE: `git rm -r v1/addons/virtual_joystick/ v1/scenes/ui/virtual_joystick.tscn` + rimuovere riferimento da `FIGMA_DESIGN_RULES.md:67`.
 
 ---
 
@@ -1014,7 +1195,7 @@ L'ordine degli autoload in `project.godot` non è arbitrario: riflette il grafo 
 ```text
                            ┌─────────────────┐
                            │   SignalBus     │   (hub, nessuna dipendenza)
-                           │  41 segnali     │
+                           │  43 segnali     │
                            └────────┬────────┘
                                     │ usato da TUTTI
               ┌─────────────────────┼─────────────────────┐
@@ -3011,6 +3192,83 @@ Il lavoro di audit del 2026-04-15 è stato eseguito in modalità multi-round par
 
 ---
 
-> **Fine versione 3.1 del CONSOLIDATED_PROJECT_REPORT.md**.
+---
+
+## 27. Appendice E — Pitfall Godot 4.6 (da web research 2026-04-16)
+
+Ricerca DuckDuckGo su 3 query: pitfall Godot 4.6 generali, CharacterBody2D move_and_slide input debugging, `_get_drag_data`/`_drop_data` Godot 4. Sintesi adattata al nostro progetto.
+
+### 27.1 Upgrade 4.5 → 4.6 a basso rischio
+
+- **Few breaking changes**: GDScript code, shader, project struttura restano validi ([Godot 4.6 release notes](https://godotengine.org/releases/4.6/))
+- **Jolt physics default per 3D** — non impatta Relax Room (2D)
+- **Glow effects**: screenshot prima di upgrade per confronto
+
+### 27.2 Pitfall GDScript generali (applicati al nostro codice)
+
+| Pitfall | Nostro codice | Stato |
+|---|---|---|
+| `_ready()` heavy work + child modify | `SaveManager._ready`, `LocalDatabase._ready` | OK — usano `call_deferred` |
+| Node Groups per collision | `mess_spawner`, `pet_controller` | Verificare se usa is_in_group vs collision_layer |
+| State machine monolitica (movimento + combat + audio) | Pet FSM, Auth FSM | OK — FSM isolate per concern |
+| Velocity reset dopo `move_and_slide()` | `character_controller._physics_process` | Da verificare se B-001 residua |
+| `print()` invece di logger | Verificato: uso di `AppLogger.*` diffuso | OK |
+
+Fonte: [5 Subtle Mistakes Godot 4.3 — Medium](https://medium.com/@maxslashwang/5-subtle-mistakes-to-avoid-when-programming-games-in-godot-4-3-45fb821f0210), [Best Practices — Godot Docs](https://docs.godotengine.org/en/stable/tutorials/best_practices/index.html).
+
+### 27.3 CharacterBody2D `move_and_slide` — debugging
+
+- `move_and_slide()` **no parameters** in Godot 4: setta `velocity` property PRIMA della chiamata
+- **Motion mode** `GROUNDED` (platformer) vs `FLOATING` (top-down): il nostro gioco e top-down → deve essere FLOATING. Da verificare `motion_mode = 1` in character scene
+- **Camera illusion**: se `Camera2D` e attaccata a character senza `drag` o `smoothing` e non ci sono altri oggetti in movimento, sembra che il char non si muova. La stanza Relax Room ha decorazioni fisse → OK, ma attenzione al caso "scene vuota"
+- **Velocity reset su collision**: in certe config `move_and_slide()` azzera velocity dopo contatto. Se B-001 residua con fix focus gia applicato, controllare questo
+
+Fonte: [Godot 4 Recipes — CharacterBody2D](https://kidscancode.org/godot_recipes/4.x/kyn/characterbody2d/index.html), [Godot Docs — Using CharacterBody2D](https://docs.godotengine.org/en/stable/tutorials/physics/using_character_body_2d.html).
+
+### 27.4 Drag & drop — pitfall specifici per B-002
+
+**Comportamento standard Godot 4**:
+
+1. `_get_drag_data(at_position)` — chiamato sul source quando inizia il drag. Ritorna `Variant` (dict). Se ritorna `null`, drag abortito.
+2. `_can_drop_data(at_position, data)` — chiamato sul target in hover. Deve ritornare `bool`. Default = false per Control, quindi spesso dimenticato e nessuno puo droppare.
+3. `_drop_data(at_position, data)` — chiamato sul target se `_can_drop_data` ha detto true.
+
+**Gotcha critica per B-002**:
+
+> *"Handling Failed Drops: The data is already disposed during NOTIFICATION_DRAG_END, and doing cleanup in `_drop_data` only works on successful drops. When dropping data outside the bounds of valid nodes, the data completely disappears instead of snapping back to its last known position."* — [Godot Forum](https://forum.godotengine.org/t/godot-s-built-in-drag-and-drop-system-if-drop-unsuccessful/93526)
+
+**Implicazione per noi**: se utente rilascia decorazione fuori dal `DropZone` (es. sopra UI panel, fuori dalla floor polygon), **Godot NON chiama `_drop_data`**, la preview sparisce, e non c'e modo di sapere che cos'e successo.
+
+**Azioni raccomandate**:
+- Override `NOTIFICATION_DRAG_END` sul source (deco_panel drag button) per rilevare drop failed e loggare
+- `_can_drop_data` su DropZone deve loggare i reject per capire quali drop posizionali falliscono
+- Visual feedback durante drag: highlight DropZone verde quando `_can_drop_data` true
+
+**Altro pitfall**: `_get_drag_data` non chiamato se il source e figlio di un autoload/singleton ([Godot Forum](https://forum.godotengine.org/t/method-get-drag-data-not-called-when-loaded-as-singleton-autoload/71870)). Il nostro `deco_panel` e scene-based (istanziato da `PanelManager`), non figlio di autoload → OK.
+
+### 27.5 Focus chain — rule-set riassuntivo
+
+Dalla documentazione ufficiale ([GUI Navigation and Focus](https://docs.godotengine.org/en/stable/tutorials/ui/gui_navigation.html)) e dai forum:
+
+1. Button con `focus_mode = FOCUS_ALL` (default) cattura tastiera quando il mouse click lo colpisce
+2. Button con focus consuma `ui_*` arrow keys internamente → character non riceve input
+3. Godot NON rilascia automaticamente focus su `queue_free()` → serve `get_viewport().gui_release_focus()` esplicito
+4. **Anti-pattern**: usare `ui_*` sia per UI che per gameplay. Pattern corretto: action custom `player_move_*` bindate a arrow + WASD, `ui_*` riservate a Tab/Enter/Escape
+
+### 27.6 Fonti
+
+- [Godot 4.6: What changes for you — GDQuest](https://www.gdquest.com/library/godot_4_6_workflow_changes/)
+- [Best Practices — Godot Docs](https://docs.godotengine.org/en/stable/tutorials/best_practices/index.html)
+- [Godot 4.6 Release Notes](https://godotengine.org/releases/4.6/)
+- [5 Subtle Mistakes in Godot 4.3 — Medium](https://medium.com/@maxslashwang/5-subtle-mistakes-to-avoid-when-programming-games-in-godot-4-3-45fb821f0210)
+- [CharacterBody2D — Godot Docs](https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html)
+- [Godot 4 Recipes — CharacterBody2D](https://kidscancode.org/godot_recipes/4.x/kyn/characterbody2d/index.html)
+- [Drag and Drop in Godot 4.x — DEV.to](https://dev.to/pdeveloper/godot-4x-drag-and-drop-5g13)
+- [Drag drop unsuccessful handling — Godot Forum](https://forum.godotengine.org/t/godot-s-built-in-drag-and-drop-system-if-drop-unsuccessful/93526)
+- [GUI Navigation and Focus — Godot Docs](https://docs.godotengine.org/en/stable/tutorials/ui/gui_navigation.html)
+
+---
+
+> **Fine versione 3.1 del CONSOLIDATED_PROJECT_REPORT.md (update 2026-04-16)**.
 >
-> Cambiamenti rispetto alla v3.0 (982 righe): aggiunte sezioni 16-26 con diagrammi ASCII architetturali, pattern e anti-pattern codificati (P-01 ... P-09), troubleshooting playbook dettagliato, reference repository letti integralmente con citazioni file:line (RodZill4/godot_inventory per B-002, elliotfontaine/untitled-farming-sim per architettura), changelog file-by-file di tutti i 36 script, cronologia completa dei 142 commit, 4 appendici operative (schema SQLite, lista 41 segnali SignalBus, inventario JSON catalog, metriche codebase), e sintesi finale.
+> Cambiamenti rispetto alla v3.0: aggiunta sez 14.5 (sprint automatico 5-review), 12 nuovi bug B-023 → B-034 in sez 2, fix status aggiornato (F1-F6 applicati, F7-F11 aperti), appendice E web research Godot 4.6. Review individuali in `v1/docs/reviews/` (01-05 + 00_consolidated). Source of truth numeri: 43 segnali, 10 autoload, 34 bug totali, 0 test.
