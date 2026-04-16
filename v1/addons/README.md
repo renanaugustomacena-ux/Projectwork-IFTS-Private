@@ -1,4 +1,4 @@
-# Mini Cozy Room — Plugin e Addon
+# Relax Room — Plugin e Addon
 
 > **Nota sulla Semplificazione**: Il plugin godot-sqlite e' utilizzato da `LocalDatabase`, che
 > e' attualmente **over-engineered** (il salvataggio JSON basta). Se LocalDatabase venisse rimosso

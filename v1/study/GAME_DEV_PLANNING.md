@@ -394,7 +394,7 @@ Fix: Use a strict feature list with priorities.
      For each idea ask: "Does this serve the core experience?"
      If no, add it to "Future Ideas" and move on.
 
-Mini Cozy Room core: Room + Character + Decorations + Music
+Relax Room core: Room + Character + Decorations + Music
 Everything else is secondary.
 ```
 
@@ -1098,7 +1098,7 @@ CONTESTO: [cosa stavo facendo quando e' successo]
 
 ---
 
-## 15. Anti-Pattern Specifici del Progetto Mini Cozy Room
+## 15. Anti-Pattern Specifici del Progetto Relax Room
 
 Errori comuni che abbiamo visto (o rischiamo di vedere) in questo progetto specifico.
 
@@ -1145,5 +1145,5 @@ Warning gialli NON sono "informazioni decorative". Ogni warning e' un potenziale
 
 ---
 
-*Study document for Mini Cozy Room — IFTS Projectwork 2026*
+*Study document for Relax Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*

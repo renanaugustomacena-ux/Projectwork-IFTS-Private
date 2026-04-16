@@ -14,11 +14,13 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="Mini Cozy Room"
+config/name="Relax Room"
 config/description="A cozy desktop companion combining pixel art rooms, lo-fi music, and organizational tools for mindful productivity"
 run/main_scene="res://scenes/menu/main_menu.tscn"
 config/features=PackedStringArray("4.6")
 config/icon="res://icon.svg"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="RelaxRoom"
 
 [autoload]
 
@@ -44,7 +46,7 @@ window/per_pixel_transparency/allowed=true
 
 [dotnet]
 
-project/assembly_name="Mini Cozy Room"
+project/assembly_name="Relax Room"
 
 [gui]
 

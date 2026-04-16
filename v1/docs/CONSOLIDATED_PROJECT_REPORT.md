@@ -1,4 +1,4 @@
-# Mini Cozy Room — Consolidated Project Report
+# Relax Room — Consolidated Project Report
 
 **Versione report**: 3.0 (audit sprint 2026-04-15)
 **Ultimo aggiornamento**: 2026-04-15
@@ -51,7 +51,7 @@ Appendici operative (sezioni 22-25):
 
 ## 1. Executive summary
 
-**Stato progetto in 10 righe.** Mini Cozy Room è un'applicazione desktop Godot 4.5 che trasforma il PC in una stanza cozy pixel art decorabile con musica lofi, sistema stress dinamico, pet autonomo e salvataggio dual JSON+SQLite. L'architettura è signal-driven tramite `SignalBus` autoload (41 segnali globali). Il contenuto è data-driven tramite JSON catalogs in `v1/data/`. La persistenza è offline-first con mirror SQLite opzionale via godot-sqlite GDExtension e cloud sync Supabase graceful-degradable.
+**Stato progetto in 10 righe.** Relax Room è un'applicazione desktop Godot 4.5 che trasforma il PC in una stanza cozy pixel art decorabile con musica lofi, sistema stress dinamico, pet autonomo e salvataggio dual JSON+SQLite. L'architettura è signal-driven tramite `SignalBus` autoload (41 segnali globali). Il contenuto è data-driven tramite JSON catalogs in `v1/data/`. La persistenza è offline-first con mirror SQLite opzionale via godot-sqlite GDExtension e cloud sync Supabase graceful-degradable.
 
 **Al 2026-04-15**, il gameplay è **parzialmente bloccato** da 3 regressioni: (a) il movimento del personaggio via WASD/arrow keys non funziona, con `Input.is_action_pressed()` che ritorna sempre `false` (raccolti 120 frame di log debug che confermano il pattern); (b) il drag & drop delle decorazioni dal `DecoPanel` al pavimento fallisce silenziosamente con lo sprite che sparisce al release; (c) alcune tab di categoria del `DecoPanel` non rispondono al click del mouse (solo a keyboard navigation). Lo sprint di audit 2026-04-15 ha identificato candidate root cause primarie per tutti e 3 i bug (vedi sezione 7). Nessun fix è stato applicato in questo sprint: l'obiettivo è la diagnosi definitiva da documentare.
 
@@ -630,7 +630,7 @@ Se backup esiste, copialo su primary. Altrimenti rm save_data*.json.
 
 ### 8.6 Cloud sync non funziona
 
-Crea `~/.local/share/godot/app_userdata/Mini Cozy Room/config.cfg` con `[supabase] url=https://... anon_key=...`.
+Crea `~/.local/share/godot/app_userdata/Relax Room/config.cfg` con `[supabase] url=https://... anon_key=...`.
 
 ### 8.7 Audio non suona
 
@@ -1659,7 +1659,7 @@ Questo è un supplemento operativo alla sezione 8. Per ogni sintomo noto, fornis
        ...
    ```
 
-3. F5, riprodurre il drag, leggere `~/.local/share/godot/app_userdata/Mini Cozy Room/logs/*.jsonl`.
+3. F5, riprodurre il drag, leggere `~/.local/share/godot/app_userdata/Relax Room/logs/*.jsonl`.
 4. **Case A** — nessun log "DropZone drop": DropZone non riceve l'evento. Probabile `mouse_filter` sbagliato.
 5. **Case B** — log "DropZone drop" ma "RoomBase placed empty=true": `item_id` passato non matcha alcuna entry nel catalog. Probabile mismatch di case/typo.
 6. **Case C** — log "RoomBase placed empty=false" ma sprite invisibile: texture fallita o sprite z_index troppo basso.
@@ -1847,7 +1847,7 @@ func _notification(what: int) -> void:
 
 Il vantaggio di questo pattern rispetto al Timer è la semplicità: nessun node runtime creato, nessun signal connection, nessun leak potenziale.
 
-#### 19.1.3 Applicazione a B-002 (Mini Cozy Room)
+#### 19.1.3 Applicazione a B-002 (Relax Room)
 
 Il sub-agent ha confrontato i due pattern con la nostra implementazione (`deco_panel.gd` + `drop_zone.gd` + `room_base.gd`) e ha identificato **tre possibili scenari di fallimento** che causano B-002:
 
@@ -1859,7 +1859,7 @@ Il sub-agent ha confrontato i due pattern con la nostra implementazione (`deco_p
 
 **Root cause più probabile** (derivata dall'analisi incrociata): il pattern RodZill4 rimuove lo stack dal parent ma lo ripristina se il drop fallisce. Noi probabilmente rimuoviamo l'item (o almeno il suo modulate visuale) ma NON abbiamo il ramo di ripristino. Quando il drop_zone è fuori posizione per qualsiasi motivo (mouse_filter, z_index, coordinate off), il drop non viene registrato e l'item nel catalog resta "consumato" visualmente.
 
-#### 19.1.4 Fix concreto proposto da R4-A per Mini Cozy Room
+#### 19.1.4 Fix concreto proposto da R4-A per Relax Room
 
 **Modifica in `v1/scripts/ui/deco_panel.gd`** (Button del catalog che implementa `_get_drag_data`):
 
@@ -1938,7 +1938,7 @@ Questi tre fix insieme dovrebbero risolvere B-002 in modo definitivo, con loggin
 **Ultimo commit**: 2023-11-14 (`c509cab`)
 **Nome progetto**: "Seasons Gone" — farming simulator con ciclo agro-ecologico (azoto del terreno, rotazione colture, malattie delle piante, variazioni climatiche mensili)
 
-**Scope comparabile**: 86 file `.gd`, ben organizzati in moduli `/player`, `/crops`, `/animals`, `/world`, `/ui`, `/common`, `/sounds`. La scala è simile al nostro Mini Cozy Room ma con scope completamente diverso.
+**Scope comparabile**: 86 file `.gd`, ben organizzati in moduli `/player`, `/crops`, `/animals`, `/world`, `/ui`, `/common`, `/sounds`. La scala è simile al nostro Relax Room ma con scope completamente diverso.
 
 #### 19.2.1 Autoload chain — minimalismo radicale
 
@@ -1951,7 +1951,7 @@ SoundHandler="*res://sounds/SoundScene.tscn"
 
 **Solo 2 autoload**: un preloader di risorse crop e un sound handler globale. Entrambi sono **scene** (`.tscn`) con script allegato, non script `.gd` puri come i nostri.
 
-**Confronto con Mini Cozy Room**: noi ne abbiamo 8. Il sub-agent lo segnala come complessità eccessiva: la dipendenza `call_deferred()` che usiamo per accedere cross-autoload nel `_ready` esiste proprio perché la chain è lunga e le dipendenze sono implicite. UFS (untitled-farming-sim) elimina il problema delegando l'orchestrazione a `game.gd` (scene root), non a un singleton.
+**Confronto con Relax Room**: noi ne abbiamo 8. Il sub-agent lo segnala come complessità eccessiva: la dipendenza `call_deferred()` che usiamo per accedere cross-autoload nel `_ready` esiste proprio perché la chain è lunga e le dipendenze sono implicite. UFS (untitled-farming-sim) elimina il problema delegando l'orchestrazione a `game.gd` (scene root), non a un singleton.
 
 **Lezione applicabile**: non tutti i nostri autoload DEVONO essere globali. In particolare:
 
@@ -1989,7 +1989,7 @@ func switch_scene(level: PackedScene) -> void:
     current_level.level_changed.connect(switch_scene)
 ```
 
-**Confronto con Mini Cozy Room**: noi abbiamo 41 segnali centralizzati in `SignalBus`. UFS ha solo ~5 segnali dichiarati e sono tutti scope-local.
+**Confronto con Relax Room**: noi abbiamo 41 segnali centralizzati in `SignalBus`. UFS ha solo ~5 segnali dichiarati e sono tutti scope-local.
 
 **Lezione applicabile**: alcuni dei nostri 41 segnali sono **micro-eventi UI** (es. `panel_opened`/`panel_closed`, `toast_requested`, `decoration_selected/deselected`) che non avrebbero bisogno del routing globale. Potrebbero vivere come segnali del PanelManager / ToastManager / decoration_system, consumati localmente.
 
@@ -2078,7 +2078,7 @@ func move_player():
 
 Quando il pause menu è aperto, `get_tree().paused = true` congela tutto il physics process e quindi automaticamente il movement. Nessuna necessità di focus chain management esplicito.
 
-**Confronto con Mini Cozy Room**: noi abbiamo il bug B-001 proprio perché il character_controller usa `ui_*` e le action vengono intercettate dai Button focused. UFS ha lo stesso tipo di action map ma il problema non si presenta perché:
+**Confronto con Relax Room**: noi abbiamo il bug B-001 proprio perché il character_controller usa `ui_*` e le action vengono intercettate dai Button focused. UFS ha lo stesso tipo di action map ma il problema non si presenta perché:
 
 1. I pause menu sono sempre gate-ati da `get_tree().paused`
 2. Non ci sono Button HUD sempre visibili durante il gameplay (l'HUD è solo informational, non interattivo)
@@ -2126,7 +2126,7 @@ Stato attuale: 41 segnali (2 dead: `language_changed`, `save_to_database_request
 **`logger.gd`** (235 righe)
 
 - `602a26b` — 2026-03-31 — fix(logger+perf): session ID con Crypto, buffer 100 msg, _exit_tree PerformanceManager
-- `23cfa33` — 2026-03-21 — Commit iniziale: Mini Cozy Room — Desktop companion 2D in Godot 4.5
+- `23cfa33` — 2026-03-21 — Commit iniziale: Relax Room — Desktop companion 2D in Godot 4.5
 
 Script molto stabile. Unica evoluzione post-init è stata l'aggiunta del Crypto session_id + buffer bounded a 100 messaggi (non implementato fino in fondo — vedi B-018).
 
@@ -2403,7 +2403,7 @@ Stato: costanti globali. Alcune sospette dead (PLAYLIST_*, DISPLAY_*, LANGUAGES)
 ### 21.1 Sprint iniziale (Marzo 2026)
 
 - `f826c4e` — 2026-03-09 — Initial commit (repo setup)
-- `23cfa33` — 2026-03-21 — Commit iniziale: Mini Cozy Room — Desktop companion 2D in Godot 4.5 (primo codice funzionante)
+- `23cfa33` — 2026-03-21 — Commit iniziale: Relax Room — Desktop companion 2D in Godot 4.5 (primo codice funzionante)
 - `698380b` — 2026-03-21 — Allineamento architetturale: comunicazione via segnali tra singleton, eliminazione coupling diretto (ADOZIONE SignalBus)
 - `f0f0178` — 2026-03-21 — Cifratura token autenticazione, limite pool HTTP, validazione input in SupabaseClient (hardening v1)
 
@@ -2978,7 +2978,7 @@ Questa sezione chiude la versione 3.1 del report consolidato riassumendo, per ch
 
 ### 26.1 Stato complessivo del progetto
 
-Mini Cozy Room al 2026-04-15 è un progetto Godot 4.6 con 7340 righe di GDScript, 15 scene, 5 catalog JSON, 9 tabelle SQLite, 8 autoload, 41 segnali SignalBus. L'architettura è solida: signal-driven, data-driven, dual-save offline-first. Il backend (StressManager, MessSpawner, AudioManager mood, save system, auth) è corretto e testabile. Il gameplay invece è **parzialmente bloccato** da 3 regressioni principali (B-001 movimento, B-002 drag&drop, B-003 tab) tutte riconducibili al focus chain di Godot 4.5 e al pattern di creazione runtime di Button senza `focus_mode` esplicito. La root cause è stata confermata dall'audit multi-round e dai 2 repo GitHub di riferimento letti integralmente.
+Relax Room al 2026-04-15 è un progetto Godot 4.6 con 7340 righe di GDScript, 15 scene, 5 catalog JSON, 9 tabelle SQLite, 8 autoload, 41 segnali SignalBus. L'architettura è solida: signal-driven, data-driven, dual-save offline-first. Il backend (StressManager, MessSpawner, AudioManager mood, save system, auth) è corretto e testabile. Il gameplay invece è **parzialmente bloccato** da 3 regressioni principali (B-001 movimento, B-002 drag&drop, B-003 tab) tutte riconducibili al focus chain di Godot 4.5 e al pattern di creazione runtime di Button senza `focus_mode` esplicito. La root cause è stata confermata dall'audit multi-round e dai 2 repo GitHub di riferimento letti integralmente.
 
 ### 26.2 Priorità immediate per lo sprint di implementazione
 

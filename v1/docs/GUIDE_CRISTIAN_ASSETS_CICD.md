@@ -1,6 +1,6 @@
 # Guida Cristian — Compiti Semplici Asset & CI
 
-**Progetto**: Mini Cozy Room (Godot 4.5/4.6)
+**Progetto**: Relax Room (Godot 4.5/4.6)
 **Destinatario**: Cristian Marino
 **Data**: 2026-04-15
 **Versione**: 2.0 (revisione: rimosse le lavorazioni complesse, ora gestite direttamente da Renan)
@@ -234,7 +234,7 @@ Output vuoto = nessun duplicato. Output con righe = due PNG hanno lo stesso cont
 Se non esiste ancora, crealo con questo contenuto minimo:
 
 ```markdown
-# Mini Cozy Room — Credits
+# Relax Room — Credits
 
 ## Asset di terze parti
 
@@ -247,7 +247,7 @@ Se non esiste ancora, crealo con questo contenuto minimo:
 ## Palette
 - Sweetie 16 — GrafxKid — https://lospec.com/palette-list/sweetie-16
 
-## Tutti gli altri asset sono originali del team Mini Cozy Room.
+## Tutti gli altri asset sono originali del team Relax Room.
 ```
 
 Poi aggiungi una riga ogni volta che entra un nuovo asset di terzi. Esempio:

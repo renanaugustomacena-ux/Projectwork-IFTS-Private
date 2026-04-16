@@ -1,4 +1,4 @@
-# Come Funziona la Grafica di Mini Cozy Room
+# Come Funziona la Grafica di Relax Room
 
 > Riassunto applicato al progetto dei 4 documenti visuali:
 > SPRITES_AND_TEXTURES, SCENES_AND_NODES, TILES_AND_TILEMAPS, RENDERING_AND_VISUAL_LOGIC.
@@ -850,4 +850,4 @@ Questo riassunto copre tutti e 4 i documenti. Se vuoi approfondire un argomento 
 
 ---
 
-*IFTS Projectwork 2026 — Mini Cozy Room Team*
+*IFTS Projectwork 2026 — Relax Room Team*

@@ -1,6 +1,6 @@
 # Isometric Game Development — Comprehensive Study Guide
 
-A deep study of isometric projection, coordinate systems, depth sorting, tile-based design, and how to build isometric games in Godot 4.x — with references to how Mini Cozy Room applies these concepts.
+A deep study of isometric projection, coordinate systems, depth sorting, tile-based design, and how to build isometric games in Godot 4.x — with references to how Relax Room applies these concepts.
 
 ---
 
@@ -290,7 +290,7 @@ sprite.z_index = 10  # Manual override
 
 ### Custom Isometric without TileMap
 
-Mini Cozy Room doesn't use TileMap — it uses a **room-based** approach where each room is a flat 2D scene with decorations placed via drag-and-drop. But the isometric concepts still apply:
+Relax Room doesn't use TileMap — it uses a **room-based** approach where each room is a flat 2D scene with decorations placed via drag-and-drop. But the isometric concepts still apply:
 
 ```
 Our approach:
@@ -348,7 +348,7 @@ func get_iso_direction() -> Vector2:
 
 ### Our Project's Approach
 
-Mini Cozy Room uses `CharacterBody2D` with simple 2D movement (not rotated isometric) because the rooms are flat 2D views with a slight perspective feel, not true isometric grids:
+Relax Room uses `CharacterBody2D` with simple 2D movement (not rotated isometric) because the rooms are flat 2D views with a slight perspective feel, not true isometric grids:
 
 ```gdscript
 # character_controller.gd (simplified concept)
@@ -543,7 +543,7 @@ camera.limit_smoothed = true  # Smooth transition at limits
 
 ### Zoom for Desktop Companions
 
-Mini Cozy Room doesn't use Camera2D because the viewport is the entire room — there's no scrolling. The window size IS the camera view:
+Relax Room doesn't use Camera2D because the viewport is the entire room — there's no scrolling. The window size IS the camera view:
 
 ```
 ┌──────── 1280 × 720 ────────┐
@@ -583,7 +583,7 @@ Mini Cozy Room doesn't use Camera2D because the viewport is the entire room — 
 
 ### Techniques from Famous Games
 
-**The Sims (2000)** — Most relevant to Mini Cozy Room:
+**The Sims (2000)** — Most relevant to Relax Room:
 - Room-based decoration system
 - Object placement with grid snapping
 - Character needs and interactions
@@ -692,7 +692,7 @@ Solution 2: Split into tiles
 | Examples | The Sims rooms, Habbo | Diablo, Age of Empires |
 | **Our project** | **Room-based** | — |
 
-### Why Room-Based Works for Mini Cozy Room
+### Why Room-Based Works for Relax Room
 
 1. **Desktop companion** — The app sits in a small window, a single room fills it
 2. **Decoration focus** — Players customize one room at a time
@@ -806,7 +806,7 @@ func snap_to_grid(position: Vector2) -> Vector2:
     )
 ```
 
-Mini Cozy Room uses grid snapping in the `Helpers.snap_to_grid()` function to ensure decorations align cleanly.
+Relax Room uses grid snapping in the `Helpers.snap_to_grid()` function to ensure decorations align cleanly.
 
 ### Overlap Prevention
 
@@ -828,11 +828,11 @@ func _has_overlap(new_rect: Rect2) -> bool:
 
 ---
 
-## 13. Applying Isometric Concepts to Mini Cozy Room
+## 13. Applying Isometric Concepts to Relax Room
 
 ### Current Architecture
 
-Mini Cozy Room uses a **simplified isometric-inspired** approach:
+Relax Room uses a **simplified isometric-inspired** approach:
 
 ```
 ┌─────────────────────────────────┐
@@ -851,7 +851,7 @@ Mini Cozy Room uses a **simplified isometric-inspired** approach:
 
 ### Where Isometric Concepts Apply
 
-Even though Mini Cozy Room isn't a tile-based isometric game, these concepts are directly relevant:
+Even though Relax Room isn't a tile-based isometric game, these concepts are directly relevant:
 
 | Concept | How We Apply It |
 |---------|----------------|
@@ -865,7 +865,7 @@ Even though Mini Cozy Room isn't a tile-based isometric game, these concepts are
 
 ### Future Isometric Enhancements
 
-If Mini Cozy Room evolves toward a more isometric look:
+If Relax Room evolves toward a more isometric look:
 
 1. **Isometric room view** — Diamond-shaped room instead of rectangle
 2. **3/4 view furniture** — Sprites drawn in isometric perspective
@@ -949,7 +949,7 @@ Stardew Valley NON e' tecnicamente isometrico — usa una vista top-down con pro
 - **Ombre proiettate**: danno l'illusione di tridimensionalita'
 - **Proporzioni personaggio**: il personaggio e' disegnato come visto da un angolo leggermente elevato
 
-**Lezione per Mini Cozy Room**: Non serve un sistema isometrico "puro" per dare l'illusione di profondita'. Il nostro progetto usa lo stesso approccio di Stardew Valley.
+**Lezione per Relax Room**: Non serve un sistema isometrico "puro" per dare l'illusione di profondita'. Il nostro progetto usa lo stesso approccio di Stardew Valley.
 
 ### Habbo Hotel — Isometrico Classico
 
@@ -957,9 +957,9 @@ Habbo Hotel e' un esempio perfetto di isometrico 2:1 con pixel art:
 - Griglia diamante rigorosa (ogni tile e' un diamante)
 - Sprite dei mobili disegnati con la stessa angolazione
 - Sistema di profondita' basato sulla posizione nella griglia
-- Stanze personalizzabili (la stessa idea di Mini Cozy Room!)
+- Stanze personalizzabili (la stessa idea di Relax Room!)
 
-**Lezione per Mini Cozy Room**: Il nostro sistema di decorazioni segue lo stesso principio di Habbo — posizionamento su griglia con snap.
+**Lezione per Relax Room**: Il nostro sistema di decorazioni segue lo stesso principio di Habbo — posizionamento su griglia con snap.
 
 ### Unpacking — Isometrico Narrativo
 
@@ -968,9 +968,9 @@ Unpacking usa la vista isometrica per raccontare una storia attraverso gli ogget
 - Il giocatore scopre la personalita' del personaggio tramite i suoi oggetti
 - La griglia e' nascosta ma presente (snap gentile)
 
-**Lezione per Mini Cozy Room**: La personalizzazione della stanza NON e' solo estetica — racconta qualcosa dell'utente. Questo e' il motivo per cui il gioco salva la posizione esatta di ogni decorazione.
+**Lezione per Relax Room**: La personalizzazione della stanza NON e' solo estetica — racconta qualcosa dell'utente. Questo e' il motivo per cui il gioco salva la posizione esatta di ogni decorazione.
 
 ---
 
-*Study document for Mini Cozy Room — IFTS Projectwork 2026*
+*Study document for Relax Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*

@@ -1002,7 +1002,7 @@ Una schermata di caricamento da mostrare all'avvio del gioco. Deve essere:
 - Contenuto suggerito: il logo del gioco, una barra di caricamento, un personaggio
 
 **Dove cercare**:
-- Crea uno sfondo semplice in Aseprite/LibreSprite: sfondo colorato + testo "Mini Cozy Room" + icona
+- Crea uno sfondo semplice in Aseprite/LibreSprite: sfondo colorato + testo "Relax Room" + icona
 - Oppure cerca "pixel art loading screen" su itch.io
 
 **Dove mettere il file**:
@@ -1208,18 +1208,18 @@ Entrambi devono uscire con **exit code 0**. Se `gdformat --check` fallisce, eseg
 1. `Project -> Export...`
 2. Seleziona il preset **Windows Desktop**.
 3. Clicca **Export Project** (NON Export PCK/Zip).
-4. Path: `C:\dev\Projectwork-IFTS-Private\build\windows\MiniCozyRoom.exe`
+4. Path: `C:\dev\Projectwork-IFTS-Private\build\windows\RelaxRoom.exe`
 5. **Togli** la spunta da "Export With Debug" (per la release finale).
 6. Clicca Save. Attendi 30-90 secondi.
 
 Alla fine in `build\windows\` troverai:
 
 ```
-MiniCozyRoom.exe
-MiniCozyRoom.pck
+RelaxRoom.exe
+RelaxRoom.pck
 ```
 
-Avvia `MiniCozyRoom.exe` con doppio click e verifica che:
+Avvia `RelaxRoom.exe` con doppio click e verifica che:
 - La finestra si apra a 1280x720.
 - Il menu principale compaia senza errori.
 - I font/sprite non siano sfocati (texture filter Nearest attivo — vedi `CLAUDE.md`).
@@ -1229,7 +1229,7 @@ Avvia `MiniCozyRoom.exe` con doppio click e verifica che:
 ```powershell
 cd C:\dev\Projectwork-IFTS-Private\v1
 mkdir ..\build\windows -Force
-& $env:GODOT_BIN --headless --export-release "Windows Desktop" "..\build\windows\MiniCozyRoom.exe"
+& $env:GODOT_BIN --headless --export-release "Windows Desktop" "..\build\windows\RelaxRoom.exe"
 ```
 
 Exit code atteso: **0**. Se e' diverso da 0, leggi l'output: Godot e' molto esplicito sugli errori di export.
@@ -1238,21 +1238,21 @@ Exit code atteso: **0**. Se e' diverso da 0, leggi l'output: Godot e' molto espl
 
 ### Passo 5 — Creare l'Installer con Inno Setup
 
-L'.exe "nudo" richiede che l'utente tenga `MiniCozyRoom.exe` + `MiniCozyRoom.pck` nella stessa cartella. Per la release vogliamo un **vero installer** che crei shortcut nel menu Start, gestisca la disinstallazione, installi in `Program Files`.
+L'.exe "nudo" richiede che l'utente tenga `RelaxRoom.exe` + `RelaxRoom.pck` nella stessa cartella. Per la release vogliamo un **vero installer** che crei shortcut nel menu Start, gestisca la disinstallazione, installi in `Program Files`.
 
 #### 5.1 — Crea lo script Inno Setup
 
-Crea il file `installer\MiniCozyRoom.iss` (se la cartella `installer\` non esiste, creala) con questo contenuto:
+Crea il file `installer\RelaxRoom.iss` (se la cartella `installer\` non esiste, creala) con questo contenuto:
 
 ```iss
-; MiniCozyRoom — Inno Setup Script
+; RelaxRoom — Inno Setup Script
 ; Genera l'installer Windows a partire dall'export Godot
 
-#define MyAppName "Mini Cozy Room"
+#define MyAppName "Relax Room"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "IFTS Team — Renan, Cristian, Elia"
 #define MyAppURL "https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private"
-#define MyAppExeName "MiniCozyRoom.exe"
+#define MyAppExeName "RelaxRoom.exe"
 #define SourceBuildDir "..\build\windows"
 #define OutputDir "..\build\installer"
 
@@ -1267,7 +1267,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir={#OutputDir}
-OutputBaseFilename=MiniCozyRoom-Setup-{#MyAppVersion}
+OutputBaseFilename=RelaxRoom-Setup-{#MyAppVersion}
 SetupIconFile=..\v1\icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -1287,8 +1287,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "{#SourceBuildDir}\MiniCozyRoom.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SourceBuildDir}\MiniCozyRoom.pck"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceBuildDir}\RelaxRoom.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceBuildDir}\RelaxRoom.pck"; DestDir: "{app}"; Flags: ignoreversion
 ; Se in futuro l'export genera altri file (DLL, cartelle), aggiungili qui.
 ; Esempio wildcard sicuro:
 ; Source: "{#SourceBuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -1308,7 +1308,7 @@ Type: filesandordirs; Name: "{userappdata}\Godot\app_userdata\{#MyAppName}"
 - `PrivilegesRequired=lowest` permette l'installazione **senza diritti di admin** (in `%LOCALAPPDATA%`). L'utente puo' comunque scegliere "Install for all users" nel wizard.
 - `AppId` e' un GUID **permanente**: non cambiarlo tra le versioni, altrimenti gli update diventano nuove installazioni parallele. Se devi generare un GUID nuovo per un altro progetto, usa PowerShell: `[guid]::NewGuid()`.
 - `SetupIconFile=..\v1\icon.ico` richiede che esista `v1\icon.ico`. Se hai solo `icon.png`, convertilo con <https://icoconvert.com/> (dimensioni 16/32/48/256).
-- `[UninstallDelete]` rimuove anche i save del gioco (`%APPDATA%\Godot\app_userdata\Mini Cozy Room`). Se preferisci preservarli, elimina quella sezione.
+- `[UninstallDelete]` rimuove anche i save del gioco (`%APPDATA%\Godot\app_userdata\Relax Room`). Se preferisci preservarli, elimina quella sezione.
 
 #### 5.2 — Compila l'installer
 
@@ -1316,7 +1316,7 @@ Da PowerShell, dalla root del repo:
 
 ```powershell
 cd installer
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" MiniCozyRoom.iss
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" RelaxRoom.iss
 ```
 
 Se tutto va bene, l'output sara':
@@ -1324,7 +1324,7 @@ Se tutto va bene, l'output sara':
 ```
 Compiler Version 6.x.x
 ...
-Successful compile (n.nnn sec). Resulting Setup program: ..\build\installer\MiniCozyRoom-Setup-1.0.0.exe
+Successful compile (n.nnn sec). Resulting Setup program: ..\build\installer\RelaxRoom-Setup-1.0.0.exe
 ```
 
 Esegui l'installer con doppio click, completa il wizard, avvia il gioco dal menu Start, poi **disinstalla** da `Impostazioni -> App` per verificare la pulizia.
@@ -1334,7 +1334,7 @@ Esegui l'installer con doppio click, completa il wizard, avvia il gioco dal menu
 - [ ] L'installer si lancia su una macchina Windows 10 **pulita** (senza Godot installato)
 - [ ] L'applicazione parte al termine dell'installazione (checkbox finale)
 - [ ] Il shortcut nel menu Start esiste e funziona
-- [ ] La disinstallazione rimuove interamente `%LOCALAPPDATA%\Programs\Mini Cozy Room` (o `Program Files`)
+- [ ] La disinstallazione rimuove interamente `%LOCALAPPDATA%\Programs\Relax Room` (o `Program Files`)
 - [ ] Il save game viene preservato o rimosso coerentemente con la scelta del `[UninstallDelete]`
 - [ ] L'installer e' firmato (per la release finale — opzionale ma riduce i warning SmartScreen). Se non abbiamo un certificato, documenta nel README che gli utenti vedranno "Windows ha protetto il tuo PC" e devono cliccare "Ulteriori informazioni -> Esegui comunque"
 
@@ -1388,7 +1388,7 @@ Apri `v1\export_presets.cfg` e controlla che il preset Android abbia almeno:
 name="Android"
 platform="Android"
 package/unique_name="com.ifts.minicozyroom"
-package/name="Mini Cozy Room"
+package/name="Relax Room"
 package/signed=true
 version/code=1
 version/name="1.0.0"
@@ -1403,7 +1403,7 @@ architectures/armeabi-v7a=false
 
 **Da GUI**:
 1. `Project -> Export... -> Android -> Export Project`
-2. Path: `C:\dev\Projectwork-IFTS-Private\build\android\MiniCozyRoom.apk`
+2. Path: `C:\dev\Projectwork-IFTS-Private\build\android\RelaxRoom.apk`
 3. Togli "Export With Debug" per la release.
 
 **Da CLI**:
@@ -1411,7 +1411,7 @@ architectures/armeabi-v7a=false
 ```powershell
 cd C:\dev\Projectwork-IFTS-Private\v1
 mkdir ..\build\android -Force
-& $env:GODOT_BIN --headless --export-release "Android" "..\build\android\MiniCozyRoom.apk"
+& $env:GODOT_BIN --headless --export-release "Android" "..\build\android\RelaxRoom.apk"
 ```
 
 #### 6.6 — Testare l'APK su dispositivo fisico
@@ -1419,11 +1419,11 @@ mkdir ..\build\android -Force
 ```powershell
 # Collega il telefono via USB con "Debug USB" attivato nelle Opzioni Sviluppatore
 adb devices                    # deve elencare il tuo dispositivo
-adb install -r ..\build\android\MiniCozyRoom.apk
+adb install -r ..\build\android\RelaxRoom.apk
 adb logcat -s godot:* *:E      # filtra solo log Godot + errori, Ctrl+C per fermare
 ```
 
-Sul telefono cerca l'icona "Mini Cozy Room" e avvia. Verifica:
+Sul telefono cerca l'icona "Relax Room" e avvia. Verifica:
 - [ ] L'app si apre in **landscape** (non ruota a portrait)
 - [ ] Il touch input funziona sui pulsanti del menu
 - [ ] Il save game si scrive su `/storage/emulated/0/Android/data/com.ifts.minicozyroom/` (non crasha al primo save)
@@ -1450,7 +1450,7 @@ Poi riesporta con "Export With Debug" **disattivato**.
 Verifica la firma:
 
 ```powershell
-& "C:\Android\build-tools\34.0.0\apksigner.bat" verify --verbose ..\build\android\MiniCozyRoom.apk
+& "C:\Android\build-tools\34.0.0\apksigner.bat" verify --verbose ..\build\android\RelaxRoom.apk
 ```
 
 Deve rispondere `Verified using v1 scheme: true` (o v2/v3). Se risponde `DOES NOT VERIFY`, la firma e' rotta.
@@ -1539,7 +1539,7 @@ sdkmanager "build-tools;34.0.0"
 **Soluzione**: disinstalla prima l'app dal telefono, poi reinstalla:
 ```powershell
 adb uninstall com.ifts.minicozyroom
-adb install ..\build\android\MiniCozyRoom.apk
+adb install ..\build\android\RelaxRoom.apk
 ```
 
 ### Android — APK esportato ma crasha subito all'avvio
@@ -1599,6 +1599,6 @@ git push
 
 ---
 
-*Guida redatta come parte dell'audit pre-rilascio del progetto Mini Cozy Room.*
+*Guida redatta come parte dell'audit pre-rilascio del progetto Relax Room.*
 *Scadenza progetto: 22 Aprile 2026.*
 *Per domande o chiarimenti, contattate Renan Augusto Macena (System Architect & Project Supervisor).*

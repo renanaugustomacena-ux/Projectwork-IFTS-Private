@@ -1,4 +1,4 @@
-# Guide Operative per il Team — Mini Cozy Room
+# Guide Operative per il Team — Relax Room
 
 > **Aggiornamento 10 Aprile 2026**:
 > - **Report consolidato**: i 5 documenti originali (AUDIT_REPORT, SPRINT_AUDIT_REPORT, architecture-review, SPRINT_TASKS, SPRINT_UX_PERFECTION_PLAN) sono stati unificati in [CONSOLIDATED_PROJECT_REPORT.md](../docs/CONSOLIDATED_PROJECT_REPORT.md)
@@ -275,6 +275,6 @@ Ogni sottocartella di `assets/` ha un proprio README con origine, licenza e istr
 
 ---
 
-*Queste guide fanno parte del progetto Mini Cozy Room — Consolidated Project Report v3.0.0.*
+*Queste guide fanno parte del progetto Relax Room — Consolidated Project Report v3.0.0.*
 *Scadenza progetto: 22 Aprile 2026.*
 *Ultimo aggiornamento: 10 Aprile 2026*

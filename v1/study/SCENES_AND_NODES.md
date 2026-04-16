@@ -1,6 +1,6 @@
 # Scene, Nodi e Composizione — Godot 4.6
 
-> Documento di studio per il team Mini Cozy Room.
+> Documento di studio per il team Relax Room.
 > Copre la struttura delle scene, il ciclo di vita dei nodi, instancing e
 > i pattern usati nel nostro progetto.
 
@@ -206,7 +206,7 @@ MainMenu (Node2D) — scripts/menu/main_menu.gd
 │   └── (sprite + timer creati runtime via walk_in())
 └── UILayer (CanvasLayer, layer=10)
     └── ButtonContainer (VBoxContainer)
-        ├── TitleLabel — "Mini Cozy Room"
+        ├── TitleLabel — "Relax Room"
         ├── Spacer
         ├── NuovaPartitaBtn
         ├── CaricaPartitaBtn

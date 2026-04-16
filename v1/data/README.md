@@ -1,4 +1,4 @@
-# Mini Cozy Room — Schema Database
+# Relax Room — Schema Database
 
 > **Nota**: Il gioco funziona esclusivamente offline con JSON + SQLite.
 > SupabaseClient e' stato rimosso (marzo 2026).

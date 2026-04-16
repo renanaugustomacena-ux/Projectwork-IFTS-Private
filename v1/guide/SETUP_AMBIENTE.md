@@ -1,4 +1,4 @@
-# Setup dell'Ambiente di Sviluppo — Mini Cozy Room
+# Setup dell'Ambiente di Sviluppo — Relax Room
 
 **Questa guida e' obbligatoria per tutti i membri del team.**
 Seguitela dall'inizio alla fine prima di iniziare qualsiasi lavoro sul progetto.
@@ -51,7 +51,7 @@ Dovreste vedere qualcosa come `git version 2.47.0`. Se vedete un errore, l'insta
 
 ### 1.2 Godot Engine 4.6
 
-**Cos'e'**: Godot e' il motore di gioco che usiamo per sviluppare Mini Cozy Room. E' come il "laboratorio" dove costruiamo il gioco: ci permette di vedere le scene, testare il gioco, e modificare l'interfaccia visuale.
+**Cos'e'**: Godot e' il motore di gioco che usiamo per sviluppare Relax Room. E' come il "laboratorio" dove costruiamo il gioco: ci permette di vedere le scene, testare il gioco, e modificare l'interfaccia visuale.
 
 **Download**: https://godotengine.org/download/archive/4.6-stable/
 
@@ -644,9 +644,9 @@ Godot usa il prefisso `user://` per indicare la cartella dati dell'utente. Quest
 
 | Sistema Operativo | Percorso Reale di `user://` |
 | ----------------- | --------------------------- |
-| **Windows** | `%APPDATA%\Godot\app_userdata\Mini Cozy Room\` |
-| **Linux** | `~/.local/share/godot/app_userdata/Mini Cozy Room/` |
-| **macOS** | `~/Library/Application Support/Godot/app_userdata/Mini Cozy Room/` |
+| **Windows** | `%APPDATA%\Godot\app_userdata\Relax Room\` |
+| **Linux** | `~/.local/share/godot/app_userdata/Relax Room/` |
+| **macOS** | `~/Library/Application Support/Godot/app_userdata/Relax Room/` |
 
 **File che troverete in questa cartella**:
 

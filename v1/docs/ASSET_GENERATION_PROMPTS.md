@@ -1,4 +1,4 @@
-# Prompt per Generare Asset — Mini Cozy Room
+# Prompt per Generare Asset — Relax Room
 
 > Usa questi prompt su Claude web (claude.ai) per generare pixel art coerente col progetto.
 > Claude puo' generare immagini. Chiedi UN'immagine alla volta, verifica il risultato,

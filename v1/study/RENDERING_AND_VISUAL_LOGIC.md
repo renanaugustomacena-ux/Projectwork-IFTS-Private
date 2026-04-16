@@ -1,6 +1,6 @@
 # Rendering 2D, Disegno e Animazione — Godot 4.6
 
-> Documento di studio per il team Mini Cozy Room.
+> Documento di studio per il team Relax Room.
 > Copre il rendering 2D, disegno custom, z-ordering, tweens,
 > viewport, temi e parallasse — con riferimenti al nostro codice.
 

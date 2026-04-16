@@ -1,4 +1,4 @@
-# Mini Cozy Room — Project Deep Dive
+# Relax Room — Project Deep Dive
 
 A comprehensive study of the project: its vision, architecture, how every component connects, and the design decisions behind it.
 
@@ -6,9 +6,9 @@ A comprehensive study of the project: its vision, architecture, how every compon
 
 ## 1. The Vision
 
-### What Is Mini Cozy Room?
+### What Is Relax Room?
 
-Mini Cozy Room is a **desktop companion** — a small, always-running application designed to sit in the corner of your screen while you study or work. Think of it as a digital aquarium, but instead of fish, you have a cozy pixel art room with a character, lo-fi music, and customizable decorations.
+Relax Room is a **desktop companion** — a small, always-running application designed to sit in the corner of your screen while you study or work. Think of it as a digital aquarium, but instead of fish, you have a cozy pixel art room with a character, lo-fi music, and customizable decorations.
 
 ### The Desktop Companion Genre
 
@@ -18,7 +18,7 @@ Desktop companions are a niche but beloved genre. Notable examples:
 - **Spirit** (Steam) — A virtual pet on your desktop
 - **Lo-fi Girl** (YouTube) — The iconic studying animation that inspired millions
 
-Mini Cozy Room takes the "lo-fi study atmosphere" concept and makes it interactive. Instead of just watching a loop, you customize your own room, choose your character, and play your own music.
+Relax Room takes the "lo-fi study atmosphere" concept and makes it interactive. Instead of just watching a loop, you customize your own room, choose your character, and play your own music.
 
 ### Target Audience
 
@@ -83,7 +83,7 @@ Students, remote workers, and anyone who wants a calming digital presence during
 
 ### Design Philosophy: Signal-Driven Architecture
 
-The most important architectural decision in Mini Cozy Room is that **no component directly calls another component**. Instead, they communicate through signals via the `SignalBus`.
+The most important architectural decision in Relax Room is that **no component directly calls another component**. Instead, they communicate through signals via the `SignalBus`.
 
 **Why this matters:**
 
@@ -400,7 +400,7 @@ Godot 4 offers three renderers:
 2. **Mobile** (Vulkan) — Reduced features, moderate GPU
 3. **GL Compatibility** (OpenGL 3.3) — Basic features, runs on almost anything
 
-Mini Cozy Room uses **GL Compatibility** because:
+Relax Room uses **GL Compatibility** because:
 - Desktop companion = runs alongside other apps = minimal GPU usage
 - Pixel art doesn't need advanced lighting, shadows, or post-processing
 - Maximum hardware compatibility (works on integrated GPUs, old laptops)
@@ -572,7 +572,7 @@ No GPL or copyleft assets are used, avoiding license contamination.
 
 ## 10. What Makes This Project Educational
 
-Mini Cozy Room is designed as an **IFTS academic project**, which means it serves dual purposes:
+Relax Room is designed as an **IFTS academic project**, which means it serves dual purposes:
 
 1. **A real product** — It should work, be polished, and be distributable
 2. **A learning platform** — It covers a wide range of software engineering topics
@@ -746,5 +746,5 @@ Provate a rispondere senza guardare il codice. Poi verificate la vostra risposta
 
 ---
 
-*Study document for Mini Cozy Room — IFTS Projectwork 2026*
+*Study document for Relax Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*

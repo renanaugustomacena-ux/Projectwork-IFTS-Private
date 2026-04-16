@@ -44,7 +44,7 @@ func _define_steps() -> void:
 	_steps = [
 		{
 			"message": (
-				"Welcome to your [b]Mini Cozy Room[/b]! 🏠\n"
+				"Welcome to your [b]Relax Room[/b]! 🏠\n"
 				+ "This is your personal space. "
 				+ "Let's make it yours!"
 			),
@@ -120,7 +120,7 @@ func _define_steps() -> void:
 			"message": (
 				"Your room saves [b]automatically[/b]! ✓\n\n"
 				+ "[b]Mission Complete![/b] 🎉\n"
-				+ "Enjoy your Mini Cozy Room!"
+				+ "Enjoy your Relax Room!"
 			),
 			"signal_name": "",
 			"auto_advance": 4.0,

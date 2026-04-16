@@ -1,4 +1,4 @@
-# Mini Cozy Room — Script GDScript
+# Relax Room — Script GDScript
 
 Questa cartella contiene **24 script GDScript** attivi (+ 3 in `_reference/`),
 organizzati in 7 sottocartelle piu il controller principale `main.gd`.

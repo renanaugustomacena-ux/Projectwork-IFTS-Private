@@ -1,4 +1,4 @@
-# Study Documents — Mini Cozy Room
+# Study Documents — Relax Room
 
 Reference documents for understanding the project, Godot Engine, game development practices, and the build process.
 
@@ -34,7 +34,7 @@ Reference documents for understanding the project, Godot Engine, game developmen
 
 ## Glossario Rapido del Progetto
 
-Termini specifici di Mini Cozy Room che troverete nei documenti e nel codice:
+Termini specifici di Relax Room che troverete nei documenti e nel codice:
 
 | Termine | Significato |
 |---------|-------------|

@@ -1,4 +1,4 @@
-# Projectwork — Mini Cozy Room
+# Projectwork — Relax Room
 
 > **Landing Page:** [https://renanaugustomacena-ux.github.io/Projectwork-IFTS-Private/](https://renanaugustomacena-ux.github.io/Projectwork-IFTS-Private/)
 > **Work in Progress — Fase 4 (Supabase) in preparazione**

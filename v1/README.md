@@ -1,12 +1,10 @@
-# Mini Cozy Room
+# Relax Room
 
-> **Work in Progress — Fase 5 (Catalogo Decorazioni e Polish UI) in corso**
-> Il sistema account locale (username + password) e' funzionante.
-> Prossimo passo: integrazione Supabase per cloud sync cross-device.
+> **Work in Progress**
 
 ## Visione
 
-Mini Cozy Room nasce da un'idea semplice: non tutti i giochi devono essere una
+Relax Room nasce da un'idea semplice: non tutti i giochi devono essere una
 competizione. Esiste un pubblico — persone che affrontano stress, ansia, o
 semplicemente giornate pesanti — che cerca un passatempo che non chieda nulla in
 cambio. Niente classifiche, niente pressione, niente corsa contro il tempo.
@@ -26,19 +24,24 @@ cambio. Niente classifiche, niente pressione, niente corsa contro il tempo.
   achievement per aver riempito ogni angolo di decorazioni. Non misurano
   quanto hai giocato, ma come hai giocato. Sono ricordi, non ricompense.
 - **Rilassante, non banale.** Non e' un gioco vuoto. Puoi personalizzare la tua
-  stanza, scegliere le decorazioni, cambiare tema, ascoltare musica lo-fi,
+  stanza, scegliere le decorazioni, cambiare tema, ascoltare musica lo-fi, potrai ascoltare
+  anche la tua musica personale del tuo device, nelle future releases, metteremo 
+  una barra di slide cosi tu, utente, se vuoi una mood piu dark, e ascoltarti un po di rock,
+  potrai farlo, poi se vuoi solo passare un po di tempo spostando piantine con un mood
+  relax e la musica lo-fi potrai fare anche quello.. al momento siamo in fase di pre-demo,
   e creare il tuo angolo digitale. C'e' profondita' nella creativita',
   non nella difficolta'.
 - **Presente, non invadente.** Il gioco non ti punisce se non giochi per una
   settimana. Non ci sono notifiche aggressive, timer che scadono, o energie
-  da ricaricare. Apri quando vuoi, rilassati, chiudi quando vuoi.
+  da ricaricare. Apri quando vuoi, rilassati, chiudi quando vuoi. Si salva in automatico
+  ogni 2 minuti.
 
 Lo scopo e' creare qualcosa dove ci si diverte rilassandosi — senza pressioni,
 senza confronti, senza sensi di colpa. Un piccolo rifugio digitale.
 
 ## Descrizione
 
-Mini Cozy Room e' un desktop companion 2D che combina stanze pixel art
+Relax Room e' un desktop companion 2D che combina stanze pixel art
 personalizzabili, musica lo-fi e un personaggio interattivo. Pensato per restare
 aperto in background come ambiente digitale rilassante.
 

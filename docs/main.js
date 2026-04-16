@@ -1,5 +1,5 @@
 /* ============================================
-   MINI COZY ROOM - JAVASCRIPT
+   RELAX ROOM - JAVASCRIPT
    Versione HTML/CSS/JS Pura
    ============================================ */
 
@@ -363,4 +363,4 @@ window.addEventListener('scroll', debounce(function() {
     }
 }, 10));
 
-console.log('🏠 Mini Cozy Room - Site loaded successfully!');
+console.log('🏠 Relax Room - Site loaded successfully!');

@@ -1,4 +1,4 @@
-## Constants — Global constants and enumerations for Mini Cozy Room.
+## Constants — Global constants and enumerations for Relax Room.
 class_name Constants
 
 # Room identifiers
