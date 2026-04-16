@@ -134,7 +134,7 @@ check "pptx presentazione presente" "test -f Mini-Cozy-Room-Presentazione-Proget
 check "speech_renan presente" "test -f v1/docs/speech_renan.md"
 check "speech_elia presente" "test -f v1/docs/speech_elia.md"
 check "speech_cristian presente" "test -f v1/docs/speech_cristian.md"
-check "speech_esteso_v2 presente" "test -f v1/docs/speech_esteso_v2.md"
+check "speech_esteso presente" "test -f v1/docs/speech_esteso.md"
 echo ""
 
 echo "==============================="
