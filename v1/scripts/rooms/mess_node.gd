@@ -54,6 +54,15 @@ func _ready() -> void:
 	body_exited.connect(_on_body_exited)
 
 
+func _exit_tree() -> void:
+	# Disconnect esplicito per evitare zombie signal se il mess viene free
+	# durante un'interazione in corso (fix B-012).
+	if body_entered.is_connected(_on_body_entered):
+		body_entered.disconnect(_on_body_entered)
+	if body_exited.is_connected(_on_body_exited):
+		body_exited.disconnect(_on_body_exited)
+
+
 ## Invocata dal sistema di interazione esistente (room_base / character)
 ## quando il giocatore preme E vicino al mess.
 func on_interact(_player: Node) -> void:

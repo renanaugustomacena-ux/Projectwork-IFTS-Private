@@ -17,18 +17,27 @@ var _container: VBoxContainer = null
 func _ready() -> void:
 	layer = 90  # Above game, below tutorial
 	_build_container()
+	# Refactor da lambda inline a metodi membri (fix B-011). Le lambda con
+	# capture implicito di `self` (o di variabili esterne) rimangono zombie
+	# dopo queue_free del CanvasLayer perche` i SignalBus segnali sono
+	# autoload persistenti. Metodi membri permettono disconnect simmetrico
+	# e pulito in _exit_tree.
 	SignalBus.toast_requested.connect(_on_toast_requested)
-	SignalBus.save_completed.connect(
-		func() -> void: show_toast("Partita salvata ✓", "success")
-	)
-	SignalBus.decoration_placed.connect(
-		func(item_id: String, _pos: Vector2) -> void:
-			show_toast("Posizionato: %s" % item_id, "info")
-	)
-	SignalBus.decoration_removed.connect(
-		func(item_id: String) -> void:
-			show_toast("Rimosso: %s" % item_id, "warning")
-	)
+	SignalBus.save_completed.connect(_on_save_completed)
+	SignalBus.decoration_placed.connect(_on_decoration_placed_toast)
+	SignalBus.decoration_removed.connect(_on_decoration_removed_toast)
+
+
+func _on_save_completed() -> void:
+	show_toast("Partita salvata ✓", "success")
+
+
+func _on_decoration_placed_toast(item_id: String, _pos: Vector2) -> void:
+	show_toast("Posizionato: %s" % item_id, "info")
+
+
+func _on_decoration_removed_toast(item_id: String) -> void:
+	show_toast("Rimosso: %s" % item_id, "warning")
 
 
 func _build_container() -> void:
@@ -132,9 +141,12 @@ func _on_toast_requested(
 
 
 func _exit_tree() -> void:
-	if SignalBus.toast_requested.is_connected(
-		_on_toast_requested
-	):
-		SignalBus.toast_requested.disconnect(
-			_on_toast_requested
-		)
+	# Disconnect simmetrico di tutti 4 segnali connessi in _ready.
+	if SignalBus.toast_requested.is_connected(_on_toast_requested):
+		SignalBus.toast_requested.disconnect(_on_toast_requested)
+	if SignalBus.save_completed.is_connected(_on_save_completed):
+		SignalBus.save_completed.disconnect(_on_save_completed)
+	if SignalBus.decoration_placed.is_connected(_on_decoration_placed_toast):
+		SignalBus.decoration_placed.disconnect(_on_decoration_placed_toast)
+	if SignalBus.decoration_removed.is_connected(_on_decoration_removed_toast):
+		SignalBus.decoration_removed.disconnect(_on_decoration_removed_toast)

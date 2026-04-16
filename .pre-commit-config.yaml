@@ -1,0 +1,44 @@
+# Pre-commit hooks per Relax Room.
+# Esegue controlli automatici prima di ogni commit per prevenire regressioni:
+# - trailing whitespace e newline finale
+# - YAML validi
+# - GDScript formattato (gdformat) e linted (gdlint)
+#
+# Setup utente (una volta sola):
+#   pip install --user pre-commit
+#   pre-commit install
+#
+# Esecuzione manuale su tutti i file:
+#   pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(v1/assets/|.*\.import$)
+      - id: end-of-file-fixer
+        exclude: ^(v1/assets/|.*\.import$)
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=5120"]
+
+  - repo: https://github.com/Scony/godot-gdscript-toolkit
+    rev: 4.3.4
+    hooks:
+      - id: gdlint
+        files: ^v1/scripts/.*\.gd$
+      - id: gdformat
+        files: ^v1/scripts/.*\.gd$
+        args: ["--check"]
+
+  # Linter custom: ogni Button.new() deve avere focus_mode esplicito
+  # (previene reintroduzione B-001/B-003 focus chain).
+  - repo: local
+    hooks:
+      - id: button-focus-mode
+        name: Check Button.new() has explicit focus_mode
+        entry: bash -c 'set -e; for f in $(git diff --cached --name-only --diff-filter=AM -- "v1/scripts/*.gd"); do if grep -q "Button\.new()" "$f" && ! grep -q "focus_mode" "$f"; then echo "$f: Button.new() senza focus_mode esplicito"; exit 1; fi; done; exit 0'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
