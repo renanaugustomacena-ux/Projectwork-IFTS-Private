@@ -37,7 +37,7 @@
 
 ## Slide 5 — Signal Bus Topology *(NEW)*
 
-- **Apertura**: "**43 segnali**, zero accoppiamento."
+- **Apertura**: "**46 segnali**, zero accoppiamento."
 - **Core** (diagramma Figma): 6 domini (**Room, Character, Audio, UI, Save/Auth, Cloud/Economy**) parlano **solo con il bus**, mai tra loro
 - **Esempio vivo**: "Quando l'utente posa una decorazione → `decoration_placed` → **SaveManager** salva, **SupabaseClient** accoda sync, **AppLogger** scrive l'evento. Nessuno si conosce."
 - **Impatto**: "Aggiungere una feature = **nuovo listener**, **zero modifica** al codice esistente."

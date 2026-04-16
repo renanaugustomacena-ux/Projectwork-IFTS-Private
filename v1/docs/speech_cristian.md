@@ -37,12 +37,12 @@
 
 - **La mia parte — Cifre highlight** (NON leggere tutti e 12):
   - **118** commit — disciplina repository
-  - **43** segnali — architettura disaccoppiata
-  - **69** decorazioni — contenuto ricco
+  - **46** segnali — architettura disaccoppiata
+  - **72** decorazioni — contenuto ricco
   - **9+15** tabelle — persistenza duale
-  - **5** job CI — automazione completa
-  - **~5.300** righe GDScript — scala reale
-- **La mia parte — Oggi funziona**: drag-and-drop 69 decorazioni / pet FSM 5 stati / audio crossfade / tutorial 9 step signal-driven
+  - **7** job CI — automazione completa
+  - **~7.900** righe GDScript — scala reale
+- **La mia parte — Oggi funziona**: drag-and-drop 72 decorazioni / pet FSM 5 stati / audio crossfade / tutorial 9 step signal-driven
 - **Impatto**: "Non e un prototipo. E un prodotto."
 - **Transizione**: (Elia prende la parola per il Domani, poi chiudiamo insieme)
 

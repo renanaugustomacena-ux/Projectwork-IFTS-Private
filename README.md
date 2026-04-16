@@ -66,7 +66,7 @@ cd Projectwork-IFTS-Private
 | **AuthManager** | `auth_manager.gd` | Funzionante | Autenticazione locale: guest, username+password. Stubs per Supabase (Fase 4). |
 | **LocalDatabase** | `local_database.gd` | Funzionante | 9 tabelle SQLite (accounts con password_hash, characters, rooms, sync_queue, ecc.) |
 | **SaveManager** | `save_manager.gd` | Funzionante | JSON v5.0.0, migrazione automatica v1→v5, auto-save 60s, backup |
-| **SignalBus** | `signal_bus.gd` | Funzionante / Essenziale | 31 segnali: room, character, audio, decoration, UI, save, auth, sync |
+| **SignalBus** | `signal_bus.gd` | Funzionante / Essenziale | 46 segnali: room, character, audio, decoration, UI, save, auth, sync, stress/mood, mess, economy, profile HUD |
 | **GameManager** | `game_manager.gd` | Funzionante / Essenziale | Caricamento cataloghi JSON, stato di gioco |
 | **AudioManager** | `audio_manager.gd` | Funzionante / Essenziale | Musica auto-play con crossfade |
 | **PerformanceManager** | `performance_manager.gd` | Funzionante / Essenziale | FPS cap dinamico (60/15) |
@@ -75,7 +75,7 @@ cd Projectwork-IFTS-Private
 ## Funzionalita' Implementate
 
 - Stanza pixel art personalizzabile con 3 temi colore
-- 69 decorazioni in 11 categorie (drag-and-drop)
+- 72 decorazioni in 13 categorie (drag-and-drop; 1 categoria `pets` nascosta)
 - Interazione decorazioni: click → popup con Rotate/Flip/Scale (+ Delete in edit mode)
 - Decorazioni impilabili e con 7 livelli di scala (0.25x → 3x)
 - Personaggio controllabile (WASD/frecce) con animazioni 8 direzioni

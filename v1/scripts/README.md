@@ -4,7 +4,7 @@ Questa cartella contiene **24 script GDScript** attivi (+ 3 in `_reference/`),
 organizzati in 7 sottocartelle piu il controller principale `main.gd`.
 
 L'architettura e **signal-driven**: tutta la comunicazione tra moduli passa per
-`SignalBus` (31 segnali), evitando accoppiamento diretto tra sistemi.
+`SignalBus` (46 segnali), evitando accoppiamento diretto tra sistemi.
 
 ## Convenzioni
 
@@ -17,7 +17,7 @@ L'architettura e **signal-driven**: tutta la comunicazione tra moduli passa per
 ```
 scripts/
 ├── autoload/                     # 7 singleton caricati automaticamente
-│   ├── signal_bus.gd             # Bus eventi globale (31 segnali)
+│   ├── signal_bus.gd             # Bus eventi globale (46 segnali)
 │   ├── logger.gd                 # Logging strutturato con correlation ID
 │   ├── local_database.gd         # Database SQLite (WAL, 9 tabelle, password_hash)
 │   ├── auth_manager.gd           # Autenticazione locale: guest, username+password
@@ -58,7 +58,7 @@ Caricati automaticamente in ordine da `project.godot`:
 
 | # | Nome | Script | Responsabilita |
 |---|------|--------|----------------|
-| 1 | `SignalBus` | autoload/signal_bus.gd | Bus eventi globale (31 segnali, disaccoppiamento moduli) |
+| 1 | `SignalBus` | autoload/signal_bus.gd | Bus eventi globale (46 segnali, disaccoppiamento moduli) |
 | 2 | `AppLogger` | autoload/logger.gd | Logging strutturato con correlation ID e rotazione file |
 | 3 | `LocalDatabase` | autoload/local_database.gd | Database SQLite locale (WAL mode, foreign keys, 9 tabelle, password_hash) |
 | 4 | `AuthManager` | autoload/auth_manager.gd | Autenticazione locale: guest mode, username+password con SHA-256 |
