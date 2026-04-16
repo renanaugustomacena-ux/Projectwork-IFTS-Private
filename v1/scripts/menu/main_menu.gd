@@ -50,22 +50,48 @@ func _ready() -> void:
 
 
 func _setup_graphical_loading_screen() -> void:
-	if not ResourceLoader.exists(LOADING_SCREEN_SCENE):
-		push_warning("MainMenu: loading screen scene not present, using fallback color")
-		return
-	var scene := load(LOADING_SCREEN_SCENE) as PackedScene
-	if scene == null:
-		push_warning("MainMenu: loading screen scene not found, using fallback color")
-		return
-	var container := SubViewportContainer.new()
-	container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	container.stretch = true
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	container.add_child(viewport)
-	viewport.add_child(scene.instantiate())
-	_loading_screen.add_child(container)
+	if ResourceLoader.exists(LOADING_SCREEN_SCENE):
+		var scene := load(LOADING_SCREEN_SCENE) as PackedScene
+		if scene != null:
+			var container := SubViewportContainer.new()
+			container.set_anchors_preset(Control.PRESET_FULL_RECT)
+			container.stretch = true
+			container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var viewport := SubViewport.new()
+			viewport.size = Vector2i(1280, 720)
+			container.add_child(viewport)
+			viewport.add_child(scene.instantiate())
+			_loading_screen.add_child(container)
+			return
+		push_warning("MainMenu: loading screen scene failed to load, using procedural fallback")
+	# Procedural fallback: un po' piu` gradevole del semplice ColorRect.
+	# Mostra sprite + label centrati. Asset: loading_people.png (gia presente).
+	# Fix BUG-B-2: niente scene → fallback visivo decente invece di schermo nero.
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_loading_screen.add_child(center)
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 24)
+	center.add_child(vbox)
+	var sprite_path := "res://assets/menu/loading/loading_people.png"
+	if ResourceLoader.exists(sprite_path):
+		var tex := load(sprite_path) as Texture2D
+		if tex != null:
+			var sprite := TextureRect.new()
+			sprite.texture = tex
+			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			sprite.custom_minimum_size = tex.get_size() * 3.0
+			sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			vbox.add_child(sprite)
+	var lbl := Label.new()
+	lbl.text = "Caricamento..."
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8, 1.0))
+	vbox.add_child(lbl)
 
 
 func _play_intro() -> void:

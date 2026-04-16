@@ -28,7 +28,7 @@ const PET_VARIANT_DEFAULT := "simple"
 @onready var _floor_bounds_node: CollisionPolygon2D = $RoomBounds/FloorBounds
 
 var mess_container: Node2D
-var mess_spawner: MessSpawner
+var mess_spawner: Node  # MessSpawner instance (typed Node to avoid class_name cache staleness)
 
 
 func _ready() -> void:
@@ -37,11 +37,14 @@ func _ready() -> void:
 	SignalBus.load_completed.connect(_on_load_completed)
 	_setup_floor_bounds()
 	_reload_decorations()
+	# Apply character chosen in main menu BEFORE spawning pet.
+	# Pet uses character_node.position — must be valid. Sync call (no defer) evita
+	# che female/outro appaia dopo un frame di ritardo e che pet sia spawned
+	# su posizione male_old poi lasciato lì. (fix BUG-B-6 + BUG-B-7)
+	if GameManager.current_character_id != "male_old":
+		_on_character_changed(GameManager.current_character_id)
 	_spawn_pet()
 	_setup_mess_spawner()
-	# Apply character chosen in main menu (signal fired before this scene loaded)
-	if GameManager.current_character_id != "male_old":
-		call_deferred("_on_character_changed", GameManager.current_character_id)
 
 
 func _setup_floor_bounds() -> void:
@@ -86,8 +89,9 @@ func _on_character_changed(character_id: String) -> void:
 	new_char.name = "Character"
 	new_char.position = old_pos
 	new_char.scale = old_scale
-	call_deferred("add_child", new_char)
+	add_child(new_char)
 	character_node = new_char
+	AppLogger.info("RoomBase", "character_changed", {"id": character_id, "pos": old_pos})
 
 
 func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
@@ -263,16 +267,19 @@ func _spawn_pet() -> void:
 	var scene := load(scene_path) as PackedScene
 	if scene == null:
 		push_warning("RoomBase: pet scene not found (%s)" % scene_path)
+		AppLogger.error("RoomBase", "pet_scene_missing", {"path": scene_path, "variant": variant})
 		return
 	var pet := scene.instantiate()
 	pet.name = "Pet"
-	# Spawn near the character, offset to the right
-	var char_pos := character_node.position
-	pet.position = Vector2(
-		char_pos.x + 60.0,
-		char_pos.y + 20.0,
-	)
+	# Spawn near the character. Null guard + fallback: se character_node e` null o
+	# a (0,0) (default scene), usa centro viewport come posizione safe (fix BUG-B-7).
+	var char_pos: Vector2 = Vector2(640, 360)  # viewport centro 1280x720
+	if character_node != null and is_instance_valid(character_node):
+		if character_node.position != Vector2.ZERO:
+			char_pos = character_node.position
+	pet.position = Vector2(char_pos.x + 60.0, char_pos.y + 20.0)
 	add_child(pet)
+	AppLogger.info("RoomBase", "pet_spawned", {"variant": variant, "pos": pet.position})
 
 
 func _exit_tree() -> void:

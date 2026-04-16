@@ -43,8 +43,13 @@ func _ready() -> void:
 	)
 	AppLogger.info("Main", "Scene initialized, HUD buttons wired")
 
-	# Launch tutorial AFTER save data is loaded (so tutorial_completed is read)
-	SignalBus.load_completed.connect(_check_tutorial, CONNECT_ONE_SHOT)
+	# Launch tutorial. SaveManager.load_game() viene chiamato da GameManager
+	# al boot (autoload._deferred_load), quindi quando main.tscn e` istanziata
+	# i dati di save sono gia` letti e `tutorial_completed` in memoria e` valido.
+	# Precedentemente usavamo `load_completed` signal con CONNECT_ONE_SHOT, ma
+	# su reload_current_scene (es. replay tutorial) il segnale era gia`
+	# consumato → tutorial non partiva (fix BUG-B-3/B-4 replay + new game).
+	call_deferred("_check_tutorial")
 
 	# Disable DropZone mouse capture while panels are open so panel
 	# buttons are clickable. Re-enable when panels close.

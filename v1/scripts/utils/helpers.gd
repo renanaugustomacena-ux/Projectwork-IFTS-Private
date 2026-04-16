@@ -103,6 +103,11 @@ static func set_floor_polygon_from_node(node: CollisionPolygon2D) -> void:
 		transformed[i] = xform * local_poly[i]
 	_floor_polygon_world = transformed
 	_floor_centroid_world = _polygon_centroid(transformed)
+	AppLogger.info(
+		"Helpers",
+		"floor_polygon_initialized",
+		{"vertices": transformed.size(), "centroid": _floor_centroid_world}
+	)
 
 
 ## True if the floor polygon has been initialized.
