@@ -144,16 +144,22 @@ func _load_settings() -> void:
 func _on_master_changed(value: float) -> void:
 	if not _loading:
 		SignalBus.volume_changed.emit("master", value)
+		# Persisti il setting cosi` resta tra sessioni (fix B-008).
+		# volume_changed da solo lo applica live ma SaveManager non sa
+		# che deve marcare dirty → auto-save 60s non include i nuovi volumi.
+		SignalBus.settings_updated.emit("master_volume", value)
 
 
 func _on_music_changed(value: float) -> void:
 	if not _loading:
 		SignalBus.volume_changed.emit("music", value)
+		SignalBus.settings_updated.emit("music_volume", value)
 
 
 func _on_ambience_changed(value: float) -> void:
 	if not _loading:
 		SignalBus.volume_changed.emit("ambience", value)
+		SignalBus.settings_updated.emit("ambience_volume", value)
 
 
 func _on_language_selected(index: int) -> void:

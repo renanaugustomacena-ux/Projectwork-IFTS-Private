@@ -14,6 +14,10 @@ func _ready() -> void:
 	_build_ui()
 	_update_info()
 	SignalBus.auth_state_changed.connect(_on_auth_state_changed)
+	# Sottoscrivi cambio monete invece di polling LocalDatabase ogni refresh
+	# (fix B-010). coins_changed viene emesso da GameManager/SaveManager
+	# ogni volta che il contatore locale cambia.
+	SignalBus.coins_changed.connect(_on_coins_changed)
 
 
 func _build_ui() -> void:
@@ -175,6 +179,17 @@ func _on_auth_state_changed(_state: int) -> void:
 	_update_info()
 
 
+func _on_coins_changed(_delta: int, total: int) -> void:
+	if is_instance_valid(_coins_label):
+		_coins_label.text = str(total)
+
+
 func _exit_tree() -> void:
+	# Disconnect espliciti per evitare signal leak su panel recreate (fix B-009).
 	if SignalBus.auth_state_changed.is_connected(_on_auth_state_changed):
 		SignalBus.auth_state_changed.disconnect(_on_auth_state_changed)
+	if SignalBus.coins_changed.is_connected(_on_coins_changed):
+		SignalBus.coins_changed.disconnect(_on_coins_changed)
+	# I pressed callback dei 3 Button (delete_char, delete_account, logout)
+	# vengono automaticamente puliti quando il panel e` queue_free: i button
+	# sono children di questo PanelContainer, distrutti con esso.

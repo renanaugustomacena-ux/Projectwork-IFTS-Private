@@ -29,6 +29,15 @@ func _ready() -> void:
 	_schedule_next()
 
 
+func _exit_tree() -> void:
+	# Stop + disconnect timer per evitare zombie spawn se lo spawner viene
+	# free durante scene reload (fix B-013).
+	if _timer != null and is_instance_valid(_timer):
+		_timer.stop()
+		if _timer.timeout.is_connected(_on_timer_timeout):
+			_timer.timeout.disconnect(_on_timer_timeout)
+
+
 func set_container(container: Node2D) -> void:
 	mess_container = container
 
