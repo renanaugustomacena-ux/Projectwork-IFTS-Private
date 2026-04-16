@@ -6,6 +6,7 @@ signal request_completed(response: Dictionary)
 
 const MAX_CONCURRENT := 3
 const REQUEST_TIMEOUT := 15.0
+const MAX_QUEUE_SIZE := 500  # cap per prevenire unbounded growth in RAM (fix B-025)
 
 var _pool: Array[HTTPRequest] = []
 var _busy: Array[HTTPRequest] = []
@@ -38,6 +39,14 @@ func request(
 		"request_id": request_id,
 	}
 	if _pool.is_empty():
+		if _queue.size() >= MAX_QUEUE_SIZE:
+			# Drop oldest per prevenire OOM (fix B-025). L'utente avra` comunque
+			# il SQLite sync_queue come backup persistente per retry.
+			var dropped: Dictionary = _queue.pop_front()
+			push_warning(
+				"SupabaseHttp: queue full (%d), dropped oldest request_id=%s"
+				% [MAX_QUEUE_SIZE, dropped.get("request_id", "")]
+			)
 		_queue.append(req_data)
 		return
 	_send(req_data)
