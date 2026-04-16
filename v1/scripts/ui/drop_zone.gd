@@ -7,10 +7,16 @@ const WALL_ZONE_RATIO := 0.4
 
 func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 	if not _is_valid_drop(data):
+		AppLogger.info("DropZone", "can_drop_invalid_data", {"data_type": typeof(data)})
 		return false
 	# Enforce wall vs floor placement zones
 	var placement_type: String = data.get("placement_type", "any")
 	if not _is_zone_valid(at_position, placement_type):
+		AppLogger.info(
+			"DropZone",
+			"can_drop_zone_invalid",
+			{"pos": at_position, "placement_type": placement_type}
+		)
 		return false
 	return true
 

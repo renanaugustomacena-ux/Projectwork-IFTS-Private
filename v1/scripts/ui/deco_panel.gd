@@ -122,7 +122,13 @@ func _populate_catalog() -> void:
 func _create_drag_button(
 	item_id: String, item_name: String, sprite_path: String, item_scale: float, placement_type: String
 ) -> Button:  # Returns null if texture missing
-	var btn := Button.new()
+	# Usa DecoButton (sottoclasse Button con override _get_drag_data) perche`
+	# set_drag_forwarding() su plain Button NON inizia il drag in Godot 4.5:
+	# il callback forwarding viene settato ma nessun hook sul Button chiama
+	# il drag_func al mouse_down. Il pattern che funziona affidabilmente e`
+	# override diretto del hook virtuale su una sottoclasse (vedi DecoButton).
+	# Referenze: jlucaso1/drag-drop-inventory, jeroenheijmans/sample-godot-drag-drop.
+	var btn := DecoButton.new()
 	btn.custom_minimum_size = Vector2(68, 56)
 	btn.tooltip_text = item_name
 	btn.focus_mode = Control.FOCUS_NONE
@@ -136,40 +142,17 @@ func _create_drag_button(
 	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	btn.expand_icon = true
 
-	# Store drag data as metadata
-	(
-		btn
-		. set_meta(
-			"drag_data",
-			{
-				"item_id": item_id,
-				"sprite_path": sprite_path,
-				"item_scale": item_scale,
-				"placement_type": placement_type,
-			}
-		)
+	# Store drag data as metadata — DecoButton._get_drag_data legge questo
+	btn.set_meta(
+		"drag_data",
+		{
+			"item_id": item_id,
+			"sprite_path": sprite_path,
+			"item_scale": item_scale,
+			"placement_type": placement_type,
+		}
 	)
-
-	btn.set_drag_forwarding(_forward_drag_data.bind(btn), Callable(), Callable())
 	return btn
-
-
-func _forward_drag_data(_at_position: Vector2, btn: Button) -> Variant:
-	var drag_data: Dictionary = btn.get_meta("drag_data", {})
-	if drag_data.is_empty():
-		return null
-
-	var preview := TextureRect.new()
-	var tex := load(drag_data.get("sprite_path", "")) as Texture2D
-	if tex:
-		preview.texture = tex
-		preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		var preview_scale: float = drag_data.get("item_scale", 1.0)
-		preview.custom_minimum_size = tex.get_size() * preview_scale * 0.5
-		preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-
-	btn.set_drag_preview(preview)
-	return drag_data
 
 
 func _on_category_toggled(cat_id: String) -> void:
