@@ -34,9 +34,9 @@ Renan Augusto Macena | Elia Zoccatelli | Cristian Marino
 
 Desktop companion che trasforma il PC in uno spazio accogliente.
 
-- **69 decorazioni** drag-and-drop in **11 categorie**
+- **72 decorazioni** drag-and-drop in **13 categorie** (1 hidden)
 - **Musica lo-fi** con crossfade + ambience naturale
-- **3 personaggi** con animazioni a 8 direzioni
+- **2 personaggi** con animazioni a 8 direzioni
 - **Pet virtuale** (gattino) autonomo: idle / wander / sleep / play
 - **Funziona offline** — nessun account obbligatorio
 
@@ -100,9 +100,9 @@ Ogni app compete per l'attenzione. Relax Room fa il contrario: crea uno spazio c
 
 *(Speaker: Renan — con diagramma `diagrams/signal_bus.png`)*
 
-### 43 segnali, zero accoppiamento
+### 46 segnali, zero accoppiamento
 
-Il cuore di Relax Room e il **SignalBus**: event bus centralizzato con **43 segnali tipizzati**. Nessun manager conosce gli altri — parlano solo via eventi.
+Il cuore di Relax Room e il **SignalBus**: event bus centralizzato con **46 segnali tipizzati**. Nessun manager conosce gli altri — parlano solo via eventi.
 
 ### 6 domini evento
 

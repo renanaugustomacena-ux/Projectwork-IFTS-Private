@@ -60,7 +60,7 @@ aperto in background come ambiente digitale rilassante.
 
 ### Pattern Principali
 
-- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (31 segnali)
+- **Signal-driven**: tutta la comunicazione tra moduli passa per `SignalBus` (46 segnali)
 - **Account locale**: username + password con SHA-256, guest mode disponibile
 - **Catalog-driven**: contenuti (stanze, decorazioni, personaggi, tracce) caricati da JSON
 - **Desktop companion**: FPS cap dinamico (60 fps in focus, 15 fps in background)
@@ -71,7 +71,7 @@ Caricati automaticamente in questo ordine da `project.godot`:
 
 | # | Autoload | Script | Responsabilita |
 |---|----------|--------|----------------|
-| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (31 segnali, disaccoppiamento moduli) |
+| 1 | `SignalBus` | signal_bus.gd | Bus eventi globale (46 segnali, disaccoppiamento moduli) |
 | 2 | `AppLogger` | logger.gd | Logging strutturato con correlation ID |
 | 3 | `LocalDatabase` | local_database.gd | Database SQLite locale (WAL mode, 9 tabelle) |
 | 4 | `AuthManager` | auth_manager.gd | Autenticazione locale: guest, username+password |
@@ -140,7 +140,7 @@ v1/
 │   └── ui/                    #   Kenney Pixel UI Pack + tema cozy
 ├── data/                      # Cataloghi JSON + schema SQL
 │   ├── characters.json        #   1 personaggio giocabile (male_old)
-│   ├── decorations.json       #   69 decorazioni in 11 categorie
+│   ├── decorations.json       #   72 decorazioni in 13 categorie
 │   ├── rooms.json             #   1 stanza con 3 temi colore
 │   ├── tracks.json            #   2 tracce musicali
 │   └── README.md              #   Documentazione schema database
@@ -171,7 +171,7 @@ v1/
 | `assets/` | [README](assets/README.md) | 1.422 asset: sprite, audio, sfondi, UI, licenze |
 | `data/` | [README](data/README.md) | Schema database JSON/SQLite, 9 tabelle |
 | `scenes/` | [README](scenes/README.md) | Scene Godot (.tscn), struttura nodi, flusso |
-| `scripts/` | [README](scripts/README.md) | 24 script GDScript, autoload, 31 segnali, moduli |
+| `scripts/` | [README](scripts/README.md) | 37 script GDScript, autoload, 46 segnali, moduli |
 | `tests/` | [README](tests/README.md) | Attualmente vuota (test rimossi, GdUnit4 non installato) |
 
 ## Contenuti di Gioco

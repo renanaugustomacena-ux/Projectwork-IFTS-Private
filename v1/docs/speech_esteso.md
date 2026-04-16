@@ -13,7 +13,7 @@ Relax Room nasce da una domanda semplice: *perche ogni software che usiamo sembr
 
 Ogni decisione tecnica l'abbiamo presa con una domanda fissa: *come manteniamo questo software vivo a sei, dodici, ventiquattro mesi?*
 
-- **SignalBus come cuore**: **43 segnali tipizzati**, un event bus centralizzato. Nessun manager conosce gli altri. Questo perche — in un progetto di team — l'accoppiamento e il primo nemico della manutenibilita. Oggi `decoration_placed` fa scattare tre listener; domani ne fara cinque, senza toccare nessun `if` nel codice esistente.
+- **SignalBus come cuore**: **46 segnali tipizzati**, un event bus centralizzato. Nessun manager conosce gli altri. Questo perche — in un progetto di team — l'accoppiamento e il primo nemico della manutenibilita. Oggi `decoration_placed` fa scattare tre listener; domani ne fara cinque, senza toccare nessun `if` nel codice esistente.
 
 - **Offline-first come valore**: l'utente non deve dipendere da un nostro server per rilassarsi. Tutto gira localmente. Il cloud e un **bonus** (sync multi-PC), mai una dipendenza. Questa scelta ha cambiato l'ordine di priorita: prima scrivi in locale, **sempre**; poi accoda al cloud; poi prova a flushare quando torna la rete.
 
