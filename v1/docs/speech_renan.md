@@ -28,7 +28,7 @@
 ## Slide 4 — Architettura Tecnica
 
 - **Apertura**: "Stack scelto per **robustezza** e **autonomia**."
-- **Core**: **Godot 4.6** engine / **SQLite + WAL** locale / **Supabase** cloud con RLS / **HMAC-SHA256** integrita / **CI 5 job** / **Netlify** deploy
+- **Core**: **Godot 4.6** engine / **SQLite + WAL** locale / **Supabase** cloud con RLS / **auth duale** (PBKDF2-SHA256 locale + JWT cloud) / **HMAC-SHA256** integrita / **CI 5 job** / **Netlify + GitHub Releases** deploy
 - **9 autoload chain**: SignalBus → AppLogger → LocalDatabase → Auth → Game → Save → Supabase → Audio → Performance
 - **Resilienza**: offline-first / scrittura atomica / sync queue retry 5 / schema-resilient
 - **Transizione**: → "Il cuore di tutto questo e il **SignalBus**. Guardiamolo."
