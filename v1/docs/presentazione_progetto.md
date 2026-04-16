@@ -1,7 +1,9 @@
 # Relax Room — Presentazione Progetto
 
-**Progetto ITS — Anno 2025/2026**
+**Progetto IFTS — Anno 2025/2026**
 **Data presentazione**: 22 Aprile 2026
+
+Struttura: **10 slide** (limite Gamma). I 3 contenuti nuovi richiesti dal piano — Signal Bus Topology, Schema DB Approfondito, AppLogger — sono tutti presenti (Slide 5, 6, 7). Le sezioni attigue sono state fuse per rispettare il budget 10, senza perdita di dettaglio.
 
 ---
 
@@ -11,309 +13,234 @@
 
 *Il tuo compagno desktop per il relax e la produttivita consapevole*
 
-Progetto ITS — Anno 2025/2026
+Progetto IFTS — Anno 2025/2026
+22 Aprile 2026
 
 Renan Augusto Macena | Elia Zoccatelli | Cristian Marino
 
 ---
 
-## Slide 2 — Il Team
+## Slide 2 — Il Team + Il Progetto
+
+*(Speaker: collettivo, una frase a testa)*
 
 ### Chi siamo
 
-**Renan Augusto Macena** — Team Lead e Architetto Software
-Progettazione dell'architettura signal-driven, sviluppo dei sistemi core
-(SaveManager, AuthManager, GameManager, SupabaseClient), coordinamento
-del team e gestione del repository Git.
+- **Renan Augusto Macena** — *Team Lead & Architetto Software.* Architettura signal-driven, sistemi core (Save, Auth, Game, Supabase), repository Git.
+- **Elia Zoccatelli** — *Database Engineer.* Schema locale SQLite (9 tabelle) + cloud Supabase PostgreSQL (15 tabelle con Row-Level Security), migrazioni automatiche.
+- **Cristian Marino** — *Asset Pipeline & CI/CD.* Pixel art (personaggi, decorazioni, sfondi), pipeline CI 5 job paralleli, build Windows + Web.
 
-**Elia Zoccatelli** — Database Engineer
-Progettazione dello schema dati locale (SQLite, 9 tabelle) e cloud
-(Supabase PostgreSQL, 15 tabelle con Row-Level Security). Modellazione
-relazionale, politiche di sicurezza per-utente, migrazioni automatiche.
+### Cos'e Relax Room
 
-**Cristian Marino** — Asset Pipeline e CI/CD
-Creazione degli asset pixel art (personaggi, decorazioni, sfondi),
-configurazione della pipeline di integrazione continua a 5 job paralleli,
-gestione dei build automatizzati per Windows e Web.
+Desktop companion che trasforma il PC in uno spazio accogliente.
 
-*Tre ruoli complementari, un obiettivo comune.*
+- **69 decorazioni** drag-and-drop in **11 categorie**
+- **Musica lo-fi** con crossfade + ambience naturale
+- **3 personaggi** con animazioni a 8 direzioni
+- **Pet virtuale** (gattino) autonomo: idle / wander / sleep / play
+- **Funziona offline** — nessun account obbligatorio
 
----
-
-## Slide 3 — Il Progetto
-
-### Cos'e Relax Room?
-
-Un'applicazione desktop che trasforma il tuo PC in uno spazio
-accogliente e personalizzabile.
-
-- Stanza pixel art decorabile con **69 decorazioni** in 11 categorie
-- **Musica lo-fi** integrata con crossfade e ambience naturale
-- **3 personaggi** selezionabili con animazioni a 8 direzioni
-- **Pet virtuale** (gattino) con comportamento autonomo: idle, walk, sleep
-- Strumenti organizzativi per la **produttivita consapevole**
-- Funziona **completamente offline** — nessuna dipendenza da internet
-
-*Non e un gioco. E un ambiente. Un luogo dove tornare quando hai
-bisogno di un momento di calma.*
+*Non e un gioco. E un ambiente.*
 
 ---
 
-## Slide 4 — Filosofia di Design
+## Slide 3 — Filosofia & Perche
 
-### Quattro principi fondamentali
+*(Speaker: Renan)*
 
-**1. Community, non Competizione**
-Nessun punteggio o classifica. Il focus e sulla creativita
-personale e sull'espressione di se.
+### Quattro principi
 
-**2. Tutto Sbloccato**
-Nessun grind, nessun paywall. Tutti i contenuti sono
-disponibili fin dal primo avvio.
+1. **Community, non Competizione** — Zero punteggi, focus su creativita.
+2. **Tutto Sbloccato** — No grind, no paywall, tutto dal primo avvio.
+3. **Zero Pressione** — No notifiche, no timer, no energia.
+4. **Presenza senza Invasione** — Sullo sfondo della giornata, non per dominarla.
 
-**3. Zero Pressione**
-Nessuna notifica, nessun timer, nessun sistema energetico.
-Gioca quando vuoi, chiudi senza sensi di colpa.
+### Perche Relax Room
 
-**4. Presenza senza Invasione**
-Il gioco esiste sullo sfondo della tua giornata,
-non per dominarla.
+Ogni app compete per l'attenzione. Relax Room fa il contrario: crea uno spazio che **aiuta a concentrarsi e rilassarsi**.
 
----
+- **Target**: studenti, remote worker, creativi
+- **Leggero**: 60 FPS focus / 15 FPS background
+- **Dati tuoi**: restano sul PC, firma HMAC-SHA256
 
-## Slide 5 — Perche Relax Room?
-
-### L'intenzione dietro il progetto
-
-Nel mondo digitale moderno, ogni applicazione compete per la tua
-attenzione. Relax Room fa il contrario: crea uno spazio che
-ti aiuta a concentrarti e rilassarti.
-
-**A chi e destinato:**
-- Studenti che cercano un ambiente di studio tranquillo
-- Lavoratori da remoto che vogliono personalizzare il proprio spazio digitale
-- Creativi che hanno bisogno di un angolo di ispirazione
-
-**Cosa lo rende diverso:**
-- Funziona offline — nessun account obbligatorio
-- Leggero — consuma poche risorse, gira in background a 15 FPS
-- Personalizzabile — la tua stanza, la tua musica, il tuo ritmo
-- I tuoi dati restano sul tuo PC, protetti da crittografia HMAC
-
-*"Il software piu utile e quello che ti fa stare bene senza chiederti
-nulla in cambio."*
+> *"Il software piu utile e quello che ti fa stare bene senza chiederti nulla in cambio."*
 
 ---
 
-## Slide 6 — Architettura Tecnica
+## Slide 4 — Architettura Tecnica
 
-### Come e costruito
+*(Speaker: Renan)*
 
-| Tecnologia | Ruolo |
+### Stack
+
+| Layer | Tecnologia | Dettaglio |
+|---|---|---|
+| Engine | **Godot 4.6** | GDScript, GL Compatibility, 1280x720, filtro Nearest |
+| DB locale | **SQLite 3** | WAL mode, 9 tabelle, FK CASCADE, migrazioni v1→v5 |
+| DB cloud | **Supabase (PostgreSQL)** | 15 tabelle, Row-Level Security, REST auto |
+| Auth | **Duale** | Locale PBKDF2-SHA256 / Cloud Supabase Auth + JWT |
+| Integrita | **HMAC-SHA256** | Firma su ogni salvataggio, anti-manomissione |
+| CI/CD | **GitHub Actions** | 5 job paralleli |
+| Deploy | **Netlify + GitHub Releases** | Build auto Windows (.exe) + HTML5 |
+
+### 9 Autoload chain
+
+`SignalBus → AppLogger → LocalDatabase → AuthManager → GameManager → SaveManager → SupabaseClient → AudioManager → PerformanceManager`
+
+### Resilienza
+
+- **Offline-first**: gioca sempre, sync opzionale
+- **Scrittura atomica**: file temp → rename, zero corruzione
+- **Sync queue**: retry max 5, backoff esponenziale
+- **Schema-resilient**: tabelle cloud mancanti → skip, no crash
+
+---
+
+## Slide 5 — Signal Bus Topology *(NEW)*
+
+*(Speaker: Renan — con diagramma `diagrams/signal_bus.png`)*
+
+### 43 segnali, zero accoppiamento
+
+Il cuore di Relax Room e il **SignalBus**: event bus centralizzato con **43 segnali tipizzati**. Nessun manager conosce gli altri — parlano solo via eventi.
+
+### 6 domini evento
+
+| Dominio | Esempi |
 |---|---|
-| **Godot 4.6** | Motore di gioco (GDScript, 31 script) |
-| **SQLite 3** | Database locale offline-first (WAL mode) |
-| **Supabase** | Backend cloud (PostgreSQL + Auth + REST API) |
-| **GitHub Actions** | CI/CD pipeline a 5 job paralleli |
-| **HMAC-SHA256** | Protezione integrita dei salvataggi |
+| **Room** | `room_changed`, `decoration_placed`, `decoration_moved` |
+| **Character** | `character_changed`, `outfit_changed`, `interaction_started` |
+| **Audio** | `track_changed`, `ambience_toggled`, `volume_changed` |
+| **UI** | `panel_opened`, `toast_requested`, `decoration_mode_changed` |
+| **Save / Auth** | `save_completed`, `auth_state_changed`, `account_created` |
+| **Cloud / Economy** | `sync_completed`, `coins_changed`, `stress_changed` |
 
-### Architettura a segnali
+### Esempio vivo
 
-**31 segnali** dichiarati nel SignalBus per comunicazione completamente
-disaccoppiata tra sistemi. Nessun sistema conosce direttamente gli altri —
-comunicano solo tramite eventi. Questo rende il codice modulare,
-testabile e facile da estendere.
+`decoration_placed` → **SaveManager** salva / **SupabaseClient** accoda sync / **AppLogger** scrive evento.
 
-### 9 Autoload Singleton orchestrati
-
-SignalBus → AppLogger → LocalDatabase → AuthManager → GameManager →
-SaveManager → SupabaseClient → AudioManager → PerformanceManager
-
-Caricati in ordine preciso per rispettare le dipendenze tra sistemi.
+**Impatto**: aggiungere una feature = nuovo listener, **zero modifica al codice esistente**.
 
 ---
 
-## Slide 7 — Persistenza dei Dati
+## Slide 6 — Persistenza + Schema DB *(NEW — schema approfondito)*
+
+*(Speaker: Elia — con diagramma `diagrams/sync_flow.png`)*
 
 ### Tre livelli di protezione
 
-**1. JSON con HMAC**
-Salvataggio primario in `save_data.json` con firma crittografica
-SHA-256 per rilevare manomissioni. Backup automatico prima di ogni
-scrittura. Scrittura atomica (file temporaneo → rinomina) per
-resistenza ai crash.
+- **1. JSON + HMAC** — `save_data.json` con firma SHA-256, backup pre-write, scrittura atomica (temp → rename).
+- **2. SQLite + WAL** — 9 tabelle, FK CASCADE, migrazioni automatiche **v1.0 → v5.0** idempotenti e rollback-safe.
+- **3. Supabase Cloud** — sync offline-first con coda, priorita dato locale, flush al reconnect.
 
-**2. SQLite con WAL**
-Database relazionale locale con 9 tabelle, chiavi esterne con CASCADE,
-indici sulle foreign key, migrazioni automatiche dalla versione 1.0
-alla 5.0. Write-Ahead Logging per operazioni concorrenti sicure.
+### Schema dati
 
-**3. Supabase Cloud**
-Sincronizzazione offline-first con coda di operazioni pendenti.
-I dati locali hanno sempre priorita. La coda si svuota automaticamente
-quando la connessione torna disponibile. 15 tabelle cloud con
-Row-Level Security: ogni utente vede solo i propri dati.
+- **SQLite (9)**: `accounts` · `characters` · `outfits_inventory` · `decorations_inventory` · `saved_rooms` · `settings` · `music_state` · `sync_queue` · `schema_version`
+- **Supabase (15)**: `profiles` · `rooms` · `room_decorations` · `friends` · `room_visits` · `chat_messages` · `pomodoro_sessions` · `journal_entries` · `mood_entries` · `memos` · `outfits_cloud` · `characters_cloud` · `settings_cloud` · `audit_log` · `notifications`
 
-*I dati dell'utente non si perdono mai.*
+### Row-Level Security
+
+`auth.uid() = user_id` su **ogni policy** — impossibile leggere dati altrui anche con API key.
+
+**Impatto**: **6 tabelle in uso**, **9 gia pronte** per feature future. I dati dell'utente non si perdono mai.
 
 ---
 
-## Slide 8 — Processo di Sviluppo
+## Slide 7 — Osservabilita: AppLogger *(NEW)*
 
-### Come abbiamo lavorato
+*(Speaker: Renan)*
 
-**Sviluppo audit-driven:**
-3 passaggi di audit sistematico che hanno guidato ogni ciclo di
-fix e refactoring. Ogni bug trovato e stato classificato per severita
-(critico, alto, medio) e risolto in ordine di priorita.
+### Quando si rompe, sai dove guardare
 
-**Continuous Integration:**
-Pipeline CI/CD a 5 job paralleli su GitHub Actions:
-1. GDScript Lint e Format (gdtoolkit)
-2. Validazione JSON dei cataloghi
-3. Verifica percorsi sprite
-4. Cross-reference costanti vs cataloghi
-5. Validazione schema database
+- **JSON Lines strutturato**: `{ts, level, source, session_id, message, context}`
+- **Session ID correlation** — flow completo tracciabile end-to-end
+- **Rotating files**: 5 MB x 5 file = **25 MB max**, auto-pulizia
+- **4 livelli**: DEBUG / INFO / WARN / ERROR, filtrabili in produzione
+- **Flush async** ogni 2s — **zero impatto** sul rendering
+- Output: `user://logs/session_YYYYMMDD_HHMMSS.jsonl`
 
-Ogni push viene validato automaticamente. Nessun codice raggiunge
-il branch principale senza superare tutti i controlli.
-
-**Gestione del Repository:**
-- 118 commit strutturati con messaggi semantici (feat/fix/chore/docs)
-- Sprint iterativi con task tracciati
-- Sviluppo collaborativo su branch main con CI obbligatoria
-- Documentazione completa: guide operative per ogni membro del team
+**Impatto**: utente ci manda il file, capiamo tutto — debug post-mortem anche offline.
 
 ---
 
-## Slide 9 — Il Gioco in Cifre
+## Slide 8 — Pipeline Asset + CI/CD + Processo
+
+*(Speaker: Cristian)*
+
+### Asset pixel art
+
+- **Sprite 32x32** — personaggi 8 direzioni (idle/walk/interact/rotate)
+- **Kenney Pixel UI Pack** — bottoni 9-slice, stile "ancient wood"
+- **Audio lo-fi** — 2 tracce ambient con **crossfade** automatico, 3 modalita playlist
+- **Parallasse** — sfondi multi-layer "Free Pixel Art Forest"
+
+### CI/CD — 5 job paralleli
+
+1. **GDScript Lint + Format** (gdtoolkit)
+2. **Validazione JSON** cataloghi decorazioni
+3. **Verifica percorsi sprite** (catalogo vs filesystem)
+4. **Cross-reference** costanti vs cataloghi
+5. **Validazione schema DB** (SQL syntax)
+
+**Zero codice sul main senza tutti e 5 green.**
+
+### Processo di sviluppo
+
+- **Audit-driven**: 3 passaggi sistematici, bug classificati per severita
+- **118 commit** semantici (feat/fix/chore/docs), sprint iterativi
+- **Runbook per ruolo**: `GUIDE_RENAN_SUPERVISOR.md` · `GUIDE_ELIA_DATABASE.md` · `GUIDE_CRISTIAN_ASSETS_CICD.md`
+
+*Il codice si scrive una volta. Si legge e si mantiene cento.*
+
+---
+
+## Slide 9 — Cifre + Funzionalita + Futuro
+
+*(Speaker: Cristian per cifre, Elia per funzionalita/futuro)*
 
 ### Relax Room in numeri
 
-| Metrica | Valore |
-|---|---|
-| Commit nel repository | **118** |
-| Script GDScript | **31** |
-| Segnali nel SignalBus | **31** |
-| Decorazioni disponibili | **69** (11 categorie) |
-| Personaggi giocabili | **3** |
-| Tracce musicali lo-fi | **2** |
-| Tabelle SQLite locali | **9** |
-| Tabelle Supabase cloud | **15** |
-| Job CI/CD paralleli | **5** |
-| Versioni save-data migrate | **5** (v1.0 → v5.0) |
-| Passaggi di audit | **3** |
-| Righe di codice GDScript | **~5.300** |
+**118** commit · **31** script GDScript · **43** segnali · **69** decorazioni (11 categorie) · **3** personaggi · **2** tracce lo-fi · **9** tabelle SQLite · **15** tabelle Supabase · **5** job CI/CD · **5** versioni save-data · **3** passaggi audit · **~5.300** righe GDScript
+
+### Oggi funziona
+
+Drag-and-drop 69 decorazioni · pet FSM 5 stati (idle/wander/follow/sleep/play) · audio crossfade · tutorial 9 step signal-driven.
+
+### Domani cresce — gia predisposto
+
+- **Cloud sync** multi-PC · **Amicizie + visite** (`friends`, `room_visits`)
+- **Chat** (`chat_messages`) · **Pomodoro** (`pomodoro_sessions`)
+- **Diario umore** (`journal_entries`, `mood_entries`, `memos`)
+- **Marketplace** — economia monete gia live
+- **Mobile** — Godot 4.6 compila nativo Android + iOS
+
+**Impatto**: ogni nuova feature = collegare un listener + attivare una tabella. Zero migrazione.
 
 ---
 
-## Slide 10 — Funzionalita Principali
+## Slide 10 — Demo + Chiusura
 
-### Decorazione drag-and-drop
-69 decorazioni trascinabili nella stanza. Rotazione (90 gradi),
-ribaltamento, ridimensionamento (0.25x → 3x), eliminazione.
-Salvataggio persistente della posizione di ogni oggetto.
+*(Speaker: collettivo)*
 
-### Personaggio animato
-3 personaggi con sprite 32x32 e animazioni a 8 direzioni
-(idle, walk, interact, rotate). Movimento fluido con WASD o frecce.
+### Demo dal vivo
 
-### Pet virtuale
-Gattino autonomo con macchina a stati: idle, wander, follow, sleep, play.
-Animazioni dedicate per ogni stato, effetto respirazione durante il sonno.
-
-### Audio lo-fi
-2 tracce ambient con crossfade automatico. 3 modalita playlist:
-sequenziale, shuffle, ripeti. Volumi indipendenti per musica e ambience.
-
-### Tutorial interattivo
-Missione guidata in 9 passi che insegna tutte le meccaniche del gioco.
-Avanzamento basato su segnali: il tutorial aspetta che il giocatore
-completi l'azione prima di procedere.
-
----
-
-## Slide 11 — Miglioramenti Futuri
-
-### Dove puo andare Relax Room
-
-L'architettura e stata progettata per crescere. Il database cloud ha
-gia **15 tabelle**: 6 sono in uso attivo, **9 sono pronte** per le
-funzionalita future.
-
-**Sincronizzazione cloud completa**
-Accedi alla tua stanza da qualsiasi PC tramite Supabase Auth.
-
-**Sistema amicizie e visite**
-Visita le stanze dei tuoi amici in tempo reale.
-*(Tabelle `friends` e `room_visits` gia predisposte nel database)*
-
-**Chat integrata**
-Messaggi tra utenti durante le visite.
-*(Tabella `chat_messages` pronta)*
-
-**Pomodoro Timer**
-Sessioni di studio con tracking e statistiche.
-*(Tabella `pomodoro_sessions` pronta)*
-
-**Diario dell'umore**
-Traccia il tuo umore nel tempo con grafici e riflessioni.
-*(Tabelle `journal_entries`, `mood_entries`, `memos` pronte)*
-
-
-**Supporto mobile**
-Godot 4.6 compila nativamente per Android e iOS.
-
----
-
-## Slide 12 — Demo
-
-### Vediamolo in azione
-
-*(Spazio per demo dal vivo o screenshot)*
-
-- Navigazione nella stanza con decorazioni posizionate
-- Selezione e personalizzazione del personaggio
+- Navigazione stanza con decorazioni posizionate
+- Selezione + personalizzazione personaggio
 - Musica lo-fi con crossfade tra tracce
-- Pannello impostazioni e profilo
-- Sistema di autenticazione locale
-- Pet gattino con animazioni autonome
+- Pannello impostazioni + profilo
+- Autenticazione locale
+- Pet gattino autonomo
 
----
+### Chiusura
 
-## Slide 13 — Chiusura
+> *"In un mondo che corre, abbiamo costruito un angolo dove fermarsi."*
 
-### Relax Room
-
-*"In un mondo che corre, abbiamo costruito un angolo dove fermarsi."*
-
-Un progetto che dimostra:
-
-- **Architettura software professionale** in un contesto creativo
-- **Sviluppo collaborativo** con pipeline CI/CD reale
+- **Architettura professionale** in un contesto creativo
+- **Sviluppo collaborativo** con CI/CD reale
 - **Design offline-first** che mette l'utente al centro
 - **Codice pulito e testabile**, pronto per scalare
-
----
 
 **Grazie.**
 
 Renan Augusto Macena | Elia Zoccatelli | Cristian Marino
-ITS 2025/2026
-
----
-
-## Frasi d'Effetto
-
-*Da usare come transizioni tra le slide o come sottotitoli:*
-
-1. "Il tuo angolo di calma, a un click di distanza."
-2. "Non un gioco. Un ambiente. Il tuo."
-3. "31 segnali, zero accoppiamento. Architettura che respira."
-4. "I tuoi dati non si perdono mai: tre livelli di protezione, zero compromessi."
-5. "Costruito per restare. Progettato per crescere."
-6. "118 commit di cura artigianale."
-7. "Pixel art, lo-fi e codice pulito: gli ingredienti del benessere digitale."
-8. "Offline-first: funziona sempre, sincronizza quando vuoi."
-9. "Il tuo spazio personale, ovunque tu sia."
-10. "Meno stress, piu pixel."
+IFTS 2025/2026
