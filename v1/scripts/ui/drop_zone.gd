@@ -31,9 +31,29 @@ func _is_zone_valid(at_position: Vector2, placement_type: String) -> bool:
 
 func _drop_data(at_position: Vector2, data: Variant) -> void:
 	var item_id: String = data.get("item_id", "")
+	var raw_pos := at_position
 	at_position = Helpers.snap_to_grid(at_position)
-	# Clamp inside room floor polygon so decorations can't escape
+	# Clamp inside room floor polygon so decorations can't escape. Se floor
+	# polygon non e` stato inizializzato (RoomBase._setup_floor_bounds ha fallito),
+	# clamp_inside_floor ritorna il punto invariato → decorazione puo` finire
+	# fuori viewport e risultare invisibile. Logging esplicito per diagnosi
+	# (fix BUG-C-001).
+	if not Helpers.has_floor_polygon():
+		AppLogger.warn(
+			"DropZone",
+			"floor_polygon_not_initialized",
+			{"item_id": item_id, "raw_pos": raw_pos, "snap_pos": at_position}
+		)
+		SignalBus.toast_requested.emit(
+			"Stanza non pronta, riprova fra un attimo", "warning"
+		)
+		return
 	at_position = Helpers.clamp_inside_floor(at_position)
+	AppLogger.info(
+		"DropZone",
+		"drop_accepted",
+		{"item_id": item_id, "raw_pos": raw_pos, "final_pos": at_position}
+	)
 	SignalBus.decoration_placed.emit(item_id, at_position)
 
 
