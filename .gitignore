@@ -2,6 +2,11 @@
 .godot/
 .nomedia
 
+# Diagrammi in docs/: sono immagini di documentazione, non asset di gioco.
+# Godot genera .import file quando ri-importa il progetto — ignoriamoli per
+# evitare rumore nel git status.
+v1/docs/diagrams/*.import
+
 # Godot-specific ignores
 .import/
 export.cfg
