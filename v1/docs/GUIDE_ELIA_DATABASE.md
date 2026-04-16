@@ -814,3 +814,36 @@ func test_upsert_account_then_select() -> void:
 > 💡 **Suggerimento finale**: nel dubbio, logga. `AppLogger.info("db_<evento>", {"key": val})` costa poco e ti salva in produzione. Lato DB, abbonda — meglio troppi log che troppo pochi quando cerchi la causa di un save corrotto che succede una volta su mille avvii.
 
 Buon lavoro.
+
+---
+
+## 11. Update 2026-04-16 (sprint auto-pilot pre-demo)
+
+### Stato DB locale (SQLite)
+
+Confermato OK, nessuna modifica schema in questa sessione. 9 tabelle, FK CASCADE, WAL mode, migrazioni v1→v5 idempotenti.
+
+### Nuovi bug DB-related identificati dalle 5 review automatiche (v1/docs/reviews/)
+
+- **B-026**: `PRAGMA busy_timeout` non settato post open. Default varia tra versioni SQLite, se altro processo ha lock → query blocca main thread. Aggiungere `_db.query("PRAGMA busy_timeout = 5000")` post apertura (5s timeout). **Fix time: 5 min.**
+- **B-027** (riclassificato da B-014): `local_database._select()` righe 803-809 ritorna `[]` su query fail SENZA `AppLogger.error`. Dead var `_last_select_error` settata ma mai letta. Aggiungere log + rimuovere var. **Fix time: 10 min.**
+- **B-032 security/operativo**: nessuna directory `supabase/migrations/` nel repo. Le 15 tabelle cloud dichiarate sono solo in docs, zero DDL versionato. Impossibile ricostruire DB cloud da zero. **Task: estrarre DDL da Supabase dashboard e versionare in `supabase/migrations/0001_initial.sql`.**
+
+### DB local vs cloud schema divergenza
+
+User ha segnalato: "ho aggiornato tabelle su Supabase ma il gioco non le vede; anzi il locale ha tabelle piu piccole del cloud".
+
+**Stato attuale (confermato)**: il gioco e **offline-first**; le 15 tabelle cloud sono dichiarate come roadmap ("9 pronte per feature future"). La sync NON e attiva nella demo (SupabaseClient logga `No valid Supabase config, cloud sync disabled`). Quindi le modifiche a Supabase **non arrivano al gioco** perche il client non legge affatto dal cloud.
+
+Piano post-demo (non toccare oggi):
+1. Popolare `user://config.cfg` con url + anon_key (ambiente di sviluppo)
+2. Implementare pull sync (`cloud_to_local` in supabase_mapper.gd — attualmente dead code, B-022)
+3. Scrivere migration DDL esplicita per ogni tabella cloud in `supabase/migrations/`
+
+### Asset catalog divergence
+
+37 PNG orfani in `v1/assets/sprites/` non referenziati in `decorations.json` (vedi `FIX_SUMMARY_2026-04-16.md` sezione asset orfani). Decisione di design: quali aggiungere, categorie, scale. Non impatta DB ma richiede update `decorations.json` + eventualmente nuove foreign key.
+
+---
+
+**Fine update — 2026-04-16**

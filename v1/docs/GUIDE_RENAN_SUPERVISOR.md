@@ -998,7 +998,80 @@ e NON dire "save riuscito". Aggiungere test che simula DB locked.
 
 ---
 
-**Fine documento — Versione 1.0 — 2026-04-15**
+---
+
+## 13. Update 2026-04-16 (sprint auto-pilot pre-demo)
+
+### Cambiamenti architetturali
+
+- `room_base._on_character_changed` ora **sincrono** (no `call_deferred`) e ordinato PRIMA di `_spawn_pet` in `_ready()`. Evita race condition che causava female→male apparente e pet spawn a posizione default.
+- `room_base._on_character_changed` non forza piu `old_scale` sul nuovo character — ogni scene preserva scale intrinseca (male 3×3, female 4×4).
+- `main._check_tutorial` chiamato via `call_deferred` diretto invece che via `SignalBus.load_completed` con `CONNECT_ONE_SHOT`. Il signal era consumato al boot autoload, quindi post `reload_current_scene()` non riscattava. Ora tutorial parte sia su nuova partita sia su replay.
+- `drop_zone._drop_data` rifiuta (toast) se `Helpers.has_floor_polygon()` false. Prima emetteva `decoration_placed` anche senza clamp reale, risultando in decorazioni fuori viewport.
+- `room_base:31` type annotation `MessSpawner` → `Node` per bypass Godot class_name cache staleness (parse error al boot).
+
+### Osservabilita estesa
+
+- `Helpers.set_floor_polygon_from_node` logga success con vertex count e centroid
+- `drop_zone._drop_data` logga ogni drop (raw → snap → final) + warn se polygon not init
+- `room_base._on_decoration_placed` logga drop ricevuto + accept/reject
+- `room_base._spawn_decoration` logga fallimenti (unknown item, no sprite, texture fail)
+- `room_base._on_character_changed` logga swap (id, pos, scale)
+- `room_base._spawn_pet` logga spawn (variant, final position)
+
+Uso log: `user://logs/session_*.jsonl` — JSON Lines, grep per `"level":"ERROR"` o `"level":"WARN"`.
+
+### Smoke test runtime
+
+```bash
+./scripts/smoke_test.sh
+```
+
+Esegue headless boot, conta parse/script/warn errors, exit 0/1/2. Usare dopo ogni commit significativo.
+
+### 5 review automatiche (sessione 2026-04-16)
+
+Output in `v1/docs/reviews/`:
+- `00_consolidated.md` — sintesi con nuovi bug B-023/B-034
+- `01_design_review.md` (7 sezioni A-G con verdetti)
+- `02_devsecops_gate.md` (7 fasi DevSecOps)
+- `03_correctness_check.md` (silent failures + non-determinism)
+- `04_resilience_check.md` (timeout/retry/backpressure)
+- `05_complexity_check.md` (over-engineering)
+
+Vedi `CONSOLIDATED_PROJECT_REPORT.md` sez 14.5 per integrazione.
+
+### Debito dichiarato (post-demo)
+
+- B-023 virtual_joystick addon decisione use/remove (interferisce focus chain)
+- B-025 HTTP queue unbounded in RAM (cap 500)
+- B-026 SQLite busy_timeout pragma mancante
+- B-027 `_select()` silent query fail (log aggiuntivo)
+- B-028 AppLogger no redaction password/token (security)
+- B-029 PBKDF2 10k iter → 100k+ (migration on login)
+- B-031 `.pre-commit-config.yaml` missing
+- B-032 Supabase schema cloud non versionato in `supabase/migrations/`
+- B-033 2 file > 500 righe (local_database 810, save_manager 523)
+- 37 asset orfani in `v1/assets/sprites/` da catalogare
+
+### Runtime verification prima della demo
+
+Opening checklist con `godot4 --path v1/ 2>&1 | tee /tmp/godot_demo.log`:
+
+1. Menu → loading screen Label "Caricamento..." (no sprite strano)
+2. Auth (guest/login) → character select
+3. Ragazza Rossa → stanza con **personaggio femminile** (non male)
+4. WASD/frecce → movimento
+5. Tutorial → dialog appare (new game) / riparte dopo replay
+6. DecoPanel → drag item → drop dentro floor polygon → decorazione appare
+7. Drop fuori floor polygon → toast "Stanza non pronta"
+8. Pet gattino → visibile vicino character
+9. Settings → Ripeti Tutorial → scena ricarica + tutorial ristart
+10. Chiusura Esc → pannelli chiudono senza bloccare movimento
+
+---
+
+**Fine documento — Versione 1.1 — 2026-04-16 (aggiornata sprint auto-pilot)**
 
 *Aggiornare questa guida a ogni lesson learned significativa. Il Team Lead è
 responsabile della revisione mensile del contenuto e dell'allineamento con

@@ -338,3 +338,58 @@ git push origin main
 > 💡 **Regola d'oro**: nel dubbio, chiedi. È sempre meglio una domanda in più che un commit da rifare. E ricorda: **commit su `main`, niente branch nuovi**.
 
 **Buon lavoro, Cristian.**
+
+---
+
+## 10. Update 2026-04-16 (sprint auto-pilot pre-demo)
+
+### CI update
+
+- **`scripts/smoke_test.sh`** aggiunto per validazione runtime headless. Usalo localmente prima di commit significativi:
+  ```bash
+  ./scripts/smoke_test.sh
+  ```
+  Esegue `godot4 --headless --path v1/ --quit`, conta parse/script errors, exit 0=pass. Non richiede display.
+
+### Nuovi bug CI-related (review automatiche)
+
+- **B-031 HIGH**: `.pre-commit-config.yaml` **MANCANTE** nel repo root. La documentazione dichiara pre-commit hooks come prassi, ma nessun file di config. **Task pre-demo-o-post**: creare stub con hook gdtoolkit (gdlint + gdformat) e detect-secrets. Tempo: 15 min.
+- **B-024**: linter rule suggerita — grep `Button.new()` senza `focus_mode` esplicito. Previene re-introduzione B-001 (movimento bloccato da focus). Aggiungere come hook pre-commit o script custom in `ci/`.
+
+### Asset orfani rilevati
+
+37 PNG in `v1/assets/sprites/` non referenziati in `v1/data/*.json`:
+- `sc_indoor_plants_free/` (5 spritesheet — plants + pots)
+- `bongseng/` (chairs, beds, doors, tables, wardrobes, windows — variant "right")
+- Room backgrounds alternativi: `moonlight_study_*`, `nest_room_*`, `cozy_studio_natural`
+
+Lista completa in `FIX_SUMMARY_2026-04-16.md`. Per aggiungerli al gioco:
+1. Decide categoria + scale per ciascuno (plants 6.0, mobili 3.0, pets 4.0 — vedi `SPRITES_AND_TEXTURES.md` §2.3)
+2. Aggiorna `v1/data/decorations.json` con entry `{id, name, category, sprite_path, item_scale, placement_type}`
+3. `./scripts/smoke_test.sh` per verificare no regressioni
+4. Commit semantico `feat(content): aggiungi N decorazioni X`
+
+### Loading screen scene manca ancora
+
+`v1/scenes/menu/loading_screen.tscn` non esiste. Fallback procedurale con solo Label "Caricamento..." attivo in `main_menu.gd`. Se vuoi loading screen piu figo:
+1. Crea scena con CanvasLayer root
+2. AnimatedSprite2D con `loading_people.png` (236x19, da verificare frame layout: potrebbe essere 12-13 frame da ~18-19px, o panorama unico)
+3. ProgressBar o Label animato
+4. Timer per demo loop
+5. Assets in `v1/assets/menu/loading/`
+
+Ref layout suggerito in `SPRITES_AND_TEXTURES.md` §2.4.
+
+### Runtime test script
+
+```bash
+# Boot main_menu + 8s lasciato running per catturare runtime errors (no GUI)
+timeout 8 godot4 --path v1/ --audio-driver Dummy 2>&1 > /tmp/runtime.log
+grep -E "SCRIPT|ERROR|WARNING" /tmp/runtime.log
+```
+
+Utile per CI job futuro: validazione runtime senza display. Godot con `--audio-driver Dummy` non fa rumore.
+
+---
+
+**Fine update — 2026-04-16**
