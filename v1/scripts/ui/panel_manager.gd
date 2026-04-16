@@ -49,6 +49,8 @@ func open_panel(panel_name: String) -> void:
 	_current_panel_name = panel_name
 	_current_panel.modulate.a = 0.0
 	_ui_layer.add_child(_current_panel)
+	# X close button aggiunto come sibling nel UI layer (NON dentro PanelContainer
+	# che avrebbe forzato layout riga). Posiziona sopra il panel in top-right.
 	_inject_close_button(_current_panel)
 	_grab_focus_recursive(_current_panel)
 
@@ -65,27 +67,41 @@ func open_panel(panel_name: String) -> void:
 
 ## Inietta un pulsante X di chiusura in alto a destra del panel. Il click chiama
 ## close_current_panel (stesso flusso del tasto ESC, rispetta tween e focus release).
-## Centralizzato qui cosi` ogni panel registrato nel PanelManager ha UX uniforme
-## senza duplicare il codice in deco/settings/profile.
+## Aggiunto come SIBLING nel ui_layer (non child di PanelContainer, che avrebbe
+## forzato layout riga e spinto i contenuti). Posizionato a sovrapposizione
+## usando global_position del panel calcolato dopo add_child.
 func _inject_close_button(panel: PanelContainer) -> void:
 	var btn := Button.new()
-	btn.name = "PanelCloseBtn"
+	btn.name = "PanelCloseBtn_" + _current_panel_name
 	btn.text = "×"
 	btn.flat = true
 	btn.focus_mode = Control.FOCUS_NONE
-	btn.custom_minimum_size = Vector2(28, 28)
-	btn.add_theme_font_size_override("font_size", 22)
-	btn.add_theme_color_override("font_color", Color(0.9, 0.4, 0.4, 1.0))
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.custom_minimum_size = Vector2(32, 32)
+	btn.add_theme_font_size_override("font_size", 24)
+	btn.add_theme_color_override("font_color", Color(0.95, 0.4, 0.4, 1.0))
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.6, 0.6, 1.0))
-	# Anchoring top-right corner del panel, con piccolo margine interno.
-	btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	btn.offset_left = -32
-	btn.offset_right = -4
-	btn.offset_top = 4
-	btn.offset_bottom = 32
-	btn.z_index = 10  # sopra i contenuti child del panel
+	# Attendi un frame perche` il PanelContainer calcoli la sua size, poi
+	# posiziona la X in alto-destra del panel rect.
 	btn.pressed.connect(close_current_panel)
-	panel.add_child(btn)
+	_ui_layer.add_child(btn)
+	btn.call_deferred("set_global_position", _compute_close_button_position(panel, btn))
+
+
+func _compute_close_button_position(panel: Control, btn: Control) -> Vector2:
+	var panel_rect := panel.get_global_rect()
+	# 6px di margine interno dall'angolo top-right del panel
+	return Vector2(
+		panel_rect.position.x + panel_rect.size.x - btn.custom_minimum_size.x - 6,
+		panel_rect.position.y + 6
+	)
+
+
+func _cleanup_close_button() -> void:
+	var prefix := "PanelCloseBtn_"
+	for child in _ui_layer.get_children():
+		if child.name.begins_with(prefix):
+			child.queue_free()
 
 
 func _grab_focus_recursive(node: Node) -> bool:
@@ -107,6 +123,7 @@ func close_current_panel() -> void:
 	var closing_name := _current_panel_name
 	var closing_panel := _current_panel
 
+	_cleanup_close_button()
 	_current_panel = null
 	_current_panel_name = ""
 	closing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -151,6 +168,7 @@ func _close_immediate() -> void:
 		_tween = null
 
 	var closing_name := _current_panel_name
+	_cleanup_close_button()
 	_current_panel.queue_free()
 	_current_panel = null
 	_current_panel_name = ""
