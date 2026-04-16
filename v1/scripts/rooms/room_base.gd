@@ -97,7 +97,20 @@ func _on_character_changed(character_id: String) -> void:
 func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
+		AppLogger.warn(
+			"RoomBase",
+			"decoration_placed_unknown_item",
+			{"item_id": item_id, "pos": pos}
+		)
+		SignalBus.toast_requested.emit(
+			"Decorazione sconosciuta: %s" % item_id, "error"
+		)
 		return
+	AppLogger.info(
+		"RoomBase",
+		"decoration_placed_accepted",
+		{"item_id": item_id, "pos": pos}
+	)
 	var item_scale: float = item_data.get("item_scale", 1.0)
 	var deco_data := {
 		"item_id": item_id,
@@ -144,13 +157,20 @@ func _spawn_decoration(
 ) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
+		AppLogger.warn("RoomBase", "spawn_deco_unknown_item", {"item_id": item_id})
 		return
 	var sprite_path: String = item_data.get("sprite_path", "")
 	if sprite_path.is_empty():
+		AppLogger.error("RoomBase", "spawn_deco_no_sprite_path", {"item_id": item_id})
 		return
 
 	var texture := load(sprite_path) as Texture2D
 	if texture == null:
+		AppLogger.error(
+			"RoomBase",
+			"spawn_deco_texture_load_fail",
+			{"item_id": item_id, "sprite_path": sprite_path}
+		)
 		return
 
 	var sprite := Sprite2D.new()
