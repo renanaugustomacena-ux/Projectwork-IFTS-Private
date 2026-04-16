@@ -1,6 +1,6 @@
 # Guida Database — Elia Zoccatelli
 
-**Progetto**: Mini Cozy Room
+**Progetto**: Relax Room
 **Ruolo destinatario**: Database Engineer
 **Data**: 2026-04-15
 **Versione**: 1.0
@@ -25,7 +25,7 @@
 
 ## Introduzione
 
-Benvenuto Elia. Questa guida ti accompagna passo-passo nella gestione del layer di persistenza di Mini Cozy Room: lo strato SQLite locale (autoload `LocalDatabase`), l'integrazione con il `SaveManager` JSON-primary e la sincronizzazione cloud opzionale verso Supabase. È pensata per essere letta in sequenza la prima volta e poi consultata come reference quando devi aggiungere tabelle, scrivere migrazioni o investigare incident di produzione.
+Benvenuto Elia. Questa guida ti accompagna passo-passo nella gestione del layer di persistenza di Relax Room: lo strato SQLite locale (autoload `LocalDatabase`), l'integrazione con il `SaveManager` JSON-primary e la sincronizzazione cloud opzionale verso Supabase. È pensata per essere letta in sequenza la prima volta e poi consultata come reference quando devi aggiungere tabelle, scrivere migrazioni o investigare incident di produzione.
 
 **Prerequisiti prima di iniziare**:
 
@@ -41,7 +41,7 @@ Benvenuto Elia. Questa guida ti accompagna passo-passo nella gestione del layer 
 
 ## 1. Panoramica architettura database
 
-Mini Cozy Room adotta un modello **dual-save offline-first**: il JSON è la *source of truth*, SQLite è un mirror strutturato, Supabase è un backup cloud opzionale. Questa scelta deriva dalla natura "desktop companion" dell'app: deve funzionare senza rete, con avvii frequenti e chiusure brusche (kill del processo dalla taskbar).
+Relax Room adotta un modello **dual-save offline-first**: il JSON è la *source of truth*, SQLite è un mirror strutturato, Supabase è un backup cloud opzionale. Questa scelta deriva dalla natura "desktop companion" dell'app: deve funzionare senza rete, con avvii frequenti e chiusure brusche (kill del processo dalla taskbar).
 
 ### 1.1 Dual save: JSON primary + SQLite mirror
 
@@ -76,7 +76,7 @@ L'ordine dichiarato in `project.godot` è vincolante — ogni autoload può dipe
 Su Linux, `user://` mappa su:
 
 ```
-~/.local/share/godot/app_userdata/Mini Cozy Room/
+~/.local/share/godot/app_userdata/Relax Room/
 ├── save_data.json
 ├── save_data.backup.json
 ├── cozy_room.db
@@ -89,7 +89,7 @@ Su Linux, `user://` mappa su:
     └── session_<uuid>.jsonl
 ```
 
-Su Windows il base path è `%APPDATA%\Godot\app_userdata\Mini Cozy Room\`. Su macOS `~/Library/Application Support/Godot/app_userdata/Mini Cozy Room/`.
+Su Windows il base path è `%APPDATA%\Godot\app_userdata\Relax Room\`. Su macOS `~/Library/Application Support/Godot/app_userdata/Relax Room/`.
 
 ### 1.4 Relazione con Supabase (opzionale)
 
@@ -299,7 +299,7 @@ Consigliato per esplorazione rapida e modifiche ad-hoc.
 
 1. Installa da [sqlitebrowser.org](https://sqlitebrowser.org/) (su Debian/Ubuntu: `sudo apt install sqlitebrowser`).
 2. Chiudi l'app Godot (altrimenti il DB è lockato in WAL mode — vedi 3.4).
-3. Apri il file `~/.local/share/godot/app_userdata/Mini Cozy Room/cozy_room.db`.
+3. Apri il file `~/.local/share/godot/app_userdata/Relax Room/cozy_room.db`.
 4. Tab **Database Structure** per vedere schema e indices.
 5. Tab **Browse Data** per scorrere le righe, filtro in alto a destra.
 6. Tab **Execute SQL** per query custom, es. `SELECT a.uid, COUNT(*) FROM accounts a JOIN inventario i ON i.account_id = a.id GROUP BY a.uid;`.

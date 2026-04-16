@@ -200,9 +200,9 @@ Prima di toccare il codice, e' fondamentale che tu capisca i concetti base dei d
 Immaginate un foglio Excel molto potente, salvato in un singolo file. Quel file e' il vostro database. Non serve un "server" separato — il database vive dentro il file `cozy_room.db` nella cartella dell'utente. Questo e' il grande vantaggio di SQLite: e' semplice, veloce, e non richiede installazione.
 
 Nel nostro progetto, il file del database si trova in:
-- **Windows**: `%APPDATA%/Godot/app_userdata/MiniCozyRoom/cozy_room.db`
-- **Linux**: `~/.local/share/godot/app_userdata/MiniCozyRoom/cozy_room.db`
-- **macOS**: `~/Library/Application Support/Godot/app_userdata/MiniCozyRoom/cozy_room.db`
+- **Windows**: `%APPDATA%/RelaxRoom/cozy_room.db`
+- **Linux**: `~/.local/share/RelaxRoom/cozy_room.db`
+- **macOS**: `~/Library/Application Support/RelaxRoom/cozy_room.db`
 
 ### Cos'e' una Tabella?
 
@@ -493,7 +493,7 @@ anon public:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.XXXXX...
 
 ```sql
 -- ================================================
--- Schema Mini Cozy Room — Supabase (PostgreSQL)
+-- Schema Relax Room — Supabase (PostgreSQL)
 -- Allineato allo schema SQLite locale
 -- ================================================
 
@@ -679,5 +679,5 @@ Task da audit v2.0.0:
 
 ---
 
-*Guida redatta come parte dell'audit pre-rilascio del progetto Mini Cozy Room.*
+*Guida redatta come parte dell'audit pre-rilascio del progetto Relax Room.*
 *Per domande o chiarimenti, contattate Renan Augusto Macena (System Architect & Project Supervisor).*

@@ -26,7 +26,7 @@ Godot is a **free and open-source** game engine released under the MIT license. 
 | 2024 | Godot 4.3 — Stability improvements, .NET 8 |
 | 2025 | Godot 4.5 — Our project's version. GL Compatibility improvements, performance |
 
-### Why Godot for Mini Cozy Room?
+### Why Godot for Relax Room?
 
 1. **2D-first design** — Godot's 2D engine is native, not a layer on top of 3D (unlike Unity)
 2. **Pixel art friendly** — Built-in nearest-neighbor filtering, pixel-perfect rendering
@@ -166,7 +166,7 @@ Node
     └── AnimationPlayer
 ```
 
-### Key Node Types Used in Mini Cozy Room
+### Key Node Types Used in Relax Room
 
 | Node Type | What It Does | Where We Use It |
 |-----------|-------------|-----------------|
@@ -586,7 +586,7 @@ func _exit_tree() -> void:
 
 ### The Signal Bus Pattern
 
-Instead of connecting signals directly between nodes (which creates tight coupling), Mini Cozy Room uses a **Signal Bus** — a global autoload that holds all signals:
+Instead of connecting signals directly between nodes (which creates tight coupling), Relax Room uses a **Signal Bus** — a global autoload that holds all signals:
 
 ```gdscript
 # signal_bus.gd (Autoload)
@@ -655,9 +655,9 @@ res://  → Project root (read-only after export)
 
 user:// → User data directory (read-write)
          Used for: save files, settings, logs, imported tracks
-         Windows: %APPDATA%/Godot/app_userdata/Mini Cozy Room/
-         Linux:   ~/.local/share/godot/app_userdata/Mini Cozy Room/
-         macOS:   ~/Library/Application Support/Godot/app_userdata/Mini Cozy Room/
+         Windows: %APPDATA%/Godot/app_userdata/Relax Room/
+         Linux:   ~/.local/share/godot/app_userdata/Relax Room/
+         macOS:   ~/Library/Application Support/Godot/app_userdata/Relax Room/
 ```
 
 ### Custom Resources
@@ -851,7 +851,7 @@ control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 ### Building UI in Code (Our Approach)
 
-Mini Cozy Room builds most UI programmatically instead of using the visual editor:
+Relax Room builds most UI programmatically instead of using the visual editor:
 
 ```gdscript
 # From music_panel.gd
@@ -1282,11 +1282,11 @@ assert(health >= 0, "Health cannot be negative!")
 
 ## 18. Project Settings That Matter
 
-### Key Settings for Mini Cozy Room
+### Key Settings for Relax Room
 
 ```ini
 [application]
-config/name = "Mini Cozy Room"
+config/name = "Relax Room"
 run/main_scene = "res://scenes/menu/main_menu.tscn"
 
 [display]
@@ -1434,7 +1434,7 @@ Per capire meglio Godot, e' utile confrontarlo con i suoi concorrenti principali
 | **Export Web** | Supportato (HTML5) | Supportato (WebGL) | Limitato |
 | **Mobile** | Supportato | Eccellente | Possibile ma pesante |
 
-### Perche' Godot per Mini Cozy Room?
+### Perche' Godot per Relax Room?
 
 1. **Pixel art 2D nativo**: Godot ha supporto first-class per il 2D, non e' un "adattamento" del 3D
 2. **Leggerezza**: L'editor e' 100 MB, il gioco esportato pesa pochi MB — ideale per un desktop companion
@@ -1444,5 +1444,5 @@ Per capire meglio Godot, e' utile confrontarlo con i suoi concorrenti principali
 
 ---
 
-*Study document for Mini Cozy Room — IFTS Projectwork 2026*
+*Study document for Relax Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*

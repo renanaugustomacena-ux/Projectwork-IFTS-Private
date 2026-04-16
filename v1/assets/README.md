@@ -1,4 +1,4 @@
-# Mini Cozy Room — Asset Grafici e Audio
+# Relax Room — Asset Grafici e Audio
 
 Questa cartella contiene tutti gli asset visivi e audio del progetto.
 Lo stile grafico e' **pixel art**, importato con texture filter Nearest (no smoothing).

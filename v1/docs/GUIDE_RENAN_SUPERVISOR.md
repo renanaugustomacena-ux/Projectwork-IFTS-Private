@@ -1,6 +1,6 @@
 # Guida Supervisor — Renan Augusto Macena
 
-**Progetto**: Mini Cozy Room — Desktop companion (Godot 4.5)
+**Progetto**: Relax Room — Desktop companion (Godot 4.5)
 **Destinatario**: Renan Augusto Macena — Team Lead, Software Architect, IP Owner
 **Data**: 2026-04-15
 **Versione**: 1.0
@@ -28,7 +28,7 @@
 ## Introduzione
 
 Questa guida è lo strumento operativo di **Renan Augusto Macena** nel ruolo di
-**Team Lead, Software Architect e IP Owner** del progetto *Mini Cozy Room*. Il ruolo
+**Team Lead, Software Architect e IP Owner** del progetto *Relax Room*. Il ruolo
 combina tre responsabilità distinte ma interdipendenti:
 
 - **Team Lead**: coordina il lavoro quotidiano di Elia (Database Engineer) e Cristian
@@ -761,7 +761,7 @@ Preset già configurati in `v1/export_presets.cfg`. Da riga di comando:
 ```bash
 # Windows
 godot-4 --headless --path v1/ --export-release "Windows Desktop" \
-    ../builds/mini_cozy_room_$(date +%Y%m%d).exe
+    ../builds/relax_room_$(date +%Y%m%d).exe
 
 # HTML5
 godot-4 --headless --path v1/ --export-release "Web" \

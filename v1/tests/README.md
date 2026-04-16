@@ -1,4 +1,4 @@
-# Mini Cozy Room — Test Unitari
+# Relax Room — Test Unitari
 
 > **Stato (29 Marzo 2026)**: I test unitari sono stati **rimossi** dal progetto.
 > GdUnit4 non e' installato. La cartella `tests/unit/` e' attualmente vuota

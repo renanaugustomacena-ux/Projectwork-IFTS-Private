@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate JSON catalog structure and required fields for Mini Cozy Room.
+"""Validate JSON catalog structure and required fields for Relax Room.
 
 Usage: python ci/validate_json_catalogs.py v1/data
 """

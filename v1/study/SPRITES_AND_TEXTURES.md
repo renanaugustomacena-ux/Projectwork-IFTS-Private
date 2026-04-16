@@ -1,6 +1,6 @@
 # Sprite, Texture e Animazioni — Godot 4.6
 
-> Documento di studio per il team Mini Cozy Room.
+> Documento di studio per il team Relax Room.
 > Copre i fondamenti delle sprite, texture e animazioni in Godot 4.6,
 > con riferimenti diretti al nostro codice sorgente.
 

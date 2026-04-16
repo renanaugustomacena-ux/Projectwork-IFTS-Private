@@ -1,4 +1,4 @@
-# Database e Persistenza nei Giochi — Studio per Mini Cozy Room
+# Database e Persistenza nei Giochi — Studio per Relax Room
 
 Guida completa su come i giochi gestiscono dati persistenti: database, salvataggi,
 autenticazione, cloud sync. Con focus su Godot 4, SQLite, JSON e Supabase.
@@ -640,7 +640,7 @@ CREATE POLICY "own_rooms" ON rooms FOR ALL
 
 ---
 
-## 6. Il Nostro Sistema — Mini Cozy Room
+## 6. Il Nostro Sistema — Relax Room
 
 ### 6.1 Architettura Completa
 
@@ -760,5 +760,5 @@ CASCADE delete:
 
 ---
 
-*Study document for Mini Cozy Room — IFTS Projectwork 2026*
+*Study document for Relax Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*

@@ -1,4 +1,4 @@
-# Mini Cozy Room — Presentazione Progetto
+# Relax Room — Presentazione Progetto
 
 **Progetto ITS — Anno 2025/2026**
 **Data presentazione**: 22 Aprile 2026
@@ -7,7 +7,7 @@
 
 ## Slide 1 — Copertina
 
-**Mini Cozy Room**
+**Relax Room**
 
 *Il tuo compagno desktop per il relax e la produttivita consapevole*
 
@@ -42,7 +42,7 @@ gestione dei build automatizzati per Windows e Web.
 
 ## Slide 3 — Il Progetto
 
-### Cos'e Mini Cozy Room?
+### Cos'e Relax Room?
 
 Un'applicazione desktop che trasforma il tuo PC in uno spazio
 accogliente e personalizzabile.
@@ -81,12 +81,12 @@ non per dominarla.
 
 ---
 
-## Slide 5 — Perche Mini Cozy Room?
+## Slide 5 — Perche Relax Room?
 
 ### L'intenzione dietro il progetto
 
 Nel mondo digitale moderno, ogni applicazione compete per la tua
-attenzione. Mini Cozy Room fa il contrario: crea uno spazio che
+attenzione. Relax Room fa il contrario: crea uno spazio che
 ti aiuta a concentrarti e rilassarti.
 
 **A chi e destinato:**
@@ -188,7 +188,7 @@ il branch principale senza superare tutti i controlli.
 
 ## Slide 9 — Il Gioco in Cifre
 
-### Mini Cozy Room in numeri
+### Relax Room in numeri
 
 | Metrica | Valore |
 |---|---|
@@ -235,7 +235,7 @@ completi l'azione prima di procedere.
 
 ## Slide 11 — Miglioramenti Futuri
 
-### Dove puo andare Mini Cozy Room
+### Dove puo andare Relax Room
 
 L'architettura e stata progettata per crescere. Il database cloud ha
 gia **15 tabelle**: 6 sono in uso attivo, **9 sono pronte** per le
@@ -260,8 +260,6 @@ Sessioni di studio con tracking e statistiche.
 Traccia il tuo umore nel tempo con grafici e riflessioni.
 *(Tabelle `journal_entries`, `mood_entries`, `memos` pronte)*
 
-**Marketplace decorazioni**
-Sistema economia con monete gia implementato nel gioco.
 
 **Supporto mobile**
 Godot 4.6 compila nativamente per Android e iOS.
@@ -285,7 +283,7 @@ Godot 4.6 compila nativamente per Android e iOS.
 
 ## Slide 13 — Chiusura
 
-### Mini Cozy Room
+### Relax Room
 
 *"In un mondo che corre, abbiamo costruito un angolo dove fermarsi."*
 

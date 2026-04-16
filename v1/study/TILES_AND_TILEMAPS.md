@@ -1,6 +1,6 @@
 # TileMap, TileSet e Terreni — Godot 4.6
 
-> Documento di studio per il team Mini Cozy Room.
+> Documento di studio per il team Relax Room.
 > Il nostro progetto attualmente NON usa TileMap, ma questa conoscenza
 > e' fondamentale per capire come funzionano i giochi 2D in Godot
 > e per eventuali sviluppi futuri (stanze modulari, editor livelli).

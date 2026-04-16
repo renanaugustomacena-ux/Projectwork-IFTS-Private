@@ -1505,5 +1505,5 @@ Se qualcosa fallisce: annotare quale test fallisce e quale errore appare nel pan
 
 ---
 
-*Guida redatta come parte dell'audit pre-rilascio del progetto Mini Cozy Room.*
+*Guida redatta come parte dell'audit pre-rilascio del progetto Relax Room.*
 *Scadenza progetto: 22 Aprile 2026.*

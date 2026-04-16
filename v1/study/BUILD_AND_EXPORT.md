@@ -106,7 +106,7 @@ Preset configuration:
 │ Binary:      godot.windows.template_release   │
 │                                               │
 │ Application:                                  │
-│   Name:           Mini Cozy Room              │
+│   Name:           Relax Room              │
 │   Icon:           res://icon.ico              │
 │   Version:        1.0.0                       │
 │                                               │
@@ -232,7 +232,7 @@ Installer Creation:
 
   Example Inno Setup script:
     [Setup]
-    AppName=Mini Cozy Room
+    AppName=Relax Room
     AppVersion=1.0.0
     DefaultDirName={autopf}\MiniCozyRoom
     OutputBaseFilename=MiniCozyRoom-Setup
@@ -244,8 +244,8 @@ Installer Creation:
     Source: "build\MiniCozyRoom.pck"; DestDir: "{app}"
 
     [Icons]
-    Name: "{group}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"
-    Name: "{commondesktop}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"
+    Name: "{group}\Relax Room"; Filename: "{app}\MiniCozyRoom.exe"
+    Name: "{commondesktop}\Relax Room"; Filename: "{app}\MiniCozyRoom.exe"
 ```
 
 ### macOS
@@ -276,7 +276,7 @@ Code Signing & Notarization:
   5. Staple: xcrun stapler staple MiniCozyRoom.app
 
 DMG Creation:
-  hdiutil create -volname "Mini Cozy Room" -srcfolder MiniCozyRoom.app \
+  hdiutil create -volname "Relax Room" -srcfolder MiniCozyRoom.app \
     -ov -format UDZO MiniCozyRoom.dmg
 ```
 
@@ -324,7 +324,7 @@ Limitations:
   - Only GL Compatibility renderer works (our renderer! ✓)
 
 Our project consideration:
-  Mini Cozy Room COULD run as a web app because:
+  Relax Room COULD run as a web app because:
   ✓ Uses GL Compatibility renderer
   ✓ 2D only (no heavy GPU features)
   ✗ File import feature won't work (already handled with OS.has_feature("web"))
@@ -547,9 +547,9 @@ Distribution via Butler CLI:
     | sudo tar xvz -C /usr/local/bin
 
   # Push a build
-  butler push build/windows username/mini-cozy-room:windows
-  butler push build/linux username/mini-cozy-room:linux
-  butler push build/mac username/mini-cozy-room:mac
+  butler push build/windows username/relax-room:windows
+  butler push build/linux username/relax-room:linux
+  butler push build/mac username/relax-room:mac
 
   # Butler features:
   - Delta patches (only uploads changed files)
@@ -739,7 +739,7 @@ our entire game. We specifically avoid GPL for this reason.
 ```
 Create a CREDITS or LICENSES screen in your game:
 
-  Mini Cozy Room
+  Relax Room
 
   Engine: Godot Engine (MIT License)
           https://godotengine.org
@@ -956,7 +956,7 @@ Cons:
   ✗ No compute shaders
   ✗ Limited post-processing
 
-For Mini Cozy Room: Perfect choice. We don't need 3D features.
+For Relax Room: Perfect choice. We don't need 3D features.
 ```
 
 ### GDExtension Bundling (godot-sqlite)
@@ -1217,19 +1217,19 @@ Per compilare su Linux (CI/CD):
   3. Compilate: wine ~/.wine/drive_c/.../ISCC.exe MiniCozyRoom.iss
 ```
 
-### Script Inno Setup per Mini Cozy Room
+### Script Inno Setup per Relax Room
 
 ```iss
-; Mini Cozy Room — Inno Setup Script
+; Relax Room — Inno Setup Script
 ; Genera un installer professionale per Windows
 
 [Setup]
-AppName=Mini Cozy Room
+AppName=Relax Room
 AppVersion=1.0.0
 AppPublisher=IFTS Projectwork Team
 AppPublisherURL=https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private
 DefaultDirName={autopf}\MiniCozyRoom
-DefaultGroupName=Mini Cozy Room
+DefaultGroupName=Relax Room
 OutputDir=installer_output
 OutputBaseFilename=Setup_MiniCozyRoom_v1.0.0
 SetupIconFile=icon.ico
@@ -1253,15 +1253,15 @@ Source: "export\windows\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 
 [Icons]
 ; Shortcut nel menu Start
-Name: "{group}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"
+Name: "{group}\Relax Room"; Filename: "{app}\MiniCozyRoom.exe"
 ; Shortcut opzionale sul Desktop
-Name: "{autodesktop}\Mini Cozy Room"; Filename: "{app}\MiniCozyRoom.exe"; \
+Name: "{autodesktop}\Relax Room"; Filename: "{app}\MiniCozyRoom.exe"; \
   Tasks: desktopicon
 
 [Run]
-; Opzione "Avvia Mini Cozy Room" alla fine dell'installazione
+; Opzione "Avvia Relax Room" alla fine dell'installazione
 Filename: "{app}\MiniCozyRoom.exe"; \
-  Description: "Avvia Mini Cozy Room"; \
+  Description: "Avvia Relax Room"; \
   Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
@@ -1396,7 +1396,7 @@ In Godot: Project → Export → Add → Android
 
 Impostazioni chiave:
   - Package → Unique Name: com.ifts.minicozyroom
-  - Package → Name: Mini Cozy Room
+  - Package → Name: Relax Room
   - Version → Code: 1 (incrementare ad ogni release)
   - Version → Name: 1.0.0
   - Architectures → arm64-v8a: ON (dispositivi moderni)
@@ -1516,5 +1516,5 @@ Installer (LZMA2)        ~35-45 MB (compresso)
 
 ---
 
-*Study document for Mini Cozy Room — IFTS Projectwork 2026*
+*Study document for Relax Room — IFTS Projectwork 2026*
 *Author: Renan Augusto Macena (System Architect & Project Supervisor)*

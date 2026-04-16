@@ -1,4 +1,4 @@
-# Mini Cozy Room — Scene Godot
+# Relax Room — Scene Godot
 
 Questa cartella contiene le **scene Godot** (.tscn) del progetto. Le scene
 definiscono le gerarchie di nodi, la composizione dei componenti e il layout dell'interfaccia.
