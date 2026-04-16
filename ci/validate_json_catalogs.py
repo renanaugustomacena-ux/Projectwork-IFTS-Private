@@ -38,8 +38,14 @@ def validate_characters(data, errors):
         if char.get("gender") not in ("male", "female"):
             errors.append(("characters.json", f"{prefix}.gender", f"invalid value '{char.get('gender')}' (expected: male, female)"))
 
-        if char.get("sprite_type") not in ("directional", "simple"):
-            errors.append(("characters.json", f"{prefix}.sprite_type", f"invalid value '{char.get('sprite_type')}' (expected: directional, simple)"))
+        sprite_type = char.get("sprite_type")
+        if sprite_type not in ("directional", "simple", "compact"):
+            errors.append(("characters.json", f"{prefix}.sprite_type", f"invalid value '{sprite_type}' (expected: directional, simple, compact)"))
+
+        # 'compact' characters only use top-level sprite_path (single idle strip).
+        # Skip the full animation-tree check for them.
+        if sprite_type != "directional":
+            continue
 
         anims = char.get("animations")
         if not isinstance(anims, dict):
