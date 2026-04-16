@@ -49,6 +49,7 @@ func open_panel(panel_name: String) -> void:
 	_current_panel_name = panel_name
 	_current_panel.modulate.a = 0.0
 	_ui_layer.add_child(_current_panel)
+	_inject_close_button(_current_panel)
 	_grab_focus_recursive(_current_panel)
 
 	# Fade in
@@ -60,6 +61,31 @@ func open_panel(panel_name: String) -> void:
 
 	SignalBus.panel_opened.emit(panel_name)
 	AppLogger.info("PanelManager", "Panel opened", {"name": panel_name})
+
+
+## Inietta un pulsante X di chiusura in alto a destra del panel. Il click chiama
+## close_current_panel (stesso flusso del tasto ESC, rispetta tween e focus release).
+## Centralizzato qui cosi` ogni panel registrato nel PanelManager ha UX uniforme
+## senza duplicare il codice in deco/settings/profile.
+func _inject_close_button(panel: PanelContainer) -> void:
+	var btn := Button.new()
+	btn.name = "PanelCloseBtn"
+	btn.text = "×"
+	btn.flat = true
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.custom_minimum_size = Vector2(28, 28)
+	btn.add_theme_font_size_override("font_size", 22)
+	btn.add_theme_color_override("font_color", Color(0.9, 0.4, 0.4, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.6, 0.6, 1.0))
+	# Anchoring top-right corner del panel, con piccolo margine interno.
+	btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	btn.offset_left = -32
+	btn.offset_right = -4
+	btn.offset_top = 4
+	btn.offset_bottom = 32
+	btn.z_index = 10  # sopra i contenuti child del panel
+	btn.pressed.connect(close_current_panel)
+	panel.add_child(btn)
 
 
 func _grab_focus_recursive(node: Node) -> bool:
