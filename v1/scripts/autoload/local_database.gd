@@ -250,6 +250,23 @@ func _migrate_schema() -> void:
 		var schema: String = rows[0].get("sql", "")
 		if "character_id" not in schema:
 			AppLogger.info("LocalDatabase", "Migrating characters to new schema")
+			# Safety net (fix B-015): backup dei dati PRIMA di DROP distruttivo.
+			# Salva snapshot characters + inventario in tabelle *_bak prima di
+			# droppare. Se migration fallisce o utente vuole rollback, recover
+			# e possibile. Tabelle bak sopravvivono al crash.
+			_execute("DROP TABLE IF EXISTS characters_bak;")
+			_execute("DROP TABLE IF EXISTS inventario_bak;")
+			_execute("CREATE TABLE characters_bak AS SELECT * FROM characters;")
+			_execute("CREATE TABLE inventario_bak AS SELECT * FROM inventario;")
+			var bak_rows := _select(
+				"SELECT COUNT(*) as cnt FROM characters_bak;", []
+			)
+			var bak_cnt: int = bak_rows[0].get("cnt", 0) if not bak_rows.is_empty() else 0
+			AppLogger.info(
+				"LocalDatabase",
+				"migration_1_backup_created",
+				{"characters_backed_up": bak_cnt}
+			)
 			_execute("DROP TABLE IF EXISTS characters;")
 			_execute("DROP TABLE IF EXISTS inventario;")
 			_create_tables()
