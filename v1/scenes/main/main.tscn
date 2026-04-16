@@ -64,13 +64,6 @@ focus_mode = 0
 mouse_filter = 1
 script = ExtResource("3_dropzone")
 
-[node name="Tree" type="Tree" parent="UILayer/DropZone" unique_id=891527627]
-layout_mode = 0
-offset_right = 16.0
-offset_bottom = 17.0
-focus_mode = 0
-columns = 3
-
 [node name="HUD" type="HBoxContainer" parent="UILayer" unique_id=1520605615]
 anchors_preset = 12
 anchor_top = 1.0
