@@ -109,10 +109,35 @@ func sign_out_cloud() -> void:
 # ---- Session Persistence ----
 
 
+## Derive una chiave di cifratura dal percorso user data dir + salt costante.
+## Stesso device → stessa chiave. Altro device → non riesce a decifrare.
+## Raddrizza il pattern plaintext su disco (fix B-019: token encryption).
+## Nota: non protegge da attacker che legge memoria del processo, ma blocca
+## grep banale + copia del .cfg su altro PC.
+const _SESSION_SALT := "relax-room-2026-session-v1"
+
+
+func _derive_session_key() -> String:
+	return (OS.get_user_data_dir() + _SESSION_SALT).sha256_text()
+
+
 func _try_restore_session() -> void:
+	# Legge prima formato cifrato (nuovo), poi fallback plaintext legacy
+	# per backward compatibility con session pre-fix B-019.
 	var cfg := ConfigFile.new()
-	if cfg.load(SESSION_PATH) != OK:
-		return
+	var pass_key := _derive_session_key()
+	var err := cfg.load_encrypted_pass(SESSION_PATH, pass_key)
+	if err != OK:
+		# Fallback legacy plaintext
+		err = cfg.load(SESSION_PATH)
+		if err == OK:
+			AppLogger.warn(
+				"SupabaseClient",
+				"session_loaded_legacy_plaintext",
+				{"action": "migrating_to_encrypted_on_next_save"}
+			)
+		else:
+			return
 	_jwt_token = cfg.get_value("session", "jwt", "")
 	_refresh_token = cfg.get_value("session", "refresh_token", "")
 	_jwt_expires_at = cfg.get_value("session", "expires_at", 0.0)
@@ -131,7 +156,17 @@ func _save_session() -> void:
 	cfg.set_value("session", "expires_at", _jwt_expires_at)
 	cfg.set_value("session", "user_id", supabase_user_id)
 	cfg.set_value("session", "local_account_id", AuthManager.current_account_id)
-	cfg.save(SESSION_PATH)
+	# Salvataggio cifrato (fix B-019). Chiave derivata dal device user dir +
+	# salt costante. Godot 4.5 nativo: ConfigFile.save_encrypted_pass.
+	var pass_key := _derive_session_key()
+	var err := cfg.save_encrypted_pass(SESSION_PATH, pass_key)
+	if err != OK:
+		AppLogger.error(
+			"SupabaseClient",
+			"session_save_encrypted_failed",
+			{"err": err, "fallback": "plaintext"}
+		)
+		cfg.save(SESSION_PATH)
 
 
 func _apply_auth_response(data: Dictionary) -> void:
