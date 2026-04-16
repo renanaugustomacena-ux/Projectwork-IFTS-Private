@@ -64,6 +64,7 @@ v1/SUPERVISOR_WORKPLAN.md
 
 # PDF export artifacts (generated, not versioned)
 v1/export_pdf/
+Mini-Cozy-Room-Presentazione-Progetto.pdf
 
 # Netlify local state (auto-generated, not versioned)
 .netlify/
