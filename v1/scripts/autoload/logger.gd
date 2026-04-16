@@ -12,6 +12,12 @@ const LOG_DIR := "user://logs/"
 const MAX_LOG_SIZE_BYTES := 5_242_880  # 5 MB
 const MAX_LOG_FILES := 5
 const FLUSH_INTERVAL := 2.0  # seconds
+const MAX_BUFFER_ENTRIES := 2000  # cap memoria: se oltre, drop oldest (fix B-018)
+const REDACT_KEYS := [
+	"password", "password_hash", "token", "jwt", "refresh_token",
+	"access_token", "hmac_key", "secret", "anon_key"
+]
+const REDACTED := "***"
 
 var _session_id: String = ""
 var _log_file: FileAccess = null
@@ -71,6 +77,28 @@ func get_session_id() -> String:
 	return _session_id
 
 
+## Sanitizza chiavi sensibili (password, token, ecc.) nel context prima di
+## serializzarlo nel log. Previene accidentale esposizione credenziali in
+## log files JSONL che l'utente potrebbe condividere per debugging. (fix B-028)
+func _redact_context(context: Dictionary) -> Dictionary:
+	var out := {}
+	for k in context.keys():
+		var key_lower := str(k).to_lower()
+		var value: Variant = context[k]
+		var is_sensitive := false
+		for sensitive in REDACT_KEYS:
+			if sensitive in key_lower:
+				is_sensitive = true
+				break
+		if is_sensitive:
+			out[k] = REDACTED
+		elif value is Dictionary:
+			out[k] = _redact_context(value)
+		else:
+			out[k] = value
+	return out
+
+
 ## Set the minimum log level. Messages below this level are discarded.
 func set_min_level(level: Level) -> void:
 	_min_level = level
@@ -97,9 +125,14 @@ func _log(level: Level, source: String, message: String, context: Dictionary) ->
 		"message": message,
 	}
 	if not context.is_empty():
-		entry["context"] = context
+		entry["context"] = _redact_context(context)
 
 	var json_line := JSON.stringify(entry)
+
+	# Cap buffer per prevenire OOM se flush fallisce ripetutamente (B-018).
+	# Quando raggiunge il cap, scarta il piu vecchio prima di appendere il nuovo.
+	if _log_buffer.size() >= MAX_BUFFER_ENTRIES:
+		_log_buffer.pop_front()
 	_log_buffer.append(json_line)
 
 	# Console output with severity-appropriate method

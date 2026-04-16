@@ -6,7 +6,6 @@ const DB_PATH := "user://cozy_room"
 
 var _db: SQLite = null
 var _is_open: bool = false
-var _last_select_error: bool = false
 
 
 func _ready() -> void:
@@ -91,6 +90,9 @@ func _open_database() -> void:
 	_is_open = true
 	_execute("PRAGMA journal_mode=WAL;")
 	_execute("PRAGMA foreign_keys=ON;")
+	# Busy timeout 5s: evita blocco main thread Godot se altro processo
+	# (es. crash precedente con lock residuo) detiene il DB. (fix B-026)
+	_execute("PRAGMA busy_timeout=5000;")
 	var fk_check := _select("PRAGMA foreign_keys;", [])
 	if fk_check.is_empty() or fk_check[0].get("foreign_keys", 0) != 1:
 		AppLogger.warn("LocalDatabase", "Foreign keys not enabled")
@@ -794,17 +796,19 @@ func _execute_bound(sql: String, bindings: Array) -> bool:
 
 
 func _select(sql: String, bindings: Array) -> Array:
-	_last_select_error = false
 	if _db == null or not _is_open:
 		AppLogger.error("LocalDatabase", "Database not open", {"sql": sql.left(80)})
-		_last_select_error = true
 		return []
 	if bindings.is_empty():
 		if not _db.query(sql):
-			_last_select_error = true
+			AppLogger.error("LocalDatabase", "select_failed", {"sql": sql.left(80)})
 			return []
 	else:
 		if not _db.query_with_bindings(sql, bindings):
-			_last_select_error = true
+			AppLogger.error(
+				"LocalDatabase",
+				"select_bound_failed",
+				{"sql": sql.left(80), "bindings": bindings}
+			)
 			return []
 	return _db.query_result
