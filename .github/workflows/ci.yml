@@ -159,3 +159,44 @@ jobs:
             exit 1
           fi
           echo "PASS: headless boot"
+
+  deep-tests:
+    name: "Deep Integration Tests"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    container:
+      image: barichello/godot-ci:4.6
+    needs: [smoke-headless]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Import project resources
+        run: |
+          godot --headless --import --path v1/ || true
+
+      - name: Run deep integration test suite
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          # Invasive suite: 96 tests across 7 modules covering helpers, catalog
+          # integrity (every sprite loads), stress hysteresis FSM, save/HMAC +
+          # migration, decoration spawn lifecycle for all 72 deco, panel UI
+          # lifecycle, simulated WASD input and animation response.
+          timeout 90 godot --headless --path v1/ res://tests/test_runner.tscn \
+            | tee /tmp/deep_ci.log
+          RC=${PIPESTATUS[0]}
+          if [ "$RC" -eq 0 ]; then
+            echo "PASS: deep tests all green"
+          else
+            echo "FAIL: deep tests exit $RC"
+            exit 1
+          fi
+
+      - name: Upload test results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deep-test-results-${{ github.sha }}
+          path: /tmp/deep_ci.log
+          retention-days: 14
