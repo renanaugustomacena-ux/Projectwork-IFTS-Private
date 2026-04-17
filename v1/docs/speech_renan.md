@@ -1,70 +1,89 @@
 # Speech — Renan Augusto Macena
 
 **Ruolo**: Team Lead · Architetto Software
-**Slide**: 1 · 3 · 4 · 5 · 7
+**Slide**: 1 · 2 (intro personale) · 5 (demo) · 6 · 7 · 8 · 11 (chiusura)
 
 ---
 
 ### [SLIDE 1 — Copertina]
 
-Buongiorno. Siamo il team che ha costruito **Relax Room**: un desktop companion pensato per farvi stare bene, non per rubare la vostra attenzione. Tre persone, un anno di lavoro, un prodotto che oggi funziona davvero. Partiamo.
+Ogni app oggi compete per la vostra attenzione. Noi abbiamo fatto il contrario.
+
+Buongiorno. Siamo Renan, Elia e Cristian, e abbiamo costruito **Relax Room** — un compagno desktop per il relax e la produttività consapevole. Progetto IFTS 2025/2026. Un anno di lavoro, tre persone, un prodotto che oggi funziona davvero.
 
 ---
 
-### [SLIDE 3 — Filosofia & Perché]
+### [SLIDE 2 — Team + Progetto]
 
-Il mondo digitale oggi compete per la vostra attenzione. Notifiche, badge rossi, dark pattern, algoritmi che vi trattengono. Noi abbiamo fatto il contrario.
+Io sono Renan, Team Lead e Architetto Software. Ho progettato l'architettura signal-driven, sviluppato i sistemi core — SaveManager, AuthManager, GameManager, SupabaseClient, Logger — e tengo il repository.
 
-Quattro principi, senza compromessi. **Community prima del profitto**. **Tutto sbloccato dal primo minuto** — niente paywall, niente loot box. **Zero pressione** — non c'è un punteggio, non c'è un livello da raggiungere. **Presenza, non invasione** — l'app c'è quando vi serve, sparisce quando non la guardate.
+*(Elia ora introduce se stessa, poi Cristian, poi riprendo per presentare il progetto.)*
 
-Leggera — sessanta frame al secondo su hardware di cinque anni fa. Offline-first — i vostri dati restano sul vostro PC, firmati con HMAC. Il software più utile è quello che vi fa stare bene senza chiedervi nulla in cambio.
-
-Ora vediamo come l'abbiamo costruito per mantenere ognuna di queste promesse.
+Cos'è Relax Room? **Non è un gioco. È un ambiente**. Un luogo dove tornare quando serve un momento di calma. Una stanza pixel art con centoventinove oggetti decorativi. Musica lo-fi con crossfade automatico. Un gattino virtuale con comportamento autonomo. E soprattutto: funziona completamente offline, senza account obbligatorio.
 
 ---
 
-### [SLIDE 4 — Architettura Tecnica]
+### [SLIDE 6 — Flusso Signal-Driven]
 
-Abbiamo scelto lo stack per due motivi: **robustezza** e **autonomia dell'utente**.
+**Quarantasei segnali. Zero accoppiamento.**
 
-Godot 4.6 per il motore. SQLite in WAL mode per la persistenza locale. Supabase per il cloud, quando serve, con Row Level Security. Autenticazione duale: PBKDF2 con SHA-256 per gli account locali, JWT per quelli cloud. Integrità dei save garantita da HMAC-SHA256. Pipeline CI a nove job. Distribuzione via Netlify e GitHub Releases.
+Nessun manager chiama direttamente un altro. Tutto passa attraverso il SignalBus — quarantasei segnali globali tipizzati. I sistemi sono completamente disaccoppiati, testabili in isolamento, estendibili senza toccare codice esistente.
 
-Dentro il motore abbiamo una catena di dieci singleton che si avviano in un ordine preciso: SignalBus, Logger, Database, Auth, Game, Save, Supabase, Audio, Performance, Stress. Ogni anello fa una cosa sola e la fa bene.
+Un esempio concreto. L'utente posa una decorazione. DropZone emette `decoration_placed`. Cinque sistemi diversi reagiscono in parallelo: RoomBase ridisegna la stanza. SaveManager scrive atomicamente su JSON più mirror SQLite. SupabaseClient accoda la sincronizzazione verso le quindici tabelle cloud. Il Logger traccia tutto con correlation ID end-to-end.
 
-Il risultato è un'app resiliente. Funziona completamente offline, scrive i file in modo atomico — prima un temporaneo, poi rename — così non perdete mai dati se si spegne il PC. Se il cloud restituisce un errore, saltiamo e andiamo avanti, mai crash.
+Cinque azioni coordinate. Nessuno conosce gli altri. Zero accoppiamento.
 
-Il cuore di tutta questa architettura è il **SignalBus**.
-
----
-
-### [SLIDE 5 — Signal Bus Topology]
-
-Quarantasei segnali. Zero accoppiamento.
-
-Abbiamo sei domini che non si parlano tra loro: Room, Character, Audio, UI, Save, Auth. Ognuno parla solo con il SignalBus. Nessun modulo conosce gli altri.
-
-Un esempio concreto. L'utente posa una decorazione nella stanza. Viene emesso il segnale `decoration_placed`. Lo SaveManager lo sente e salva. Il SupabaseClient lo accoda per la sincronizzazione. L'AppLogger scrive l'evento nel log. Tre sistemi diversi, tre azioni coordinate, e nessuno di loro si conosce.
-
-L'impatto è questo: aggiungere una funzionalità significa scrivere un nuovo listener. Non devi mai modificare il codice esistente. Il progetto cresce senza spezzarsi.
-
-Passo la parola a Elia, che vi racconta come questi eventi diventano dati permanenti.
+L'impatto pratico: aggiungere una nuova funzionalità significa scrivere un nuovo listener. Non modifichi mai il codice esistente. Il progetto cresce senza spezzarsi.
 
 ---
 
-### [SLIDE 7 — Osservabilità: AppLogger]
+### [SLIDE 7 — Filosofia di Design]
 
-Quando qualcosa si rompe, sapere dove guardare fa la differenza tra un bug fix in dieci minuti e un post-mortem di una settimana.
+Quattro principi, senza compromessi.
 
-Abbiamo costruito un logger che scrive JSON strutturato, una riga per evento. Ogni riga ha un session ID — così tracciate l'intero flusso dell'utente da quando apre l'app a quando la chiude. Quattro livelli — debug, info, warn, error — filtrabili. File che ruotano: cinque da cinque megabyte ciascuno, venticinque totali, mai oltre. Scrittura asincrona ogni due secondi, zero impatto sul frame rate.
+**Community, non competizione**. Nessun punteggio, nessuna classifica. Il focus è la creatività personale.
 
-Risultato pratico: se un utente ci segnala un problema, ci manda il file `.jsonl` del giorno. Apriamo il log e capiamo esattamente cos'è successo, anche se il bug è su un PC offline che non abbiamo mai visto.
+**Tutto sbloccato**. Niente grind, niente paywall. Tutto è disponibile dal primo avvio.
 
-Ora Cristian vi racconta la pipeline di asset e la CI che rende tutto questo possibile.
+**Zero pressione**. Nessuna notifica, nessun timer, nessun sistema energetico. Giocate quando volete, chiudete senza sensi di colpa.
+
+**Presenza senza invasione**. Il software esiste sullo sfondo della vostra giornata, non per dominarla.
+
+A chi è destinato? Studenti che cercano un ambiente di studio tranquillo. Lavoratori da remoto che personalizzano il proprio spazio digitale. Creativi che cercano un angolo di ispirazione.
+
+*Il software più utile è quello che vi fa stare bene senza chiedervi nulla in cambio.*
+
+---
+
+### [SLIDE 8 — Architettura Tecnica]
+
+Lo stack. Godot 4.6 come motore — GDScript, viewport 1280×720, filtro Nearest per pixel art nitida. SQLite in WAL mode per il database locale — undici tabelle, chiavi esterne con CASCADE, migrazioni automatiche da versione uno a cinque. Supabase PostgreSQL per il cloud — quindici tabelle con Row-Level Security per utente.
+
+Autenticazione duale: PBKDF2-SHA256 con salt random per gli account locali, Supabase Auth con JWT auto-refresh per quelli cloud. Integrità dei save garantita da firma HMAC-SHA256 — qualsiasi manomissione del file viene rilevata. Osservabilità tramite Logger strutturato a JSON Lines con correlation ID e redazione automatica dei secret.
+
+CI/CD su GitHub Actions — nove job paralleli, niente merge senza verde totale. Deploy automatico su Netlify e GitHub Releases.
+
+Otto autoload singleton. Un SignalBus al centro. Quarantasei segnali. Zero accoppiamento. Rimuovere un sistema non rompe gli altri. Aggiungere una feature non tocca il codice esistente.
+
+---
+
+### [SLIDE 11 — Ringraziamenti]
+
+Un grazie di cuore.
+
+A **Giorgia Chiampan**, la nostra tutor, per la guida costante, la pazienza e la fiducia in ogni fase del progetto. Senza di lei questo percorso non sarebbe stato lo stesso.
+
+A **311-Verona e ai facilitatori**, che hanno reso possibile questo percorso formativo.
+
+A **docenti e compagni**, che hanno condiviso domande e spunti lungo l'anno.
+
+Relax Room non sarebbe esistito senza di voi. **Grazie.**
 
 ---
 
 ## Note personali
 
-- Se il tempo stringe sulla slide 5, tagliate l'esempio vivo di `decoration_placed`.
-- Se vi avanza tempo sulla slide 4, aggiungete lo schema-resilient: errore HTTP 404 sul cloud → skip silenzioso, niente crash.
-- Collegamento speech esteso: genesi del progetto, scelta del signal bus, offline-first.
+- Slide 1: la frase "Ogni app oggi compete per la vostra attenzione, noi abbiamo fatto il contrario" è il gancio. Pausa dopo.
+- Slide 6: se sei in ritardo, taglia l'esempio `decoration_placed`. L'headline "46 segnali, zero accoppiamento" basta.
+- Slide 7: i quattro principi vanno scanditi. Una frase per principio, non di più.
+- Slide 11: la chiusura "Grazie" la possiamo dire tutti e tre insieme.
