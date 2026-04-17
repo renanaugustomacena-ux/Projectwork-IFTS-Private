@@ -127,16 +127,29 @@ func _build_ui() -> void:
 	points_block.add_child(_coin_label)
 
 	# Profile HUD button (feature T-R-015a): icona cliccabile che apre
-	# il mini pannello profilo+mood. Qui MOUSE_FILTER default (STOP) per
-	# ricevere click, diversamente dal resto della HUD che e` IGNORE.
-	var profile_btn := Button.new()
+	# il mini pannello profilo+mood. MOUSE_FILTER default (STOP) per ricevere
+	# click, diversamente dal resto della HUD che e` IGNORE.
+	#
+	# Icona: primo frame di male_idle_down.png (32x32) via AtlasTexture,
+	# anziche emoji "👤" che in font di fallback rendeva come stella blu
+	# triste (user feedback 2026-04-17). Mostra letteralmente il character
+	# del gioco, coerente col resto della pixel art.
+	var profile_btn := TextureButton.new()
 	profile_btn.name = "ProfileHUDButton"
-	profile_btn.text = "👤"
-	profile_btn.flat = true
 	profile_btn.focus_mode = Control.FOCUS_NONE
-	profile_btn.custom_minimum_size = Vector2(36, 32)
-	profile_btn.add_theme_font_size_override("font_size", 20)
+	profile_btn.custom_minimum_size = Vector2(40, 40)
 	profile_btn.tooltip_text = "Profilo + Mood"
+	var portrait_strip: Texture2D = load(
+		"res://assets/charachters/male/old/male_idle/male_idle_down.png"
+	) as Texture2D
+	if portrait_strip != null:
+		var portrait := AtlasTexture.new()
+		portrait.atlas = portrait_strip
+		portrait.region = Rect2(0, 0, 32, 32)  # primo frame
+		profile_btn.texture_normal = portrait
+		profile_btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		profile_btn.ignore_texture_size = true
+		profile_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	profile_btn.pressed.connect(_on_profile_hud_pressed)
 	row.add_child(profile_btn)
 
