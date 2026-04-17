@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renan Augusto Macena — Contributi · Relax Room</title>
+    <meta name="description" content="Contributi di Renan Augusto Macena al progetto Relax Room: architettura, runtime, UI, gameplay.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="team.css">
+    <script>
+        (function() {
+            var t = localStorage.getItem('mcr-theme') ||
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+    <div class="nav-container">
+        <a href="../index.html" class="nav-logo">
+            <i data-lucide="sparkles"></i>
+            Relax Room
+        </a>
+        <div class="nav-links">
+            <a href="../index.html#vision" class="nav-link">Visione</a>
+            <a href="../index.html#features" class="nav-link">Caratteristiche</a>
+            <a href="../index.html#team" class="nav-link">Team</a>
+            <a href="../index.html#download" class="nav-cta">Download</a>
+        </div>
+    </div>
+</nav>
+
+<main class="team-page">
+    <header class="team-page-hero" data-aos="fade-up">
+        <a href="../index.html#team" class="back-link">
+            <i data-lucide="arrow-left"></i>
+            <span>Torna al team</span>
+        </a>
+        <div class="team-page-avatar">R</div>
+        <h1>Renan Augusto Macena</h1>
+        <p class="team-page-role">System Architect · Runtime · Gameplay · Project Supervisor</p>
+        <a href="https://github.com/renanaugustomacena-ux" target="_blank" rel="noopener" class="btn btn-secondary">
+            <i data-lucide="github"></i>
+            Profilo GitHub
+        </a>
+    </header>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Panoramica</h2>
+        <p>
+            Architetto del progetto. Ha definito la struttura signal-driven,
+            scritto il core runtime (main.gd, panel_manager, game_manager), la
+            gameplay logic (character controller, pet FSM, stress system, mess
+            spawner) e l'intero layer UI del gioco. Ha coordinato il team come
+            Project Supervisor — redigendo runbook, guide operative, report
+            tecnici consolidati — e ha tenuto insieme il progetto nelle fasi di
+            integrazione degli asset di Cristian e dello schema di Elia.
+        </p>
+    </section>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Contributi per area</h2>
+
+        <div class="contrib-grid">
+            <div class="contrib-card">
+                <h3><i data-lucide="layers"></i> Architettura</h3>
+                <ul>
+                    <li>Progettazione signal-driven: <strong>46 segnali SignalBus</strong> tipizzati, 14 domini (room, character, audio, UI, save, auth, cloud, stress/mood, mess, economy, profile HUD)</li>
+                    <li>Definizione ordine autoload critico (10 singleton, ogni layer dipende solo dai precedenti)</li>
+                    <li>Decisione architetturale <strong>offline-first</strong>: JSON + SQLite source-of-truth, Supabase opzionale</li>
+                    <li>Pattern catalog-driven: contenuto in JSON, zero hardcoding</li>
+                    <li>Definizione 9 pattern codificati (P-01..P-09) documentati in <code>CONSOLIDATED_PROJECT_REPORT.md</code></li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="code"></i> Runtime + Gameplay</h3>
+                <ul>
+                    <li><code>main.gd</code> (205 righe) — controller scena principale, HUD wiring, tutorial launch, tema colore dinamico</li>
+                    <li><code>room_base.gd</code> (325 righe) — gestione stanza, spawn decorazioni, character swap con guard idempotente, pet spawn</li>
+                    <li><code>character_controller.gd</code> (93 righe) — movimento top-down WASD, animazioni direzionali, collision layers 1|2</li>
+                    <li><code>pet_controller.gd</code> (226 righe) — FSM 5 stati (IDLE/WANDER/FOLLOW/SLEEP/PLAY) con transizioni naturali, bobbing animation</li>
+                    <li><code>decoration_system.gd</code> (244 righe) — popup R/F/S/X su CanvasLayer, shift disabilita snap grid</li>
+                    <li><code>room_grid.gd</code>, <code>window_background.gd</code> — overlay grid editing, parallasse foresta 8 layer</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="layout-dashboard"></i> UI + UX</h3>
+                <ul>
+                    <li><code>panel_manager.gd</code> (165 righe) — lifecycle 4 panel (deco, settings, profile, profile_hud), mutual exclusion, Esc handler, fade tween</li>
+                    <li>5 panel UI programmatici: <code>deco_panel</code>, <code>settings_panel</code>, <code>profile_panel</code>, <code>profile_hud_panel</code>, <code>toast_manager</code></li>
+                    <li><code>game_hud.gd</code> — serenity bar in-game, coin counter, profile icon con portrait pixel-art</li>
+                    <li><code>deco_button.gd</code> (TextureRect subclass) — fix drag-drop Godot 4 usando pattern da reference repos</li>
+                    <li>Tutorial scripted 9 step signal-driven (<code>tutorial_manager.gd</code> 422 righe)</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="activity"></i> Stress + Mood System</h3>
+                <ul>
+                    <li><code>stress_manager.gd</code> — autoload con stress continuo 0.0-1.0, <strong>isteresi</strong> su 3 livelli (calm/neutral/tense), decay passivo 2%/min</li>
+                    <li><code>mess_spawner.gd</code> — Timer randomico 60-180s, max 5 concurrent, weighted pick, clamp in floor polygon</li>
+                    <li><code>mess_node.gd</code> — Area2D interattiva con interaction signal, reward coin on clean</li>
+                    <li>Integrazione <code>mood_changed</code> → <code>AudioManager._on_mood_changed</code> (crossfade dinamico su track matching mood)</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="save"></i> Persistenza</h3>
+                <ul>
+                    <li><code>save_manager.gd</code> (523 righe) — JSON v5.0.0 con <strong>atomic write</strong>, backup, <strong>HMAC-SHA256</strong> integrity</li>
+                    <li>Migrazioni save v1→v2→v3→v4→v5 con erase obsolete fields + preserve coins</li>
+                    <li>Chiave HMAC device-local in <code>user://integrity.key</code> (32 byte crypto random)</li>
+                    <li>Fallback a backup se primary HMAC mismatch</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="bug"></i> Bug Fixing + Audit</h3>
+                <ul>
+                    <li>Root cause analysis di B-001 (focus chain che bloccava movimento) + fix</li>
+                    <li>Root cause B-002 (drag-drop fail) → fix <code>DecoButton extends TextureRect</code> pattern</li>
+                    <li>Root cause B-003 (WallRect/FloorRect mouse_filter) → IGNORE su ColorRect</li>
+                    <li>Fix 2026-04-17: ToastManager._container (default STOP bloccava upper-right clicks)</li>
+                    <li>Fix 2026-04-17: DropZone IGNORE swap rimosso (rompeva drag-drop placement)</li>
+                    <li>Audit 3-pass: Round 1 file-by-file, Round 2 cross-module, Round 3 runtime</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="flask-conical"></i> Test Harness</h3>
+                <ul>
+                    <li>Custom reflection-based test runner (<code>test_runner.gd</code>) senza GdUnit4</li>
+                    <li><strong>112 test invasivi</strong> in 8 moduli: helpers, catalogs, stress, save, spawn, panels, input, ui_events</li>
+                    <li>Test catalog integrity: ogni 129 sprite_path viene caricata, 25 char sprite verificati</li>
+                    <li>Test save migration: sintetizza save v1/v3/v4 → verifica struttura v5</li>
+                    <li>Test stress hysteresis: 12 casi sui threshold up/down</li>
+                    <li>Script shell: <code>smoke_test.sh</code>, <code>preflight.sh</code>, <code>deep_test.sh</code>, <code>godot-validate.sh</code></li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="book-open"></i> Documentation + Supervisione</h3>
+                <ul>
+                    <li><code>CONSOLIDATED_PROJECT_REPORT.md</code> — audit tecnico completo 3195 righe, 23 sezioni</li>
+                    <li><code>DEEP_READ_REGISTRY_2026-04-16.md</code> — source of truth numerico post deep-audit</li>
+                    <li>Scritto <strong>GUIDA_RENAN_GAMEPLAY_UI.md</strong> (operational guide) + <strong>GUIDA_ELIA_DATABASE.md</strong> (operational)</li>
+                    <li>Presentazione + 4 speech docs (Renan, Elia, Cristian, esteso)</li>
+                    <li>Scope docs per feature cluster: <code>FEATURE_PROFILE_MOOD_PANEL.md</code></li>
+                    <li>Coordinamento team, PR reviews, runbook operativi per ogni membro</li>
+                    <li>Landing page iniziale (HTML/CSS/JS) + deploy Netlify</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Numeri complessivi</h2>
+        <ul class="stats-list">
+            <li><strong>~5000 righe GDScript</strong> (autoload + systems + rooms + UI + main)</li>
+            <li><strong>46 segnali SignalBus</strong> progettati + documentati</li>
+            <li><strong>112 test</strong> invasivi scritti + runner custom</li>
+            <li><strong>22 bug</strong> root-cause analyzed + fixed</li>
+            <li><strong>~30 commit semantici</strong> nel sprint finale (audit → fix → test → docs)</li>
+            <li><strong>4 documenti tecnici</strong> integrali (CONSOLIDATED_REPORT, DEEP_READ_REGISTRY, 2 Guide)</li>
+        </ul>
+    </section>
+
+    <section class="team-page-quote" data-aos="fade-up">
+        <blockquote>
+            «Il software si giudica anche dalla facilità di tenerlo vivo nel tempo.
+            Ogni segnale tipizzato, ogni test, ogni README è un regalo al me stesso
+            di fra sei mesi.»
+        </blockquote>
+    </section>
+
+    <div class="team-page-nav">
+        <a href="elia.html" class="team-nav-link">
+            <i data-lucide="arrow-right"></i>
+            Prossimo: Elia Zoccatelli
+        </a>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3 class="footer-logo">
+                    <i data-lucide="sparkles"></i>
+                    Relax Room
+                </h3>
+                <p class="footer-tagline">Un piccolo rifugio digitale.</p>
+            </div>
+            <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private" target="_blank" rel="noopener" class="footer-github">
+                <i data-lucide="github"></i>
+                Repository
+            </a>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Relax Room — Project Work IFTS IT Cybersecurity, Centro 311 Verona</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    AOS.init({ duration: 800, once: true });
+    lucide.createIcons();
+</script>
+</body>
+</html>

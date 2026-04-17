@@ -1,0 +1,321 @@
+/* Team page styles — contributor detail pages */
+
+.team-page {
+    padding-top: 8rem;
+    padding-bottom: 4rem;
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+.team-page-hero {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 4rem;
+    padding: 0 2rem;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+    transition: color 0.2s;
+    font-family: 'Figtree', sans-serif;
+}
+
+.back-link:hover {
+    color: var(--accent-primary);
+}
+
+.team-page-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary, #8b5cf6));
+    color: white;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+}
+
+.team-page-hero h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 0.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.team-page-role {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-family: 'Figtree', sans-serif;
+}
+
+.team-page-section {
+    max-width: 1100px;
+    margin: 0 auto 4rem;
+    padding: 0 2rem;
+}
+
+.team-page-section h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-left: 4px solid var(--accent-primary);
+    padding-left: 1rem;
+}
+
+.team-page-section > p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    max-width: 800px;
+    font-family: 'Nunito', sans-serif;
+}
+
+/* Grid of contribution cards */
+.contrib-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.contrib-card {
+    background: var(--bg-card, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    font-family: 'Nunito', sans-serif;
+}
+
+.contrib-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent-primary);
+}
+
+.contrib-card h3 {
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.contrib-card h3 i {
+    color: var(--accent-primary);
+    width: 20px;
+    height: 20px;
+}
+
+.contrib-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.contrib-card ul li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.contrib-card ul li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--accent-primary);
+    font-weight: 700;
+}
+
+.contrib-card ul li ul {
+    margin-top: 0.4rem;
+    margin-left: 0.5rem;
+}
+
+.contrib-card ul li ul li {
+    padding-left: 1rem;
+    font-size: 0.9rem;
+}
+
+.contrib-card ul li ul li::before {
+    content: "·";
+}
+
+.contrib-card code {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--accent-primary);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.75em;
+}
+
+.contrib-card strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Stats */
+.stats-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.8rem;
+}
+
+.stats-list li {
+    background: var(--bg-card, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    padding: 1rem;
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+}
+
+.stats-list li strong {
+    color: var(--accent-primary);
+    font-weight: 700;
+}
+
+/* Quote */
+.team-page-quote {
+    max-width: 900px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+
+.team-page-quote blockquote {
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+    position: relative;
+    padding: 2rem;
+    font-family: 'Nunito', sans-serif;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.08));
+    border-left: 4px solid var(--accent-primary);
+}
+
+.team-page-quote blockquote::before {
+    content: "\201C";
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    font-size: 5rem;
+    color: var(--accent-primary);
+    opacity: 0.3;
+    font-family: Georgia, serif;
+    line-height: 1;
+}
+
+/* Prev/next */
+.team-page-nav {
+    max-width: 1100px;
+    margin: 3rem auto 0;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.team-nav-link,
+.team-nav-link-prev {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.5rem;
+    background: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-family: 'Figtree', sans-serif;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.team-nav-link:hover,
+.team-nav-link-prev:hover {
+    transform: translateY(-2px);
+    background: var(--accent-secondary, #7c3aed);
+}
+
+.team-nav-link-prev {
+    background: var(--bg-card, rgba(255, 255, 255, 0.1));
+    color: var(--text-primary);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+}
+
+.team-nav-link-prev:hover {
+    background: var(--bg-card-hover, rgba(255, 255, 255, 0.15));
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .contrib-grid {
+        grid-template-columns: 1fr;
+    }
+    .team-page-hero h1 {
+        font-size: 1.75rem;
+    }
+    .team-page-nav {
+        flex-direction: column;
+    }
+    .team-nav-link,
+    .team-nav-link-prev {
+        justify-content: center;
+    }
+}
+
+/* Also polish the main team section to have Contributi button visible */
+.team-actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.team-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: 'Figtree', sans-serif;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.team-btn:hover {
+    transform: translateY(-2px);
+    background: var(--accent-secondary, #7c3aed);
+}
