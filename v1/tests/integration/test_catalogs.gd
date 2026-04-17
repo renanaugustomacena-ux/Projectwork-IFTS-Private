@@ -107,7 +107,9 @@ func test_decoration_item_scale_positive() -> void:
 
 
 func test_characters_catalog_size() -> void:
-	assert_eq(GameManager.characters_catalog.get("characters", []).size(), 2)
+	# Currently 1 playable character (male_old). Female moved out of project
+	# on 2026-04-17 pending proper aseprite creation.
+	assert_eq(GameManager.characters_catalog.get("characters", []).size(), 1)
 
 
 func test_male_old_all_sprites_load() -> void:
@@ -156,13 +158,13 @@ func test_male_old_rotate_strip_dimensions() -> void:
 	assert_approx(sz.x, 256.0, 0.5)
 
 
-func test_female_sprite_path_loads() -> void:
-	var char_data: Dictionary = _find_character("female")
-	assert_false(char_data.is_empty(), "female must exist")
-	var path: String = char_data.get("sprite_path", "")
-	assert_false(path.is_empty())
-	var tex: Texture2D = load(path) as Texture2D
-	assert_non_null(tex)
+func test_female_character_removed_from_catalog() -> void:
+	# Regression guard: female was moved out of project 2026-04-17. If someone
+	# re-adds it without completing the full directional animation set,
+	# test_catalogs.test_male_old_all_sprites_load equivalent must be added.
+	assert_true(_find_character("female").is_empty(),
+		"female character must NOT be in catalog (moved to "
+		+ "/tmp/projectwork_removed/female_character_assets_2026-04-17/)")
 
 
 # ---- Tracks ----

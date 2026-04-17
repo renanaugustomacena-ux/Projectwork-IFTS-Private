@@ -6,17 +6,14 @@ signal character_selected(character_id: String)
 
 const CHARACTER_SCENE := "res://scenes/menu/character_select.tscn"
 
-## Available characters — must match CHARACTER_SCENES in room_base.gd
+## Available characters — must match CHARACTER_SCENES in room_base.gd.
+## Currently only 1 character (male_old). character_select screen
+## may be bypassed by main_menu.gd when size() == 1.
 const CHARACTERS := [
 	{
 		"id": "male_old",
 		"name": "Ragazzo Classico",
 		"scene": "res://scenes/male-old-character.tscn",
-	},
-	{
-		"id": "female",
-		"name": "Ragazza Rossa",
-		"scene": "res://scenes/female-character.tscn",
 	},
 ]
 
