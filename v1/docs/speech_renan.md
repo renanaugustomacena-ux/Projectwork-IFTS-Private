@@ -1,18 +1,16 @@
 # Speech — Renan Augusto Macena
 
-**Ruolo**: Team Lead & Architetto Software
-**Slide assegnate**: 1 (apertura), 3, 4, 5, 7
+**Ruolo**: Team Lead · Architetto Software · **Slide**: 1, 3, 4, 5, 7
 
-> Legge veloce: **keyword bold** = appigli visivi. Freccia `→` = transizione alla prossima slide.
+> **keyword bold** = appigli visivi · `→` = transizione.
 
 ---
 
-## Slide 1 — Copertina
+## Slide 1 — Copertina (20s)
 
 - **Apertura**: "Buongiorno, siamo il team che ha costruito **Relax Room**."
-- **Core**: desktop companion / IFTS 2025-2026 / tre nomi
-- **Tempo**: 20 secondi
-- **Transizione**: → "Partiamo presentandoci e presentando il prodotto."
+- **Core**: desktop companion · IFTS 2025-2026 · tre nomi
+- **→** "Partiamo presentandoci e presentando il prodotto."
 
 ---
 
@@ -28,10 +26,10 @@
 ## Slide 4 — Architettura Tecnica
 
 - **Apertura**: "Stack scelto per **robustezza** e **autonomia**."
-- **Core**: **Godot 4.6** engine / **SQLite + WAL** locale / **Supabase** cloud con RLS / **auth duale** (PBKDF2-SHA256 locale + JWT cloud) / **HMAC-SHA256** integrita / **CI 5 job** / **Netlify + GitHub Releases** deploy
-- **9 autoload chain**: SignalBus → AppLogger → LocalDatabase → Auth → Game → Save → Supabase → Audio → Performance
-- **Resilienza**: offline-first / scrittura atomica / sync queue retry 5 / schema-resilient
-- **Transizione**: → "Il cuore di tutto questo e il **SignalBus**. Guardiamolo."
+- **Core**: **Godot 4.6** · **SQLite WAL** locale · **Supabase** cloud con RLS · **auth duale** (PBKDF2-SHA256 + JWT) · **HMAC-SHA256** integrità · **CI 9 job** · **Netlify + GitHub Releases**
+- **10 autoload chain**: SignalBus → AppLogger → LocalDatabase → Auth → Game → Save → Supabase → Audio → Performance → Stress
+- **Resilienza**: offline-first · scrittura atomica · sync queue exp backoff · schema-resilient (404 cloud → skip senza crash)
+- **→** "Il cuore di tutto questo è il **SignalBus**."
 
 ---
 
