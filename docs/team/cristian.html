@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cristian Marino — Contributi · Relax Room</title>
+    <meta name="description" content="Contributi di Cristian Marino al progetto Relax Room: pipeline CI/CD, asset, build, pixel art integration.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="team.css">
+    <script>
+        (function() {
+            var t = localStorage.getItem('mcr-theme') ||
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+    <div class="nav-container">
+        <a href="../index.html" class="nav-logo">
+            <i data-lucide="sparkles"></i>
+            Relax Room
+        </a>
+        <div class="nav-links">
+            <a href="../index.html#vision" class="nav-link">Visione</a>
+            <a href="../index.html#features" class="nav-link">Caratteristiche</a>
+            <a href="../index.html#team" class="nav-link">Team</a>
+            <a href="../index.html#download" class="nav-cta">Download</a>
+        </div>
+    </div>
+</nav>
+
+<main class="team-page">
+    <header class="team-page-hero" data-aos="fade-up">
+        <a href="../index.html#team" class="back-link">
+            <i data-lucide="arrow-left"></i>
+            <span>Torna al team</span>
+        </a>
+        <div class="team-page-avatar">C</div>
+        <h1>Cristian Marino</h1>
+        <p class="team-page-role">Asset Pipeline · CI/CD · Build · Documentation</p>
+        <a href="https://github.com/cristianmari777-art" target="_blank" rel="noopener" class="btn btn-secondary">
+            <i data-lucide="github"></i>
+            Profilo GitHub
+        </a>
+    </header>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Panoramica</h2>
+        <p>
+            Garante della qualità del codice e della riproducibilità della build.
+            Ha definito la pipeline CI che fa da guardia ad ogni merge, integrato
+            gli asset pixel art del gioco (personaggio, stanza, pet, menu UI),
+            configurato gli export Windows + HTML5 + Android, e scritto la guida
+            operativa per il nuovo pixel-art artist Alex. Senza i suoi job CI,
+            ogni bug oggi rilevato sarebbe arrivato in demo.
+        </p>
+    </section>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Contributi per area</h2>
+
+        <div class="contrib-grid">
+            <div class="contrib-card">
+                <h3><i data-lucide="git-branch"></i> CI/CD Pipeline</h3>
+                <ul>
+                    <li><code>.github/workflows/ci.yml</code> — <strong>9 job paralleli/sequenziali</strong> su ogni push/PR</li>
+                    <li><strong>lint</strong> (gdlint + gdformat) su scripts + tests</li>
+                    <li><strong>validate-json</strong> — struttura + vincoli 5 catalog JSON</li>
+                    <li><strong>validate-sprites</strong> — 100+ sprite_path esistenza filesystem</li>
+                    <li><strong>validate-crossrefs</strong> — constants.gd ↔ catalog IDs</li>
+                    <li><strong>validate-db</strong> — sintassi CREATE TABLE</li>
+                    <li><strong>validate-signals</strong> — SignalBus floor 40 + no duplicates</li>
+                    <li><strong>validate-pixelart</strong> — palette sync + deliverable sizes/naming</li>
+                    <li><strong>smoke-headless</strong> — boot Godot 4.6 headless 0 error</li>
+                    <li><strong>deep-tests</strong> — 112 test gated su smoke-headless</li>
+                    <li>Config <code>concurrency</code> group + <code>paths</code> filter per minimize Actions minutes</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="package"></i> Build System</h3>
+                <ul>
+                    <li><code>.github/workflows/build.yml</code> — export multi-platform</li>
+                    <li>Container <code>barichello/godot-ci:4.6</code> per build deterministiche</li>
+                    <li><strong>Export Windows .exe</strong> preset con icona, versione 1.0.0</li>
+                    <li><strong>Export HTML5</strong> browser-playable</li>
+                    <li><strong>Export Android APK</strong> (aggiunto 2026-04-17) con architetture arm64-v8a, internet permission only</li>
+                    <li>Setup export templates pre-installed in container</li>
+                    <li>Debug keystore setup per CI Android</li>
+                    <li>Artifact upload 30d retention per ogni platform</li>
+                    <li><strong>Migrazione critica Godot 4.5 → 4.6</strong> in build.yml (N-BD1)</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="image"></i> Asset Integration</h3>
+                <ul>
+                    <li>Integrato virtual_joystick addon (CF Studios)</li>
+                    <li>Integrato sprite loading screen (background, title, barra progresso, silhouette)</li>
+                    <li>Integrato bottoni menu (buttons_static + buttons_pressed, 14 varianti)</li>
+                    <li>Registrati <strong>letti bongseng</strong> + mobili isometrici Thurraya in decorations.json</li>
+                    <li>Integrato <strong>Kenney Furniture CC0 pack</strong> (120 PNG, 57 registered in catalog)</li>
+                    <li>Sfondo parallasse Free Pixel Art Forest (Eder Muniz) — setup 8 layer</li>
+                    <li>Pixel UI Pack Kenney — integrato come <code>cozy_theme.tres</code> globale</li>
+                    <li>Tracce audio Mixkit — Light Rain + Rain &amp; Thunder per mood calm/tense</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="sparkles"></i> Logger + Performance</h3>
+                <ul>
+                    <li><strong>Logger session ID</strong> crypto-safe: <code>Crypto.generate_random_bytes</code> + ticks + unix time (prevenzione collision N-Q2)</li>
+                    <li><strong>Logger buffer cap</strong> 2000 entries (prevenzione OOM se flush fallisce — B-018)</li>
+                    <li><strong>Logger redaction</strong>: chiavi sensibili (<code>password</code>, <code>token</code>, <code>jwt</code>, ecc.) automaticamente <code>***</code> nei log JSONL (B-028)</li>
+                    <li>PerformanceManager: FPS cap dinamico 60 focused / 15 unfocused</li>
+                    <li>PerformanceManager <code>_exit_tree()</code> disconnect symmetric</li>
+                    <li>Window position persistence across runs</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="palette"></i> Pixel-Art CI</h3>
+                <ul>
+                    <li><code>ci/extract_palette.py</code> — estrae palette da sorgenti aseprite, sync check</li>
+                    <li><code>ci/validate_pixelart_deliverables.py</code> — size/naming/palette coerenza asset</li>
+                    <li><code>ci/scaffold_character.py</code> — scaffold per nuovo character</li>
+                    <li><code>v1/assets/palette/palette_projectwork.gpl</code> — palette di riferimento GIMP</li>
+                    <li><code>v1/guide/references/</code> — pack CC0 di riferimento per Alex (puny_characters, cat_sprites)</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="book"></i> Guide Documentation</h3>
+                <ul>
+                    <li><strong>GUIDA_CRISTIAN_CICD.md</strong> — 1604 righe, pipeline CI + build Windows + Android step-by-step</li>
+                    <li><strong>GUIDA_ALEX_PIXEL_ART.md</strong> (1148 righe) — guida pixel-art completa per nuovo team member Alex (16 Apr):
+                        <ul>
+                            <li>Workflow Aseprite: palette, grid, 8 direzioni, onion skin</li>
+                            <li>Personaggio 1 + Personaggio 2: idle + walk + interact + rotate</li>
+                            <li>Cat animations: 8 animazioni nuove (jump, roll, play, annoyed, surprised, licking)</li>
+                            <li>Checklist finale silhouette + dimensioni + trim</li>
+                            <li>24 trappole Aseprite/personaggi/gatto con fix</li>
+                            <li>Workflow Git per Alex (GitHub Desktop)</li>
+                        </ul>
+                    </li>
+                    <li>Asset README files in ogni sottocartella di <code>assets/</code></li>
+                    <li>Build guide Windows + Inno Setup installer + Android APK signing</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="shield"></i> Validation Infrastructure</h3>
+                <ul>
+                    <li><code>ci/validate_json_catalogs.py</code> — schema JSON + duplicate ID + category refs</li>
+                    <li><code>ci/validate_sprite_paths.py</code> — ogni sprite_path esiste sul filesystem</li>
+                    <li><code>ci/validate_cross_references.py</code> — constants vs catalog IDs</li>
+                    <li><code>ci/validate_db_schema.py</code> — SQL CREATE TABLE sintassi</li>
+                    <li><code>ci/validate_signal_count.py</code> — SignalBus signal floor + no duplicates</li>
+                    <li>Pre-commit config stub (<code>.pre-commit-config.yaml</code>) con gdtoolkit hook</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="file-text"></i> Release Management</h3>
+                <ul>
+                    <li>Commit semantici convention: <code>feat(area):</code>, <code>fix(area):</code>, <code>docs:</code>, <code>chore:</code>, <code>test:</code>, <code>ci:</code></li>
+                    <li>Coordinamento branch <code>main</code> con Renan/Elia per sprint finale</li>
+                    <li>Release tags + artifact GitHub</li>
+                    <li>Icona applicazione Windows (N-BD4)</li>
+                    <li>Versione 1.0.0.0 in export_presets.cfg</li>
+                    <li>Troubleshooting guide: "Export template not found", "MSVCP140.dll missing", "Android INSTALL_FAILED"</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Numeri complessivi</h2>
+        <ul class="stats-list">
+            <li><strong>9 job CI</strong> disegnati + configurati</li>
+            <li><strong>3 platform export</strong>: Windows + HTML5 + Android APK</li>
+            <li><strong>5 validator Python</strong> custom per type safety non-runtime</li>
+            <li><strong>2 guide operative</strong> complete (CICD 1604 righe + Alex 1148 righe)</li>
+            <li><strong>~400 righe Python</strong> CI scripting</li>
+            <li><strong>100+ asset</strong> integrati (Kenney + Bongseng + SoppyCraft + Thurraya + Mixkit + Eder Muniz)</li>
+            <li><strong>9 asset README</strong> per ogni sottocartella</li>
+        </ul>
+    </section>
+
+    <section class="team-page-quote" data-aos="fade-up">
+        <blockquote>
+            «Un commit che fa scattare 9 job CI è la definizione di "dormo
+            tranquillo". Il linter è il mio correttore di bozze, i validatori
+            sono il mio peer review, la CI è il mio netto prima di pushare.»
+        </blockquote>
+    </section>
+
+    <div class="team-page-nav">
+        <a href="elia.html" class="team-nav-link-prev">
+            <i data-lucide="arrow-left"></i>
+            Precedente: Elia Zoccatelli
+        </a>
+        <a href="../index.html#team" class="team-nav-link">
+            <i data-lucide="home"></i>
+            Home team
+        </a>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3 class="footer-logo">
+                    <i data-lucide="sparkles"></i>
+                    Relax Room
+                </h3>
+                <p class="footer-tagline">Un piccolo rifugio digitale.</p>
+            </div>
+            <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private" target="_blank" rel="noopener" class="footer-github">
+                <i data-lucide="github"></i>
+                Repository
+            </a>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Relax Room — Project Work IFTS IT Cybersecurity, Centro 311 Verona</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    AOS.init({ duration: 800, once: true });
+    lucide.createIcons();
+</script>
+</body>
+</html>

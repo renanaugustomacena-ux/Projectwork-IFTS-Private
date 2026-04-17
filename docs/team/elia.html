@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elia Zoccatelli — Contributi · Relax Room</title>
+    <meta name="description" content="Contributi di Elia Zoccatelli al progetto Relax Room: database SQLite, migrazioni, schema Supabase, cloud sync.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="team.css">
+    <script>
+        (function() {
+            var t = localStorage.getItem('mcr-theme') ||
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+    <div class="nav-container">
+        <a href="../index.html" class="nav-logo">
+            <i data-lucide="sparkles"></i>
+            Relax Room
+        </a>
+        <div class="nav-links">
+            <a href="../index.html#vision" class="nav-link">Visione</a>
+            <a href="../index.html#features" class="nav-link">Caratteristiche</a>
+            <a href="../index.html#team" class="nav-link">Team</a>
+            <a href="../index.html#download" class="nav-cta">Download</a>
+        </div>
+    </div>
+</nav>
+
+<main class="team-page">
+    <header class="team-page-hero" data-aos="fade-up">
+        <a href="../index.html#team" class="back-link">
+            <i data-lucide="arrow-left"></i>
+            <span>Torna al team</span>
+        </a>
+        <div class="team-page-avatar">E</div>
+        <h1>Elia Zoccatelli</h1>
+        <p class="team-page-role">Database Engineer · SQLite · Supabase · Auth Security</p>
+        <a href="https://github.com/eliaozccatelli" target="_blank" rel="noopener" class="btn btn-secondary">
+            <i data-lucide="github"></i>
+            Profilo GitHub
+        </a>
+    </header>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Panoramica</h2>
+        <p>
+            Ha progettato e implementato tutta la persistenza del progetto. Dal
+            layer locale SQLite (9 tabelle, WAL mode, migrazioni idempotenti con
+            backup pre-DROP) al layer cloud Supabase (schema PostgreSQL, Row
+            Level Security, REST API client). È la base su cui poggia l'offline-first
+            del gioco: il sistema funziona senza connessione, il cloud è un bonus.
+        </p>
+    </section>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Contributi per area</h2>
+
+        <div class="contrib-grid">
+            <div class="contrib-card">
+                <h3><i data-lucide="database"></i> SQLite Locale</h3>
+                <ul>
+                    <li><code>local_database.gd</code> (831 righe) — autoload SQLite via godot-sqlite GDExtension v4.7</li>
+                    <li><strong>9 tabelle</strong> progettate: <code>accounts</code>, <code>characters</code>, <code>rooms</code>, <code>inventario</code>, <code>sync_queue</code>, <code>settings</code>, <code>save_metadata</code>, <code>music_state</code>, <code>placed_decorations</code></li>
+                    <li>7 indici su foreign keys per performance query</li>
+                    <li><code>PRAGMA journal_mode=WAL</code> + <code>foreign_keys=ON</code> + <code>busy_timeout=5000</code></li>
+                    <li>BEGIN/COMMIT/ROLLBACK transaction pattern in <code>_on_save_requested</code></li>
+                    <li>CRUD completo per ogni tabella: upsert, get, update, delete, soft_delete</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="git-merge"></i> Migrazioni Schema</h3>
+                <ul>
+                    <li><strong>Migration 1</strong>: characters legacy senza <code>character_id</code> → backup <code>characters_bak</code> + <code>inventario_bak</code> pre-DROP (safety net rollback-safe)</li>
+                    <li><strong>Migration 2</strong>: <code>ALTER TABLE accounts ADD COLUMN</code> per <code>display_name</code>, <code>updated_at</code>, <code>password_hash</code>, <code>deleted_at</code>, <code>coins</code>, <code>inventario_capacita</code></li>
+                    <li><strong>Migration 3</strong>: <code>ALTER TABLE inventario ADD COLUMN</code> per <code>item_type</code>, <code>is_unlocked</code>, <code>acquired_at</code></li>
+                    <li>Migrations idempotenti — si possono eseguire più volte senza errori</li>
+                    <li>Logging strutturato di ogni step migration per debugging</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="shield-check"></i> Auth + Security</h3>
+                <ul>
+                    <li><code>auth_manager.gd</code> (193 righe) — guest + username/password</li>
+                    <li><strong>PBKDF2-v2</strong> hashing con salt per-account (16 bytes random), 10.000 iterazioni SHA-256</li>
+                    <li>Legacy hash migration: al primo login con hash vecchio, si migra automaticamente al formato v2</li>
+                    <li>Rate limiting: <strong>5 tentativi</strong> falliti → lockout 300s</li>
+                    <li>Soft delete account (flag <code>deleted_at</code>) per audit trail</li>
+                    <li>Integrazione <code>is_open()</code> check prima di ogni operazione DB (fix A26)</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="cloud"></i> Supabase Cloud</h3>
+                <ul>
+                    <li><code>supabase_client.gd</code> (499 righe) — REST API client asincrono</li>
+                    <li>Schema cloud: 15 tabelle PostgreSQL con RLS <code>auth.uid() = user_id</code> su ogni policy</li>
+                    <li>5 tabelle push live: <code>profiles</code>, <code>user_currency</code>, <code>user_settings</code>, <code>music_preferences</code>, <code>room_decorations</code></li>
+                    <li>Session token <strong>cifrato</strong> con chiave derivata da device (<code>ConfigFile.save_encrypted_pass</code>) — fix B-019</li>
+                    <li><strong>HTTPS obbligatorio</strong> nella config validation (fix B-020)</li>
+                    <li>Queue cap 500 per prevenire OOM (<code>supabase_http.gd</code>)</li>
+                    <li>SQLite <code>sync_queue</code> persistente per retry offline</li>
+                    <li>Graceful degradation su 404/400 relation error (schema evolving)</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="map"></i> Data Mapping</h3>
+                <ul>
+                    <li><code>supabase_mapper.gd</code> — Single Point of Truth per local-to-cloud field mapping</li>
+                    <li>Bidirectional: <code>profile_to_cloud</code>, <code>cloud_profile_to_local</code>, <code>decorations_to_cloud</code>, ecc.</li>
+                    <li><code>.get(key, default)</code> ovunque — missing field mai crash</li>
+                    <li><code>supabase_config.gd</code> — load config da <code>user://config.cfg</code>, validate url + anon_key</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="shield"></i> Data Integrity</h3>
+                <ul>
+                    <li>HMAC-SHA256 save file validation design (architettura con Renan)</li>
+                    <li>Atomic write pattern: temp file → rename per prevenire corruzione</li>
+                    <li>Backup automatico prima di ogni save nuovo</li>
+                    <li>Type validation ad ogni <code>_apply_save_data</code> (settings, music, inventory, character)</li>
+                    <li>Clamping valori numerici: livello_stress 0-100, volume 0-1, capacita 1-999</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="bug"></i> Bug Fix + Audit</h3>
+                <ul>
+                    <li><strong>A24</strong> — aggiunto ROLLBACK alle transazioni DB</li>
+                    <li><strong>A25</strong> — <code>_save_inventory()</code> ritorna bool (propaga errore)</li>
+                    <li><strong>A26</strong> — check <code>is_open()</code> in <code>_set_state()</code> prima di accesso DB</li>
+                    <li><strong>A27</strong> — validate <code>create_account()</code> result in <code>register()</code></li>
+                    <li><strong>N-DB1</strong> — rimossi dead tables dallo schema</li>
+                    <li><strong>N-DB2</strong> — aggiunti indici su tutte le FK (performance)</li>
+                    <li><strong>B-015</strong> — safety net backup in Migration 1 (characters_bak pre-DROP)</li>
+                    <li><strong>B-026</strong> — PRAGMA busy_timeout=5000 (previene main thread block su lock)</li>
+                    <li><strong>B-027</strong> — AppLogger.error in <code>_select()</code> su query fail</li>
+                </ul>
+            </div>
+
+            <div class="contrib-card">
+                <h3><i data-lucide="book-open"></i> Documentation + CI</h3>
+                <ul>
+                    <li>Consulenza schema database in <code>data/README.md</code></li>
+                    <li><strong>GUIDA_ELIA_DATABASE.md</strong> — guida operativa team completa</li>
+                    <li>CI validator: <code>ci/validate_db_schema.py</code> — sintassi CREATE TABLE</li>
+                    <li>Design schema cloud Supabase in Mermaid diagrams</li>
+                    <li>Review + audit sessions su database stabilità post-migrazione</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="team-page-section" data-aos="fade-up">
+        <h2>Numeri complessivi</h2>
+        <ul class="stats-list">
+            <li><strong>9 tabelle SQLite</strong> locali con 7 indici FK</li>
+            <li><strong>15 tabelle Supabase</strong> PostgreSQL progettate</li>
+            <li><strong>5 tabelle cloud</strong> attive in sync + 10 predisposte per feature future</li>
+            <li><strong>3 migrazioni</strong> idempotenti con backup pre-DROP</li>
+            <li><strong>~1400 righe GDScript</strong> (local_database + supabase_* + auth_manager)</li>
+            <li><strong>PBKDF2 10k iter</strong> + rate limiting + soft delete</li>
+            <li><strong>HMAC-SHA256 save integrity</strong> con chiave device-local</li>
+        </ul>
+    </section>
+
+    <section class="team-page-quote" data-aos="fade-up">
+        <blockquote>
+            «Un database senza migrazione rollback-safe è un database che, prima o
+            poi, costa un intero sprint di lavoro perso. Ogni DROP in produzione
+            merita un backup che possa sopravvivere al crash.»
+        </blockquote>
+    </section>
+
+    <div class="team-page-nav">
+        <a href="renan.html" class="team-nav-link-prev">
+            <i data-lucide="arrow-left"></i>
+            Precedente: Renan Augusto Macena
+        </a>
+        <a href="cristian.html" class="team-nav-link">
+            <i data-lucide="arrow-right"></i>
+            Prossimo: Cristian Marino
+        </a>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3 class="footer-logo">
+                    <i data-lucide="sparkles"></i>
+                    Relax Room
+                </h3>
+                <p class="footer-tagline">Un piccolo rifugio digitale.</p>
+            </div>
+            <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private" target="_blank" rel="noopener" class="footer-github">
+                <i data-lucide="github"></i>
+                Repository
+            </a>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Relax Room — Project Work IFTS IT Cybersecurity, Centro 311 Verona</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    AOS.init({ duration: 800, once: true });
+    lucide.createIcons();
+</script>
+</body>
+</html>
