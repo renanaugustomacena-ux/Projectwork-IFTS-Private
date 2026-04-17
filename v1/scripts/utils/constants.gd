@@ -11,7 +11,6 @@ const THEME_PINK := "pink"
 
 # Character identifiers
 const CHAR_MALE_OLD := "male_old"
-const CHAR_FEMALE := "female"
 
 # Playlist modes
 const PLAYLIST_SEQUENTIAL := "sequential"

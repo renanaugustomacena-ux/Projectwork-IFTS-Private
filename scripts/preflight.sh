@@ -68,7 +68,6 @@ check "characters.json esiste" "test -f v1/data/characters.json"
 check "room_base.gd esiste" "test -f v1/scripts/rooms/room_base.gd"
 check "cat_void.tscn esiste" "test -f v1/scenes/cat_void.tscn"
 check "male-old-character.tscn esiste" "test -f v1/scenes/male-old-character.tscn"
-check "female-character.tscn esiste" "test -f v1/scenes/female-character.tscn"
 echo ""
 
 echo "[3] JSON catalog validity"

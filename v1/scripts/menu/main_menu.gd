@@ -107,7 +107,18 @@ func _on_nuova_partita() -> void:
 	# Flush sincrono necessario prima della scene transition.
 	SignalBus.settings_updated.emit("tutorial_completed", false)
 	SaveManager.save_game()
-	_show_character_select()
+	# Con 1 solo personaggio in catalog (male_old), saltiamo character_select
+	# e andiamo dritti in game. Quando il catalog crescera`, il ramo
+	# _show_character_select() torna attivo.
+	var characters: Array = GameManager.characters_catalog.get("characters", [])
+	if characters.size() <= 1:
+		var char_id: String = characters[0].get("id", "male_old") if not characters.is_empty() else "male_old"
+		GameManager.current_character_id = char_id
+		SignalBus.character_changed.emit(char_id)
+		_transitioning = true
+		_transition_to_scene(GAMEPLAY_SCENE)
+	else:
+		_show_character_select()
 
 
 func _show_character_select() -> void:

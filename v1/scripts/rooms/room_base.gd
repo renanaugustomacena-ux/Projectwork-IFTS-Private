@@ -12,7 +12,6 @@ const INTERACTION_PADDING := 8.0
 
 const CHARACTER_SCENES := {
 	"male_old": "res://scenes/male-old-character.tscn",
-	"female": "res://scenes/female-character.tscn",
 }
 
 ## Pet variants. The active one is selected via SaveManager setting "pet_variant"
