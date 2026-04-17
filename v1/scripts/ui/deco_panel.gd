@@ -121,26 +121,22 @@ func _populate_catalog() -> void:
 
 func _create_drag_button(
 	item_id: String, item_name: String, sprite_path: String, item_scale: float, placement_type: String
-) -> Button:  # Returns null if texture missing
-	# Usa DecoButton (sottoclasse Button con override _get_drag_data) perche`
-	# set_drag_forwarding() su plain Button NON inizia il drag in Godot 4.5:
-	# il callback forwarding viene settato ma nessun hook sul Button chiama
-	# il drag_func al mouse_down. Il pattern che funziona affidabilmente e`
-	# override diretto del hook virtuale su una sottoclasse (vedi DecoButton).
-	# Referenze: jlucaso1/drag-drop-inventory, jeroenheijmans/sample-godot-drag-drop.
-	var btn := DecoButton.new()
-	btn.custom_minimum_size = Vector2(68, 56)
-	btn.tooltip_text = item_name
-	btn.focus_mode = Control.FOCUS_NONE
-
+) -> Control:  # Returns null if texture missing
+	# DecoButton (TextureRect sottoclasse) ha _get_drag_data override. Usiamo
+	# TextureRect e non Button perche` Button intercetta mouse_down con la sua
+	# logica _pressing_inside che interferisce con la drag detection nativa di
+	# Godot 4 (viewport aspetta mouse_move threshold tra press e release).
+	# Pattern verificato in jlucaso1/drag-drop-inventory + jeroenheijmans/sample.
 	var tex: Texture2D = null
 	if not sprite_path.is_empty():
 		tex = load(sprite_path) as Texture2D
 	if tex == null:
 		return null
-	btn.icon = tex
-	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	btn.expand_icon = true
+
+	var btn := DecoButton.new()
+	btn.custom_minimum_size = Vector2(68, 56)
+	btn.tooltip_text = item_name
+	btn.texture = tex
 
 	# Store drag data as metadata — DecoButton._get_drag_data legge questo
 	btn.set_meta(
