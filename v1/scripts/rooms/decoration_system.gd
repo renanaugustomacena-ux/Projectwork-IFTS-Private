@@ -60,13 +60,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			var snap_pos := raw_pos
 			if Input.is_key_pressed(KEY_SHIFT):
 				snap_pos = Helpers.snap_to_grid(raw_pos)
-			# The decoration's anchor for "is on the floor?" is the bottom-center
-			# of its texture (sprites are non-centered in this project — see
-			# room_base.gd._spawn_decoration). We clamp that anchor inside the
-			# floor polygon, then translate the result back to the sprite origin.
-			var anchor_offset := _floor_anchor_offset()
-			var clamped_anchor: Vector2 = Helpers.clamp_inside_floor(snap_pos + anchor_offset)
-			global_position = clamped_anchor - anchor_offset
+			# Clamp al pavimento SOLO per oggetti floor. I wall (finestre, quadri)
+			# vivono sopra il pavimento e non devono essere agganciati al poligono
+			# (fix "invisible wall" — impossibile trascinare finestra in alto).
+			var placement_type: String = deco_data.get("placement_type", "floor")
+			if placement_type == "wall":
+				global_position = snap_pos
+			else:
+				var anchor_offset := _floor_anchor_offset()
+				var clamped_anchor: Vector2 = Helpers.clamp_inside_floor(snap_pos + anchor_offset)
+				global_position = clamped_anchor - anchor_offset
 
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE and _popup != null:
