@@ -337,6 +337,68 @@ func test_dropzone_restores_pass_when_panel_closes() -> void:
 		"after panel close, DropZone must restore mouse_filter (was %d)" % dz.mouse_filter)
 
 
+func test_no_overlay_container_blocks_upper_right_quadrant() -> void:
+	# REGRESSION GUARD: user report 2026-04-17: "non riesco a cliccare sopra
+	# wall-decor nel panel decorazioni + slider mood + lang btn dead".
+	# Root cause was ToastManager._container (VBoxContainer default STOP) at
+	# x=[832,1254] y=[14,288] absorbing clicks. This test walks all
+	# CanvasLayer descendants, finds Controls with mouse_filter!=IGNORE
+	# whose rect intersects a "panel zone" (upper-right quadrant where
+	# deco_panel + profile_hud_panel live) — fails if any STOP/PASS Control
+	# exists there OUTSIDE the expected panels + allowed chrome.
+	#
+	# We OPEN the deco panel first so DropZone enters its IGNORE state
+	# (DropZone PASS in default state is intentional — needed for drag-drop
+	# of decorations after panel closes; it's swapped to IGNORE whenever a
+	# panel is open via main.gd._on_drop_zone_panel_opened).
+	await _setup_main_scene()
+	# Simulate panel open as the user would
+	var deco_btn := _find_control("UILayer/HUD/DecoButton") as Button
+	deco_btn.pressed.emit()
+	await wait_frames(3)
+
+	var panel_zone := Rect2(1030, 14, 1280 - 1030, 288 - 14)
+	# Controls that are ALLOWED to be STOP/PASS in this zone: the panels
+	# themselves, their ancestors (Main/UILayer — no-op containers), and
+	# DropZone (because while panel open it's already IGNORE).
+	var allowed_roots := [
+		"DecoPanel", "ProfileHUDPanel", "SettingsPanel", "ProfilePanel",
+		"Main", "UILayer", "DropZone",
+	]
+	var blockers: Array[String] = []
+	_collect_overlay_blockers(_main_root, panel_zone, allowed_roots, blockers)
+	if not blockers.is_empty():
+		fail(
+			"Controls with mouse_filter != IGNORE overlap panel_zone while "
+			+ "a panel is open — they would absorb clicks intended for panel: %s"
+			% ", ".join(blockers)
+		)
+	else:
+		assert_true(true, "panel_zone clear of overlay blockers while panel open")
+
+
+func _collect_overlay_blockers(
+	node: Node, zone: Rect2, allowed_names: Array, out: Array[String]
+) -> void:
+	# Skip allowed named roots (their descendants are expected to receive input)
+	for allowed in allowed_names:
+		if node.name == allowed:
+			return
+	if node is Control:
+		var ctl := node as Control
+		if ctl.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			var rect := ctl.get_global_rect()
+			if rect.intersects(zone) and rect.size.x > 0 and rect.size.y > 0:
+				var parent_name: String = "<root>"
+				if ctl.get_parent() != null:
+					parent_name = String(ctl.get_parent().name)
+				out.append("%s (type=%s parent=%s mouse_filter=%d rect=%s)" % [
+					ctl.name, ctl.get_class(), parent_name, ctl.mouse_filter, rect,
+				])
+	for child in node.get_children():
+		_collect_overlay_blockers(child, zone, allowed_names, out)
+
+
 func _collect_nodes_with_meta(node: Node, meta_key: String) -> int:
 	var count := 0
 	if node.has_meta(meta_key):
