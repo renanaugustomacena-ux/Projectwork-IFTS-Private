@@ -1,12 +1,13 @@
 # Relax Room — Plugin e Addon
 
-> **Nota sulla Semplificazione**: Il plugin godot-sqlite e' utilizzato da `LocalDatabase`, che
-> e' attualmente **over-engineered** (il salvataggio JSON basta). Se LocalDatabase venisse rimosso
-> in futuro, anche questo addon potrebbe essere rimosso dal progetto, riducendo la dimensione
-> del repository. Per ora resta necessario perche' LocalDatabase e' ancora attivo.
+> **Aggiornamento 17 Apr 2026**: LocalDatabase è attivamente usato per
+> `accounts` (password_hash PBKDF2), `characters`, `rooms`, `inventario`,
+> `sync_queue` (Supabase cloud retry), `settings`, `save_metadata`,
+> `music_state`, `placed_decorations`. NON è più over-engineering — è
+> l'infrastruttura per cloud sync + audit + multi-account. Sta rimanendo.
 
-Questa cartella contiene i plugin Godot e i binari GDExtension utilizzati dal progetto.
-Attualmente l'unico addon e **godot-sqlite**.
+Questa cartella contiene i plugin Godot e i binari GDExtension del progetto.
+**2 addon attivi**: godot-sqlite + virtual_joystick.
 
 ## godot-sqlite (GDExtension v4.7)
 
@@ -53,7 +54,30 @@ addons/
 - Non richiede configurazione manuale: si carica in modo trasparente all'avvio del progetto
 - Per iOS, e dichiarata la dipendenza aggiuntiva `libgodot-cpp` nel `.gdextension`
 
-## Vedi Anche
+## virtual_joystick (CF Studios)
 
-- [README Database](../data/README.md) — Schema delle 7 tabelle usate con SQLite
-- [README Script](../scripts/README.md) — `local_database.gd` che utilizza questo plugin
+Addon originariamente in `projectwork-ifts/` parallelo, importato in v1.
+Touch input simulato (funziona anche con mouse su desktop — utile per dev).
+
+### Struttura
+
+```
+addons/
+└── virtual_joystick/
+    ├── scripts/
+    │   └── virtual_joystick.gd
+    ├── icon.png                 # editor icon
+    └── plugin.cfg               # metadata
+```
+
+Instanziato via `scenes/ui/virtual_joystick.tscn`. Texture custom:
+`assets/menu/ui/sprite_pad_base.png` + `sprite_pad_lever.png`.
+
+**Stato**: incluso ma NON posizionato in `main.tscn` di default.
+Decisione USE/REMOVE pending post-demo (B-023 open in backlog).
+
+## Vedi anche
+
+- [README data](../data/README.md) — schema 9 tabelle SQLite + cataloghi JSON
+- [README scripts](../scripts/README.md) — `autoload/local_database.gd` + `autoload/supabase_client.gd`
+- [GUIDA_ELIA_DATABASE.md](../guide/GUIDA_ELIA_DATABASE.md) — guida operativa DB

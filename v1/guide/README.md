@@ -1,13 +1,24 @@
 # Guide Operative per il Team — Relax Room
 
-> **Aggiornamento 10 Aprile 2026**:
-> - **Report consolidato**: i 5 documenti originali (AUDIT_REPORT, SPRINT_AUDIT_REPORT, architecture-review, SPRINT_TASKS, SPRINT_UX_PERFECTION_PLAN) sono stati unificati in [CONSOLIDATED_PROJECT_REPORT.md](../docs/CONSOLIDATED_PROJECT_REPORT.md)
-> - **Sprint 6-11 Aprile**: completati 39 task sprint (character selection, tutorial 10 step, pet controller, toast system, keyboard nav, ecc.)
-> - **Task Renan 19-21**: COMPLETATI (fix clean_name, auth_screen _exit_tree, settings_panel SignalBus)
-> - **Task Cristian 9-11**: COMPLETATI (build.yml 4.6, icona app, versione 1.0.0)
-> - **Task Elia 7-8**: COMPLETATI (indici FK, tabelle morte rimosse)
-> - **Nuovi bug runtime**: floor bounds inesistenti (CRITICO), pet animation singola, character flicker — vedi Parte V del report
-> - **Branch**: si lavora SOLO su `main`
+> **Aggiornamento 17 Aprile 2026** (post deep-read + fix UX reali):
+>
+> **Pre-demo completato** (sprint 14-17 Aprile):
+> - Toast container `mouse_filter=IGNORE` (era il blocker reale di tab upper deco panel + mood slider + lang button)
+> - `DecoButton extends TextureRect` (non più Button — pattern reference repos Godot 4, fix drag-drop)
+> - `DropZone` stays PASS anche con panel aperto (reverted broken IGNORE swap)
+> - Female character moved fuori repo (aspetta aseprite directional completi)
+> - Android APK CI build (preset + build.yml job)
+> - Landing page: content + download buttons + 3 contributor pages individuali
+> - **READMEs riscritti**: root, v1/, v1/data, v1/scripts, v1/scenes, v1/tests
+> - **112 test invasivi** in 8 moduli (helpers, catalogs, stress, save, spawn, panels, input, ui_events)
+> - Nuovi decorations Kenney CC0: 57 items aggiunti, totale catalog **129 deco in 13 categorie**
+>
+> **Storico sprint**:
+> - 10 Apr: Report consolidato v3.0.0, Renan 19-21 completati, Cristian 9-11 completati, Elia 7-8 completati
+> - 16 Apr: Alex joined team per pixel art, GUIDA_ALEX_PIXEL_ART.md (1148 righe)
+> - 17 Apr: Deep read 84 file / ~25k righe → DEEP_READ_REGISTRY_2026-04-16.md
+>
+> **Branch**: si lavora SOLO su `main`. Scadenza: **22 Aprile 2026**.
 
 ---
 
