@@ -9,9 +9,10 @@ extends "res://tests/integration/test_base.gd"
 func test_decorations_catalog_size() -> void:
 	var catalog: Dictionary = GameManager.decorations_catalog
 	var decos: Array = catalog.get("decorations", [])
-	# Current state: 72 decorations. If this changes intentionally,
-	# update the assertion (and README, speech, pptx).
-	assert_eq(decos.size(), 72, "decoration count changed — update docs if intentional")
+	# Current state: 129 decorations (72 original + 57 kenney_furniture_cc0
+	# added 2026-04-17). If this changes intentionally, update the assertion
+	# AND the docs (README, speech, pptx, DEEP_READ_REGISTRY).
+	assert_eq(decos.size(), 129, "decoration count changed — update docs if intentional")
 
 
 func test_decorations_categories_size() -> void:

@@ -50,6 +50,16 @@ func _build_container() -> void:
 	_container.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_container.add_theme_constant_override("separation", TOAST_GAP)
+	# CRITICAL: VBoxContainer default mouse_filter is STOP. Since this container
+	# occupies the upper-right quadrant (x=[832,1254] y=[14,288] at 1280x720)
+	# AND the ToastManager CanvasLayer sits at layer=90 (above UILayer layer=10),
+	# a STOP filter here silently absorbs every click in that region — blocking:
+	#   - deco_panel items in the upper half (anchor right, full height overlaps)
+	#   - profile_hud_panel entirely (anchor top-right)
+	#   - any future top-right UI
+	# Individual toast panels already have mouse_filter=IGNORE so they don't
+	# block. Only this parent container needed correcting. (fix 2026-04-17)
+	_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_container)
 
 
