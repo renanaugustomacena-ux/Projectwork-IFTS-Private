@@ -308,33 +308,31 @@ func test_deco_button_extends_texture_rect_not_button() -> void:
 	btn.queue_free()
 
 
-func test_dropzone_becomes_ignore_when_panel_opens() -> void:
-	# CRITICAL: when a panel is open, DropZone must be IGNORE so clicks on
-	# panel items (DecoButton drag items, mode toggle, X buttons) reach them.
-	# Without this swap, panels open but their buttons are "dead" — this was
-	# the suspected cause of user-reported "non riesco a scegliere piu nulla".
+func test_dropzone_stays_pass_even_when_panel_open() -> void:
+	# REGRESSION GUARD (fix 2026-04-17): previously main.gd swapped DropZone
+	# to IGNORE when a panel was opened. That SEEMED reasonable (let panel
+	# clicks through) but actually BROKE drag-drop: dropped decorations
+	# never reached DropZone._drop_data because IGNORE means 'do not receive
+	# events'. Without this, the user's 'non riesco a posizionare nulla'
+	# bug recurs.
+	#
+	# Godot 4 routes mouse events top-most first. The panel is added to
+	# UILayer after DropZone, so panel gets panel-area clicks via
+	# point-under-mouse z-order — no swap needed.
 	await _setup_main_scene()
 	var dz := _find_control("UILayer/DropZone")
 	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
-		"before panel open, DropZone must NOT be IGNORE (drops need to happen)")
+		"initial: DropZone must NOT be IGNORE (drag-drop needs it)")
 	var deco_btn := _find_control("UILayer/HUD/DecoButton") as Button
 	deco_btn.pressed.emit()
 	await wait_frames(3)
-	assert_eq(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
-		"after panel open, DropZone MUST become IGNORE (was %d)" % dz.mouse_filter)
-
-
-func test_dropzone_restores_pass_when_panel_closes() -> void:
-	await _setup_main_scene()
-	var dz := _find_control("UILayer/DropZone")
-	var deco_btn := _find_control("UILayer/HUD/DecoButton") as Button
-	deco_btn.pressed.emit()
-	await wait_frames(3)
-	assert_eq(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
+		"panel open: DropZone MUST still receive events (not IGNORE) so drops "
+		+ "can fire when user releases mouse over room. was %d" % dz.mouse_filter)
 	deco_btn.pressed.emit()
 	await wait_frames(5)
 	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
-		"after panel close, DropZone must restore mouse_filter (was %d)" % dz.mouse_filter)
+		"panel closed: DropZone still not IGNORE (was %d)" % dz.mouse_filter)
 
 
 func test_no_overlay_container_blocks_upper_right_quadrant() -> void:
