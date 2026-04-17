@@ -103,6 +103,74 @@
 		{"id": "bongseng_door_wood", "name": "Porta Legno", "category": "doors", "sprite_path": "res://assets/sprites/rooms/bongseng/doors/wooden door entrance left.png", "placement_type": "wall", "item_scale": 0.4},
 		{"id": "bongseng_door_black", "name": "Porta Nera", "category": "doors", "sprite_path": "res://assets/sprites/rooms/bongseng/doors/black door entrance left.png", "placement_type": "wall", "item_scale": 0.4},
 
+		{"id": "kenney_bed_double", "name": "Letto Matrimoniale Kenney", "category": "beds", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bed_double.png", "placement_type": "floor", "item_scale": 1.0},
+		{"id": "kenney_bed_single", "name": "Letto Singolo Kenney", "category": "beds", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bed_single.png", "placement_type": "floor", "item_scale": 1.0},
+		{"id": "kenney_bed_bunk", "name": "Letto a Castello", "category": "beds", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bed_bunk.png", "placement_type": "floor", "item_scale": 1.0},
+		{"id": "kenney_cabinet_bed", "name": "Comodino", "category": "beds", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/cabinet_bed.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_cabinet_bed_drawer", "name": "Comodino con Cassetto", "category": "beds", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/cabinet_bed_drawer.png", "placement_type": "floor", "item_scale": 2.5},
+
+		{"id": "kenney_desk", "name": "Scrivania Kenney", "category": "desks", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/desk.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_desk_corner", "name": "Scrivania Angolare", "category": "desks", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/desk_corner.png", "placement_type": "floor", "item_scale": 1.0},
+		{"id": "kenney_side_table_drawers", "name": "Cassettiera", "category": "desks", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/side_table_drawers.png", "placement_type": "floor", "item_scale": 2.0},
+
+		{"id": "kenney_chair", "name": "Sedia Kenney", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_chair_cushion", "name": "Sedia Imbottita", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_cushion.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_chair_desk", "name": "Sedia da Scrivania", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_desk.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_chair_rounded", "name": "Sedia Arrotondata", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_rounded.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_lounge_chair", "name": "Poltrona", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lounge_chair.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_lounge_chair_relax", "name": "Poltrona Relax", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lounge_chair_relax.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_stool_bar", "name": "Sgabello Bar", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/stool_bar.png", "placement_type": "floor", "item_scale": 2.5},
+
+		{"id": "kenney_bookcase_closed", "name": "Libreria Chiusa", "category": "wardrobes", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bookcase_closed.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_bookcase_closed_doors", "name": "Libreria con Ante", "category": "wardrobes", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bookcase_closed_doors.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_bookcase_closed_wide", "name": "Libreria Larga", "category": "wardrobes", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bookcase_closed_wide.png", "placement_type": "floor", "item_scale": 1.2},
+		{"id": "kenney_bookcase_open", "name": "Scaffale Aperto", "category": "wardrobes", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bookcase_open.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_cabinet_television", "name": "Mobile TV", "category": "wardrobes", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/cabinet_television.png", "placement_type": "floor", "item_scale": 1.5},
+
+		{"id": "kenney_table", "name": "Tavolo Kenney", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/table.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_table_round", "name": "Tavolo Rotondo", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/table_round.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_table_coffee", "name": "Tavolino Caffe", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/table_coffee.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_table_coffee_glass", "name": "Tavolino Vetro", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/table_coffee_glass.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_table_cross", "name": "Tavolo Incrocio", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/table_cross.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_table_glass", "name": "Tavolo Vetro Kenney", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/table_glass.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_side_table", "name": "Tavolino Lato", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/side_table.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_kitchen_bar", "name": "Bancone Cucina", "category": "tables", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/kitchen_bar.png", "placement_type": "floor", "item_scale": 2.0},
+
+		{"id": "kenney_wall_window", "name": "Finestra Kenney", "category": "windows", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/wall_window.png", "placement_type": "wall", "item_scale": 1.5},
+		{"id": "kenney_wall_window_slide", "name": "Finestra Scorrevole", "category": "windows", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/wall_window_slide.png", "placement_type": "wall", "item_scale": 1.5},
+
+		{"id": "kenney_doorway", "name": "Porta Kenney", "category": "doors", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/doorway.png", "placement_type": "wall", "item_scale": 1.5},
+		{"id": "kenney_doorway_front", "name": "Porta Frontale", "category": "doors", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/doorway_front.png", "placement_type": "wall", "item_scale": 1.5},
+		{"id": "kenney_doorway_open", "name": "Porta Aperta", "category": "doors", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/doorway_open.png", "placement_type": "wall", "item_scale": 1.5},
+
+		{"id": "kenney_bathroom_mirror", "name": "Specchio Bagno", "category": "wall_decor", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bathroom_mirror.png", "placement_type": "wall", "item_scale": 2.5},
+		{"id": "kenney_paneling", "name": "Pannello Muro", "category": "wall_decor", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/paneling.png", "placement_type": "wall", "item_scale": 1.5},
+
+		{"id": "kenney_potted_plant", "name": "Pianta in Vaso Kenney", "category": "potted_plants", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/potted_plant.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "kenney_plant_small_1", "name": "Piantina 1", "category": "potted_plants", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/plant_small1.png", "placement_type": "floor", "item_scale": 4.0},
+		{"id": "kenney_plant_small_2", "name": "Piantina 2", "category": "potted_plants", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/plant_small2.png", "placement_type": "floor", "item_scale": 4.0},
+		{"id": "kenney_plant_small_3", "name": "Piantina 3", "category": "potted_plants", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/plant_small3.png", "placement_type": "floor", "item_scale": 4.0},
+
+		{"id": "kenney_books", "name": "Libri", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/books.png", "placement_type": "floor", "item_scale": 3.0},
+		{"id": "kenney_box_closed", "name": "Scatola Chiusa", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/cardboard_box_closed.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_box_open", "name": "Scatola Aperta", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/cardboard_box_open.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_laptop", "name": "Laptop", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/laptop.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_computer_screen", "name": "Monitor", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/computer_screen.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_lamp_round_table", "name": "Lampada da Tavolo Rotonda", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lamp_round_table.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_lamp_square_table", "name": "Lampada da Tavolo Quadra", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lamp_square_table.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_radio", "name": "Radio", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/radio.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_television_modern", "name": "TV Moderna", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/television_modern.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_television_vintage", "name": "TV Vintage", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/television_vintage.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_bear", "name": "Orsetto", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bear.png", "placement_type": "floor", "item_scale": 2.5},
+		{"id": "kenney_trashcan", "name": "Cestino", "category": "accessories", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/trashcan.png", "placement_type": "floor", "item_scale": 2.5},
+
+		{"id": "kenney_rug_rectangle", "name": "Tappeto Rettangolare", "category": "room_elements", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/rug_rectangle.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_rug_round", "name": "Tappeto Rotondo", "category": "room_elements", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/rug_round.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_rug_square", "name": "Tappeto Quadrato", "category": "room_elements", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/rug_square.png", "placement_type": "floor", "item_scale": 1.5},
+		{"id": "kenney_ceiling_fan", "name": "Ventilatore Soffitto", "category": "room_elements", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/ceiling_fan.png", "placement_type": "wall", "item_scale": 2.5},
+		{"id": "kenney_lamp_round_floor", "name": "Lampada a Terra Rotonda", "category": "room_elements", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lamp_round_floor.png", "placement_type": "floor", "item_scale": 2.0},
+		{"id": "kenney_lamp_square_floor", "name": "Lampada a Terra Quadra", "category": "room_elements", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lamp_square_floor.png", "placement_type": "floor", "item_scale": 2.0},
+
 		{"id": "pet_cat_void", "name": "Void Cat", "category": "pets", "sprite_path": "res://assets/pets/cat_void_simple.png", "placement_type": "floor", "item_scale": 4.0}
 	]
 }
