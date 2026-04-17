@@ -146,11 +146,22 @@ jobs:
           godot --headless --import --path . || true
           godot --headless --import --path . || true
 
+      - name: Diagnose Android env
+        run: |
+          echo "=== Templates dir ==="
+          ls -la ~/.local/share/godot/export_templates/4.6.stable/ 2>&1 || true
+          echo "=== Android SDK ==="
+          ls /usr/lib/android-sdk/ 2>&1 || true
+          ls /usr/lib/android-sdk/build-tools/ 2>&1 || true
+          ls /usr/lib/android-sdk/platforms/ 2>&1 || true
+          echo "=== Keystore verify ==="
+          keytool -list -keystore ~/.android/debug.keystore -storepass android 2>&1 | head -5 || true
+
       - name: Export Android APK (debug)
         run: |
           mkdir -p v1/export/android
           cd v1
-          godot --headless --export-debug "Android" export/android/RelaxRoom.apk
+          godot --headless --verbose --export-debug "Android" export/android/RelaxRoom.apk 2>&1 | tail -60
           ls -lh export/android/
 
       - name: Upload Android APK artifact
