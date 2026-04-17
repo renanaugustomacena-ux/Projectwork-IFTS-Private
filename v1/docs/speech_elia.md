@@ -1,48 +1,54 @@
 # Speech — Elia Zoccatelli
 
 **Ruolo**: Database Engineer
-**Slide**: 2 (intro) · 6 · 9 (Futuro)
+**Slide**: 2 (intro) · 5 (futuro) · 9 · 11 (chiusura)
 
 ---
 
-### [SLIDE 2 — Presentazione team]
+### [SLIDE 2 — Team + Progetto]
 
-Sono Elia, Database Engineer del team. Ho progettato le due facce della persistenza: il database SQLite locale, nove tabelle, e lo schema cloud su Supabase, quindici tabelle con Row Level Security. Migrazioni automatiche tra versioni, così quando aggiorniamo lo schema nessun utente perde dati.
+*(Dopo Renan, parla Elia:)*
 
----
-
-### [SLIDE 6 — Persistenza & Schema DB]
-
-I dati di un utente non si perdono. Mai. È la promessa del progetto, e ci siamo arrivati con tre livelli di difesa.
-
-**Primo livello**: JSON su disco, firmato con HMAC-SHA256. Qualcuno manomette il file? Lo intercettiamo. Scrittura atomica — prima un file temporaneo, poi rename — così se il PC crasha a metà salvataggio, il file precedente resta intatto.
-
-**Secondo livello**: SQLite con Write-Ahead Logging. Nove tabelle, chiavi esterne con CASCADE, migrazioni da versione uno a versione cinque, tutte idempotenti e rollback-safe. Prima di una DROP facciamo sempre un backup — `characters_bak`, `rooms_bak` — mai modifiche distruttive senza rete di salvataggio.
-
-**Terzo livello**: Supabase cloud, ma solo quando l'utente vuole. E sempre offline-first: la scrittura locale parte subito, la sincronizzazione viene accodata, e quando la connessione torna facciamo flush con backoff esponenziale.
-
-Sulla sicurezza: Row Level Security su ogni tabella cloud. La policy è sempre la stessa — `auth.uid() = user_id`. Anche se qualcuno si impossessasse della nostra API key, non riuscirebbe a vedere i dati di nessun altro utente. È il database stesso che lo impedisce.
-
-Un dettaglio importante: cinque tabelle cloud sono già in uso, dieci sono predisposte per le feature future. Significa zero migrazioni al lancio di ogni nuova funzionalità. La fondazione c'è già.
-
-Ora Renan vi racconta come osserviamo tutto questo in produzione.
+Sono Elia, Database Engineer del team. Ho progettato lo schema dati locale — SQLite, undici tabelle — e lo schema cloud — Supabase PostgreSQL, quindici tabelle con Row-Level Security. Modellazione relazionale, politiche di sicurezza per utente, migrazioni automatiche. Quando aggiorniamo lo schema, nessun utente perde dati.
 
 ---
 
-### [SLIDE 9 — Funzionalità & Futuro]
+### [SLIDE 5 — Demo & Riflessione — Miglioramenti Futuri]
 
-Oggi funzionano: drag-and-drop di centoventinove decorazioni, pet autonomo con cinque stati, audio con crossfade guidato dal mood, tutorial a nove step signal-driven, account locali sicuri con PBKDF2.
+*(Dopo il momento demo guidato da Renan, Elia prende la parola per il roadmap:)*
 
-Domani, senza toccare lo schema, cresce così: **sync multi-PC** via Supabase. **Amicizie e visite di stanza** — le tabelle `friends` e `room_visits` esistono già. **Chat** tra utenti. **Sessioni Pomodoro** tracciate. **Diario dell'umore**, con `mood_entries` e `memos`. **Marketplace** — l'economia delle monete è già viva in locale. **Mobile nativo** — l'export Android è in finalizzazione, iOS compila.
+Quello che vedete oggi è solo la fondazione. Il database cloud ha già **quindici tabelle**: una parte è in uso attivo, le altre sono **pronte per le funzionalità future**. Significa zero migrazioni al lancio di ogni nuova feature.
 
-Il principio è questo: ogni feature che vedrete nei prossimi mesi è un **nuovo listener** sul bus degli eventi e una **tabella già pronta**. Zero modifiche al resto. Un prodotto che cresce senza cicatrici.
+Domani cresce così: **sincronizzazione cloud completa** multi-device via Supabase Auth. **Sistema amicizie e visite di stanza** — le tabelle `friends` e `room_visits` esistono già. **Chat integrata** — `chat_messages` è pronta. **Pomodoro timer** con statistiche. **Diario dell'umore** — `journal_entries`, `mood_entries`, `memos`. **Marketplace decorazioni** — l'economia delle monete è già viva. **Supporto mobile** — Godot 4.6 compila per Android e iOS. **Catalogo personaggi esteso** — la pipeline scaffold è pronta.
 
-Chiudiamo con la demo.
+Ogni feature futura è un **nuovo listener sul bus** e una **tabella già pronta**. Zero modifiche al resto. Un prodotto che cresce senza cicatrici.
+
+---
+
+### [SLIDE 9 — Persistenza dei Dati]
+
+**I dati dell'utente non si perdono. Mai.** È la promessa del progetto, e ci siamo arrivati con tre livelli di difesa.
+
+**Primo livello — JSON con HMAC**. Salvataggio primario in `save_data.json` con firma crittografica SHA-256. Qualsiasi manomissione del file viene rilevata. Backup automatico prima di ogni scrittura. Scrittura atomica — file temporaneo, poi rename — così anche se il PC crasha a metà salvataggio, il file precedente resta intatto.
+
+**Secondo livello — SQLite con WAL**. Undici tabelle relazionali. Chiavi esterne con CASCADE. Indici sulle foreign key. Migrazioni automatiche dalla versione uno alla cinque, tutte idempotenti e rollback-safe. Write-Ahead Logging per operazioni concorrenti sicure.
+
+**Terzo livello — Supabase Cloud**. Sincronizzazione offline-first con coda di operazioni pendenti. I dati locali hanno **sempre priorità**. La coda si svuota automaticamente al reconnect. Quindici tabelle cloud con Row-Level Security — ogni utente vede solo i propri dati. Anche se qualcuno si impossessasse della nostra API key, non vedrebbe niente di nessun altro. È il database stesso che lo impedisce.
+
+In più, osservabilità: Logger strutturato con JSON Lines, correlation ID end-to-end, quattro livelli — debug, info, warn, error — rotazione automatica cinque megabyte per cinque file, venticinque totali. Redazione automatica di chiavi sensibili: password, token, jwt, hmac_key. Flush periodico ogni due secondi, zero impatto sul frame rate.
+
+---
+
+### [SLIDE 11 — Ringraziamenti]
+
+*(Intervento condiviso con Renan e Cristian — Elia può chiudere con una frase personale prima del "Grazie" collettivo:)*
+
+Per me questo progetto è stato la prima volta che ho progettato un database pensando davvero alla persona che userà l'app. Row-Level Security, migrazioni rollback-safe, backup pre-scrittura — tutto per una promessa semplice: **i tuoi dati non si perdono**. Grazie a chi ci ha insegnato a lavorare così.
 
 ---
 
 ## Note personali
 
-- Slide 6: **non leggere** tutti i nomi delle tabelle. Raggruppa — "le nove locali", "le quindici cloud". Sono sulla slide.
-- Slide 9: l'ancora del discorso è la frase "la fondazione c'è già". È il messaggio di manutenibilità futura.
-- Collegamento speech esteso: doppio DB + RLS + migrazioni = robustezza e preparazione al futuro.
+- Slide 9: **non leggere** tutti i nomi delle tabelle. Raggruppa — "le undici locali", "le quindici cloud". Sono sulla slide.
+- Slide 5: sulla roadmap, enfatizzare "**la fondazione c'è già**". È il messaggio di manutenibilità.
+- Slide 11: una frase personale breve, poi "Grazie" insieme agli altri due.
