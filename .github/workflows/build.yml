@@ -135,6 +135,12 @@ jobs:
           export/android/debug_keystore_pass = "android"
           EOF
 
+      - name: Pre-import resources
+        run: |
+          cd v1
+          godot --headless --import --path . || true
+          godot --headless --import --path . || true
+
       - name: Export Android APK (debug)
         run: |
           mkdir -p v1/export/android
