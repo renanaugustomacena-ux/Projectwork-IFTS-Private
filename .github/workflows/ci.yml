@@ -123,6 +123,29 @@ jobs:
       - name: Check signal count floor + no duplicates
         run: python ci/validate_signal_count.py v1/scripts/autoload/signal_bus.gd --min 40
 
+  validate-pixelart:
+    name: "Validate Pixel-Art Deliverables"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: pip install "Pillow>=10,<12"
+
+      - name: Check palette is in sync with male/old sources
+        run: python ci/extract_palette.py --check
+
+      - name: Validate deliverables (sizes, naming, .aseprite twins, palette)
+        run: python ci/validate_pixelart_deliverables.py --check-palette
+
   smoke-headless:
     name: "Headless Boot Smoke"
     runs-on: ubuntu-22.04

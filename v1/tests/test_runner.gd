@@ -21,6 +21,7 @@ const TEST_MODULES := [
 	"res://tests/integration/test_spawn.gd",
 	"res://tests/integration/test_panels.gd",
 	"res://tests/integration/test_input.gd",
+	"res://tests/integration/test_ui_events.gd",
 ]
 
 const RESULTS_PATH := "user://test_results.jsonl"
@@ -87,10 +88,18 @@ func _run_module(module_path: String, script_res: GDScript) -> void:
 	print("── %s (%d tests)" % [instance.name, test_methods.size()])
 
 	for method_name in test_methods:
-		# Reset per-test counters on the instance so each test is independent
+		# Reset per-test counters on the instance so each test is independent.
+		# Use method call for the Array reset to avoid the typed-Array quirk
+		# where set("_failures_in_test", []) silently leaves the old array
+		# because `[]` is untyped and doesn't fit Array[String] assignment.
 		instance.set("_current_test_name", method_name)
 		instance.set("_assertions_in_test", 0)
-		instance.set("_failures_in_test", [])
+		if instance.has_method("_reset_failures"):
+			instance.call("_reset_failures")
+		else:
+			var prev: Array = instance.get("_failures_in_test")
+			if prev is Array:
+				prev.clear()
 
 		var callable := Callable(instance, method_name)
 		if not callable.is_valid():

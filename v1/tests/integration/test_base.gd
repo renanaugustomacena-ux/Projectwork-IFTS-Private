@@ -96,6 +96,12 @@ func fail(message: String) -> void:
 	_failures_in_test.append("explicit fail: " + message)
 
 
+## Runner calls this before each test_* method to reset per-test state.
+## Needed because set() of typed Array[String] to untyped [] silently fails.
+func _reset_failures() -> void:
+	_failures_in_test.clear()
+
+
 ## Waits N frames. Use in tests that need tree-processing (input, timers).
 func wait_frames(n: int = 1) -> void:
 	for _i in range(n):
