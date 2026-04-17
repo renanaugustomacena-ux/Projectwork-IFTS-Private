@@ -19,6 +19,7 @@ var _name_label: Label = null
 var _profile_btn: Button = null
 var _settings_btn: Button = null
 var _lang_btn: Button = null
+var _close_btn: Button = null
 var _mood_slider: HSlider = null
 var _loading: bool = false
 
@@ -89,6 +90,16 @@ func _build_ui() -> void:
 	_settings_btn.add_theme_font_size_override("font_size", 18)
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	row_top.add_child(_settings_btn)
+
+	# Close button (X) — re-emits profile_hud_requested to toggle-close.
+	_close_btn = Button.new()
+	_close_btn.custom_minimum_size = Vector2(32, 28)
+	_close_btn.focus_mode = Control.FOCUS_NONE
+	_close_btn.text = "✕"
+	_close_btn.tooltip_text = "Chiudi"
+	_close_btn.add_theme_font_size_override("font_size", 14)
+	_close_btn.pressed.connect(_on_close_pressed)
+	row_top.add_child(_close_btn)
 
 	# Row 2: mood bar
 	var mood_row := HBoxContainer.new()
@@ -165,6 +176,12 @@ func _on_settings_pressed() -> void:
 	SignalBus.profile_hud_closed.emit()
 
 
+func _on_close_pressed() -> void:
+	# Re-emit profile_hud_requested → main.gd chiama toggle_panel("profile_hud")
+	# → PanelManager chiude (il panel e attualmente aperto).
+	SignalBus.profile_hud_requested.emit()
+
+
 func _on_mood_changed(value: float) -> void:
 	if _loading:
 		return
@@ -177,5 +194,7 @@ func _exit_tree() -> void:
 		_settings_btn.pressed.disconnect(_on_settings_pressed)
 	if _lang_btn != null and _lang_btn.pressed.is_connected(_on_lang_toggled):
 		_lang_btn.pressed.disconnect(_on_lang_toggled)
+	if _close_btn != null and _close_btn.pressed.is_connected(_on_close_pressed):
+		_close_btn.pressed.disconnect(_on_close_pressed)
 	if _mood_slider != null and _mood_slider.value_changed.is_connected(_on_mood_changed):
 		_mood_slider.value_changed.disconnect(_on_mood_changed)
