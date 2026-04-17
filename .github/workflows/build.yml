@@ -161,8 +161,17 @@ jobs:
         run: |
           mkdir -p v1/export/android
           cd v1
-          godot --headless --verbose --export-debug "Android" export/android/RelaxRoom.apk 2>&1 | tail -60
-          ls -lh export/android/
+          set +e
+          godot --headless --verbose --export-debug "Android" export/android/RelaxRoom.apk > /tmp/export.log 2>&1
+          RC=$?
+          echo "=== godot exit: $RC ==="
+          echo "=== first 40 lines ==="
+          head -40 /tmp/export.log
+          echo "=== ERROR lines (full) ==="
+          grep -B 2 -A 2 "ERROR\|WARNING\|valid Java\|configuration error" /tmp/export.log || true
+          echo "=== export/android/ ==="
+          ls -lh export/android/ || true
+          exit $RC
 
       - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
