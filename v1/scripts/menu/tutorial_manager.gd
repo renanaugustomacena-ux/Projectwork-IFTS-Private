@@ -44,27 +44,27 @@ func _define_steps() -> void:
 	_steps = [
 		{
 			"message": (
-				"Welcome to your [b]Relax Room[/b]! 🏠\n"
-				+ "This is your personal space. "
-				+ "Let's make it yours!"
+				"Benvenuto nella tua [b]Relax Room[/b]! 🏠\n"
+				+ "Questo è il tuo spazio personale. "
+				+ "Rendilo tuo!"
 			),
 			"signal_name": "",
 			"auto_advance": 3.0,
 		},
 		{
 			"message": (
-				"Use [b]WASD[/b] or [b]Arrow Keys[/b] "
-				+ "to walk around.\n"
-				+ "Try moving your character now!"
+				"Usa [b]WASD[/b] o le [b]frecce direzionali[/b] "
+				+ "per muoverti.\n"
+				+ "Prova a muovere il personaggio ora!"
 			),
 			"signal_name": "",
 			"wait_for_input": "movement",
 		},
 		{
 			"message": (
-				"Open the [b]Decorations[/b] panel "
-				+ "to furnish your room.\n"
-				+ "Click the [b]Decor[/b] button below! ⬇"
+				"Apri il pannello [b]Decorazioni[/b] "
+				+ "per arredare la stanza.\n"
+				+ "Clicca il pulsante [b]Decora[/b] in basso! ⬇"
 			),
 			"signal_name": "panel_opened",
 			"signal_filter": "deco",
@@ -72,38 +72,28 @@ func _define_steps() -> void:
 		},
 		{
 			"message": (
-				"Browse the categories and [b]drag[/b] "
-				+ "a decoration into your room!\n"
-				+ "Try adding a plant or a desk."
+				"Sfoglia le categorie e [b]trascina[/b] "
+				+ "una decorazione nella stanza!\n"
+				+ "Prova con una pianta o una scrivania."
 			),
 			"signal_name": "decoration_placed",
 		},
 		{
 			"message": (
-				"Nice! You can click on any decoration "
-				+ "to select it.\n"
-				+ "Try [b]R[/b] to rotate, "
-				+ "[b]F[/b] to flip, "
-				+ "[b]S[/b] to resize, "
-				+ "or [b]X[/b] to delete."
+				"Ottimo! Clicca su qualsiasi decorazione "
+				+ "per selezionarla.\n"
+				+ "Premi [b]R[/b] per ruotare, "
+				+ "[b]F[/b] per specchiare, "
+				+ "[b]S[/b] per ridimensionare, "
+				+ "[b]X[/b] per eliminare."
 			),
 			"signal_name": "decoration_selected",
 		},
 		{
 			"message": (
-				"Open [b]Settings[/b] to adjust volume "
-				+ "and language.\n"
-				+ "Click the Settings button! ⬇"
-			),
-			"signal_name": "panel_opened",
-			"signal_filter": "settings",
-			"arrow_target": "SettingsButton",
-		},
-		{
-			"message": (
-				"Check your [b]Profile[/b] to see "
-				+ "your account info.\n"
-				+ "Click the Profile button! ⬇"
+				"Apri il [b]Profilo[/b] per vedere "
+				+ "le info del tuo account.\n"
+				+ "Clicca il pulsante Profilo! ⬇"
 			),
 			"signal_name": "panel_opened",
 			"signal_filter": "profile",
@@ -111,16 +101,16 @@ func _define_steps() -> void:
 		},
 		{
 			"message": (
-				"Press [b]Escape[/b] to close any panel.\n"
-				+ "Try it now!"
+				"Premi [b]Esc[/b] per chiudere un pannello.\n"
+				+ "Provalo ora!"
 			),
 			"signal_name": "panel_closed",
 		},
 		{
 			"message": (
-				"Your room saves [b]automatically[/b]! ✓\n\n"
-				+ "[b]Mission Complete![/b] 🎉\n"
-				+ "Enjoy your Relax Room!"
+				"La tua stanza si salva [b]automaticamente[/b]! ✓\n\n"
+				+ "[b]Missione completata![/b] 🎉\n"
+				+ "Buon relax nella tua Relax Room!"
 			),
 			"signal_name": "",
 			"auto_advance": 4.0,
@@ -200,7 +190,7 @@ func _build_ui() -> void:
 	hbox.add_child(_progress_label)
 
 	_skip_btn = Button.new()
-	_skip_btn.text = "Skip Tutorial"
+	_skip_btn.text = "Salta tutorial"
 	_skip_btn.flat = true
 	_skip_btn.focus_mode = Control.FOCUS_NONE
 	_skip_btn.add_theme_font_size_override("font_size", 12)
@@ -232,7 +222,7 @@ func _advance_step() -> void:
 
 	var step: Dictionary = _steps[_current_step]
 	_dialog_label.text = step.get("message", "")
-	_progress_label.text = "Step %d / %d" % [
+	_progress_label.text = "Passo %d / %d" % [
 		_current_step + 1, _steps.size()
 	]
 	_step_timer = 0.0
@@ -241,9 +231,9 @@ func _advance_step() -> void:
 	# Disconnect previous signal listeners
 	_disconnect_all_signals()
 
-	# Final step — show "Fine!" button that closes tutorial
+	# Final step — bottone di chiusura
 	if step.get("is_final", false):
-		_skip_btn.text = "Fine!"
+		_skip_btn.text = "Chiudi"
 
 	# Auto-advance step (timed, no signal)
 	var auto_time: float = step.get("auto_advance", 0.0)
