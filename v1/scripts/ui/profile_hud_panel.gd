@@ -73,13 +73,9 @@ func _build_ui() -> void:
 	badges_label.modulate.a = 0.6
 	info_vbox.add_child(badges_label)
 
-	# Language toggle
+	# Language toggle — nascosto pre-demo, i18n completa in arrivo post-demo.
 	_lang_btn = Button.new()
-	_lang_btn.custom_minimum_size = Vector2(50, 28)
-	_lang_btn.focus_mode = Control.FOCUS_NONE
-	_lang_btn.tooltip_text = "Cambia lingua — click per IT/EN"
-	_lang_btn.pressed.connect(_on_lang_toggled)
-	row_top.add_child(_lang_btn)
+	_lang_btn.visible = false
 
 	# Settings button
 	_settings_btn = Button.new()
@@ -177,9 +173,14 @@ func _on_settings_pressed() -> void:
 
 
 func _on_close_pressed() -> void:
-	# Re-emit profile_hud_requested → main.gd chiama toggle_panel("profile_hud")
-	# → PanelManager chiude (il panel e attualmente aperto).
-	SignalBus.profile_hud_requested.emit()
+	# Trova PanelManager e chiudi direttamente — no signal bouncing.
+	var root := get_tree().root
+	var pm := root.find_child("PanelManager", true, false)
+	if pm != null and pm.has_method("close_current_panel"):
+		pm.close_current_panel()
+		return
+	# Fallback — auto-destroy se PanelManager non trovato.
+	queue_free()
 
 
 func _on_mood_changed(value: float) -> void:
