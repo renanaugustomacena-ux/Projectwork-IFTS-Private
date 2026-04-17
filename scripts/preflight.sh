@@ -128,15 +128,17 @@ else
 fi
 echo ""
 
-echo "[7] Deep integration tests (96 tests, ~7s)"
+echo "[7] Deep integration tests (~7s)"
 rm -f /tmp/preflight_deep.log
 timeout 90 godot4 --headless --path v1/ res://tests/test_runner.tscn \
     >/tmp/preflight_deep.log 2>&1
 DEEP_RC=$?
 DEEP_FAILS=$(grep -E "^  Totals: " /tmp/preflight_deep.log | sed -E 's/.* ([0-9]+) fail.*/\1/')
+DEEP_PASS=$(grep -E "^  Totals: " /tmp/preflight_deep.log | sed -E 's/.* ([0-9]+) pass.*/\1/')
 DEEP_FAILS=${DEEP_FAILS:-999}
+DEEP_PASS=${DEEP_PASS:-0}
 if [ "$DEEP_RC" -eq 0 ] && [ "$DEEP_FAILS" -eq 0 ]; then
-    printf "  %-50s ${GREEN}✅${NC} (96 tests pass)\n" "Deep test suite"
+    printf "  %-50s ${GREEN}✅${NC} ($DEEP_PASS tests pass)\n" "Deep test suite"
 else
     printf "  %-50s ${RED}❌ (exit $DEEP_RC, $DEEP_FAILS fail)${NC}\n" "Deep test suite"
     grep -E "^\s+✗|FAILURES:" /tmp/preflight_deep.log | head -8 | sed 's/^/      /'
