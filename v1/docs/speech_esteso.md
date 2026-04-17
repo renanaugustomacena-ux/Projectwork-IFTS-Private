@@ -9,27 +9,27 @@
 
 Relax Room nasce da una domanda semplice: *perche ogni software che usiamo sembra chiederci qualcosa?* Notifiche, badge, timer, streak. Ogni app e costruita per **vincere la lotta per la nostra attenzione**. In quel rumore abbiamo voluto costruire il contrario: un **ambiente**, non un gioco. Un luogo che vive sullo sfondo della giornata, che non chiede nulla, che non ti fa sentire in colpa se lo chiudi. Abbiamo pensato a chi studia con dieci tab aperte, a chi lavora da casa e vuole un angolo personale nel proprio desktop, a chi semplicemente ha bisogno di un posto tranquillo dove tornare. Da qui il concetto di **desktop companion**: un'app che sta li, che puoi decorare, in cui c'e un gattino che dorme, in cui la musica suona piano.
 
-## 2. Scelte architetturali (~210 parole)
+## 2. Scelte architetturali (~200 parole)
 
 Ogni decisione tecnica l'abbiamo presa con una domanda fissa: *come manteniamo questo software vivo a sei, dodici, ventiquattro mesi?*
 
-- **SignalBus come cuore**: **46 segnali tipizzati**, un event bus centralizzato. Nessun manager conosce gli altri. Questo perche — in un progetto di team — l'accoppiamento e il primo nemico della manutenibilita. Oggi `decoration_placed` fa scattare tre listener; domani ne fara cinque, senza toccare nessun `if` nel codice esistente.
+- **SignalBus come cuore**: **46 segnali tipizzati**, event bus centralizzato. Nessun manager conosce gli altri. L'accoppiamento è il primo nemico della manutenibilità. Oggi `decoration_placed` fa scattare tre listener; domani cinque, senza toccare codice esistente.
 
-- **Offline-first come valore**: l'utente non deve dipendere da un nostro server per rilassarsi. Tutto gira localmente. Il cloud e un **bonus** (sync multi-PC), mai una dipendenza. Questa scelta ha cambiato l'ordine di priorita: prima scrivi in locale, **sempre**; poi accoda al cloud; poi prova a flushare quando torna la rete.
+- **Offline-first come valore**: l'utente non deve dipendere dal nostro server per rilassarsi. Tutto gira localmente. Il cloud è un **bonus** (sync multi-PC), mai dipendenza. Priorità: scrivi in locale **sempre**, accoda al cloud, flush al reconnect.
 
-- **Doppio DB SQLite + Supabase**: SQLite con WAL mode ci da **robustezza su disco**; Supabase con **Row-Level Security** ci da **scalabilita futura senza rifare il backend**. Le **migrazioni v1.0→v5.0** sono idempotenti: riparte ogni volta, nessun crash.
+- **Doppio DB SQLite + Supabase**: SQLite con WAL ci dà **robustezza su disco**; Supabase con **Row-Level Security** ci dà **scalabilità futura senza rifare il backend**. Le **migrazioni v1→v5** sono idempotenti con backup pre-DROP.
 
-- **HMAC-SHA256 sui salvataggi**: integrita senza cloud obbligatorio. Anche se qualcuno modifica `save_data.json` a mano, il gioco lo rileva. Scrittura atomica (temp → rename) = zero corruzione su crash.
+- **HMAC-SHA256 sui salvataggi**: integrità senza cloud obbligatorio. Se qualcuno modifica `save_data.json` a mano, il gioco lo rileva e carica il backup. Scrittura atomica (temp → rename) = zero corruzione su crash.
 
-## 3. Metodologia di lavoro (~190 parole)
+## 3. Metodologia di lavoro (~180 parole)
 
 Non abbiamo improvvisato. Il progetto ha seguito tre principi operativi:
 
-- **Audit-driven development**: **tre passaggi di audit sistematico** sul codice. Ogni bug trovato e classificato per severita (critico, alto, medio) e risolto per priorita — non per chi lo trovava o chi aveva piu voglia.
+- **Audit-driven development**: **tre passaggi di audit sistematico** sul codice. Ogni bug classificato per severità (critico/alto/medio) e risolto per priorità — non per chi lo trovava. Deep read integrale di **84 file / ~25k righe** prima dello sprint finale.
 
-- **CI come cancello obbligatorio**: **5 job paralleli** (lint GDScript, JSON validation, sprite paths, cross-reference costanti, schema DB). Nessun codice finisce sul branch `main` senza **tutti i 5 green**. Questo ha eliminato intere classi di bug prima ancora che arrivassero in review.
+- **CI come cancello obbligatorio**: **9 job paralleli** (lint GDScript, JSON, sprite paths, cross-reference, schema DB, signal count, pixel-art deliverables, smoke headless, 112 deep test). Nessun codice sul `main` senza **tutti e 9 green**. Questo ha eliminato intere classi di bug prima della review.
 
-- **Runbook per ruolo**: abbiamo scritto **tre guide operative** (`GUIDE_RENAN_SUPERVISOR.md`, `GUIDE_ELIA_DATABASE.md`, `GUIDE_CRISTIAN_ASSETS_CICD.md`). Ognuna documenta cosa fare, come farlo, dove sta la cosa. L'obiettivo: **chiunque entra nel progetto domani deve poter lavorare senza chiederci nulla**. **118 commit semantici** (feat/fix/chore/docs) completano il quadro — la cronologia del repo si legge come una storia, non come un disastro.
+- **Runbook per ruolo**: **4 guide operative** (Renan runtime/UI, Elia database, Cristian CI/asset, Alex pixel art 1148 righe). Ognuna documenta cosa fare, come, dove. Obiettivo: **chiunque entra nel progetto domani deve poter lavorare senza chiederci nulla**. Commit semantici (feat/fix/chore/docs) — la cronologia del repo si legge come una storia, non come un disastro.
 
 ## 4. Team e ruoli (~100 parole)
 
@@ -41,14 +41,14 @@ Tre persone, **tre ruoli complementari**, interfacce nette.
 
 Le interfacce tra noi non sono riunioni: sono **segnali** nel SignalBus e **schemi** nel database. Questo ci ha permesso di lavorare in parallelo, quasi senza blocchi reciproci.
 
-## 5. Manutenzione futura (~140 parole)
+## 5. Manutenzione futura (~130 parole)
 
 Un progetto si giudica anche dopo la consegna. Abbiamo preparato il terreno:
 
-- **9 tabelle cloud gia predisposte** per feature future: `friends`, `room_visits`, `chat_messages`, `pomodoro_sessions`, `journal_entries`, `mood_entries`, `memos`, `outfits_cloud`, `notifications`. Nessuna migrazione al lancio di una nuova funzione.
-- **Architettura estensibile by design**: aggiungere una feature = aggiungere un listener a un segnale esistente, oppure dichiarare un nuovo segnale. **Mai rompere** codice che gia funziona.
-- **Documentazione operativa** in `v1/docs/`: tre guide + un report consolidato del progetto. Un nuovo membro del team puo leggere, capire, contribuire — senza sessioni di onboarding.
-- **AppLogger strutturato**: se qualcosa si rompe in produzione, l'utente ci manda un `.jsonl` e noi, **anche senza accesso al suo PC**, ricostruiamo il flusso completo dall'inizio della sessione.
+- **10 tabelle cloud già predisposte** per feature future: `friends`, `room_visits`, `chat_messages`, `pomodoro_sessions`, `journal_entries`, `mood_entries`, `memos`, `outfits_cloud`, `notifications`, `audit_log`. Nessuna migrazione al lancio.
+- **Architettura estensibile by design**: aggiungere una feature = un listener in più su un segnale esistente o un nuovo segnale. **Mai rompere** codice che già funziona.
+- **Documentazione operativa** in `v1/docs/` + `v1/guide/` + `v1/study/`: 4 guide + report consolidato 3195 righe + registry numerico post deep-read. Nuovo membro: legge, capisce, contribuisce senza onboarding.
+- **AppLogger strutturato**: l'utente ci manda un `.jsonl` e noi ricostruiamo il flusso completo dalla prima riga — anche senza accesso al suo PC.
 
 ## 6. Chiusura (~40 parole)
 

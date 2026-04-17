@@ -1,50 +1,44 @@
 # Speech — Cristian Marino
 
-**Ruolo**: Asset Pipeline & CI/CD
-**Slide assegnate**: 2 (intro propria), 8, 9 (parte Cifre + Oggi), 10 (chiusura collettiva)
+**Ruolo**: Asset Pipeline · CI/CD · **Slide**: 2 (intro), 8, 9 (Cifre + Oggi), 10 (chiusura)
 
-> Legge veloce: **keyword bold** = appigli visivi. Freccia `→` = transizione alla prossima slide.
+> **keyword bold** = appigli visivi · `→` = transizione.
 
 ---
 
-## Slide 2 — Intro personale
+## Slide 2 — Intro personale (15s)
 
 - **Apertura**: "Sono Cristian, **Asset Pipeline e CI/CD**."
-- **Core** (1 frase): "Ho curato gli **asset pixel art** (personaggi, decorazioni, sfondi), configurato la **pipeline CI a 5 job paralleli** e gestito i **build automatici Windows + Web**."
-- **Tempo**: 15 secondi
-- **Transizione**: (torna a Renan per filosofia)
+- **Core**: "Ho curato **asset pixel art** (personaggi, decorazioni, sfondi), configurato la **pipeline CI 9 job**, gestito **build Windows + Android + Web**."
+- **→** (torna a Renan per filosofia)
 
 ---
 
 ## Slide 8 — Pipeline Asset + CI/CD + Processo
 
 - **Apertura**: "Pixel art **coerente** + pipeline **automatica** + metodo **disciplinato**."
-- **Core — Asset**:
-  - **Sprite 32x32** personaggi, 8 direzioni (idle/walk/interact/rotate)
-  - **Kenney Pixel UI Pack** "ancient wood"
-  - **Audio lo-fi**: 2 tracce, **crossfade automatico**
-  - **Parallasse** multi-layer
-- **Core — CI/CD 5 job paralleli**: lint / JSON / sprite paths / cross-ref / schema DB
-- **Core — Processo**: **audit-driven** 3 passaggi / CI obbligatoria / **118 commit** semantici / runbook per ruolo
-- **Impatto**: "Zero codice sul main senza **5 green**. Il codice si scrive una volta, si mantiene cento."
-- **Transizione**: → "I numeri parlano."
+- **Asset**: sprite **32×32** 8 direzioni · **Kenney Pixel UI Pack** "ancient wood" · audio lo-fi **crossfade 2s** · parallasse multi-layer · **129 decorazioni** Kenney CC0 + SoppyCraft + Thurraya
+- **CI/CD 9 job**: lint · JSON · sprite paths · cross-ref · schema DB · signal count · pixel-art · smoke headless · deep test 112
+- **Processo**: **audit-driven** 3 passaggi · CI obbligatoria · commit semantici · runbook per ruolo · deep read 84 file
+- **Impatto**: "Zero codice sul main senza **9 green**. Il codice si scrive una volta, si mantiene cento."
+- **→** "I numeri parlano."
 
 ---
 
 ## Slide 9 — Cifre + Funzionalita + Futuro
 
-*(Speaker condiviso con Elia: io porto i numeri e l'Oggi, lei porta il Domani.)*
+*(Speaker condiviso con Elia: io numeri e Oggi, lei Domani.)*
 
-- **La mia parte — Cifre highlight** (NON leggere tutti e 12):
-  - **118** commit — disciplina repository
+- **Cifre highlight** (NON leggere tutti):
   - **46** segnali — architettura disaccoppiata
-  - **72** decorazioni — contenuto ricco
+  - **129** decorazioni — contenuto ricco (13 categorie)
   - **9+15** tabelle — persistenza duale
-  - **7** job CI — automazione completa
+  - **9** job CI — automazione completa
+  - **112** test invasivi — non solo smoke, verifica ogni sprite + drag + FSM
   - **~7.900** righe GDScript — scala reale
-- **La mia parte — Oggi funziona**: drag-and-drop 72 decorazioni / pet FSM 5 stati / audio crossfade / tutorial 9 step signal-driven
-- **Impatto**: "Non e un prototipo. E un prodotto."
-- **Transizione**: (Elia prende la parola per il Domani, poi chiudiamo insieme)
+- **Oggi funziona**: drag-and-drop 129 decorazioni · pet FSM 5 stati · audio crossfade mood-driven · tutorial 9 step signal-driven
+- **Impatto**: "Non è un prototipo. È un prodotto."
+- **→** (Elia per il Domani, poi chiudiamo insieme)
 
 ---
 
