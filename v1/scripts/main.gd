@@ -5,12 +5,6 @@ extends Node2D
 const OVERLAY_ALPHA := 0.6
 
 var _panel_manager: PanelManager
-# Reference membro al DropZone Control del UILayer. E` salvato come field
-# (invece di variabile locale) perche` le connessioni SignalBus al
-# panel_opened/closed usano metodi che devono poterlo leggere in modo
-# is_instance_valid-safe anche dopo eventuali free parziali.
-var _drop_zone: Control = null
-
 @onready var _ui_layer: CanvasLayer = $UILayer
 @onready var _hud: HBoxContainer = $UILayer/HUD
 @onready var _room_bg: Sprite2D = $RoomBackground
@@ -51,20 +45,14 @@ func _ready() -> void:
 	# consumato → tutorial non partiva (fix BUG-B-3/B-4 replay + new game).
 	call_deferred("_check_tutorial")
 
-	# Disable DropZone mouse capture while panels are open so panel
-	# buttons are clickable. Re-enable when panels close.
-	# Uso method references (non lambda con capture) perche` SignalBus e`
-	# autoload permanente: al reload della scena Main, una lambda con
-	# capture locale diventerebbe un callable zombie con puntatore a
-	# drop_zone freed, e alla prossima emissione di panel_opened il
-	# motore crasha con "Lambda capture at index 0 was freed". Il pattern
-	# corretto (mirror di character_controller.gd::_ready/_exit_tree) e`
-	# salvare il nodo come field, connettere metodi, disconnettere
-	# simmetricamente in _exit_tree.
-	_drop_zone = _ui_layer.get_node_or_null("DropZone") as Control
-	if _drop_zone:
-		SignalBus.panel_opened.connect(_on_drop_zone_panel_opened)
-		SignalBus.panel_closed.connect(_on_drop_zone_panel_closed)
+	# DropZone stays PASS (its default in the .tscn) so drag-drop works while
+	# a panel is open. Previous versions toggled it to IGNORE on panel_opened
+	# in a misguided attempt to prevent click-absorption; that swap actually
+	# BROKE decoration placement because dropped items never reached
+	# DropZone._drop_data while dragging from the deco panel. Panels are
+	# drawn on top of DropZone (they're added later to UILayer) so they
+	# receive panel-area clicks natively via point-under-mouse z-routing.
+	# The real click blocker was ToastManager._container (fix separato).
 
 	# Profile HUD mini-panel (T-R-015): icona in GameHud apre panel_hud
 	# e richiesta da settings_btn interno chiude e apre il settings classico.
@@ -167,16 +155,6 @@ func _on_tutorial_done() -> void:
 	SignalBus.save_requested.emit()
 
 
-func _on_drop_zone_panel_opened(_panel_name: String) -> void:
-	if is_instance_valid(_drop_zone):
-		_drop_zone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-
-func _on_drop_zone_panel_closed(_panel_name: String) -> void:
-	if is_instance_valid(_drop_zone):
-		_drop_zone.mouse_filter = Control.MOUSE_FILTER_PASS
-
-
 func _on_profile_hud_requested() -> void:
 	if _panel_manager != null:
 		_panel_manager.toggle_panel("profile_hud")
@@ -195,10 +173,6 @@ func _on_profile_hud_close_to_settings() -> void:
 func _exit_tree() -> void:
 	if SignalBus.room_changed.is_connected(_on_room_changed):
 		SignalBus.room_changed.disconnect(_on_room_changed)
-	if SignalBus.panel_opened.is_connected(_on_drop_zone_panel_opened):
-		SignalBus.panel_opened.disconnect(_on_drop_zone_panel_opened)
-	if SignalBus.panel_closed.is_connected(_on_drop_zone_panel_closed):
-		SignalBus.panel_closed.disconnect(_on_drop_zone_panel_closed)
 	if SignalBus.profile_hud_requested.is_connected(_on_profile_hud_requested):
 		SignalBus.profile_hud_requested.disconnect(_on_profile_hud_requested)
 	if SignalBus.profile_hud_closed.is_connected(_on_profile_hud_close_to_settings):
