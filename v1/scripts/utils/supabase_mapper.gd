@@ -97,40 +97,7 @@ static func inventory_to_cloud(
 	return rows
 
 
-# ---- Cloud -> Local ----
-
-
-static func cloud_profile_to_local(profile: Dictionary) -> Dictionary:
-	return {
-		"display_name": profile.get("display_name", ""),
-		"character_id": profile.get("avatar_character_id", "male_old"),
-		"outfit_id": profile.get("avatar_outfit_id", ""),
-		"room_id": profile.get("current_room_id", "cozy_studio"),
-		"theme": profile.get("current_theme", "modern"),
-	}
-
-
-static func cloud_decorations_to_local(rows: Array) -> Array:
-	var result: Array = []
-	for row in rows:
-		if row is not Dictionary:
-			continue
-		result.append({
-			"item_id": row.get("item_id", ""),
-			"pos_x": row.get("position_x", 0.0),
-			"pos_y": row.get("position_y", 0.0),
-			"z_order": row.get("z_index", 0),
-			"rotation_deg": row.get("rotation_deg", 0.0),
-			"flip_h": row.get("flipped", false),
-		})
-	return result
-
-
-static func cloud_settings_to_local(settings: Dictionary) -> Dictionary:
-	return {
-		"display_mode": settings.get("display_mode", "windowed"),
-		"mini_mode_position": settings.get("mini_mode_position", "bottom_right"),
-		"master_volume": settings.get("master_volume", 0.8),
-		"music_volume": settings.get("music_volume", 0.6),
-		"ambience_volume": settings.get("ambience_volume", 0.4),
-	}
+# Cloud -> Local mappers rimossi (B-022): la pull sync non è mai stata
+# implementata. Quando servirà, reintrodurre con logica specifica di
+# conflict resolution (LWW vs CRDT) invece di copia cieca. Vedi git
+# history di questo file per il pattern precedente.
