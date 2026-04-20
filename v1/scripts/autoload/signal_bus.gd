@@ -78,3 +78,7 @@ signal coins_changed(delta: int, total: int)
 signal profile_hud_requested
 signal profile_hud_closed
 signal mood_level_changed(mood: float)  # 0.0=gloomy/stormy, 1.0=cozy original
+
+# Mood effects pipeline (T-R-015i)
+signal pet_wild_mode_requested(active: bool)  # cat berserk quando mood < 0.10
+signal badge_unlocked(badge_id: String)  # T-R-015d

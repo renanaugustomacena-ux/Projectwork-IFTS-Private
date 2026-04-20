@@ -374,6 +374,36 @@ func _apply_music_volume() -> void:
 		_active_player.volume_db = db
 
 
+# T-R-015i: crossfade audio in risposta al mood_level slider continuo 0..1.
+# Strategia demo-safe (no asset storm dedicato):
+#  - Abbassa il volume musica proporzionalmente al gloom (0.5 al minimo)
+#  - Se la soglia stormy viene attraversata, propaga mood_changed("tense")
+#    per riusare la track selection esistente basata sul catalog
+func crossfade_to_mood_track(mood: float) -> void:
+	var clamped: float = clampf(mood, 0.0, 1.0)
+	# Scala volume: mood 1.0 -> volume normale, mood 0.0 -> 50% volume
+	var volume_scale: float = 0.5 + 0.5 * clamped
+	var effective_linear: float = maxf(
+		master_volume * music_volume * volume_scale, 0.0001
+	)
+	var target_db: float = linear_to_db(effective_linear)
+	if _active_player != null and _active_player.playing:
+		_active_player.volume_db = target_db
+	# Soglia stormy: propaga evento discreto per eventuale swap track
+	if clamped < Constants.MOOD_STORMY_THRESHOLD:
+		if current_mood != "stormy":
+			current_mood = "stormy"
+			SignalBus.mood_changed.emit("stormy")
+	elif clamped < Constants.MOOD_GLOOMY_THRESHOLD:
+		if current_mood != "tense":
+			current_mood = "tense"
+			SignalBus.mood_changed.emit("tense")
+	else:
+		if current_mood != "calm":
+			current_mood = "calm"
+			SignalBus.mood_changed.emit("calm")
+
+
 func _apply_ambience_volume() -> void:
 	var db := linear_to_db(maxf(master_volume * ambience_volume, 0.0001))
 	for player: AudioStreamPlayer in _ambience_players.values():

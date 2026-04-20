@@ -2,7 +2,7 @@
 ## Manages idle, wander, follow, sleep, and play states.
 extends CharacterBody2D
 
-enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY }
+enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD }
 
 const WANDER_SPEED := 30.0
 const FOLLOW_SPEED := 80.0
@@ -13,6 +13,8 @@ const STATE_CHANGE_MIN := 3.0
 const STATE_CHANGE_MAX := 8.0
 const SLEEP_COOLDOWN := 120.0  # 2 min before considering sleep
 const PLAY_RANGE := 60.0
+const WILD_SPEED := 140.0  # T-R-015i: berserk mode quando mood < stormy
+const WILD_REDIRECT_INTERVAL := 0.8  # cambia direzione spesso
 
 var _state: State = State.IDLE
 var _state_timer: float = 0.0
@@ -21,6 +23,9 @@ var _wander_target := Vector2.ZERO
 var _home_position := Vector2.ZERO
 var _character_ref: CharacterBody2D = null
 var _rng := RandomNumberGenerator.new()
+var _wild_mode_active: bool = false
+var _wild_redirect_timer: float = 0.0
+var _wild_direction: Vector2 = Vector2.RIGHT
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -36,6 +41,17 @@ func _ready() -> void:
 		_rng.randomize()
 	_find_character()
 	_set_state(State.IDLE)
+	# T-R-015i: ascolta richieste WILD da MoodManager quando mood < stormy
+	if SignalBus.has_signal("pet_wild_mode_requested"):
+		SignalBus.pet_wild_mode_requested.connect(_on_wild_mode_requested)
+
+
+func _on_wild_mode_requested(active: bool) -> void:
+	_wild_mode_active = active
+	if active:
+		_set_state(State.WILD)
+	elif _state == State.WILD:
+		_set_state(State.IDLE)
 
 
 func _physics_process(delta: float) -> void:
@@ -53,6 +69,22 @@ func _physics_process(delta: float) -> void:
 			_process_sleep(delta)
 		State.PLAY:
 			_process_play(delta)
+		State.WILD:
+			_process_wild(delta)
+
+
+func _process_wild(delta: float) -> void:
+	# T-R-015i: movimento erratico veloce finche` mood < stormy threshold.
+	_wild_redirect_timer += delta
+	if _wild_redirect_timer >= WILD_REDIRECT_INTERVAL:
+		_wild_redirect_timer = 0.0
+		var angle := _rng.randf_range(0.0, TAU)
+		_wild_direction = Vector2(cos(angle), sin(angle))
+	velocity = _wild_direction * WILD_SPEED
+	move_and_slide()
+	if _anim != null:
+		_anim.flip_h = _wild_direction.x < 0
+		_play_anim("walk")
 
 
 func _process_idle(_delta: float) -> void:
@@ -230,3 +262,12 @@ func _reset_anim_scale() -> void:
 func _reset_anim_position() -> void:
 	if _anim:
 		_anim.position.y = 0.0
+
+
+func _exit_tree() -> void:
+	# T-R-015i: disconnect WILD mode signal per evitare zombie su reload scena
+	if (
+		SignalBus.has_signal("pet_wild_mode_requested")
+		and SignalBus.pet_wild_mode_requested.is_connected(_on_wild_mode_requested)
+	):
+		SignalBus.pet_wild_mode_requested.disconnect(_on_wild_mode_requested)
