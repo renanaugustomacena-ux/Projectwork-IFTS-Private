@@ -117,12 +117,14 @@ func _build_ui() -> void:
 	vbox.add_child(nav)
 
 	_left_btn = Button.new()
+	_left_btn.focus_mode = Control.FOCUS_ALL  # keyboard nav (arrow keys)
 	_left_btn.text = "◀"
 	_left_btn.custom_minimum_size = Vector2(60, 40)
 	_left_btn.pressed.connect(_on_prev)
 	nav.add_child(_left_btn)
 
 	_right_btn = Button.new()
+	_right_btn.focus_mode = Control.FOCUS_ALL  # keyboard nav
 	_right_btn.text = "▶"
 	_right_btn.custom_minimum_size = Vector2(60, 40)
 	_right_btn.pressed.connect(_on_next)
@@ -135,6 +137,7 @@ func _build_ui() -> void:
 
 	# Start button
 	_start_btn = Button.new()
+	_start_btn.focus_mode = Control.FOCUS_ALL  # keyboard nav (Enter)
 	_start_btn.text = "Inizia a Giocare"
 	_start_btn.custom_minimum_size = Vector2(200, 48)
 	_start_btn.pressed.connect(_on_start)

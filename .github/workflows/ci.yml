@@ -108,6 +108,21 @@ jobs:
       - name: Validate SQL syntax
         run: python ci/validate_db_schema.py v1/scripts/autoload/local_database.gd
 
+  validate-button-focus:
+    name: "Validate Button.new() focus_mode"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check every runtime Button has focus_mode (B-001/B-003 regression guard)
+        run: python ci/validate_button_focus.py v1/scripts
+
   validate-signals:
     name: "Validate SignalBus Count"
     runs-on: ubuntu-22.04

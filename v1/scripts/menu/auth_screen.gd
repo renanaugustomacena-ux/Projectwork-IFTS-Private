@@ -86,6 +86,7 @@ func _build_ui() -> void:
 
 	# Guest play button
 	var guest_btn := Button.new()
+	guest_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
 	guest_btn.text = "Play as Guest"
 	guest_btn.custom_minimum_size = Vector2(0, 40)
 	guest_btn.pressed.connect(_on_guest_pressed)
@@ -106,12 +107,14 @@ func _build_login_form(container: VBoxContainer) -> void:
 	container.add_child(_password_input)
 
 	var login_btn := Button.new()
+	login_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
 	login_btn.text = "Login"
 	login_btn.custom_minimum_size = Vector2(0, 42)
 	login_btn.pressed.connect(_on_login_pressed)
 	container.add_child(login_btn)
 
 	var switch_btn := Button.new()
+	switch_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
 	switch_btn.text = "Don't have an account? Register"
 	switch_btn.flat = true
 	switch_btn.add_theme_font_size_override("font_size", 11)
@@ -141,12 +144,14 @@ func _build_register_form(container: VBoxContainer) -> void:
 	container.add_child(_confirm_input)
 
 	var reg_btn := Button.new()
+	reg_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
 	reg_btn.text = "Register"
 	reg_btn.custom_minimum_size = Vector2(0, 42)
 	reg_btn.pressed.connect(_on_register_pressed)
 	container.add_child(reg_btn)
 
 	var switch_btn := Button.new()
+	switch_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
 	switch_btn.text = "Already have an account? Login"
 	switch_btn.flat = true
 	switch_btn.add_theme_font_size_override("font_size", 11)
