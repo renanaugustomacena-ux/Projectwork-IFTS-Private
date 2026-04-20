@@ -4,8 +4,15 @@ extends Node
 
 enum AuthState { LOGGED_OUT, GUEST, AUTHENTICATED }
 
-const _HASH_ITERATIONS := 10000
-const _LEGACY_SALT := "MiniCozyRoom2026"  # Only for migrating old hashes
+# B-029 PBKDF2 iteration strength
+# v3 current: 100_000 iter SHA-256 (OWASP 2023 minimum per PBKDF2-SHA256 ~=
+# 600k, ma mantengo 100k come trade-off con avvio login responsivo; l'
+# upgrade successivo richiedera` solo bump di questa costante + migration
+# chain v3->v4). v2 legacy: 10_000 iter, mantenuta solo per verificare +
+# re-hash transparent su login.
+const _HASH_ITERATIONS_V3 := 100_000
+const _HASH_ITERATIONS_V2_LEGACY := 10_000
+const _LEGACY_SALT := "MiniCozyRoom2026"  # legacy pre-v2 fixed-salt hash
 
 var auth_state: int = AuthState.LOGGED_OUT
 var current_account_id: int = -1
@@ -88,26 +95,48 @@ func login(username: String, password: String) -> Dictionary:
 
 	var stored_hash: String = account.get("password_hash", "")
 	var pw_ok := false
+	var needs_upgrade_to_v3 := false
 
-	if stored_hash.begins_with("v2:"):
-		# New format: v2:salt_hex:hash_hex
+	if stored_hash.begins_with("v3:"):
+		# Current format: v3:iterations:salt_hex:hash_hex
+		var parts := stored_hash.split(":")
+		if parts.size() == 4:
+			var iter_count := int(parts[1])
+			var computed := _hash_with_salt_iter(password, parts[2], iter_count)
+			pw_ok = (computed == parts[3])
+	elif stored_hash.begins_with("v2:"):
+		# Legacy format v2: 10k iter, salt_hex:hash_hex
 		var parts := stored_hash.split(":")
 		if parts.size() == 3:
-			var computed := _hash_with_salt(password, parts[1])
+			var computed := _hash_with_salt_iter(
+				password, parts[1], _HASH_ITERATIONS_V2_LEGACY
+			)
 			pw_ok = (computed == parts[2])
+			if pw_ok:
+				needs_upgrade_to_v3 = true
 	else:
-		# Legacy format — migrate on success
+		# Pre-v2 fixed-salt legacy — migrate on success
 		var legacy := (_LEGACY_SALT + password).sha256_text()
 		pw_ok = (stored_hash == legacy)
 		if pw_ok:
-			var new_hash := _hash_password(password)
-			LocalDatabase.update_password_hash(
-				account.get("account_id", -1), new_hash
-			)
+			needs_upgrade_to_v3 = true
 
 	if not pw_ok:
 		_record_failed_attempt()
 		return {"error": "Invalid credentials"}
+
+	# B-029: transparent hash migration v1/v2 -> v3. Succede una sola volta
+	# al primo login successivo: user digita password, verify OK, ri-hash
+	# con 100k iter + prefix v3, UPDATE DB.
+	if needs_upgrade_to_v3:
+		var new_hash := _hash_password(password)
+		LocalDatabase.update_password_hash(
+			account.get("account_id", -1), new_hash
+		)
+		AppLogger.info(
+			"AuthManager", "hash_migration_applied",
+			{"account_id": account.get("account_id", -1), "to": "v3"}
+		)
 
 	_failed_attempts = 0
 	_set_state(AuthState.AUTHENTICATED, account)
@@ -170,18 +199,25 @@ func _set_state(new_state: int, account: Dictionary) -> void:
 
 
 func _hash_password(password: String) -> String:
+	# B-029: emette formato v3 con iter count nel prefix per future migrazioni
+	# v3->v4 (bump iter) senza code change ne` ambiguita`.
 	var crypto := Crypto.new()
 	var salt_bytes := crypto.generate_random_bytes(16)
 	var salt_hex := salt_bytes.hex_encode()
-	var hash_hex := _hash_with_salt(password, salt_hex)
-	return "v2:%s:%s" % [salt_hex, hash_hex]
+	var hash_hex := _hash_with_salt_iter(
+		password, salt_hex, _HASH_ITERATIONS_V3
+	)
+	return "v3:%d:%s:%s" % [_HASH_ITERATIONS_V3, salt_hex, hash_hex]
 
 
-func _hash_with_salt(password: String, salt_hex: String) -> String:
-	# PBKDF2-style iterated SHA-256 using HashingContext
+func _hash_with_salt_iter(
+	password: String, salt_hex: String, iter: int,
+) -> String:
+	# PBKDF2-style iterated SHA-256 using HashingContext.
+	# Iter count parametrico: v2 legacy = 10k, v3 = 100k, future = bump.
 	var data := (salt_hex + password).to_utf8_buffer()
 	var result := _sha256(data)
-	for i in range(_HASH_ITERATIONS - 1):
+	for i in range(iter - 1):
 		result = _sha256(result + data)
 	return result.hex_encode()
 
