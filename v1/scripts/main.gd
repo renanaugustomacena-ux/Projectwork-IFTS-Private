@@ -11,16 +11,10 @@ var _panel_manager: PanelManager
 @onready var _wall_rect: ColorRect = $WallRect
 @onready var _floor_rect: ColorRect = $FloorRect
 
+const TUTORIAL_SCRIPT := preload("res://scripts/menu/tutorial_manager.gd")
+const TOAST_SCRIPT := preload("res://scripts/ui/toast_manager.gd")
+const GAME_HUD_SCRIPT := preload("res://scripts/ui/game_hud.gd")
 
-const TUTORIAL_SCRIPT := preload(
-	"res://scripts/menu/tutorial_manager.gd"
-)
-const TOAST_SCRIPT := preload(
-	"res://scripts/ui/toast_manager.gd"
-)
-const GAME_HUD_SCRIPT := preload(
-	"res://scripts/ui/game_hud.gd"
-)
 
 func _ready() -> void:
 	_panel_manager = PanelManager.new()
@@ -137,20 +131,14 @@ func _fit_background_to_viewport() -> void:
 
 
 func _check_tutorial() -> void:
-	var completed: bool = SaveManager.get_setting(
-		"tutorial_completed", false
-	)
+	var completed: bool = SaveManager.get_setting("tutorial_completed", false)
 	if completed:
 		return
 	var tutorial := CanvasLayer.new()
 	tutorial.set_script(TUTORIAL_SCRIPT)
 	tutorial.name = "TutorialManager"
-	tutorial.tutorial_completed.connect(
-		_on_tutorial_done, CONNECT_ONE_SHOT
-	)
-	tutorial.tutorial_skipped.connect(
-		_on_tutorial_done, CONNECT_ONE_SHOT
-	)
+	tutorial.tutorial_completed.connect(_on_tutorial_done, CONNECT_ONE_SHOT)
+	tutorial.tutorial_skipped.connect(_on_tutorial_done, CONNECT_ONE_SHOT)
 	add_child(tutorial)
 	tutorial.start()
 

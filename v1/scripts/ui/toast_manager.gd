@@ -63,9 +63,7 @@ func _build_container() -> void:
 	add_child(_container)
 
 
-func show_toast(
-	message: String, toast_type: String = "info"
-) -> void:
+func show_toast(message: String, toast_type: String = "info") -> void:
 	# Drop oldest if at limit
 	while _toasts.size() >= MAX_VISIBLE:
 		var oldest: Control = _toasts.pop_front()
@@ -79,20 +77,14 @@ func show_toast(
 	# Fade in
 	toast.modulate.a = 0.0
 	var tween := create_tween()
-	tween.tween_property(
-		toast, "modulate:a", 1.0, FADE_DURATION
-	)
+	tween.tween_property(toast, "modulate:a", 1.0, FADE_DURATION)
 	# Auto-dismiss
 	tween.tween_interval(TOAST_DURATION)
-	tween.tween_property(
-		toast, "modulate:a", 0.0, FADE_DURATION
-	)
+	tween.tween_property(toast, "modulate:a", 0.0, FADE_DURATION)
 	tween.tween_callback(_remove_toast.bind(toast))
 
 
-func _create_toast(
-	message: String, toast_type: String
-) -> PanelContainer:
+func _create_toast(message: String, toast_type: String) -> PanelContainer:
 	var panel := PanelContainer.new()
 
 	var style := StyleBoxFlat.new()
@@ -125,9 +117,7 @@ func _create_toast(
 	var label := Label.new()
 	label.text = message
 	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override(
-		"font_color", Color(0.9, 0.88, 0.82, 1.0)
-	)
+	label.add_theme_color_override("font_color", Color(0.9, 0.88, 0.82, 1.0))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	panel.add_child(label)
 
@@ -144,9 +134,7 @@ func _remove_toast(toast: Control) -> void:
 		toast.queue_free()
 
 
-func _on_toast_requested(
-	message: String, toast_type: String
-) -> void:
+func _on_toast_requested(message: String, toast_type: String) -> void:
 	show_toast(message, toast_type)
 
 

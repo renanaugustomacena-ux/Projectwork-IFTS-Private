@@ -172,7 +172,18 @@ func _load_audio_stream(path: String) -> AudioStream:
 				return null
 			if file.get_length() > MAX_AUDIO_FILE_SIZE:
 				file.close()
-				AppLogger.error("AudioManager", "Audio file too large", {"path": path, "size": file.get_length(), "max": MAX_AUDIO_FILE_SIZE})
+				(
+					AppLogger
+					. error(
+						"AudioManager",
+						"Audio file too large",
+						{
+							"path": path,
+							"size": file.get_length(),
+							"max": MAX_AUDIO_FILE_SIZE,
+						}
+					)
+				)
 				return null
 			var buffer := file.get_buffer(file.get_length())
 			file.close()
@@ -383,9 +394,7 @@ func crossfade_to_mood_track(mood: float) -> void:
 	var clamped: float = clampf(mood, 0.0, 1.0)
 	# Scala volume: mood 1.0 -> volume normale, mood 0.0 -> 50% volume
 	var volume_scale: float = 0.5 + 0.5 * clamped
-	var effective_linear: float = maxf(
-		master_volume * music_volume * volume_scale, 0.0001
-	)
+	var effective_linear: float = maxf(master_volume * music_volume * volume_scale, 0.0001)
 	var target_db: float = linear_to_db(effective_linear)
 	if _active_player != null and _active_player.playing:
 		_active_player.volume_db = target_db
@@ -411,11 +420,17 @@ func _apply_ambience_volume() -> void:
 
 
 func _sync_music_state() -> void:
-	SignalBus.music_state_updated.emit({
-		"current_track_index": current_track_index,
-		"playlist_mode": playlist_mode,
-		"active_ambience": _active_ambience.duplicate(),
-	})
+	(
+		SignalBus
+		. music_state_updated
+		. emit(
+			{
+				"current_track_index": current_track_index,
+				"playlist_mode": playlist_mode,
+				"active_ambience": _active_ambience.duplicate(),
+			}
+		)
+	)
 
 
 func _notification(what: int) -> void:

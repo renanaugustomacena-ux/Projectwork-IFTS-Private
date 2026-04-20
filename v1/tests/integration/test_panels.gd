@@ -29,8 +29,7 @@ func test_panel_scenes_exist() -> void:
 		"profile_hud": "res://scenes/ui/profile_hud_panel.tscn",
 	}
 	for name in registered:
-		assert_true(ResourceLoader.exists(registered[name]),
-			"panel scene missing: %s" % registered[name])
+		assert_true(ResourceLoader.exists(registered[name]), "panel scene missing: %s" % registered[name])
 
 
 func test_open_deco_panel() -> void:

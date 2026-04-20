@@ -57,12 +57,15 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 		preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 	set_drag_preview(preview)
-	AppLogger.info(
-		"DecoButton",
-		"drag_started",
-		{
-			"item_id": drag_data.get("item_id", ""),
-			"pos": _at_position,
-		}
+	(
+		AppLogger
+		. info(
+			"DecoButton",
+			"drag_started",
+			{
+				"item_id": drag_data.get("item_id", ""),
+				"pos": _at_position,
+			}
+		)
 	)
 	return drag_data

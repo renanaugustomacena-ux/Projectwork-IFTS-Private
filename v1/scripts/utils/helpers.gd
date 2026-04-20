@@ -1,7 +1,6 @@
 ## Helpers — Utility functions used across the project.
 class_name Helpers
 
-
 # ----------------------------------------------------------------------------
 # Floor polygon (single source of truth for the playable room area)
 # ----------------------------------------------------------------------------
@@ -89,10 +88,7 @@ static func set_floor_polygon_from_node(node: CollisionPolygon2D) -> void:
 
 	var local_poly: PackedVector2Array = node.polygon
 	if local_poly.size() < 3:
-		push_warning(
-			"Helpers.set_floor_polygon_from_node: polygon has %d vertices (need >= 3)"
-			% local_poly.size()
-		)
+		push_warning("Helpers.set_floor_polygon_from_node: polygon has %d vertices (need >= 3)" % local_poly.size())
 		_floor_polygon_world = PackedVector2Array()
 		return
 
@@ -104,9 +100,7 @@ static func set_floor_polygon_from_node(node: CollisionPolygon2D) -> void:
 	_floor_polygon_world = transformed
 	_floor_centroid_world = _polygon_centroid(transformed)
 	AppLogger.info(
-		"Helpers",
-		"floor_polygon_initialized",
-		{"vertices": transformed.size(), "centroid": _floor_centroid_world}
+		"Helpers", "floor_polygon_initialized", {"vertices": transformed.size(), "centroid": _floor_centroid_world}
 	)
 
 

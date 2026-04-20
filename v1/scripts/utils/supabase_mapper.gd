@@ -3,12 +3,13 @@
 ## Uses .get(key, default) everywhere so missing fields never crash.
 class_name SupabaseMapper
 
-
 # ---- Local -> Cloud ----
 
 
 static func profile_to_cloud(
-	account: Dictionary, character: Dictionary, supabase_uid: String,
+	account: Dictionary,
+	character: Dictionary,
+	supabase_uid: String,
 ) -> Dictionary:
 	return {
 		"user_id": supabase_uid,
@@ -23,29 +24,36 @@ static func profile_to_cloud(
 
 
 static func decorations_to_cloud(
-	decorations: Array, supabase_uid: String,
+	decorations: Array,
+	supabase_uid: String,
 ) -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for d in decorations:
 		if d is not Dictionary:
 			continue
-		rows.append({
-			"user_id": supabase_uid,
-			"room_id": d.get("room_id", "cozy_studio"),
-			"theme": d.get("theme", "modern"),
-			"item_id": d.get("item_id", ""),
-			"position_x": d.get("position_x", d.get("pos_x", 0.0)),
-			"position_y": d.get("position_y", d.get("pos_y", 0.0)),
-			"z_index": d.get("z_index", d.get("z_order", 0)),
-			"rotation_deg": d.get("rotation_deg", 0.0),
-			"flipped": d.get("flipped", d.get("flip_h", false)),
-			"updated_at": Time.get_datetime_string_from_system(),
-		})
+		(
+			rows
+			. append(
+				{
+					"user_id": supabase_uid,
+					"room_id": d.get("room_id", "cozy_studio"),
+					"theme": d.get("theme", "modern"),
+					"item_id": d.get("item_id", ""),
+					"position_x": d.get("position_x", d.get("pos_x", 0.0)),
+					"position_y": d.get("position_y", d.get("pos_y", 0.0)),
+					"z_index": d.get("z_index", d.get("z_order", 0)),
+					"rotation_deg": d.get("rotation_deg", 0.0),
+					"flipped": d.get("flipped", d.get("flip_h", false)),
+					"updated_at": Time.get_datetime_string_from_system(),
+				}
+			)
+		)
 	return rows
 
 
 static func currency_to_cloud(
-	account: Dictionary, supabase_uid: String,
+	account: Dictionary,
+	supabase_uid: String,
 ) -> Dictionary:
 	return {
 		"user_id": supabase_uid,
@@ -56,7 +64,8 @@ static func currency_to_cloud(
 
 
 static func settings_to_cloud(
-	settings: Dictionary, supabase_uid: String,
+	settings: Dictionary,
+	supabase_uid: String,
 ) -> Dictionary:
 	return {
 		"user_id": supabase_uid,
@@ -70,7 +79,8 @@ static func settings_to_cloud(
 
 
 static func music_to_cloud(
-	music_state: Dictionary, supabase_uid: String,
+	music_state: Dictionary,
+	supabase_uid: String,
 ) -> Dictionary:
 	return {
 		"user_id": supabase_uid,
@@ -82,20 +92,25 @@ static func music_to_cloud(
 
 
 static func inventory_to_cloud(
-	items: Array, supabase_uid: String,
+	items: Array,
+	supabase_uid: String,
 ) -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for item in items:
 		if item is not Dictionary:
 			continue
-		rows.append({
-			"user_id": supabase_uid,
-			"item_id": str(item.get("item_id", "")),
-			"unlock_type": "currency",
-			"unlocked_at": Time.get_datetime_string_from_system(),
-		})
+		(
+			rows
+			. append(
+				{
+					"user_id": supabase_uid,
+					"item_id": str(item.get("item_id", "")),
+					"unlock_type": "currency",
+					"unlocked_at": Time.get_datetime_string_from_system(),
+				}
+			)
+		)
 	return rows
-
 
 # Cloud -> Local mappers rimossi (B-022): la pull sync non è mai stata
 # implementata. Quando servirà, reintrodurre con logica specifica di

@@ -48,9 +48,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	elif event is InputEventMouseMotion and _mouse_pressed:
 		if not _is_dragging:
-			var dist := _click_start_pos.distance_to(
-				get_global_mouse_position()
-			)
+			var dist := _click_start_pos.distance_to(get_global_mouse_position())
 			if dist > DRAG_THRESHOLD and GameManager.is_decoration_mode:
 				_is_dragging = true
 				dismiss_popup()
@@ -140,9 +138,7 @@ func _show_popup() -> void:
 		delete_btn.tooltip_text = "Delete"
 		delete_btn.custom_minimum_size = Vector2(28, 28)
 		delete_btn.focus_mode = Control.FOCUS_NONE
-		delete_btn.add_theme_color_override(
-			"font_color", Color(0.9, 0.3, 0.3)
-		)
+		delete_btn.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 		delete_btn.pressed.connect(_on_delete)
 		hbox.add_child(delete_btn)
 
@@ -150,10 +146,7 @@ func _show_popup() -> void:
 	var screen_pos := get_canvas_transform() * global_position
 	var tex_size := texture.get_size() * scale if texture else Vector2.ZERO
 	var canvas_scale := get_canvas_transform().get_scale()
-	_popup.position = Vector2(
-		screen_pos.x + tex_size.x * canvas_scale.x * 0.5 - 50,
-		screen_pos.y - 36
-	)
+	_popup.position = Vector2(screen_pos.x + tex_size.x * canvas_scale.x * 0.5 - 50, screen_pos.y - 36)
 
 	_popup_layer.add_child(_popup)
 	SignalBus.decoration_selected.emit(item_id)

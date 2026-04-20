@@ -139,9 +139,7 @@ func _build_ui() -> void:
 	profile_btn.focus_mode = Control.FOCUS_NONE
 	profile_btn.custom_minimum_size = Vector2(40, 40)
 	profile_btn.tooltip_text = "Profilo + Mood"
-	var portrait_strip: Texture2D = load(
-		"res://assets/charachters/male/old/male_idle/male_idle_down.png"
-	) as Texture2D
+	var portrait_strip: Texture2D = load("res://assets/charachters/male/old/male_idle/male_idle_down.png") as Texture2D
 	if portrait_strip != null:
 		var portrait := AtlasTexture.new()
 		portrait.atlas = portrait_strip

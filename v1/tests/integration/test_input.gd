@@ -66,10 +66,16 @@ func test_character_animations_registered() -> void:
 	var anim := _char.get_node("AnimatedSprite2D") as AnimatedSprite2D
 	# Check for the animations character_controller.gd references
 	var required := [
-		"idle_down", "idle_up", "idle_side",
-		"idle_vertical_down", "idle_vertical_up",
-		"walk_down", "walk_up", "walk_side",
-		"walk_side_down", "walk_side_up",
+		"idle_down",
+		"idle_up",
+		"idle_side",
+		"idle_vertical_down",
+		"idle_vertical_up",
+		"walk_down",
+		"walk_up",
+		"walk_side",
+		"walk_side_down",
+		"walk_side_up",
 	]
 	var missing: Array[String] = []
 	for anim_name in required:
@@ -89,8 +95,7 @@ func test_right_input_sets_positive_x_velocity() -> void:
 	Input.action_press("ui_right", 1.0)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	assert_true(_char.velocity.x > 0.0,
-		"ui_right should produce positive x velocity, got %f" % _char.velocity.x)
+	assert_true(_char.velocity.x > 0.0, "ui_right should produce positive x velocity, got %f" % _char.velocity.x)
 	_release_all()
 
 
@@ -99,8 +104,7 @@ func test_left_input_sets_negative_x_velocity() -> void:
 	Input.action_press("ui_left", 1.0)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	assert_true(_char.velocity.x < 0.0,
-		"ui_left should produce negative x velocity, got %f" % _char.velocity.x)
+	assert_true(_char.velocity.x < 0.0, "ui_left should produce negative x velocity, got %f" % _char.velocity.x)
 	_release_all()
 
 
@@ -109,8 +113,7 @@ func test_up_input_sets_negative_y_velocity() -> void:
 	Input.action_press("ui_up", 1.0)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	assert_true(_char.velocity.y < 0.0,
-		"ui_up should produce negative y velocity, got %f" % _char.velocity.y)
+	assert_true(_char.velocity.y < 0.0, "ui_up should produce negative y velocity, got %f" % _char.velocity.y)
 	_release_all()
 
 
@@ -119,8 +122,7 @@ func test_down_input_sets_positive_y_velocity() -> void:
 	Input.action_press("ui_down", 1.0)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	assert_true(_char.velocity.y > 0.0,
-		"ui_down should produce positive y velocity, got %f" % _char.velocity.y)
+	assert_true(_char.velocity.y > 0.0, "ui_down should produce positive y velocity, got %f" % _char.velocity.y)
 	_release_all()
 
 
@@ -133,8 +135,7 @@ func test_release_stops_movement() -> void:
 	Input.action_release("ui_right")
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	assert_approx(_char.velocity.x, 0.0, 0.1,
-		"releasing input must zero velocity, got %f" % _char.velocity.x)
+	assert_approx(_char.velocity.x, 0.0, 0.1, "releasing input must zero velocity, got %f" % _char.velocity.x)
 
 
 func test_diagonal_input_normalized_speed() -> void:
@@ -145,8 +146,7 @@ func test_diagonal_input_normalized_speed() -> void:
 	await get_tree().physics_frame
 	# Diagonal should be normalized — not SPEED on each axis, but SPEED total
 	var speed := _char.velocity.length()
-	assert_approx(speed, 120.0, 0.5,
-		"diagonal must be normalized to SPEED=120, got %f" % speed)
+	assert_approx(speed, 120.0, 0.5, "diagonal must be normalized to SPEED=120, got %f" % speed)
 	_release_all()
 
 
@@ -159,8 +159,7 @@ func test_right_input_plays_walk_side() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	var anim := _char.get_node("AnimatedSprite2D") as AnimatedSprite2D
-	assert_eq(anim.animation, StringName("walk_side"),
-		"expected walk_side, got %s" % anim.animation)
+	assert_eq(anim.animation, StringName("walk_side"), "expected walk_side, got %s" % anim.animation)
 	assert_false(anim.flip_h, "facing right must not flip")
 	_release_all()
 
@@ -207,5 +206,4 @@ func test_idle_animation_after_release() -> void:
 	var anim := _char.get_node("AnimatedSprite2D") as AnimatedSprite2D
 	# After releasing, should enter an idle_* animation (based on _last_direction)
 	var name := String(anim.animation)
-	assert_true(name.begins_with("idle_"),
-		"after release must play idle_*, got %s" % name)
+	assert_true(name.begins_with("idle_"), "after release must play idle_*, got %s" % name)

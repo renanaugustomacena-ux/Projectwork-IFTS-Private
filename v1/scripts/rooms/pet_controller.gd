@@ -157,7 +157,7 @@ func _process_follow(_delta: float) -> void:
 		_set_state(State.IDLE)
 
 
-func _process_sleep(delta: float) -> void:
+func _process_sleep(_delta: float) -> void:
 	velocity = Vector2.ZERO
 	# No move_and_slide — sleeping pet must not drift
 	_play_anim("sleep")
@@ -223,17 +223,13 @@ func _find_character() -> void:
 func _is_far_from_character() -> bool:
 	if _character_ref == null:
 		return false
-	return position.distance_to(
-		_character_ref.global_position
-	) > FOLLOW_DISTANCE
+	return position.distance_to(_character_ref.global_position) > FOLLOW_DISTANCE
 
 
 func _is_close_to_character() -> bool:
 	if _character_ref == null:
 		return false
-	return position.distance_to(
-		_character_ref.global_position
-	) < PLAY_RANGE
+	return position.distance_to(_character_ref.global_position) < PLAY_RANGE
 
 
 func _random_duration() -> float:
@@ -241,6 +237,7 @@ func _random_duration() -> float:
 
 
 var _last_anim: String = ""
+
 
 func _play_anim(anim_name: String) -> void:
 	if _anim == null:

@@ -31,9 +31,7 @@ func _ready() -> void:
 
 func try_auto_login() -> bool:
 	# Try guest account first (simplest path)
-	var account := LocalDatabase.get_account_by_auth_uid(
-		Constants.AUTH_GUEST_UID
-	)
+	var account := LocalDatabase.get_account_by_auth_uid(Constants.AUTH_GUEST_UID)
 	if not account.is_empty():
 		_set_state(AuthState.GUEST, account)
 		return true
@@ -41,9 +39,7 @@ func try_auto_login() -> bool:
 
 
 func play_as_guest() -> void:
-	var account_id := LocalDatabase.upsert_account(
-		Constants.AUTH_GUEST_UID, Constants.AUTH_GUEST_EMAIL, ""
-	)
+	var account_id := LocalDatabase.upsert_account(Constants.AUTH_GUEST_UID, Constants.AUTH_GUEST_EMAIL, "")
 	var account := LocalDatabase.get_account(account_id)
 	_set_state(AuthState.GUEST, account)
 	SignalBus.account_created.emit(account_id)
@@ -54,19 +50,15 @@ func register(username: String, password: String) -> Dictionary:
 	if clean_name.length() < 3:
 		return {"error": "Username must be at least 3 characters"}
 	if clean_name.length() > Constants.AUTH_MAX_USERNAME_LENGTH:
-		return {"error": "Username too long (max %d)" \
-			% Constants.AUTH_MAX_USERNAME_LENGTH}
+		return {"error": "Username too long (max %d)" % Constants.AUTH_MAX_USERNAME_LENGTH}
 	var min_pw := Constants.AUTH_MIN_PASSWORD_LENGTH
 	if password.length() < min_pw:
-		return {"error": "Password must be at least %d characters" \
-			% min_pw}
+		return {"error": "Password must be at least %d characters" % min_pw}
 	var existing := LocalDatabase.get_account_by_username(clean_name)
 	if not existing.is_empty():
 		return {"error": "Username already taken"}
 	var pw_hash := _hash_password(password)
-	var account_id := LocalDatabase.create_account(
-		clean_name, pw_hash
-	)
+	var account_id := LocalDatabase.create_account(clean_name, pw_hash)
 	if account_id < 0:
 		return {"error": "Failed to create account"}
 	var account := LocalDatabase.get_account(account_id)
@@ -81,14 +73,11 @@ func login(username: String, password: String) -> Dictionary:
 	if _failed_attempts >= Constants.AUTH_MAX_FAILED_ATTEMPTS:
 		var remaining := int(_lockout_until - now)
 		if remaining > 0:
-			return {"error": "Too many attempts. Wait %ds" \
-				% remaining}
+			return {"error": "Too many attempts. Wait %ds" % remaining}
 		# Lockout expired
 		_failed_attempts = 0
 
-	var account := LocalDatabase.get_account_by_username(
-		username.strip_edges()
-	)
+	var account := LocalDatabase.get_account_by_username(username.strip_edges())
 	if account.is_empty():
 		_record_failed_attempt()
 		return {"error": "Invalid credentials"}
@@ -108,9 +97,7 @@ func login(username: String, password: String) -> Dictionary:
 		# Legacy format v2: 10k iter, salt_hex:hash_hex
 		var parts := stored_hash.split(":")
 		if parts.size() == 3:
-			var computed := _hash_with_salt_iter(
-				password, parts[1], _HASH_ITERATIONS_V2_LEGACY
-			)
+			var computed := _hash_with_salt_iter(password, parts[1], _HASH_ITERATIONS_V2_LEGACY)
 			pw_ok = (computed == parts[2])
 			if pw_ok:
 				needs_upgrade_to_v3 = true
@@ -130,12 +117,9 @@ func login(username: String, password: String) -> Dictionary:
 	# con 100k iter + prefix v3, UPDATE DB.
 	if needs_upgrade_to_v3:
 		var new_hash := _hash_password(password)
-		LocalDatabase.update_password_hash(
-			account.get("account_id", -1), new_hash
-		)
+		LocalDatabase.update_password_hash(account.get("account_id", -1), new_hash)
 		AppLogger.info(
-			"AuthManager", "hash_migration_applied",
-			{"account_id": account.get("account_id", -1), "to": "v3"}
+			"AuthManager", "hash_migration_applied", {"account_id": account.get("account_id", -1), "to": "v3"}
 		)
 
 	_failed_attempts = 0
@@ -146,10 +130,8 @@ func login(username: String, password: String) -> Dictionary:
 func _record_failed_attempt() -> void:
 	_failed_attempts += 1
 	if _failed_attempts >= Constants.AUTH_MAX_FAILED_ATTEMPTS:
-		_lockout_until = Time.get_unix_time_from_system() \
-			+ Constants.AUTH_LOCKOUT_SECONDS
-		AppLogger.warn("AuthManager", "Account locked out",
-			{"attempts": _failed_attempts})
+		_lockout_until = Time.get_unix_time_from_system() + Constants.AUTH_LOCKOUT_SECONDS
+		AppLogger.warn("AuthManager", "Account locked out", {"attempts": _failed_attempts})
 
 
 func is_authenticated() -> bool:
@@ -171,10 +153,17 @@ func delete_character() -> void:
 func delete_account() -> void:
 	if current_account_id < 0:
 		return
-	AppLogger.info("AuthManager", "Account deleted", {
-		"account_id": current_account_id,
-		"username": current_username,
-	})
+	(
+		AppLogger
+		. info(
+			"AuthManager",
+			"Account deleted",
+			{
+				"account_id": current_account_id,
+				"username": current_username,
+			}
+		)
+	)
 	LocalDatabase.soft_delete_account(current_account_id)
 	_set_state(AuthState.LOGGED_OUT, {})
 	SignalBus.account_deleted.emit()
@@ -190,9 +179,7 @@ func _set_state(new_state: int, account: Dictionary) -> void:
 	current_auth_uid = account.get("auth_uid", "")
 	current_username = account.get("display_name", "")
 	if current_account_id >= 0 and LocalDatabase.is_open():
-		has_character = not LocalDatabase.get_character(
-			current_account_id
-		).is_empty()
+		has_character = not LocalDatabase.get_character(current_account_id).is_empty()
 	else:
 		has_character = false
 	SignalBus.auth_state_changed.emit(new_state)
@@ -204,14 +191,14 @@ func _hash_password(password: String) -> String:
 	var crypto := Crypto.new()
 	var salt_bytes := crypto.generate_random_bytes(16)
 	var salt_hex := salt_bytes.hex_encode()
-	var hash_hex := _hash_with_salt_iter(
-		password, salt_hex, _HASH_ITERATIONS_V3
-	)
+	var hash_hex := _hash_with_salt_iter(password, salt_hex, _HASH_ITERATIONS_V3)
 	return "v3:%d:%s:%s" % [_HASH_ITERATIONS_V3, salt_hex, hash_hex]
 
 
 func _hash_with_salt_iter(
-	password: String, salt_hex: String, iter: int,
+	password: String,
+	salt_hex: String,
+	iter: int,
 ) -> String:
 	# PBKDF2-style iterated SHA-256 using HashingContext.
 	# Iter count parametrico: v2 legacy = 10k, v3 = 100k, future = bump.
