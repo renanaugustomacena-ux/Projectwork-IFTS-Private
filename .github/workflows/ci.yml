@@ -13,11 +13,15 @@ on:
     paths:
       - "v1/**"
       - "ci/**"
+      - ".github/workflows/**"
+      - "gdlintrc"
   push:
     branches: [main]
     paths:
       - "v1/**"
       - "ci/**"
+      - ".github/workflows/**"
+      - "gdlintrc"
   workflow_dispatch:
 
 concurrency:
