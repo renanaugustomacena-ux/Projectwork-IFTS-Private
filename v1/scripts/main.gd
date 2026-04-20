@@ -71,6 +71,17 @@ func _ready() -> void:
 	hud_layer.name = "GameHud"
 	add_child(hud_layer)
 
+	# B-023: Virtual joystick solo su mobile/web (Android APK, HTML5 touch).
+	# Su desktop l'addon interferisce col focus chain (B-001) e non serve
+	# perche` tastiera + mouse coprono gia` l'input. L'addon scene rimane
+	# nel repo gated qui — mobile port pronto senza refactor.
+	if OS.has_feature("mobile") or OS.has_feature("web"):
+		var joy_scene := load("res://scenes/ui/virtual_joystick.tscn")
+		if joy_scene != null:
+			var joystick := joy_scene.instantiate()
+			_ui_layer.add_child(joystick)
+			AppLogger.info("Main", "VirtualJoystick instantiated (mobile/web)")
+
 
 func _wire_hud_buttons() -> void:
 	var button_map := {
