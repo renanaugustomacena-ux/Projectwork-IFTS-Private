@@ -63,6 +63,7 @@ func _build_ui() -> void:
 
 	# Delete Character
 	_delete_char_btn = Button.new()
+	_delete_char_btn.focus_mode = Control.FOCUS_NONE
 	_delete_char_btn.text = "Elimina Personaggio"
 	_delete_char_btn.custom_minimum_size = Vector2(0, 32)
 	_delete_char_btn.pressed.connect(
@@ -76,6 +77,7 @@ func _build_ui() -> void:
 
 	# Delete Account
 	_delete_account_btn = Button.new()
+	_delete_account_btn.focus_mode = Control.FOCUS_NONE
 	_delete_account_btn.text = "Elimina Account"
 	_delete_account_btn.custom_minimum_size = Vector2(0, 32)
 	_delete_account_btn.pressed.connect(
@@ -92,6 +94,7 @@ func _build_ui() -> void:
 
 	# Logout
 	var logout_btn := Button.new()
+	logout_btn.focus_mode = Control.FOCUS_NONE
 	logout_btn.text = "Esci dall'account"
 	logout_btn.custom_minimum_size = Vector2(0, 32)
 	logout_btn.pressed.connect(_on_logout_pressed)

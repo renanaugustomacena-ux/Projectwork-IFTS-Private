@@ -75,6 +75,7 @@ func _build_ui() -> void:
 
 	# Language toggle — nascosto pre-demo, i18n completa in arrivo post-demo.
 	_lang_btn = Button.new()
+	_lang_btn.focus_mode = Control.FOCUS_NONE
 	_lang_btn.visible = false
 
 	# Settings button

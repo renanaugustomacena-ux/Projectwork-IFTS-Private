@@ -82,6 +82,7 @@ func _build_ui() -> void:
 	var in_game := current_scene and current_scene.scene_file_path == "res://scenes/main/main.tscn"
 	if in_game:
 		var tutorial_btn := Button.new()
+		tutorial_btn.focus_mode = Control.FOCUS_NONE
 		tutorial_btn.text = "Ripeti Tutorial"
 		tutorial_btn.pressed.connect(_on_replay_tutorial)
 		vbox.add_child(tutorial_btn)
