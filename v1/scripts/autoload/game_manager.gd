@@ -15,6 +15,7 @@ var decorations_catalog: Dictionary = {}
 var characters_catalog: Dictionary = {}
 var tracks_catalog: Dictionary = {}
 var mess_catalog: Dictionary = {}
+var badges_catalog: Dictionary = {}  # T-R-015d
 
 
 func _ready() -> void:
@@ -47,6 +48,7 @@ func _load_catalogs() -> void:
 	characters_catalog = _load_json("res://data/characters.json")
 	tracks_catalog = _load_json("res://data/tracks.json")
 	mess_catalog = _load_json("res://data/mess_catalog.json")
+	badges_catalog = _load_json("res://data/badges.json")
 
 
 func _validate_catalogs() -> void:
@@ -56,6 +58,7 @@ func _validate_catalogs() -> void:
 		"characters": characters_catalog.get("characters", []).size(),
 		"tracks": tracks_catalog.get("tracks", []).size(),
 		"mess": mess_catalog.get("mess", []).size(),
+		"badges": badges_catalog.get("badges", []).size(),
 	}
 	AppLogger.info("GameManager", "Catalogs loaded", counts)
 

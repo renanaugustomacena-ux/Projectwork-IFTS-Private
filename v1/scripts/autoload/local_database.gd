@@ -251,6 +251,19 @@ func _create_tables() -> void:
 		)
 	)
 
+	# T-R-015d badges
+	_execute(
+		(
+			"CREATE TABLE IF NOT EXISTS badges_unlocked ("
+			+ "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+			+ "account_id INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,"
+			+ "badge_id TEXT NOT NULL,"
+			+ "unlocked_at TEXT NOT NULL DEFAULT (datetime('now')),"
+			+ "UNIQUE(account_id, badge_id)"
+			+ ");"
+		)
+	)
+
 	# Indexes on foreign key columns for query performance
 	_execute("CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);")
 	_execute("CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);")
@@ -259,6 +272,7 @@ func _create_tables() -> void:
 	_execute("CREATE INDEX IF NOT EXISTS idx_save_metadata_account ON save_metadata(account_id);")
 	_execute("CREATE INDEX IF NOT EXISTS idx_music_state_account ON music_state(account_id);")
 	_execute("CREATE INDEX IF NOT EXISTS idx_placed_decorations_room ON placed_decorations(room_id);")
+	_execute("CREATE INDEX IF NOT EXISTS idx_badges_account ON badges_unlocked(account_id);")
 
 
 func _migrate_schema() -> void:
@@ -806,6 +820,35 @@ func clear_room_decorations(room_id: int) -> bool:
 	return _execute_bound(
 		"DELETE FROM placed_decorations WHERE room_id = ?;",
 		[room_id]
+	)
+
+
+# ---- CRUD: Badges unlocked (T-R-015d) ----
+
+
+func get_unlocked_badges(account_id: int) -> Array:
+	return _select(
+		"SELECT badge_id, unlocked_at FROM badges_unlocked WHERE account_id = ?;",
+		[account_id]
+	)
+
+
+func is_badge_unlocked(account_id: int, badge_id: String) -> bool:
+	var rows := _select(
+		"SELECT 1 FROM badges_unlocked WHERE account_id = ? AND badge_id = ?;",
+		[account_id, badge_id]
+	)
+	return not rows.is_empty()
+
+
+func unlock_badge(account_id: int, badge_id: String) -> bool:
+	# INSERT OR IGNORE evita duplicati grazie a UNIQUE(account_id, badge_id)
+	return _execute_bound(
+		(
+			"INSERT OR IGNORE INTO badges_unlocked"
+			+ " (account_id, badge_id) VALUES (?, ?);"
+		),
+		[account_id, badge_id]
 	)
 
 
