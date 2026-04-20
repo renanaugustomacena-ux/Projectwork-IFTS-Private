@@ -55,13 +55,33 @@ func _on_save_requested(data: Dictionary) -> void:
 	if success and data.has("inventory") and data["inventory"] is Dictionary:
 		if not _save_inventory(account_id, data["inventory"]):
 			success = false
+	# B-016 dual-write completo: settings, music_state, room+decorations
+	if success and data.has("settings") and data["settings"] is Dictionary:
+		if not upsert_settings(account_id, data["settings"]):
+			success = false
+	if success and data.has("music_state") and data["music_state"] is Dictionary:
+		if not upsert_music_state(account_id, data["music_state"]):
+			success = false
+	if success and data.has("room") and data["room"] is Dictionary:
+		# upsert_room richiede character_id (rooms table ha FK su characters)
+		var char_row := get_character(account_id)
+		if not char_row.is_empty():
+			var character_id: int = char_row.get("character_id", -1)
+			if character_id >= 0:
+				if not upsert_room(character_id, data["room"]):
+					success = false
 	if success:
 		_execute("COMMIT;")
 	else:
 		_execute("ROLLBACK;")
 		AppLogger.error(
 			"LocalDatabase", "Save rolled back",
-			{"account_id": account_id}
+			{
+				"account_id": account_id,
+				"has_settings": data.has("settings"),
+				"has_music_state": data.has("music_state"),
+				"has_room": data.has("room"),
+			}
 		)
 
 
