@@ -58,10 +58,7 @@ func _build_ui() -> void:
 	_profile_btn = Button.new()
 	_profile_btn.custom_minimum_size = Vector2(56, 56)
 	_profile_btn.focus_mode = Control.FOCUS_NONE
-	_profile_btn.tooltip_text = (
-		"Immagine profilo — click per scegliere PNG/JPG dal disco.\n"
-		+ "Salvata solo in locale, mai inviata online."
-	)
+	_profile_btn.tooltip_text = tr("UI_PROFILE_IMAGE_TOOLTIP")
 	_profile_btn.flat = true
 	_profile_btn.pressed.connect(_on_profile_btn_pressed)
 	row_top.add_child(_profile_btn)
@@ -105,7 +102,7 @@ func _build_ui() -> void:
 	_settings_btn.custom_minimum_size = Vector2(40, 28)
 	_settings_btn.focus_mode = Control.FOCUS_NONE
 	_settings_btn.text = "⚙"
-	_settings_btn.tooltip_text = "Impostazioni"
+	_settings_btn.tooltip_text = tr("UI_PROFILE_SETTINGS_TOOLTIP")
 	_settings_btn.add_theme_font_size_override("font_size", 18)
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	row_top.add_child(_settings_btn)
@@ -115,7 +112,7 @@ func _build_ui() -> void:
 	_close_btn.custom_minimum_size = Vector2(32, 28)
 	_close_btn.focus_mode = Control.FOCUS_NONE
 	_close_btn.text = "✕"
-	_close_btn.tooltip_text = "Chiudi"
+	_close_btn.tooltip_text = tr("UI_PROFILE_CLOSE_TOOLTIP")
 	_close_btn.add_theme_font_size_override("font_size", 14)
 	_close_btn.pressed.connect(_on_close_pressed)
 	row_top.add_child(_close_btn)
@@ -126,7 +123,7 @@ func _build_ui() -> void:
 	vbox.add_child(mood_row)
 
 	var mood_label := Label.new()
-	mood_label.text = "Mood"
+	mood_label.text = tr("UI_PROFILE_MOOD_LABEL")
 	mood_label.custom_minimum_size = Vector2(50, 0)
 	mood_label.add_theme_font_size_override("font_size", 12)
 	mood_row.add_child(mood_label)
@@ -142,7 +139,7 @@ func _build_ui() -> void:
 	mood_row.add_child(_mood_slider)
 
 	var mood_hint := Label.new()
-	mood_hint.text = "🌧 ↔ 🌸"
+	mood_hint.text = tr("UI_PROFILE_MOOD_HINT")
 	mood_hint.custom_minimum_size = Vector2(60, 0)
 	mood_hint.add_theme_font_size_override("font_size", 12)
 	mood_row.add_child(mood_hint)
@@ -154,7 +151,7 @@ func _load_state() -> void:
 	if _name_label != null:
 		var username: String = AuthManager.current_username
 		if username.is_empty() or username == "guest":
-			_name_label.text = "Ospite"
+			_name_label.text = tr("UI_PROFILE_GUEST")
 		else:
 			_name_label.text = username
 	# Mood slider da settings
@@ -250,9 +247,11 @@ func _on_lang_toggled() -> void:
 	var new_lang: String = "en" if current == "it" else "it"
 	SignalBus.settings_updated.emit(LANGUAGE_SETTING_KEY, new_lang)
 	SignalBus.language_changed.emit(new_lang)
+	# T-R-015g: applica locale runtime — TranslationServer swap + UI re-render
+	TranslationServer.set_locale(new_lang)
 	_refresh_lang_button()
 	SignalBus.toast_requested.emit(
-		"Lingua: %s" % new_lang.to_upper() + " (i18n reale in arrivo)", "info"
+		tr("TOAST_LANG_CHANGED") % new_lang.to_upper(), "info"
 	)
 
 
