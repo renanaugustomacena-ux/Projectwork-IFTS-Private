@@ -44,8 +44,10 @@ func request(
 			# il SQLite sync_queue come backup persistente per retry.
 			var dropped: Dictionary = _queue.pop_front()
 			push_warning(
-				"SupabaseHttp: queue full (%d), dropped oldest request_id=%s"
-				% [MAX_QUEUE_SIZE, dropped.get("request_id", "")]
+				(
+					"SupabaseHttp: queue full (%d), dropped oldest request_id=%s"
+					% [MAX_QUEUE_SIZE, dropped.get("request_id", "")]
+				)
 			)
 		_queue.append(req_data)
 		return
@@ -56,24 +58,30 @@ func _send(req_data: Dictionary) -> void:
 	var http: HTTPRequest = _pool.pop_back()
 	_busy.append(http)
 	var rid: String = req_data.get("request_id", "")
-	http.request_completed.connect(
-		_on_http_done.bind(http, rid), CONNECT_ONE_SHOT
-	)
-	var err := http.request(
-		req_data["url"],
-		req_data["headers"],
-		req_data["method"],
-		req_data.get("body", ""),
+	http.request_completed.connect(_on_http_done.bind(http, rid), CONNECT_ONE_SHOT)
+	var err := (
+		http
+		. request(
+			req_data["url"],
+			req_data["headers"],
+			req_data["method"],
+			req_data.get("body", ""),
+		)
 	)
 	if err != OK:
 		http.request_completed.disconnect(_on_http_done)
 		_return_to_pool(http)
-		request_completed.emit({
-			"status": 0,
-			"body": null,
-			"error": "HTTPRequest.request() failed: %d" % err,
-			"request_id": rid,
-		})
+		(
+			request_completed
+			. emit(
+				{
+					"status": 0,
+					"body": null,
+					"error": "HTTPRequest.request() failed: %d" % err,
+					"request_id": rid,
+				}
+			)
+		)
 
 
 func _on_http_done(
@@ -86,12 +94,17 @@ func _on_http_done(
 ) -> void:
 	_return_to_pool(http)
 	if result != HTTPRequest.RESULT_SUCCESS:
-		request_completed.emit({
-			"status": 0,
-			"body": null,
-			"error": "HTTP result: %d" % result,
-			"request_id": request_id,
-		})
+		(
+			request_completed
+			. emit(
+				{
+					"status": 0,
+					"body": null,
+					"error": "HTTP result: %d" % result,
+					"request_id": request_id,
+				}
+			)
+		)
 		return
 	var body_text := body_bytes.get_string_from_utf8()
 	var parsed: Variant = null
@@ -101,12 +114,17 @@ func _on_http_done(
 			parsed = json.data
 		else:
 			parsed = body_text
-	request_completed.emit({
-		"status": response_code,
-		"body": parsed,
-		"error": "" if response_code >= 200 and response_code < 300 else "HTTP %d" % response_code,
-		"request_id": request_id,
-	})
+	(
+		request_completed
+		. emit(
+			{
+				"status": response_code,
+				"body": parsed,
+				"error": "" if response_code >= 200 and response_code < 300 else "HTTP %d" % response_code,
+				"request_id": request_id,
+			}
+		)
+	)
 
 
 func _return_to_pool(http: HTTPRequest) -> void:

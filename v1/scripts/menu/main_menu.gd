@@ -134,9 +134,7 @@ func _show_character_select() -> void:
 		_transitioning = true
 		_transition_to_scene(GAMEPLAY_SCENE)
 		return
-	select_screen.character_selected.connect(
-		_on_character_chosen, CONNECT_ONE_SHOT
-	)
+	select_screen.character_selected.connect(_on_character_chosen, CONNECT_ONE_SHOT)
 	$UILayer.add_child(select_screen)
 
 
@@ -176,9 +174,7 @@ func _show_auth_screen() -> void:
 		_intro_tween.kill()
 	_intro_tween = create_tween()
 	_intro_tween.tween_interval(LOADING_PAUSE)
-	_intro_tween.tween_property(
-		_loading_screen, "modulate:a", 0.0, Constants.FADE_DURATION
-	)
+	_intro_tween.tween_property(_loading_screen, "modulate:a", 0.0, Constants.FADE_DURATION)
 	_intro_tween.tween_callback(_loading_screen.set_visible.bind(false))
 
 
@@ -205,9 +201,7 @@ func _on_profilo() -> void:
 	if _panel_tween and _panel_tween.is_running():
 		_panel_tween.kill()
 	_panel_tween = create_tween()
-	_panel_tween.tween_property(
-		_profile_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION
-	)
+	_panel_tween.tween_property(_profile_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
 
 
 func _on_opzioni() -> void:
@@ -291,9 +285,7 @@ func _exit_tree() -> void:
 		_profilo_btn.pressed.disconnect(_on_profilo)
 	if _esci_btn and _esci_btn.pressed.is_connected(_on_esci):
 		_esci_btn.pressed.disconnect(_on_esci)
-	if _menu_character and _menu_character.walk_in_completed.is_connected(
-		_on_walk_in_done
-	):
+	if _menu_character and _menu_character.walk_in_completed.is_connected(_on_walk_in_done):
 		_menu_character.walk_in_completed.disconnect(_on_walk_in_done)
 
 
@@ -306,6 +298,4 @@ func _transition_to_scene(scene_path: String) -> void:
 	_intro_tween.tween_property(_loading_screen, "modulate:a", 1.0, Constants.FADE_DURATION)
 	_intro_tween.tween_callback(get_tree().change_scene_to_file.bind(scene_path))
 	# Safety: reset _transitioning after 5s in case scene change fails silently
-	get_tree().create_timer(5.0).timeout.connect(
-		func() -> void: _transitioning = false, CONNECT_ONE_SHOT
-	)
+	get_tree().create_timer(5.0).timeout.connect(func() -> void: _transitioning = false, CONNECT_ONE_SHOT)

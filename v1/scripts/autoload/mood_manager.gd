@@ -12,7 +12,7 @@
 ## volontariamente via slider. Disaccoppiati.
 extends Node
 
-const _RainScene := preload("res://scenes/effects/rain.tscn")
+const RainScene := preload("res://scenes/effects/rain.tscn")
 
 var _overlay: ColorRect = null
 var _overlay_layer: CanvasLayer = null
@@ -87,12 +87,12 @@ func _ensure_overlay() -> void:
 
 
 func _spawn_rain() -> void:
-	if _RainScene == null:
+	if RainScene == null:
 		return
 	var scene_tree := get_tree()
 	if scene_tree == null or scene_tree.current_scene == null:
 		return
-	_rain_instance = _RainScene.instantiate() as Node2D
+	_rain_instance = RainScene.instantiate() as Node2D
 	if _rain_instance == null:
 		return
 	scene_tree.current_scene.add_child(_rain_instance)

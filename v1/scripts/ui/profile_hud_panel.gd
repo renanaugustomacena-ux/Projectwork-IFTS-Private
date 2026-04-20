@@ -168,9 +168,7 @@ func _load_state() -> void:
 func _refresh_profile_image() -> void:
 	if _profile_tex_rect == null or _profile_btn == null:
 		return
-	var saved_path: String = SaveManager.get_setting(
-		"profile_image_path", ""
-	)
+	var saved_path: String = SaveManager.get_setting("profile_image_path", "")
 	var file_path: String = saved_path if saved_path != "" else PROFILE_IMAGE_PATH
 	if not FileAccess.file_exists(file_path):
 		# Fallback: mostra emoji placeholder come Button.text
@@ -196,9 +194,7 @@ func _on_profile_btn_pressed() -> void:
 	_file_dialog = FileDialog.new()
 	_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-	_file_dialog.filters = PackedStringArray(
-		["*.png,*.jpg,*.jpeg ; Immagini (PNG, JPG)"]
-	)
+	_file_dialog.filters = PackedStringArray(["*.png,*.jpg,*.jpeg ; Immagini (PNG, JPG)"])
 	_file_dialog.title = "Scegli immagine profilo (solo locale)"
 	_file_dialog.file_selected.connect(_on_profile_image_selected)
 	add_child(_file_dialog)
@@ -210,24 +206,16 @@ func _on_profile_image_selected(path: String) -> void:
 	# Privacy: MAI upload cloud, solo filesystem locale.
 	var img := Image.load_from_file(path)
 	if img == null or img.is_empty():
-		SignalBus.toast_requested.emit(
-			"Impossibile leggere l'immagine selezionata", "error"
-		)
+		SignalBus.toast_requested.emit("Impossibile leggere l'immagine selezionata", "error")
 		return
-	img.resize(
-		PROFILE_IMAGE_SIZE, PROFILE_IMAGE_SIZE, Image.INTERPOLATE_LANCZOS
-	)
+	img.resize(PROFILE_IMAGE_SIZE, PROFILE_IMAGE_SIZE, Image.INTERPOLATE_LANCZOS)
 	var err := img.save_png(PROFILE_IMAGE_PATH)
 	if err != OK:
-		SignalBus.toast_requested.emit(
-			"Errore salvataggio immagine (%d)" % err, "error"
-		)
+		SignalBus.toast_requested.emit("Errore salvataggio immagine (%d)" % err, "error")
 		return
 	SignalBus.settings_updated.emit("profile_image_path", PROFILE_IMAGE_PATH)
 	_refresh_profile_image()
-	SignalBus.toast_requested.emit(
-		"Immagine profilo aggiornata (solo locale)", "success"
-	)
+	SignalBus.toast_requested.emit("Immagine profilo aggiornata (solo locale)", "success")
 
 
 func _refresh_lang_button() -> void:
@@ -250,9 +238,7 @@ func _on_lang_toggled() -> void:
 	# T-R-015g: applica locale runtime — TranslationServer swap + UI re-render
 	TranslationServer.set_locale(new_lang)
 	_refresh_lang_button()
-	SignalBus.toast_requested.emit(
-		tr("TOAST_LANG_CHANGED") % new_lang.to_upper(), "info"
-	)
+	SignalBus.toast_requested.emit(tr("TOAST_LANG_CHANGED") % new_lang.to_upper(), "info")
 
 
 func _on_settings_pressed() -> void:
@@ -299,9 +285,7 @@ func _refresh_badges() -> void:
 		var lbl := Label.new()
 		lbl.text = icon
 		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.tooltip_text = "%s — %s" % [
-			badge.get("name", ""), badge.get("description", "")
-		]
+		lbl.tooltip_text = "%s — %s" % [badge.get("name", ""), badge.get("description", "")]
 		if not is_unlocked:
 			lbl.modulate = Color(0.4, 0.4, 0.4, 0.5)  # locked grey
 		_badges_row.add_child(lbl)

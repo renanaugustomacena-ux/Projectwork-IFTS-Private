@@ -4,9 +4,9 @@
 ## tables and columns without crashing.
 extends Node
 
-const _ConfigScript := preload("res://scripts/utils/supabase_config.gd")
-const _HttpScript := preload("res://scripts/utils/supabase_http.gd")
-const _MapperScript := preload("res://scripts/utils/supabase_mapper.gd")
+const ConfigScript := preload("res://scripts/utils/supabase_config.gd")
+const HttpScript := preload("res://scripts/utils/supabase_http.gd")
+const MapperScript := preload("res://scripts/utils/supabase_mapper.gd")
 
 enum ConnectionState { OFFLINE, CONNECTING, ONLINE, ERROR }
 
@@ -33,20 +33,25 @@ const _BACKOFF_MAX_MS: int = 300_000
 
 
 func _ready() -> void:
-	_config = _ConfigScript.load_config()
+	_config = ConfigScript.load_config()
 	if not _config.get("valid", false):
-		AppLogger.info(
-			"SupabaseClient", "No valid Supabase config, cloud sync disabled"
-		)
+		AppLogger.info("SupabaseClient", "No valid Supabase config, cloud sync disabled")
 		return
-	_http = _HttpScript.new()
+	_http = HttpScript.new()
 	_http.initialize(self)
 	_http.request_completed.connect(_on_request_completed)
 	_setup_sync_timer()
 	_try_restore_session()
-	AppLogger.info("SupabaseClient", "Initialized", {
-		"url": _config["url"].left(40),
-	})
+	(
+		AppLogger
+		. info(
+			"SupabaseClient",
+			"Initialized",
+			{
+				"url": _config["url"].left(40),
+			}
+		)
+	)
 
 
 # ---- Configuration ----
@@ -113,7 +118,6 @@ func sign_out_cloud() -> void:
 
 # ---- Session Persistence ----
 
-
 ## Derive una chiave di cifratura dal percorso user data dir + salt costante.
 ## Stesso device → stessa chiave. Altro device → non riesce a decifrare.
 ## Raddrizza il pattern plaintext su disco (fix B-019: token encryption).
@@ -137,9 +141,7 @@ func _try_restore_session() -> void:
 		err = cfg.load(SESSION_PATH)
 		if err == OK:
 			AppLogger.warn(
-				"SupabaseClient",
-				"session_loaded_legacy_plaintext",
-				{"action": "migrating_to_encrypted_on_next_save"}
+				"SupabaseClient", "session_loaded_legacy_plaintext", {"action": "migrating_to_encrypted_on_next_save"}
 			)
 		else:
 			return
@@ -166,11 +168,7 @@ func _save_session() -> void:
 	var pass_key := _derive_session_key()
 	var err := cfg.save_encrypted_pass(SESSION_PATH, pass_key)
 	if err != OK:
-		AppLogger.error(
-			"SupabaseClient",
-			"session_save_encrypted_failed",
-			{"err": err, "fallback": "plaintext"}
-		)
+		AppLogger.error("SupabaseClient", "session_save_encrypted_failed", {"err": err, "fallback": "plaintext"})
 		cfg.save(SESSION_PATH)
 
 
@@ -186,9 +184,16 @@ func _apply_auth_response(data: Dictionary) -> void:
 		_save_session()
 		SignalBus.cloud_auth_completed.emit(true)
 		SignalBus.cloud_connection_changed.emit(ConnectionState.ONLINE)
-		AppLogger.info("SupabaseClient", "Authenticated", {
-			"user_id": supabase_user_id.left(8) + "...",
-		})
+		(
+			AppLogger
+			. info(
+				"SupabaseClient",
+				"Authenticated",
+				{
+					"user_id": supabase_user_id.left(8) + "...",
+				}
+			)
+		)
 	else:
 		connection_state = ConnectionState.ERROR
 		SignalBus.cloud_auth_completed.emit(false)
@@ -245,18 +250,22 @@ func _ensure_jwt() -> bool:
 
 
 func _auth_headers() -> PackedStringArray:
-	return PackedStringArray([
-		"apikey: " + _anon_key(),
-		"Content-Type: application/json",
-	])
+	return PackedStringArray(
+		[
+			"apikey: " + _anon_key(),
+			"Content-Type: application/json",
+		]
+	)
 
 
 func _bearer_headers() -> PackedStringArray:
-	return PackedStringArray([
-		"apikey: " + _anon_key(),
-		"Authorization: Bearer " + _jwt_token,
-		"Content-Type: application/json",
-	])
+	return PackedStringArray(
+		[
+			"apikey: " + _anon_key(),
+			"Authorization: Bearer " + _jwt_token,
+			"Content-Type: application/json",
+		]
+	)
 
 
 # ---- Response Router ----
@@ -288,19 +297,25 @@ func _on_request_completed(response: Dictionary) -> void:
 		refresh_jwt()
 	elif status == 404 or (status == 400 and _is_relation_error(body)):
 		# Table doesn't exist — Elia changed schema, skip gracefully
-		AppLogger.warn("SupabaseClient", "Table not found, skipping", {
-			"rid": rid,
-		})
+		(
+			AppLogger
+			. warn(
+				"SupabaseClient",
+				"Table not found, skipping",
+				{
+					"rid": rid,
+				}
+			)
+		)
 	elif status == 429:
 		# B-021: exponential backoff invece di ritentare al prossimo tick.
 		# delay = min(2^attempts * 1000, 300_000). Reset a 0 su 2xx.
 		_retry_attempts += 1
-		var delay_ms: int = min(
-			int(pow(2, _retry_attempts) * 1000), _BACKOFF_MAX_MS
-		)
+		var delay_ms: int = min(int(pow(2, _retry_attempts) * 1000), _BACKOFF_MAX_MS)
 		_backoff_until_ms = Time.get_ticks_msec() + delay_ms
 		AppLogger.warn(
-			"SupabaseClient", "Rate limited, backoff applied",
+			"SupabaseClient",
+			"Rate limited, backoff applied",
 			{"rid": rid, "delay_ms": delay_ms, "attempt": _retry_attempts}
 		)
 	elif status >= 200 and status < 300:
@@ -310,7 +325,9 @@ func _on_request_completed(response: Dictionary) -> void:
 
 
 func _handle_auth_response(
-	rid: String, status: int, body: Variant,
+	rid: String,
+	status: int,
+	body: Variant,
 ) -> void:
 	if status >= 200 and status < 300 and body is Dictionary:
 		_apply_auth_response(body)
@@ -320,9 +337,18 @@ func _handle_auth_response(
 			msg = body.get("error_description", body.get("msg", "Auth failed"))
 		else:
 			msg = "Auth failed (HTTP %d)" % status
-		AppLogger.error("SupabaseClient", "Auth error", {
-			"rid": rid, "status": status, "msg": msg,
-		})
+		(
+			AppLogger
+			. error(
+				"SupabaseClient",
+				"Auth error",
+				{
+					"rid": rid,
+					"status": status,
+					"msg": msg,
+				}
+			)
+		)
 		if rid.contains("refresh"):
 			# Refresh failed — session expired
 			connection_state = ConnectionState.OFFLINE
@@ -333,7 +359,9 @@ func _handle_auth_response(
 
 
 func _handle_sync_response(
-	rid: String, status: int, _body: Variant,
+	rid: String,
+	status: int,
+	_body: Variant,
 ) -> void:
 	# Track sync completion
 	_pending_requests.erase(rid)
@@ -343,9 +371,16 @@ func _handle_sync_response(
 		if queue_id > 0:
 			LocalDatabase.clear_sync_item(queue_id)
 	elif status == 0:
-		AppLogger.warn("SupabaseClient", "Sync request failed (offline)", {
-			"rid": rid,
-		})
+		(
+			AppLogger
+			. warn(
+				"SupabaseClient",
+				"Sync request failed (offline)",
+				{
+					"rid": rid,
+				}
+			)
+		)
 	if _pending_requests.is_empty() and _is_syncing:
 		_finish_sync(true)
 
@@ -414,16 +449,14 @@ func _push_local_state() -> void:
 	var account := LocalDatabase.get_account(AuthManager.current_account_id)
 	var character := LocalDatabase.get_character(AuthManager.current_account_id)
 	if not account.is_empty():
-		var profile: Dictionary = _MapperScript.profile_to_cloud(
-			account, character, supabase_user_id
-		)
+		var profile: Dictionary = MapperScript.profile_to_cloud(account, character, supabase_user_id)
 		var rid: String = _next_rid("sync_push_profiles")
 		_pending_requests[rid] = true
 		upsert_to_table("profiles", profile)
 
 	# Push currency
 	if not account.is_empty():
-		var currency: Dictionary = _MapperScript.currency_to_cloud(account, supabase_user_id)
+		var currency: Dictionary = MapperScript.currency_to_cloud(account, supabase_user_id)
 		var rid: String = _next_rid("sync_push_user_currency")
 		_pending_requests[rid] = true
 		upsert_to_table("user_currency", currency)
@@ -437,16 +470,14 @@ func _push_local_state() -> void:
 		"music_volume": SaveManager.get_setting("music_volume", 0.6),
 		"ambience_volume": SaveManager.get_setting("ambience_volume", 0.4),
 	}
-	var cloud_settings: Dictionary = _MapperScript.settings_to_cloud(
-		settings_data, supabase_user_id
-	)
+	var cloud_settings: Dictionary = MapperScript.settings_to_cloud(settings_data, supabase_user_id)
 	var settings_rid: String = _next_rid("sync_push_user_settings")
 	_pending_requests[settings_rid] = true
 	upsert_to_table("user_settings", cloud_settings)
 
 	# Push music preferences
 	var music: Dictionary = SaveManager.get_music_state()
-	var cloud_music: Dictionary = _MapperScript.music_to_cloud(music, supabase_user_id)
+	var cloud_music: Dictionary = MapperScript.music_to_cloud(music, supabase_user_id)
 	var music_rid: String = _next_rid("sync_push_music_preferences")
 	_pending_requests[music_rid] = true
 	upsert_to_table("music_preferences", cloud_music)
@@ -454,16 +485,11 @@ func _push_local_state() -> void:
 	# Push decorations
 	var decos: Array = SaveManager.get_decorations()
 	if not decos.is_empty():
-		var cloud_decos: Array = _MapperScript.decorations_to_cloud(
-			decos, supabase_user_id
-		)
+		var cloud_decos: Array = MapperScript.decorations_to_cloud(decos, supabase_user_id)
 		# Delete old decorations first, then insert new
 		var del_rid: String = _next_rid("sync_push_room_decorations_del")
 		_pending_requests[del_rid] = true
-		delete_from_table(
-			"room_decorations",
-			"user_id=eq." + supabase_user_id
-		)
+		delete_from_table("room_decorations", "user_id=eq." + supabase_user_id)
 		for deco: Dictionary in cloud_decos:
 			var deco_rid: String = _next_rid("sync_push_room_decorations")
 			_pending_requests[deco_rid] = true

@@ -38,8 +38,9 @@ func test_hysteresis_neutral_to_calm_requires_lower_threshold() -> void:
 	assert_eq(StressManager.get_stress_level(), "neutral")
 	# Coming back below 0.35 (UP threshold) is NOT enough to go calm
 	StressManager.apply_delta(-0.10)  # stress = 0.30
-	assert_eq(StressManager.get_stress_level(), "neutral",
-		"hysteresis: 0.30 should stay neutral (DOWN threshold is 0.25)")
+	assert_eq(
+		StressManager.get_stress_level(), "neutral", "hysteresis: 0.30 should stay neutral (DOWN threshold is 0.25)"
+	)
 	# Drop below 0.25 to trigger calm
 	StressManager.apply_delta(-0.10)  # stress = 0.20
 	assert_eq(StressManager.get_stress_level(), "calm")
@@ -51,8 +52,7 @@ func test_hysteresis_tense_to_neutral_requires_lower_threshold() -> void:
 	assert_eq(StressManager.get_stress_level(), "tense")
 	# 0.55 should NOT revert to neutral because DOWN_NEUTRAL is 0.50
 	StressManager.apply_delta(-0.15)  # 0.55
-	assert_eq(StressManager.get_stress_level(), "tense",
-		"hysteresis: 0.55 should stay tense (DOWN_NEUTRAL = 0.50)")
+	assert_eq(StressManager.get_stress_level(), "tense", "hysteresis: 0.55 should stay tense (DOWN_NEUTRAL = 0.50)")
 	# Cross below 0.50
 	StressManager.apply_delta(-0.10)  # 0.45
 	assert_eq(StressManager.get_stress_level(), "neutral")
@@ -114,5 +114,4 @@ func test_stress_persist_to_character_data() -> void:
 	# _persist() runs on every _notify_change via _set_stress
 	var stored: int = int(SaveManager.character_data.get("livello_stress", -1))
 	# Should be 42 (float 0.42 * 100 = 42) ± rounding
-	assert_in_range(float(stored), 41.0, 43.0,
-		"livello_stress int persist expected ~42, got %d" % stored)
+	assert_in_range(float(stored), 41.0, 43.0, "livello_stress int persist expected ~42, got %d" % stored)

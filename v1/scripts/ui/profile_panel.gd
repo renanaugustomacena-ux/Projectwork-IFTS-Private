@@ -66,11 +66,18 @@ func _build_ui() -> void:
 	_delete_char_btn.focus_mode = Control.FOCUS_NONE
 	_delete_char_btn.text = "Elimina Personaggio"
 	_delete_char_btn.custom_minimum_size = Vector2(0, 32)
-	_delete_char_btn.pressed.connect(
-		_confirm_action.bind(
-			"Eliminare il personaggio?",
-			"Il personaggio e la stanza verranno rimossi. Account e monete restano.",
-			_on_delete_character_confirmed,
+	(
+		_delete_char_btn
+		. pressed
+		. connect(
+			(
+				_confirm_action
+				. bind(
+					"Eliminare il personaggio?",
+					"Il personaggio e la stanza verranno rimossi. Account e monete restano.",
+					_on_delete_character_confirmed,
+				)
+			)
 		)
 	)
 	vbox.add_child(_delete_char_btn)
@@ -80,11 +87,18 @@ func _build_ui() -> void:
 	_delete_account_btn.focus_mode = Control.FOCUS_NONE
 	_delete_account_btn.text = "Elimina Account"
 	_delete_account_btn.custom_minimum_size = Vector2(0, 32)
-	_delete_account_btn.pressed.connect(
-		_confirm_action.bind(
-			"Eliminare l'account?",
-			"Tutti i dati verranno eliminati permanentemente.",
-			_on_delete_account_confirmed,
+	(
+		_delete_account_btn
+		. pressed
+		. connect(
+			(
+				_confirm_action
+				. bind(
+					"Eliminare l'account?",
+					"Tutti i dati verranno eliminati permanentemente.",
+					_on_delete_account_confirmed,
+				)
+			)
 		)
 	)
 	vbox.add_child(_delete_account_btn)
@@ -145,9 +159,7 @@ func _update_info() -> void:
 	_delete_char_btn.disabled = not AuthManager.has_character
 
 
-func _confirm_action(
-	title: String, message: String, callback: Callable
-) -> void:
+func _confirm_action(title: String, message: String, callback: Callable) -> void:
 	_confirm_dialog.title = title
 	_confirm_dialog.dialog_text = message
 	# Disconnect previous confirmations

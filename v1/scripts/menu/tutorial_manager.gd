@@ -43,16 +43,14 @@ func start() -> void:
 func _define_steps() -> void:
 	_steps = [
 		{
-			"message": (
-				"Benvenuto nella tua [b]Relax Room[/b]! 🏠\n"
-				+ "Questo è il tuo spazio personale. "
-				+ "Rendilo tuo!"
-			),
+			"message":
+			"Benvenuto nella tua [b]Relax Room[/b]! 🏠\n" + "Questo è il tuo spazio personale. " + "Rendilo tuo!",
 			"signal_name": "",
 			"auto_advance": 3.0,
 		},
 		{
-			"message": (
+			"message":
+			(
 				"Usa [b]WASD[/b] o le [b]frecce direzionali[/b] "
 				+ "per muoverti.\n"
 				+ "Prova a muovere il personaggio ora!"
@@ -61,7 +59,8 @@ func _define_steps() -> void:
 			"wait_for_input": "movement",
 		},
 		{
-			"message": (
+			"message":
+			(
 				"Apri il pannello [b]Decorazioni[/b] "
 				+ "per arredare la stanza.\n"
 				+ "Clicca il pulsante [b]Decora[/b] in basso! ⬇"
@@ -71,7 +70,8 @@ func _define_steps() -> void:
 			"arrow_target": "DecoButton",
 		},
 		{
-			"message": (
+			"message":
+			(
 				"Sfoglia le categorie e [b]trascina[/b] "
 				+ "una decorazione nella stanza!\n"
 				+ "Prova con una pianta o una scrivania."
@@ -79,7 +79,8 @@ func _define_steps() -> void:
 			"signal_name": "decoration_placed",
 		},
 		{
-			"message": (
+			"message":
+			(
 				"Ottimo! Clicca su qualsiasi decorazione "
 				+ "per selezionarla.\n"
 				+ "Premi [b]R[/b] per ruotare, "
@@ -90,24 +91,19 @@ func _define_steps() -> void:
 			"signal_name": "decoration_selected",
 		},
 		{
-			"message": (
-				"Apri il [b]Profilo[/b] per vedere "
-				+ "le info del tuo account.\n"
-				+ "Clicca il pulsante Profilo! ⬇"
-			),
+			"message":
+			"Apri il [b]Profilo[/b] per vedere " + "le info del tuo account.\n" + "Clicca il pulsante Profilo! ⬇",
 			"signal_name": "panel_opened",
 			"signal_filter": "profile",
 			"arrow_target": "ProfileButton",
 		},
 		{
-			"message": (
-				"Premi [b]Esc[/b] per chiudere un pannello.\n"
-				+ "Provalo ora!"
-			),
+			"message": "Premi [b]Esc[/b] per chiudere un pannello.\n" + "Provalo ora!",
 			"signal_name": "panel_closed",
 		},
 		{
-			"message": (
+			"message":
+			(
 				"La tua stanza si salva [b]automaticamente[/b]! ✓\n\n"
 				+ "[b]Missione completata![/b] 🎉\n"
 				+ "Buon relax nella tua Relax Room!"
@@ -150,9 +146,7 @@ func _build_ui() -> void:
 	style.content_margin_right = 20
 	style.content_margin_top = 16
 	style.content_margin_bottom = 16
-	_dialog_panel.add_theme_stylebox_override(
-		"panel", style
-	)
+	_dialog_panel.add_theme_stylebox_override("panel", style)
 	add_child(_dialog_panel)
 
 	var vbox := VBoxContainer.new()
@@ -165,12 +159,8 @@ func _build_ui() -> void:
 	_dialog_label.fit_content = true
 	_dialog_label.scroll_active = false
 	_dialog_label.custom_minimum_size = Vector2(0, 60)
-	_dialog_label.add_theme_font_size_override(
-		"normal_font_size", 16
-	)
-	_dialog_label.add_theme_color_override(
-		"default_color", Color(0.9, 0.85, 0.75, 1.0)
-	)
+	_dialog_label.add_theme_font_size_override("normal_font_size", 16)
+	_dialog_label.add_theme_color_override("default_color", Color(0.9, 0.85, 0.75, 1.0))
 	vbox.add_child(_dialog_label)
 
 	# Bottom row: progress + skip
@@ -181,12 +171,8 @@ func _build_ui() -> void:
 
 	_progress_label = Label.new()
 	_progress_label.add_theme_font_size_override("font_size", 12)
-	_progress_label.add_theme_color_override(
-		"font_color", Color(0.6, 0.55, 0.5, 0.6)
-	)
-	_progress_label.size_flags_horizontal = (
-		Control.SIZE_EXPAND_FILL
-	)
+	_progress_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.5, 0.6))
+	_progress_label.size_flags_horizontal = (Control.SIZE_EXPAND_FILL)
 	hbox.add_child(_progress_label)
 
 	_skip_btn = Button.new()
@@ -194,9 +180,7 @@ func _build_ui() -> void:
 	_skip_btn.flat = true
 	_skip_btn.focus_mode = Control.FOCUS_NONE
 	_skip_btn.add_theme_font_size_override("font_size", 12)
-	_skip_btn.add_theme_color_override(
-		"font_color", Color(0.6, 0.55, 0.5, 0.8)
-	)
+	_skip_btn.add_theme_color_override("font_color", Color(0.6, 0.55, 0.5, 0.8))
 	_skip_btn.pressed.connect(_on_skip)
 	hbox.add_child(_skip_btn)
 
@@ -204,9 +188,7 @@ func _build_ui() -> void:
 	_arrow = Label.new()
 	_arrow.text = "▼"
 	_arrow.add_theme_font_size_override("font_size", 24)
-	_arrow.add_theme_color_override(
-		"font_color", Color(1.0, 0.9, 0.4, 0.9)
-	)
+	_arrow.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4, 0.9))
 	_arrow.visible = false
 	_arrow.z_index = 101
 	add_child(_arrow)
@@ -222,9 +204,7 @@ func _advance_step() -> void:
 
 	var step: Dictionary = _steps[_current_step]
 	_dialog_label.text = step.get("message", "")
-	_progress_label.text = "Passo %d / %d" % [
-		_current_step + 1, _steps.size()
-	]
+	_progress_label.text = "Passo %d / %d" % [_current_step + 1, _steps.size()]
 	_step_timer = 0.0
 	_arrow.visible = false
 
@@ -255,10 +235,7 @@ func _advance_step() -> void:
 	if not sig_name.is_empty() and SignalBus.has_signal(sig_name):
 		var sig: Signal = SignalBus.get(sig_name)
 		if sig.get_connections().size() < 10:
-			sig.connect(
-				_on_signal_received.bind(sig_name),
-				CONNECT_ONE_SHOT
-			)
+			sig.connect(_on_signal_received.bind(sig_name), CONNECT_ONE_SHOT)
 
 	# Show arrow pointing to a specific button
 	var arrow_target: String = step.get("arrow_target", "")
@@ -290,12 +267,12 @@ func _on_signal_received(
 			var sig_name: String = step.get("signal_name", "")
 			if SignalBus.has_signal(sig_name):
 				var sig: Signal = SignalBus.get(sig_name)
-				sig.connect(
-					_on_signal_received.bind(sig_name),
-					CONNECT_ONE_SHOT
-				)
+				sig.connect(_on_signal_received.bind(sig_name), CONNECT_ONE_SHOT)
 			return
-	var _unused := [a, b, c]
+	# a, b, c sono i parametri variadici dei signal: li consumiamo cosi` per
+	# silenziare gdlint (varargs non possono essere prefixati con _)
+	var unused_sig_args := [a, b, c]
+	unused_sig_args.clear()
 	_advance_step()
 
 
@@ -309,9 +286,7 @@ func _process(delta: float) -> void:
 	if _current_step >= 0 and _current_step < _steps.size():
 		var step: Dictionary = _steps[_current_step]
 		if step.has("wait_for_input"):
-			var dir := Input.get_vector(
-				"ui_left", "ui_right", "ui_up", "ui_down"
-			)
+			var dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 			if dir.length() > 0.1:
 				_advance_step()
 				return
@@ -322,9 +297,7 @@ func _process(delta: float) -> void:
 
 	# Animate arrow
 	if _arrow.visible:
-		_arrow.position.y += sin(
-			Time.get_ticks_msec() / 300.0
-		) * 0.3
+		_arrow.position.y += sin(Time.get_ticks_msec() / 300.0) * 0.3
 
 
 func _show_arrow(target_name: String) -> void:
@@ -332,16 +305,11 @@ func _show_arrow(target_name: String) -> void:
 	var target := _find_node_by_name(get_tree().root, target_name)
 	if target is Control:
 		var pos: Vector2 = target.global_position
-		_arrow.position = Vector2(
-			pos.x + target.size.x / 2.0 - 12,
-			pos.y - 30
-		)
+		_arrow.position = Vector2(pos.x + target.size.x / 2.0 - 12, pos.y - 30)
 		_arrow.visible = true
 
 
-func _find_node_by_name(
-	root: Node, node_name: String
-) -> Node:
+func _find_node_by_name(root: Node, node_name: String) -> Node:
 	if root.name == node_name:
 		return root
 	for child in root.get_children():
@@ -358,9 +326,7 @@ func _animate_dialog_in() -> void:
 	if _tween and _tween.is_running():
 		_tween.kill()
 	_tween = create_tween()
-	_tween.tween_property(
-		_dialog_panel, "modulate:a", 1.0, 0.3
-	)
+	_tween.tween_property(_dialog_panel, "modulate:a", 1.0, 0.3)
 
 
 func _on_skip() -> void:
@@ -368,9 +334,7 @@ func _on_skip() -> void:
 	visible = false
 	_disconnect_all_signals()
 	tutorial_skipped.emit()
-	AppLogger.info("Tutorial", "Tutorial skipped", {
-		"step": _current_step
-	})
+	AppLogger.info("Tutorial", "Tutorial skipped", {"step": _current_step})
 	queue_free()
 
 

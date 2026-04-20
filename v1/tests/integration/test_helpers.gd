@@ -78,10 +78,14 @@ func test_clamp_to_viewport_clamps_outside() -> void:
 func test_floor_polygon_init_via_node() -> void:
 	# Synthesize a CollisionPolygon2D with a rhombus matching main.tscn
 	var poly_node := CollisionPolygon2D.new()
-	poly_node.polygon = PackedVector2Array([
-		Vector2(640, 265), Vector2(1100, 480),
-		Vector2(640, 685), Vector2(180, 480),
-	])
+	poly_node.polygon = PackedVector2Array(
+		[
+			Vector2(640, 265),
+			Vector2(1100, 480),
+			Vector2(640, 685),
+			Vector2(180, 480),
+		]
+	)
 	add_child(poly_node)
 	Helpers.set_floor_polygon_from_node(poly_node)
 	assert_true(Helpers.has_floor_polygon())
@@ -103,8 +107,9 @@ func test_is_inside_floor_corner_outside() -> void:
 func test_clamp_inside_floor_outside_point_brought_in() -> void:
 	var original := Vector2(0, 0)
 	var clamped := Helpers.clamp_inside_floor(original)
-	assert_true(Helpers.is_inside_floor(clamped),
-		"clamp_inside_floor must return a point strictly inside (got %s)" % clamped)
+	assert_true(
+		Helpers.is_inside_floor(clamped), "clamp_inside_floor must return a point strictly inside (got %s)" % clamped
+	)
 
 
 func test_clamp_inside_floor_inside_point_unchanged() -> void:

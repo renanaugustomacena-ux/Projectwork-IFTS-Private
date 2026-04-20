@@ -223,9 +223,7 @@ func _finish() -> void:
 	if _finish_tween and _finish_tween.is_running():
 		_finish_tween.kill()
 	_finish_tween = create_tween()
-	_finish_tween.tween_property(
-		self, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION
-	)
+	_finish_tween.tween_property(self, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
 	_finish_tween.tween_callback(
 		func() -> void:
 			auth_completed.emit()

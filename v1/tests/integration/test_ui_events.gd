@@ -13,6 +13,7 @@
 extends "res://tests/integration/test_base.gd"
 
 const MAIN_SCENE := "res://scenes/main/main.tscn"
+const DecoButtonScript := preload("res://scripts/ui/deco_button.gd")
 
 var _main_root: Node = null
 
@@ -107,8 +108,7 @@ func test_deco_button_has_connected_pressed_signal() -> void:
 	var deco_btn := _find_control("UILayer/HUD/DecoButton") as Button
 	assert_non_null(deco_btn)
 	var conn_count := deco_btn.pressed.get_connections().size()
-	assert_true(conn_count > 0,
-		"DecoButton.pressed must have >= 1 connection, got %d" % conn_count)
+	assert_true(conn_count > 0, "DecoButton.pressed must have >= 1 connection, got %d" % conn_count)
 
 
 func test_drop_zone_mouse_filter_initial_state() -> void:
@@ -120,8 +120,11 @@ func test_drop_zone_mouse_filter_initial_state() -> void:
 	await _setup_main_scene()
 	var dz := _find_control("UILayer/DropZone")
 	assert_non_null(dz)
-	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
-		"DropZone must not start IGNORE (drag-drop would never receive drops)")
+	assert_ne(
+		dz.mouse_filter,
+		Control.MOUSE_FILTER_IGNORE,
+		"DropZone must not start IGNORE (drag-drop would never receive drops)"
+	)
 
 
 func test_hud_buttons_have_nonzero_size() -> void:
@@ -130,12 +133,10 @@ func test_hud_buttons_have_nonzero_size() -> void:
 	for name in ["DecoButton", "SettingsButton", "ProfileButton", "MenuButton"]:
 		var btn := _find_control("UILayer/HUD/" + name)
 		assert_non_null(btn, name)
-		assert_true(btn.size.x > 0 and btn.size.y > 0,
-			"%s has zero size %s — layout did not apply" % [name, btn.size])
+		assert_true(btn.size.x > 0 and btn.size.y > 0, "%s has zero size %s — layout did not apply" % [name, btn.size])
 
 
 # ---- Real mouse events ----
-
 
 ## Note on headless vs GUI click tests:
 ##
@@ -164,8 +165,11 @@ func test_click_deco_button_opens_deco_panel() -> void:
 	assert_non_null(deco_btn)
 	deco_btn.pressed.emit()
 	await wait_frames(3)
-	assert_eq(pm.get_current_panel_name(), "deco",
-		"DecoButton.pressed must open deco panel (got %s)" % pm.get_current_panel_name())
+	assert_eq(
+		pm.get_current_panel_name(),
+		"deco",
+		"DecoButton.pressed must open deco panel (got %s)" % pm.get_current_panel_name()
+	)
 
 
 func test_click_settings_button_opens_settings_panel() -> void:
@@ -175,8 +179,11 @@ func test_click_settings_button_opens_settings_panel() -> void:
 	assert_non_null(btn)
 	btn.pressed.emit()
 	await wait_frames(3)
-	assert_eq(pm.get_current_panel_name(), "settings",
-		"SettingsButton.pressed must open settings (got %s)" % pm.get_current_panel_name())
+	assert_eq(
+		pm.get_current_panel_name(),
+		"settings",
+		"SettingsButton.pressed must open settings (got %s)" % pm.get_current_panel_name()
+	)
 
 
 func test_click_profile_button_opens_profile_panel() -> void:
@@ -186,8 +193,7 @@ func test_click_profile_button_opens_profile_panel() -> void:
 	assert_non_null(btn)
 	btn.pressed.emit()
 	await wait_frames(3)
-	assert_eq(pm.get_current_panel_name(), "profile",
-		"ProfileButton.pressed must open profile")
+	assert_eq(pm.get_current_panel_name(), "profile", "ProfileButton.pressed must open profile")
 
 
 func test_click_same_hud_button_toggles_panel_closed() -> void:
@@ -201,8 +207,7 @@ func test_click_same_hud_button_toggles_panel_closed() -> void:
 	# Second press: toggle close
 	deco_btn.pressed.emit()
 	await wait_frames(5)  # allow fade-out tween + queue_free
-	assert_eq(pm.get_current_panel_name(), "",
-		"second press on same HUD button must close panel")
+	assert_eq(pm.get_current_panel_name(), "", "second press on same HUD button must close panel")
 
 
 func test_push_input_headless_limitation_documented() -> void:
@@ -224,12 +229,12 @@ func test_push_input_headless_limitation_documented() -> void:
 			# Fallback: press via emit and confirm the wiring is still correct
 			deco_btn.pressed.emit()
 			await wait_frames(3)
-		assert_eq(pm.get_current_panel_name(), "deco",
-			"in headless: push_input may not route; emit fallback must still work")
+		assert_eq(
+			pm.get_current_panel_name(), "deco", "in headless: push_input may not route; emit fallback must still work"
+		)
 	else:
 		# GUI mode: real click MUST work
-		assert_eq(pm.get_current_panel_name(), "deco",
-			"GUI mode: push_input at button center MUST open panel")
+		assert_eq(pm.get_current_panel_name(), "deco", "GUI mode: push_input at button center MUST open panel")
 
 
 func test_dropzone_does_not_swallow_hud_clicks() -> void:
@@ -246,11 +251,14 @@ func test_dropzone_does_not_swallow_hud_clicks() -> void:
 	# HUD must be AFTER DropZone so it's drawn on top and gets mouse events first
 	var dropzone_idx := children_order.find("DropZone")
 	var hud_idx := children_order.find("HUD")
-	assert_true(dropzone_idx >= 0 and hud_idx >= 0,
-		"DropZone + HUD must both exist in UILayer")
-	assert_true(hud_idx > dropzone_idx,
-		"HUD must be drawn AFTER DropZone (higher sibling index) so clicks hit HUD first. "
-		+ "Current: DropZone=%d, HUD=%d" % [dropzone_idx, hud_idx])
+	assert_true(dropzone_idx >= 0 and hud_idx >= 0, "DropZone + HUD must both exist in UILayer")
+	assert_true(
+		hud_idx > dropzone_idx,
+		(
+			"HUD must be drawn AFTER DropZone (higher sibling index) so clicks hit HUD first. "
+			+ "Current: DropZone=%d, HUD=%d" % [dropzone_idx, hud_idx]
+		)
+	)
 
 
 # ---- Decoration drag-drop end-to-end ----
@@ -267,28 +275,32 @@ func test_deco_panel_populates_drag_buttons_with_meta() -> void:
 	var hud_deco_btn := _find_control("UILayer/HUD/DecoButton") as Button
 	hud_deco_btn.pressed.emit()
 	await wait_frames(5)
-	assert_eq(pm.get_current_panel_name(), "deco",
-		"panel open (got %s)" % pm.get_current_panel_name())
+	assert_eq(pm.get_current_panel_name(), "deco", "panel open (got %s)" % pm.get_current_panel_name())
 	var panel: Node = pm.get("_current_panel")
 	assert_non_null(panel)
 	var count := _collect_nodes_with_meta(panel, "drag_data")
 	# Expect >= 72 items (one per decoration). Headers don't have meta.
-	assert_true(count >= 60,
-		"expected >= 60 DecoButtons with drag_data meta inside panel, got %d" % count)
+	assert_true(count >= 60, "expected >= 60 DecoButtons with drag_data meta inside panel, got %d" % count)
 
 
 func test_deco_button_get_drag_data_returns_non_null_with_valid_meta() -> void:
 	# Regression check for B-002: calling _get_drag_data on a DecoButton with
 	# proper drag_data meta must return the dictionary. If this ever returns
 	# null for a valid setup, drag-drop is definitively broken.
-	var btn = preload("res://scripts/ui/deco_button.gd").new()
+	var btn = DecoButtonScript.new()
 	add_child(btn)
-	btn.set_meta("drag_data", {
-		"item_id": "bed_1",
-		"sprite_path": "res://assets/sprites/rooms/Individuals/Bed_1.png",
-		"item_scale": 3.0,
-		"placement_type": "floor",
-	})
+	(
+		btn
+		. set_meta(
+			"drag_data",
+			{
+				"item_id": "bed_1",
+				"sprite_path": "res://assets/sprites/rooms/Individuals/Bed_1.png",
+				"item_scale": 3.0,
+				"placement_type": "floor",
+			}
+		)
+	)
 	await wait_frames(1)
 	var data: Variant = btn._get_drag_data(Vector2.ZERO)
 	assert_non_null(data, "_get_drag_data must return dict for valid meta")
@@ -300,11 +312,9 @@ func test_deco_button_extends_texture_rect_not_button() -> void:
 	# Regression guard: DecoButton must be a TextureRect (confirmed working
 	# pattern in Godot 4 drag-drop reference repos). If someone reverts to
 	# `extends Button`, drag detection fails silently in-game.
-	var btn = preload("res://scripts/ui/deco_button.gd").new()
-	assert_true(btn is TextureRect,
-		"DecoButton MUST extend TextureRect for Godot 4 drag detection to trigger")
-	assert_false(btn is Button,
-		"DecoButton MUST NOT extend Button — Button's _pressing_inside blocks drag")
+	var btn = DecoButtonScript.new()
+	assert_true(btn is TextureRect, "DecoButton MUST extend TextureRect for Godot 4 drag detection to trigger")
+	assert_false(btn is Button, "DecoButton MUST NOT extend Button — Button's _pressing_inside blocks drag")
 	btn.queue_free()
 
 
@@ -321,18 +331,25 @@ func test_dropzone_stays_pass_even_when_panel_open() -> void:
 	# point-under-mouse z-order — no swap needed.
 	await _setup_main_scene()
 	var dz := _find_control("UILayer/DropZone")
-	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
-		"initial: DropZone must NOT be IGNORE (drag-drop needs it)")
+	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE, "initial: DropZone must NOT be IGNORE (drag-drop needs it)")
 	var deco_btn := _find_control("UILayer/HUD/DecoButton") as Button
 	deco_btn.pressed.emit()
 	await wait_frames(3)
-	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
-		"panel open: DropZone MUST still receive events (not IGNORE) so drops "
-		+ "can fire when user releases mouse over room. was %d" % dz.mouse_filter)
+	assert_ne(
+		dz.mouse_filter,
+		Control.MOUSE_FILTER_IGNORE,
+		(
+			"panel open: DropZone MUST still receive events (not IGNORE) so drops "
+			+ "can fire when user releases mouse over room. was %d" % dz.mouse_filter
+		)
+	)
 	deco_btn.pressed.emit()
 	await wait_frames(5)
-	assert_ne(dz.mouse_filter, Control.MOUSE_FILTER_IGNORE,
-		"panel closed: DropZone still not IGNORE (was %d)" % dz.mouse_filter)
+	assert_ne(
+		dz.mouse_filter,
+		Control.MOUSE_FILTER_IGNORE,
+		"panel closed: DropZone still not IGNORE (was %d)" % dz.mouse_filter
+	)
 
 
 func test_no_overlay_container_blocks_upper_right_quadrant() -> void:
@@ -360,24 +377,28 @@ func test_no_overlay_container_blocks_upper_right_quadrant() -> void:
 	# themselves, their ancestors (Main/UILayer — no-op containers), and
 	# DropZone (because while panel open it's already IGNORE).
 	var allowed_roots := [
-		"DecoPanel", "ProfileHUDPanel", "SettingsPanel", "ProfilePanel",
-		"Main", "UILayer", "DropZone",
+		"DecoPanel",
+		"ProfileHUDPanel",
+		"SettingsPanel",
+		"ProfilePanel",
+		"Main",
+		"UILayer",
+		"DropZone",
 	]
 	var blockers: Array[String] = []
 	_collect_overlay_blockers(_main_root, panel_zone, allowed_roots, blockers)
 	if not blockers.is_empty():
 		fail(
-			"Controls with mouse_filter != IGNORE overlap panel_zone while "
-			+ "a panel is open — they would absorb clicks intended for panel: %s"
-			% ", ".join(blockers)
+			(
+				"Controls with mouse_filter != IGNORE overlap panel_zone while "
+				+ "a panel is open — they would absorb clicks intended for panel: %s" % ", ".join(blockers)
+			)
 		)
 	else:
 		assert_true(true, "panel_zone clear of overlay blockers while panel open")
 
 
-func _collect_overlay_blockers(
-	node: Node, zone: Rect2, allowed_names: Array, out: Array[String]
-) -> void:
+func _collect_overlay_blockers(node: Node, zone: Rect2, allowed_names: Array, out: Array[String]) -> void:
 	# Skip allowed named roots (their descendants are expected to receive input)
 	for allowed in allowed_names:
 		if node.name == allowed:
@@ -390,9 +411,21 @@ func _collect_overlay_blockers(
 				var parent_name: String = "<root>"
 				if ctl.get_parent() != null:
 					parent_name = String(ctl.get_parent().name)
-				out.append("%s (type=%s parent=%s mouse_filter=%d rect=%s)" % [
-					ctl.name, ctl.get_class(), parent_name, ctl.mouse_filter, rect,
-				])
+				(
+					out
+					. append(
+						(
+							"%s (type=%s parent=%s mouse_filter=%d rect=%s)"
+							% [
+								ctl.name,
+								ctl.get_class(),
+								parent_name,
+								ctl.mouse_filter,
+								rect,
+							]
+						)
+					)
+				)
 	for child in node.get_children():
 		_collect_overlay_blockers(child, zone, allowed_names, out)
 

@@ -24,10 +24,14 @@ func _build_minimal_room() -> void:
 
 	# Initialize floor polygon (same rhombus as main.tscn)
 	var poly_node := CollisionPolygon2D.new()
-	poly_node.polygon = PackedVector2Array([
-		Vector2(640, 265), Vector2(1100, 480),
-		Vector2(640, 685), Vector2(180, 480),
-	])
+	poly_node.polygon = PackedVector2Array(
+		[
+			Vector2(640, 265),
+			Vector2(1100, 480),
+			Vector2(640, 685),
+			Vector2(180, 480),
+		]
+	)
 	_room.add_child(poly_node)
 	Helpers.set_floor_polygon_from_node(poly_node)
 
@@ -107,8 +111,11 @@ func test_spawn_all_catalog_decorations_succeeds() -> void:
 func test_spawned_sprite_uses_nearest_filter() -> void:
 	await _build_minimal_room()
 	var sprite: Sprite2D = _spawn_manually("bed_1", Vector2(640, 500), 3.0, 0.0, false)
-	assert_eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST,
-		"all decoration sprites must have nearest filter for pixel art crispness")
+	assert_eq(
+		sprite.texture_filter,
+		CanvasItem.TEXTURE_FILTER_NEAREST,
+		"all decoration sprites must have nearest filter for pixel art crispness"
+	)
 
 
 func test_spawned_sprite_non_centered() -> void:
@@ -136,8 +143,9 @@ func test_rotation_persists_to_deco_data() -> void:
 	var sprite: Sprite2D = _spawn_manually("bed_1", Vector2(640, 500), 3.0, 0.0, false)
 	sprite._on_rotate()
 	assert_approx(sprite.rotation_degrees, 90.0)
-	assert_approx(float(sprite.deco_data.get("rotation", -1.0)), 90.0,
-		0.1, "rotation must be mirrored in deco_data dict")
+	assert_approx(
+		float(sprite.deco_data.get("rotation", -1.0)), 90.0, 0.1, "rotation must be mirrored in deco_data dict"
+	)
 
 
 func test_flip_persists_to_deco_data() -> void:
@@ -161,13 +169,18 @@ func test_decoration_placed_signal_updates_savemanager() -> void:
 	await _build_minimal_room()
 	var before_count: int = SaveManager.get_decorations().size()
 	# Add directly via SaveManager (what room_base.gd does in reality)
-	SaveManager.add_decoration({
-		"item_id": "bed_1",
-		"position": [640, 500],
-		"item_scale": 3.0,
-		"rotation": 0.0,
-		"flip_h": false,
-	})
+	(
+		SaveManager
+		. add_decoration(
+			{
+				"item_id": "bed_1",
+				"position": [640, 500],
+				"item_scale": 3.0,
+				"rotation": 0.0,
+				"flip_h": false,
+			}
+		)
+	)
 	var after_count: int = SaveManager.get_decorations().size()
 	assert_eq(after_count, before_count + 1)
 	# Cleanup
@@ -180,5 +193,6 @@ func test_clamp_inside_floor_placement() -> void:
 	# Drop far outside polygon; should be clamped inside
 	var raw := Vector2(2000, 2000)
 	var clamped := Helpers.clamp_inside_floor(raw)
-	assert_true(Helpers.is_inside_floor(clamped),
-		"clamp_inside_floor must return a strictly-inside point, got %s" % clamped)
+	assert_true(
+		Helpers.is_inside_floor(clamped), "clamp_inside_floor must return a strictly-inside point, got %s" % clamped
+	)

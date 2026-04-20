@@ -14,8 +14,7 @@ const MAX_LOG_FILES := 5
 const FLUSH_INTERVAL := 2.0  # seconds
 const MAX_BUFFER_ENTRIES := 2000  # cap memoria: se oltre, drop oldest (fix B-018)
 const REDACT_KEYS := [
-	"password", "password_hash", "token", "jwt", "refresh_token",
-	"access_token", "hmac_key", "secret", "anon_key"
+	"password", "password_hash", "token", "jwt", "refresh_token", "access_token", "hmac_key", "secret", "anon_key"
 ]
 const REDACTED := "***"
 
@@ -164,7 +163,9 @@ func _flush_buffer() -> void:
 		if _log_buffer.size() > max_retained:
 			var discarded := _log_buffer.size() - max_retained
 			_log_buffer = _log_buffer.slice(discarded)
-			push_warning("Logger: discarded %d old entries, retaining %d (log file unavailable)" % [discarded, max_retained])
+			push_warning(
+				"Logger: discarded %d old entries, retaining %d (log file unavailable)" % [discarded, max_retained]
+			)
 		return
 
 	for line in _log_buffer:
@@ -217,12 +218,7 @@ func _generate_session_id() -> String:
 	var ticks := Time.get_ticks_usec()
 	var crypto := Crypto.new()
 	var random_bytes := crypto.generate_random_bytes(4)
-	var random_int := (
-		random_bytes[0] << 24
-		| random_bytes[1] << 16
-		| random_bytes[2] << 8
-		| random_bytes[3]
-	)
+	var random_int := random_bytes[0] << 24 | random_bytes[1] << 16 | random_bytes[2] << 8 | random_bytes[3]
 	return (
 		"%08x-%04x-%04x"
 		% [

@@ -40,9 +40,7 @@ func _on_save_requested(data: Dictionary) -> void:
 	var account := get_account_by_auth_uid(auth_uid)
 	var account_id: int
 	if account.is_empty():
-		account_id = upsert_account(
-			auth_uid, Constants.AUTH_GUEST_EMAIL, ""
-		)
+		account_id = upsert_account(auth_uid, Constants.AUTH_GUEST_EMAIL, "")
 	else:
 		account_id = account.get("account_id", -1)
 	if account_id < 0:
@@ -74,14 +72,18 @@ func _on_save_requested(data: Dictionary) -> void:
 		_execute("COMMIT;")
 	else:
 		_execute("ROLLBACK;")
-		AppLogger.error(
-			"LocalDatabase", "Save rolled back",
-			{
-				"account_id": account_id,
-				"has_settings": data.has("settings"),
-				"has_music_state": data.has("music_state"),
-				"has_room": data.has("room"),
-			}
+		(
+			AppLogger
+			. error(
+				"LocalDatabase",
+				"Save rolled back",
+				{
+					"account_id": account_id,
+					"has_settings": data.has("settings"),
+					"has_music_state": data.has("music_state"),
+					"has_room": data.has("room"),
+				}
+			)
 		)
 
 
@@ -97,11 +99,18 @@ func _open_database() -> void:
 	_db.path = DB_PATH
 	_db.verbosity_level = SQLite.QUIET
 	if not _db.open_db():
-		AppLogger.error("LocalDatabase", "Failed to open database", {
-			"path": DB_PATH,
-			"os": OS.get_name(),
-			"user_data_dir": OS.get_user_data_dir(),
-		})
+		(
+			AppLogger
+			. error(
+				"LocalDatabase",
+				"Failed to open database",
+				{
+					"path": DB_PATH,
+					"os": OS.get_name(),
+					"user_data_dir": OS.get_user_data_dir(),
+				}
+			)
+		)
 		var dir := DirAccess.open("user://")
 		if dir == null:
 			AppLogger.error("LocalDatabase", "Cannot access user:// directory")
@@ -277,9 +286,7 @@ func _create_tables() -> void:
 
 func _migrate_schema() -> void:
 	# Migration 1: characters table without character_id column
-	var rows := _select(
-		"SELECT sql FROM sqlite_master WHERE type='table' AND name='characters';", []
-	)
+	var rows := _select("SELECT sql FROM sqlite_master WHERE type='table' AND name='characters';", [])
 	if not rows.is_empty():
 		var schema: String = rows[0].get("sql", "")
 		if "character_id" not in schema:
@@ -292,23 +299,15 @@ func _migrate_schema() -> void:
 			_execute("DROP TABLE IF EXISTS inventario_bak;")
 			_execute("CREATE TABLE characters_bak AS SELECT * FROM characters;")
 			_execute("CREATE TABLE inventario_bak AS SELECT * FROM inventario;")
-			var bak_rows := _select(
-				"SELECT COUNT(*) as cnt FROM characters_bak;", []
-			)
+			var bak_rows := _select("SELECT COUNT(*) as cnt FROM characters_bak;", [])
 			var bak_cnt: int = bak_rows[0].get("cnt", 0) if not bak_rows.is_empty() else 0
-			AppLogger.info(
-				"LocalDatabase",
-				"migration_1_backup_created",
-				{"characters_backed_up": bak_cnt}
-			)
+			AppLogger.info("LocalDatabase", "migration_1_backup_created", {"characters_backed_up": bak_cnt})
 			_execute("DROP TABLE IF EXISTS characters;")
 			_execute("DROP TABLE IF EXISTS inventario;")
 			_create_tables()
 
 	# Migration 2: add columns to accounts if missing
-	var acc_rows := _select(
-		"SELECT sql FROM sqlite_master WHERE type='table' AND name='accounts';", []
-	)
+	var acc_rows := _select("SELECT sql FROM sqlite_master WHERE type='table' AND name='accounts';", [])
 	if not acc_rows.is_empty():
 		var acc_schema: String = acc_rows[0].get("sql", "")
 		if "display_name" not in acc_schema:
@@ -319,26 +318,16 @@ func _migrate_schema() -> void:
 			_execute("ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT '';")
 			_execute("UPDATE accounts SET updated_at = datetime('now') WHERE updated_at = '';")
 		if "password_hash" not in acc_schema:
-			_execute(
-				"ALTER TABLE accounts"
-				+ " ADD COLUMN password_hash TEXT DEFAULT '';"
-			)
+			_execute("ALTER TABLE accounts" + " ADD COLUMN password_hash TEXT DEFAULT '';")
 		if "deleted_at" not in acc_schema:
-			_execute(
-				"ALTER TABLE accounts"
-				+ " ADD COLUMN deleted_at TEXT DEFAULT NULL;"
-			)
+			_execute("ALTER TABLE accounts" + " ADD COLUMN deleted_at TEXT DEFAULT NULL;")
 		if "coins" not in acc_schema:
 			_execute("ALTER TABLE accounts ADD COLUMN coins INTEGER DEFAULT 0;")
 		if "inventario_capacita" not in acc_schema:
-			_execute(
-				"ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;"
-			)
+			_execute("ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;")
 
 	# Migration 3: add extra columns to inventario if missing
-	var inv_rows := _select(
-		"SELECT sql FROM sqlite_master WHERE type='table' AND name='inventario';", []
-	)
+	var inv_rows := _select("SELECT sql FROM sqlite_master WHERE type='table' AND name='inventario';", [])
 	if not inv_rows.is_empty():
 		var inv_schema: String = inv_rows[0].get("sql", "")
 		if "item_type" not in inv_schema:
@@ -388,9 +377,7 @@ func upsert_account(auth_uid: String, mail: String, data_di_nascita: String = ""
 
 func get_account_by_username(username: String) -> Dictionary:
 	var rows := _select(
-		"SELECT * FROM accounts"
-		+ " WHERE display_name = ? AND auth_uid != ?"
-		+ " AND deleted_at IS NULL;",
+		"SELECT * FROM accounts" + " WHERE display_name = ? AND auth_uid != ?" + " AND deleted_at IS NULL;",
 		[username, Constants.AUTH_GUEST_UID]
 	)
 	if rows.is_empty():
@@ -398,15 +385,10 @@ func get_account_by_username(username: String) -> Dictionary:
 	return rows[0]
 
 
-func create_account(
-	username: String, password_hash: String
-) -> int:
+func create_account(username: String, password_hash: String) -> int:
 	var auth_uid := "user_%s" % username.to_lower()
 	_execute_bound(
-		(
-			"INSERT INTO accounts (auth_uid, display_name, password_hash)"
-			+ " VALUES (?, ?, ?);"
-		),
+		"INSERT INTO accounts (auth_uid, display_name, password_hash)" + " VALUES (?, ?, ?);",
 		[auth_uid, username, password_hash]
 	)
 	var rows := _select("SELECT last_insert_rowid() as id;", [])
@@ -474,22 +456,16 @@ func get_inventory(account_id: int) -> Array:
 
 func add_inventory_item(account_id: int, item_id: int, quantita: int = 1) -> bool:
 	return _execute_bound(
-		"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);",
-		[account_id, item_id, quantita]
+		"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);", [account_id, item_id, quantita]
 	)
 
 
 func remove_inventory_item(account_id: int, item_id: int) -> bool:
-	return _execute_bound(
-		"DELETE FROM inventario WHERE account_id = ? AND item_id = ?;",
-		[account_id, item_id]
-	)
+	return _execute_bound("DELETE FROM inventario WHERE account_id = ? AND item_id = ?;", [account_id, item_id])
 
 
 func update_coins(account_id: int, coins: int) -> bool:
-	return _execute_bound(
-		"UPDATE accounts SET coins = ? WHERE account_id = ?;", [coins, account_id]
-	)
+	return _execute_bound("UPDATE accounts SET coins = ? WHERE account_id = ?;", [coins, account_id])
 
 
 func get_coins(account_id: int) -> int:
@@ -503,8 +479,7 @@ func _save_inventory(account_id: int, inv_data: Dictionary) -> bool:
 	var coins: int = inv_data.get("coins", 0)
 	var capacita: int = inv_data.get("capacita", 50)
 	if not _execute_bound(
-		"UPDATE accounts SET coins = ?, inventario_capacita = ? WHERE account_id = ?;",
-		[coins, capacita, account_id]
+		"UPDATE accounts SET coins = ?, inventario_capacita = ? WHERE account_id = ?;", [coins, capacita, account_id]
 	):
 		return false
 	var items: Array = inv_data.get("items", [])
@@ -524,50 +499,37 @@ func _save_inventory(account_id: int, inv_data: Dictionary) -> bool:
 
 
 func delete_account(account_id: int) -> bool:
-	return _execute_bound(
-		"DELETE FROM accounts WHERE account_id = ?;",
-		[account_id]
-	)
+	return _execute_bound("DELETE FROM accounts WHERE account_id = ?;", [account_id])
 
 
 func soft_delete_account(account_id: int) -> bool:
 	return _execute_bound(
-		"UPDATE accounts SET deleted_at = datetime('now'),"
-		+ " display_name = '', password_hash = ''"
-		+ " WHERE account_id = ?;",
+		(
+			"UPDATE accounts SET deleted_at = datetime('now'),"
+			+ " display_name = '', password_hash = ''"
+			+ " WHERE account_id = ?;"
+		),
 		[account_id]
 	)
 
 
 func delete_character(account_id: int) -> bool:
-	return _execute_bound(
-		"DELETE FROM characters WHERE account_id = ?;",
-		[account_id]
-	)
+	return _execute_bound("DELETE FROM characters WHERE account_id = ?;", [account_id])
 
 
 func update_password_hash(account_id: int, new_hash: String) -> bool:
-	return _execute_bound(
-		"UPDATE accounts SET password_hash = ? WHERE account_id = ?;",
-		[new_hash, account_id]
-	)
+	return _execute_bound("UPDATE accounts SET password_hash = ? WHERE account_id = ?;", [new_hash, account_id])
 
 
 func update_auth_uid(account_id: int, new_auth_uid: String) -> bool:
-	return _execute_bound(
-		"UPDATE accounts SET auth_uid = ? WHERE account_id = ?;",
-		[new_auth_uid, account_id]
-	)
+	return _execute_bound("UPDATE accounts SET auth_uid = ? WHERE account_id = ?;", [new_auth_uid, account_id])
 
 
 # ---- CRUD: Rooms ----
 
 
 func get_room(character_id: int) -> Dictionary:
-	var rows := _select(
-		"SELECT * FROM rooms WHERE character_id = ?;",
-		[character_id]
-	)
+	var rows := _select("SELECT * FROM rooms WHERE character_id = ?;", [character_id])
 	if rows.is_empty():
 		return {}
 	return rows[0]
@@ -575,9 +537,7 @@ func get_room(character_id: int) -> Dictionary:
 
 func upsert_room(character_id: int, data: Dictionary) -> bool:
 	var existing := get_room(character_id)
-	var decorations_json: String = JSON.stringify(
-		data.get("decorations", [])
-	)
+	var decorations_json: String = JSON.stringify(data.get("decorations", []))
 	if not existing.is_empty():
 		return _execute_bound(
 			(
@@ -593,11 +553,7 @@ func upsert_room(character_id: int, data: Dictionary) -> bool:
 			]
 		)
 	return _execute_bound(
-		(
-			"INSERT INTO rooms"
-			+ " (character_id, room_type, theme, decorations)"
-			+ " VALUES (?, ?, ?, ?);"
-		),
+		"INSERT INTO rooms" + " (character_id, room_type, theme, decorations)" + " VALUES (?, ?, ?, ?);",
 		[
 			character_id,
 			data.get("room_type", "cozy_studio"),
@@ -608,38 +564,25 @@ func upsert_room(character_id: int, data: Dictionary) -> bool:
 
 
 func delete_room(character_id: int) -> bool:
-	return _execute_bound(
-		"DELETE FROM rooms WHERE character_id = ?;",
-		[character_id]
-	)
+	return _execute_bound("DELETE FROM rooms WHERE character_id = ?;", [character_id])
 
 
 # ---- CRUD: Sync Queue ----
 
 
-func enqueue_sync(
-	table_name: String, operation: String, payload: Dictionary
-) -> bool:
+func enqueue_sync(table_name: String, operation: String, payload: Dictionary) -> bool:
 	return _execute_bound(
-		(
-			"INSERT INTO sync_queue"
-			+ " (table_name, operation, payload)"
-			+ " VALUES (?, ?, ?);"
-		),
+		"INSERT INTO sync_queue" + " (table_name, operation, payload)" + " VALUES (?, ?, ?);",
 		[table_name, operation, JSON.stringify(payload)]
 	)
 
 
 func get_pending_sync() -> Array:
-	return _select(
-		"SELECT * FROM sync_queue ORDER BY created_at ASC;", []
-	)
+	return _select("SELECT * FROM sync_queue ORDER BY created_at ASC;", [])
 
 
 func clear_sync_item(queue_id: int) -> bool:
-	return _execute_bound(
-		"DELETE FROM sync_queue WHERE queue_id = ?;", [queue_id]
-	)
+	return _execute_bound("DELETE FROM sync_queue WHERE queue_id = ?;", [queue_id])
 
 
 # ---- CRUD: Settings ----
@@ -718,11 +661,7 @@ func upsert_save_metadata(account_id: int, data: Dictionary) -> bool:
 			]
 		)
 	return _execute_bound(
-		(
-			"INSERT INTO save_metadata"
-			+ " (account_id, save_version, save_slot, play_time_sec)"
-			+ " VALUES (?, ?, ?, ?);"
-		),
+		"INSERT INTO save_metadata" + " (account_id, save_version, save_slot, play_time_sec)" + " VALUES (?, ?, ?, ?);",
 		[
 			account_id,
 			data.get("save_version", "1.0"),
@@ -810,45 +749,29 @@ func add_placed_decoration(room_id: int, data: Dictionary) -> bool:
 
 
 func remove_placed_decoration(placement_id: int) -> bool:
-	return _execute_bound(
-		"DELETE FROM placed_decorations WHERE placement_id = ?;",
-		[placement_id]
-	)
+	return _execute_bound("DELETE FROM placed_decorations WHERE placement_id = ?;", [placement_id])
 
 
 func clear_room_decorations(room_id: int) -> bool:
-	return _execute_bound(
-		"DELETE FROM placed_decorations WHERE room_id = ?;",
-		[room_id]
-	)
+	return _execute_bound("DELETE FROM placed_decorations WHERE room_id = ?;", [room_id])
 
 
 # ---- CRUD: Badges unlocked (T-R-015d) ----
 
 
 func get_unlocked_badges(account_id: int) -> Array:
-	return _select(
-		"SELECT badge_id, unlocked_at FROM badges_unlocked WHERE account_id = ?;",
-		[account_id]
-	)
+	return _select("SELECT badge_id, unlocked_at FROM badges_unlocked WHERE account_id = ?;", [account_id])
 
 
 func is_badge_unlocked(account_id: int, badge_id: String) -> bool:
-	var rows := _select(
-		"SELECT 1 FROM badges_unlocked WHERE account_id = ? AND badge_id = ?;",
-		[account_id, badge_id]
-	)
+	var rows := _select("SELECT 1 FROM badges_unlocked WHERE account_id = ? AND badge_id = ?;", [account_id, badge_id])
 	return not rows.is_empty()
 
 
 func unlock_badge(account_id: int, badge_id: String) -> bool:
 	# INSERT OR IGNORE evita duplicati grazie a UNIQUE(account_id, badge_id)
 	return _execute_bound(
-		(
-			"INSERT OR IGNORE INTO badges_unlocked"
-			+ " (account_id, badge_id) VALUES (?, ?);"
-		),
-		[account_id, badge_id]
+		"INSERT OR IGNORE INTO badges_unlocked" + " (account_id, badge_id) VALUES (?, ?);", [account_id, badge_id]
 	)
 
 
@@ -885,10 +808,6 @@ func _select(sql: String, bindings: Array) -> Array:
 			return []
 	else:
 		if not _db.query_with_bindings(sql, bindings):
-			AppLogger.error(
-				"LocalDatabase",
-				"select_bound_failed",
-				{"sql": sql.left(80), "bindings": bindings}
-			)
+			AppLogger.error("LocalDatabase", "select_bound_failed", {"sql": sql.left(80), "bindings": bindings})
 			return []
 	return _db.query_result

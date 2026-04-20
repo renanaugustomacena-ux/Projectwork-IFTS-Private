@@ -5,7 +5,6 @@ const SAVE_PATH := "user://save_data.json"
 const BACKUP_PATH := "user://save_data.backup.json"
 const TMP_SAVE := "user://test_save_data.json"
 
-
 # ---- HMAC integrity ----
 
 
@@ -46,8 +45,7 @@ func test_save_then_load_roundtrip_preserves_settings() -> void:
 	# Reload
 	SaveManager.load_game()
 	await wait_frames(2)
-	assert_approx(SaveManager.get_setting("master_volume", 0.0), 0.33,
-		0.001, "load should restore the saved 0.33")
+	assert_approx(SaveManager.get_setting("master_volume", 0.0), 0.33, 0.001, "load should restore the saved 0.33")
 	# Restore pre-test state
 	SignalBus.settings_updated.emit("master_volume", original_master)
 	SaveManager.save_game()
@@ -77,9 +75,12 @@ func test_tampered_save_rejected_falls_back() -> void:
 	SaveManager.save_game()
 	await wait_frames(1)
 	# Force backup copy (SaveManager copies primary→backup on NEXT save only, so do it manually)
-	DirAccess.copy_absolute(
-		ProjectSettings.globalize_path(SAVE_PATH),
-		ProjectSettings.globalize_path(BACKUP_PATH),
+	(
+		DirAccess
+		. copy_absolute(
+			ProjectSettings.globalize_path(SAVE_PATH),
+			ProjectSettings.globalize_path(BACKUP_PATH),
+		)
 	)
 	# Now corrupt primary by mutating HMAC
 	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -97,8 +98,7 @@ func test_tampered_save_rejected_falls_back() -> void:
 	# Trigger load — should reject primary, fall back to backup
 	SaveManager.load_game()
 	await wait_frames(2)
-	assert_eq(SaveManager.get_setting("language", ""), "en",
-		"tampered primary should be rejected, backup loaded")
+	assert_eq(SaveManager.get_setting("language", ""), "en", "tampered primary should be rejected, backup loaded")
 	# Cleanup: restore a clean primary
 	SaveManager.save_game()
 
@@ -126,8 +126,7 @@ func test_migrate_v3_to_v5_strips_obsolete_fields() -> void:
 	}
 	var migrated: Dictionary = SaveManager._migrate_save_data(data)
 	assert_eq(migrated.get("version", ""), "5.0.0")
-	for key in ["tools", "therapeutic", "xp", "streak", "currency", "unlocks",
-		"last_active_timestamp", "updated_at"]:
+	for key in ["tools", "therapeutic", "xp", "streak", "currency", "unlocks", "last_active_timestamp", "updated_at"]:
 		assert_false(migrated.has(key), "obsolete field %s must be removed" % key)
 	# Coins should be preserved via the currency.coins → inventory.coins path
 	assert_true(migrated.has("inventory"))
@@ -162,8 +161,11 @@ func test_compare_versions() -> void:
 func test_reset_all_preserves_pet_variant_in_defaults() -> void:
 	# Regression test for fix just applied: reset_all must include pet_variant
 	SaveManager.reset_all()
-	assert_eq(SaveManager.get_setting("pet_variant", "__missing__"), "simple",
-		"reset_all() must set pet_variant default, not lose the key")
+	assert_eq(
+		SaveManager.get_setting("pet_variant", "__missing__"),
+		"simple",
+		"reset_all() must set pet_variant default, not lose the key"
+	)
 	# Restore
 	SaveManager.save_game()
 

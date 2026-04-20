@@ -70,13 +70,8 @@ func _try_unlock(badge_id: String) -> void:
 		return
 	SignalBus.badge_unlocked.emit(badge_id)
 	var badge_name: String = _get_badge_name(badge_id)
-	SignalBus.toast_requested.emit(
-		"🏅 Badge sbloccato: %s" % badge_name, "success"
-	)
-	AppLogger.info(
-		"BadgeManager", "badge_unlocked",
-		{"badge_id": badge_id, "account_id": account_id}
-	)
+	SignalBus.toast_requested.emit("🏅 Badge sbloccato: %s" % badge_name, "success")
+	AppLogger.info("BadgeManager", "badge_unlocked", {"badge_id": badge_id, "account_id": account_id})
 
 
 func _get_badge_name(badge_id: String) -> String:

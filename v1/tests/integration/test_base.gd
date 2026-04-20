@@ -15,17 +15,13 @@ var _failures_in_test: Array[String] = []
 func assert_true(condition: bool, message: String = "") -> void:
 	_assertions_in_test += 1
 	if not condition:
-		_failures_in_test.append(
-			"assert_true failed" + ((": " + message) if message != "" else "")
-		)
+		_failures_in_test.append("assert_true failed" + ((": " + message) if message != "" else ""))
 
 
 func assert_false(condition: bool, message: String = "") -> void:
 	_assertions_in_test += 1
 	if condition:
-		_failures_in_test.append(
-			"assert_false failed" + ((": " + message) if message != "" else "")
-		)
+		_failures_in_test.append("assert_false failed" + ((": " + message) if message != "" else ""))
 
 
 func assert_eq(a: Variant, b: Variant, message: String = "") -> void:
@@ -38,9 +34,7 @@ func assert_eq(a: Variant, b: Variant, message: String = "") -> void:
 func assert_ne(a: Variant, b: Variant, message: String = "") -> void:
 	_assertions_in_test += 1
 	if a == b:
-		_failures_in_test.append(
-			"assert_ne: both %s%s" % [a, (": " + message) if message != "" else ""]
-		)
+		_failures_in_test.append("assert_ne: both %s%s" % [a, (": " + message) if message != "" else ""])
 
 
 func assert_approx(a: float, b: float, epsilon: float = 0.001, message: String = "") -> void:
@@ -53,35 +47,27 @@ func assert_approx(a: float, b: float, epsilon: float = 0.001, message: String =
 func assert_non_null(value: Variant, message: String = "") -> void:
 	_assertions_in_test += 1
 	if value == null:
-		_failures_in_test.append(
-			"assert_non_null: got null" + ((" (" + message + ")") if message != "" else "")
-		)
+		_failures_in_test.append("assert_non_null: got null" + ((" (" + message + ")") if message != "" else ""))
 
 
 func assert_null(value: Variant, message: String = "") -> void:
 	_assertions_in_test += 1
 	if value != null:
-		_failures_in_test.append(
-			"assert_null: got %s%s" % [value, ((" (" + message + ")") if message != "" else "")]
-		)
+		_failures_in_test.append("assert_null: got %s%s" % [value, (" (" + message + ")") if message != "" else ""])
 
 
 func assert_in_range(value: float, low: float, high: float, message: String = "") -> void:
 	_assertions_in_test += 1
 	if value < low or value > high:
 		var context := (": " + message) if message != "" else ""
-		_failures_in_test.append(
-			"assert_in_range: %f not in [%f, %f]%s" % [value, low, high, context]
-		)
+		_failures_in_test.append("assert_in_range: %f not in [%f, %f]%s" % [value, low, high, context])
 
 
 func assert_array_size(arr: Array, expected_size: int, message: String = "") -> void:
 	_assertions_in_test += 1
 	if arr.size() != expected_size:
 		var context := (": " + message) if message != "" else ""
-		_failures_in_test.append(
-			"assert_array_size: expected %d got %d%s" % [expected_size, arr.size(), context]
-		)
+		_failures_in_test.append("assert_array_size: expected %d got %d%s" % [expected_size, arr.size(), context])
 
 
 func assert_has(dict: Dictionary, key: String, message: String = "") -> void:

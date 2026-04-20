@@ -139,14 +139,17 @@ func _create_drag_button(
 	btn.texture = tex
 
 	# Store drag data as metadata — DecoButton._get_drag_data legge questo
-	btn.set_meta(
-		"drag_data",
-		{
-			"item_id": item_id,
-			"sprite_path": sprite_path,
-			"item_scale": item_scale,
-			"placement_type": placement_type,
-		}
+	(
+		btn
+		. set_meta(
+			"drag_data",
+			{
+				"item_id": item_id,
+				"sprite_path": sprite_path,
+				"item_scale": item_scale,
+				"placement_type": placement_type,
+			}
+		)
 	)
 	return btn
 

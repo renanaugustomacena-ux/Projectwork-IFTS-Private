@@ -56,6 +56,7 @@ func get_setting(key: String, default: Variant = null) -> Variant:
 func get_music_state() -> Dictionary:
 	return _music_state
 
+
 # Character data (maps to CHARACTER table)
 var character_data: Dictionary = {
 	"nome": "",
@@ -147,10 +148,7 @@ func save_game() -> void:
 	var wrapper := {"data": json_string, "hmac": hmac}
 	var file := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
 	if file == null:
-		push_error(
-			"SaveManager: cannot write temp file (error: %s)"
-			% FileAccess.get_open_error()
-		)
+		push_error("SaveManager: cannot write temp file (error: %s)" % FileAccess.get_open_error())
 		_is_saving = false
 		return
 	file.store_string(JSON.stringify(wrapper, "\t"))
@@ -166,15 +164,11 @@ func save_game() -> void:
 
 	# Rename temp → primary (atomic operation)
 	var rename_err := DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(TEMP_PATH),
-		ProjectSettings.globalize_path(SAVE_PATH)
+		ProjectSettings.globalize_path(TEMP_PATH), ProjectSettings.globalize_path(SAVE_PATH)
 	)
 	if rename_err != OK:
 		AppLogger.error("SaveManager", "Rename fallito, copia temp → save", {"errore": rename_err})
-		DirAccess.copy_absolute(
-			ProjectSettings.globalize_path(TEMP_PATH),
-			ProjectSettings.globalize_path(SAVE_PATH)
-		)
+		DirAccess.copy_absolute(ProjectSettings.globalize_path(TEMP_PATH), ProjectSettings.globalize_path(SAVE_PATH))
 
 	# Secondary: persist character and inventory to SQLite
 	_save_to_sqlite()
@@ -192,13 +186,19 @@ func _save_to_sqlite() -> void:
 		"theme": GameManager.current_theme,
 		"decorations": _decorations,
 	}
-	SignalBus.save_to_database_requested.emit({
-		"character": character_data,
-		"inventory": inventory_data,
-		"settings": _settings,
-		"music_state": _music_state,
-		"room": room_payload,
-	})
+	(
+		SignalBus
+		. save_to_database_requested
+		. emit(
+			{
+				"character": character_data,
+				"inventory": inventory_data,
+				"settings": _settings,
+				"music_state": _music_state,
+				"room": room_payload,
+			}
+		)
+	)
 
 
 func load_game() -> void:
@@ -224,8 +224,7 @@ func _load_from_file(path: String) -> Variant:
 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		AppLogger.error("SaveManager", "Cannot read file",
-			{"path": path})
+		AppLogger.error("SaveManager", "Cannot read file", {"path": path})
 		return null
 
 	var raw_text := file.get_as_text()
@@ -234,14 +233,12 @@ func _load_from_file(path: String) -> Variant:
 	var json := JSON.new()
 	var parse_result := json.parse(raw_text)
 	if parse_result != OK:
-		AppLogger.error("SaveManager", "JSON parse error",
-			{"path": path, "line": json.get_error_line()})
+		AppLogger.error("SaveManager", "JSON parse error", {"path": path, "line": json.get_error_line()})
 		return null
 
 	var wrapper = json.data
 	if not wrapper is Dictionary:
-		AppLogger.error("SaveManager", "Root is not Dictionary",
-			{"path": path})
+		AppLogger.error("SaveManager", "Root is not Dictionary", {"path": path})
 		return null
 
 	# New HMAC-wrapped format
@@ -250,9 +247,7 @@ func _load_from_file(path: String) -> Variant:
 		var json_string: String = wrapper.get("data", "")
 		var expected := _compute_hmac(json_string)
 		if stored_hmac != expected:
-			AppLogger.warn("SaveManager",
-				"HMAC mismatch — save file may be tampered",
-				{"path": path})
+			AppLogger.warn("SaveManager", "HMAC mismatch — save file may be tampered", {"path": path})
 			return null
 		var inner := JSON.new()
 		if inner.parse(json_string) != OK:
@@ -465,13 +460,9 @@ func reset_all() -> void:
 		"pet_variant": "simple",
 	}
 	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(
-			ProjectSettings.globalize_path(SAVE_PATH)
-		)
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	if FileAccess.file_exists(BACKUP_PATH):
-		DirAccess.remove_absolute(
-			ProjectSettings.globalize_path(BACKUP_PATH)
-		)
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(BACKUP_PATH))
 
 
 func _get_integrity_key() -> PackedByteArray:

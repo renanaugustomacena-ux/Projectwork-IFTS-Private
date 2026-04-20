@@ -109,7 +109,9 @@ func _run_module(module_path: String, script_res: GDScript) -> void:
 		# sync methods return their value. `await` on a non-awaitable is a no-op,
 		# so this line is safe for both kinds.
 		@warning_ignore("redundant_await")
-		var _result: Variant = await callable.call()
+		# await su sync call ritorna il valore; await su async ritorna il signal
+		# finito. Non storiamo il risultato (no-op vs il linter).
+		await callable.call()
 		var elapsed := Time.get_ticks_msec() - start
 
 		var failures_in_test: Array = instance.get("_failures_in_test")
@@ -120,33 +122,43 @@ func _run_module(module_path: String, script_res: GDScript) -> void:
 			print("   ✓ %s (%d assert, %dms)" % [method_name, assertions, elapsed])
 		else:
 			module_fail += 1
-			print("   ✗ %s (%d fail / %d assert, %dms)" % [
-				method_name, failures_in_test.size(), assertions, elapsed
-			])
+			print("   ✗ %s (%d fail / %d assert, %dms)" % [method_name, failures_in_test.size(), assertions, elapsed])
 			for f in failures_in_test:
 				print("       └─ %s" % f)
-				_failures.append({
-					"module": instance.name,
-					"test": method_name,
-					"message": f,
-				})
+				(
+					_failures
+					. append(
+						{
+							"module": instance.name,
+							"test": method_name,
+							"message": f,
+						}
+					)
+				)
 
-		_write_jsonl({
-			"module": instance.name,
-			"test": method_name,
-			"pass": failures_in_test.is_empty(),
-			"assertions": assertions,
-			"failures": failures_in_test,
-			"elapsed_ms": elapsed,
-		})
+		_write_jsonl(
+			{
+				"module": instance.name,
+				"test": method_name,
+				"pass": failures_in_test.is_empty(),
+				"assertions": assertions,
+				"failures": failures_in_test,
+				"elapsed_ms": elapsed,
+			}
+		)
 
 	_total_pass += module_pass
 	_total_fail += module_fail
-	_module_stats.append({
-		"name": instance.name,
-		"pass": module_pass,
-		"fail": module_fail,
-	})
+	(
+		_module_stats
+		. append(
+			{
+				"name": instance.name,
+				"pass": module_pass,
+				"fail": module_fail,
+			}
+		)
+	)
 	print("")
 
 	instance.queue_free()
@@ -159,9 +171,7 @@ func _print_report() -> void:
 	print("============================================")
 	for stats in _module_stats:
 		var status := "✅" if stats["fail"] == 0 else "❌"
-		print("  %s %-30s %d pass / %d fail" % [
-			status, stats["name"], stats["pass"], stats["fail"]
-		])
+		print("  %s %-30s %d pass / %d fail" % [status, stats["name"], stats["pass"], stats["fail"]])
 	print("")
 	print("  Totals: %d pass, %d fail" % [_total_pass, _total_fail])
 	if _total_fail > 0:

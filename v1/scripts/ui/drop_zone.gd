@@ -12,11 +12,7 @@ func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 	# Enforce wall vs floor placement zones
 	var placement_type: String = data.get("placement_type", "any")
 	if not _is_zone_valid(at_position, placement_type):
-		AppLogger.info(
-			"DropZone",
-			"can_drop_zone_invalid",
-			{"pos": at_position, "placement_type": placement_type}
-		)
+		AppLogger.info("DropZone", "can_drop_zone_invalid", {"pos": at_position, "placement_type": placement_type})
 		return false
 	return true
 
@@ -53,9 +49,7 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 				"floor_polygon_not_initialized",
 				{"item_id": item_id, "raw_pos": raw_pos, "snap_pos": at_position}
 			)
-			SignalBus.toast_requested.emit(
-				"Stanza non pronta, riprova fra un attimo", "warning"
-			)
+			SignalBus.toast_requested.emit("Stanza non pronta, riprova fra un attimo", "warning")
 			return
 		at_position = Helpers.clamp_inside_floor(at_position)
 	AppLogger.info(

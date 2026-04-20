@@ -120,10 +120,7 @@ func test_male_old_all_sprites_load() -> void:
 	var missing: Array[String] = []
 	for anim_name in ["idle", "walk", "interact"]:
 		var anim: Dictionary = anims.get(anim_name, {})
-		for direction in [
-			"down", "down_side", "down_side_sx", "side", "side_sx",
-			"up", "up_side", "up_side_sx"
-		]:
+		for direction in ["down", "down_side", "down_side_sx", "side", "side_sx", "up", "up_side", "up_side_sx"]:
 			var path: String = anim.get(direction, "")
 			var tex: Texture2D = load(path) as Texture2D
 			if tex == null:
@@ -163,9 +160,13 @@ func test_female_character_removed_from_catalog() -> void:
 	# Regression guard: female was moved out of project 2026-04-17. If someone
 	# re-adds it without completing the full directional animation set,
 	# test_catalogs.test_male_old_all_sprites_load equivalent must be added.
-	assert_true(_find_character("female").is_empty(),
-		"female character must NOT be in catalog (moved to "
-		+ "/tmp/projectwork_removed/female_character_assets_2026-04-17/)")
+	assert_true(
+		_find_character("female").is_empty(),
+		(
+			"female character must NOT be in catalog (moved to "
+			+ "/tmp/projectwork_removed/female_character_assets_2026-04-17/)"
+		)
+	)
 
 
 # ---- Tracks ----

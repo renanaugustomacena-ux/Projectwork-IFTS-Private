@@ -71,11 +71,7 @@ func _on_character_changed(character_id: String) -> void:
 	# l'originale. L'utente vedeva un character fermo mentre l'altro
 	# rispondeva all'input. Root cause documentata in detail nel log
 	# diagnostico del 2026-04-15.
-	if (
-		character_node != null
-		and is_instance_valid(character_node)
-		and character_node.scene_file_path == scene_path
-	):
+	if character_node != null and is_instance_valid(character_node) and character_node.scene_file_path == scene_path:
 		return
 	var scene := load(scene_path) as PackedScene
 	if scene == null:
@@ -92,30 +88,16 @@ func _on_character_changed(character_id: String) -> void:
 	# la female molto piu` piccola del previsto (fix extra BUG-B-6).
 	add_child(new_char)
 	character_node = new_char
-	AppLogger.info(
-		"RoomBase",
-		"character_changed",
-		{"id": character_id, "pos": old_pos, "scale": new_char.scale}
-	)
+	AppLogger.info("RoomBase", "character_changed", {"id": character_id, "pos": old_pos, "scale": new_char.scale})
 
 
 func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
-		AppLogger.warn(
-			"RoomBase",
-			"decoration_placed_unknown_item",
-			{"item_id": item_id, "pos": pos}
-		)
-		SignalBus.toast_requested.emit(
-			"Decorazione sconosciuta: %s" % item_id, "error"
-		)
+		AppLogger.warn("RoomBase", "decoration_placed_unknown_item", {"item_id": item_id, "pos": pos})
+		SignalBus.toast_requested.emit("Decorazione sconosciuta: %s" % item_id, "error")
 		return
-	AppLogger.info(
-		"RoomBase",
-		"decoration_placed_accepted",
-		{"item_id": item_id, "pos": pos}
-	)
+	AppLogger.info("RoomBase", "decoration_placed_accepted", {"item_id": item_id, "pos": pos})
 	var item_scale: float = item_data.get("item_scale", 1.0)
 	var deco_data := {
 		"item_id": item_id,
@@ -157,8 +139,12 @@ func _reload_decorations() -> void:
 
 
 func _spawn_decoration(
-	item_id: String, pos: Vector2, item_scale: float,
-	rot: float = 0.0, flipped: bool = false, deco_data: Dictionary = {}
+	item_id: String,
+	pos: Vector2,
+	item_scale: float,
+	rot: float = 0.0,
+	flipped: bool = false,
+	deco_data: Dictionary = {}
 ) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
@@ -171,11 +157,7 @@ func _spawn_decoration(
 
 	var texture := load(sprite_path) as Texture2D
 	if texture == null:
-		AppLogger.error(
-			"RoomBase",
-			"spawn_deco_texture_load_fail",
-			{"item_id": item_id, "sprite_path": sprite_path}
-		)
+		AppLogger.error("RoomBase", "spawn_deco_texture_load_fail", {"item_id": item_id, "sprite_path": sprite_path})
 		return
 
 	var sprite := Sprite2D.new()
@@ -224,10 +206,7 @@ func _spawn_decoration(
 		var area_shape := CollisionShape2D.new()
 		var area_rect := RectangleShape2D.new()
 		# Interaction zone slightly larger than collision footprint
-		area_rect.size = Vector2(
-			foot_w + INTERACTION_PADDING * 2.0,
-			foot_h + INTERACTION_PADDING * 2.0
-		)
+		area_rect.size = Vector2(foot_w + INTERACTION_PADDING * 2.0, foot_h + INTERACTION_PADDING * 2.0)
 		area_shape.shape = area_rect
 		area_shape.position = Vector2(tex_size.x * 0.5, tex_size.y - foot_h * 0.5)
 		area.add_child(area_shape)

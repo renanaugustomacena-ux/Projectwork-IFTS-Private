@@ -58,9 +58,7 @@ func _build_ui() -> void:
 	_title_label.text = "Scegli il tuo Personaggio"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 28)
-	_title_label.add_theme_color_override(
-		"font_color", Color(0.9, 0.85, 0.7, 1.0)
-	)
+	_title_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7, 1.0))
 	vbox.add_child(_title_label)
 
 	# Spacer
@@ -96,18 +94,14 @@ func _build_ui() -> void:
 	_name_label = Label.new()
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.add_theme_font_size_override("font_size", 20)
-	_name_label.add_theme_color_override(
-		"font_color", Color(0.8, 0.75, 0.65, 1.0)
-	)
+	_name_label.add_theme_color_override("font_color", Color(0.8, 0.75, 0.65, 1.0))
 	vbox.add_child(_name_label)
 
 	# Counter (1/3)
 	_counter_label = Label.new()
 	_counter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_counter_label.add_theme_font_size_override("font_size", 14)
-	_counter_label.add_theme_color_override(
-		"font_color", Color(0.6, 0.55, 0.5, 0.7)
-	)
+	_counter_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.5, 0.7))
 	vbox.add_child(_counter_label)
 
 	# Navigation row
@@ -147,10 +141,7 @@ func _build_ui() -> void:
 
 
 func _on_prev() -> void:
-	_current_index = (
-		(_current_index - 1 + CHARACTERS.size())
-		% CHARACTERS.size()
-	)
+	_current_index = ((_current_index - 1 + CHARACTERS.size()) % CHARACTERS.size())
 	_show_character(_current_index)
 
 
@@ -179,10 +170,7 @@ func _show_character(index: int) -> void:
 
 	var scene := load(char_data["scene"]) as PackedScene
 	if scene == null:
-		push_warning(
-			"CharacterSelect: failed to load '%s'"
-			% char_data["scene"]
-		)
+		push_warning("CharacterSelect: failed to load '%s'" % char_data["scene"])
 		return
 	var instance := scene.instantiate()
 	# Disable the controller script so the preview just plays idle
@@ -197,9 +185,7 @@ func _show_character(index: int) -> void:
 	if parent is CanvasItem:
 		(parent as CanvasItem).modulate.a = 0.0
 		_tween = create_tween()
-		_tween.tween_property(
-			parent, "modulate:a", 1.0, 0.25
-		)
+		_tween.tween_property(parent, "modulate:a", 1.0, 0.25)
 
 
 func _unhandled_input(event: InputEvent) -> void:
