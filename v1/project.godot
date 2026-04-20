@@ -34,6 +34,7 @@ SupabaseClient="*res://scripts/autoload/supabase_client.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 PerformanceManager="*res://scripts/systems/performance_manager.gd"
 StressManager="*res://scripts/systems/stress_manager.gd"
+MoodManager="*res://scripts/autoload/mood_manager.gd"
 
 [display]
 

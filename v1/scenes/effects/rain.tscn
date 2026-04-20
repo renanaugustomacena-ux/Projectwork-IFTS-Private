@@ -1,0 +1,31 @@
+[gd_scene load_steps=4 format=3 uid="uid://dxmdrain0001t"]
+
+[sub_resource type="Gradient" id="Gradient_rain"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.7, 0.8, 1, 0.8, 0.5, 0.6, 0.9, 0.0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_rain"]
+gradient = SubResource("Gradient_rain")
+width = 8
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_rain"]
+emission_shape = 3
+emission_box_extents = Vector3(640, 1, 0)
+gravity = Vector3(0, 800, 0)
+initial_velocity_min = 200.0
+initial_velocity_max = 320.0
+direction = Vector3(0, 1, 0)
+spread = 8.0
+scale_min = 0.5
+scale_max = 1.0
+
+[node name="Rain" type="Node2D"]
+
+[node name="Particles" type="GPUParticles2D" parent="."]
+position = Vector2(640, -20)
+amount = 120
+lifetime = 1.8
+preprocess = 0.5
+randomness = 0.3
+process_material = SubResource("ParticleProcessMaterial_rain")
+texture = SubResource("GradientTexture1D_rain")
