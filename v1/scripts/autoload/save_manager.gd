@@ -184,9 +184,20 @@ func save_game() -> void:
 
 
 func _save_to_sqlite() -> void:
+	# B-016: payload completo dual-write JSON+SQLite. Prima solo character +
+	# inventory andavano al mirror; settings/music_state/room+deco erano su
+	# JSON soltanto causando divergenza silente fra i due storage.
+	var room_payload: Dictionary = {
+		"room_type": GameManager.current_room_id,
+		"theme": GameManager.current_theme,
+		"decorations": _decorations,
+	}
 	SignalBus.save_to_database_requested.emit({
 		"character": character_data,
 		"inventory": inventory_data,
+		"settings": _settings,
+		"music_state": _music_state,
+		"room": room_payload,
 	})
 
 
