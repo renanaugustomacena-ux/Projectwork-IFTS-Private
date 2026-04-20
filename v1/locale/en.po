@@ -1,0 +1,116 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Relax Room 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Main menu
+msgid "UI_MENU_NEW_GAME"
+msgstr "New Game"
+
+msgid "UI_MENU_LOAD_GAME"
+msgstr "Load Game"
+
+msgid "UI_MENU_OPTIONS"
+msgstr "Options"
+
+msgid "UI_MENU_QUIT"
+msgstr "Quit"
+
+# In-game HUD
+msgid "UI_HUD_DECO"
+msgstr "Decorate"
+
+msgid "UI_HUD_PROFILE"
+msgstr "Profile"
+
+msgid "UI_HUD_MENU"
+msgstr "Menu"
+
+# Profile HUD panel
+msgid "UI_PROFILE_GUEST"
+msgstr "Guest"
+
+msgid "UI_PROFILE_IMAGE_TOOLTIP"
+msgstr "Profile image — click to pick a PNG/JPG from disk.\nStored locally only, never uploaded online."
+
+msgid "UI_PROFILE_SETTINGS_TOOLTIP"
+msgstr "Settings"
+
+msgid "UI_PROFILE_CLOSE_TOOLTIP"
+msgstr "Close"
+
+msgid "UI_PROFILE_MOOD_LABEL"
+msgstr "Mood"
+
+msgid "UI_PROFILE_MOOD_HINT"
+msgstr "🌧 ↔ 🌸"
+
+msgid "UI_PROFILE_LANG_TOOLTIP"
+msgstr "Change language — click for IT/EN"
+
+# Toast messages
+msgid "TOAST_IMAGE_LOAD_ERROR"
+msgstr "Cannot read the selected image"
+
+msgid "TOAST_IMAGE_SAVED"
+msgstr "Profile image updated (local only)"
+
+msgid "TOAST_LANG_CHANGED"
+msgstr "Language changed: %s"
+
+msgid "TOAST_BADGE_UNLOCKED"
+msgstr "🏅 Badge unlocked: %s"
+
+# Settings panel
+msgid "UI_SETTINGS_TITLE"
+msgstr "Settings"
+
+msgid "UI_SETTINGS_VOLUME_MASTER"
+msgstr "Master volume"
+
+msgid "UI_SETTINGS_VOLUME_MUSIC"
+msgstr "Music volume"
+
+msgid "UI_SETTINGS_VOLUME_AMBIENCE"
+msgstr "Ambience volume"
+
+msgid "UI_SETTINGS_LANGUAGE"
+msgstr "Language"
+
+msgid "UI_SETTINGS_REPLAY_TUTORIAL"
+msgstr "Replay Tutorial"
+
+# Auth screen
+msgid "UI_AUTH_PLAY_GUEST"
+msgstr "Play as Guest"
+
+msgid "UI_AUTH_LOGIN"
+msgstr "Login"
+
+msgid "UI_AUTH_REGISTER"
+msgstr "Register"
+
+msgid "UI_AUTH_USERNAME"
+msgstr "Username"
+
+msgid "UI_AUTH_PASSWORD"
+msgstr "Password"
+
+msgid "UI_AUTH_SWITCH_TO_REGISTER"
+msgstr "Don't have an account? Register"
+
+msgid "UI_AUTH_SWITCH_TO_LOGIN"
+msgstr "Already have an account? Login"
+
+# Decoration panel
+msgid "UI_DECO_TITLE"
+msgstr "Decorations"
+
+msgid "UI_DECO_MODE_ENABLE"
+msgstr "Edit"
+
+msgid "UI_DECO_MODE_DISABLE"
+msgstr "Done"

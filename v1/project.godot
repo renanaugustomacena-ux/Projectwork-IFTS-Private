@@ -22,6 +22,11 @@ config/icon="res://icon.svg"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="RelaxRoom"
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://locale/it.po", "res://locale/en.po")
+locale/fallback="it"
+
 [autoload]
 
 SignalBus="*res://scripts/autoload/signal_bus.gd"

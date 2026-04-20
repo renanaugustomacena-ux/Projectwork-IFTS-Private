@@ -1,0 +1,116 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Relax Room 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# Menu principale
+msgid "UI_MENU_NEW_GAME"
+msgstr "Nuova Partita"
+
+msgid "UI_MENU_LOAD_GAME"
+msgstr "Carica Partita"
+
+msgid "UI_MENU_OPTIONS"
+msgstr "Opzioni"
+
+msgid "UI_MENU_QUIT"
+msgstr "Esci"
+
+# HUD di gioco
+msgid "UI_HUD_DECO"
+msgstr "Arreda"
+
+msgid "UI_HUD_PROFILE"
+msgstr "Profilo"
+
+msgid "UI_HUD_MENU"
+msgstr "Menu"
+
+# Profile HUD panel
+msgid "UI_PROFILE_GUEST"
+msgstr "Ospite"
+
+msgid "UI_PROFILE_IMAGE_TOOLTIP"
+msgstr "Immagine profilo — click per scegliere PNG/JPG dal disco.\nSalvata solo in locale, mai inviata online."
+
+msgid "UI_PROFILE_SETTINGS_TOOLTIP"
+msgstr "Impostazioni"
+
+msgid "UI_PROFILE_CLOSE_TOOLTIP"
+msgstr "Chiudi"
+
+msgid "UI_PROFILE_MOOD_LABEL"
+msgstr "Umore"
+
+msgid "UI_PROFILE_MOOD_HINT"
+msgstr "🌧 ↔ 🌸"
+
+msgid "UI_PROFILE_LANG_TOOLTIP"
+msgstr "Cambia lingua — click per IT/EN"
+
+# Toast messages
+msgid "TOAST_IMAGE_LOAD_ERROR"
+msgstr "Impossibile leggere l'immagine selezionata"
+
+msgid "TOAST_IMAGE_SAVED"
+msgstr "Immagine profilo aggiornata (solo locale)"
+
+msgid "TOAST_LANG_CHANGED"
+msgstr "Lingua cambiata: %s"
+
+msgid "TOAST_BADGE_UNLOCKED"
+msgstr "🏅 Badge sbloccato: %s"
+
+# Settings panel
+msgid "UI_SETTINGS_TITLE"
+msgstr "Impostazioni"
+
+msgid "UI_SETTINGS_VOLUME_MASTER"
+msgstr "Volume generale"
+
+msgid "UI_SETTINGS_VOLUME_MUSIC"
+msgstr "Volume musica"
+
+msgid "UI_SETTINGS_VOLUME_AMBIENCE"
+msgstr "Volume ambiente"
+
+msgid "UI_SETTINGS_LANGUAGE"
+msgstr "Lingua"
+
+msgid "UI_SETTINGS_REPLAY_TUTORIAL"
+msgstr "Ripeti Tutorial"
+
+# Auth screen
+msgid "UI_AUTH_PLAY_GUEST"
+msgstr "Gioca come Ospite"
+
+msgid "UI_AUTH_LOGIN"
+msgstr "Accedi"
+
+msgid "UI_AUTH_REGISTER"
+msgstr "Registrati"
+
+msgid "UI_AUTH_USERNAME"
+msgstr "Nome utente"
+
+msgid "UI_AUTH_PASSWORD"
+msgstr "Password"
+
+msgid "UI_AUTH_SWITCH_TO_REGISTER"
+msgstr "Non hai un account? Registrati"
+
+msgid "UI_AUTH_SWITCH_TO_LOGIN"
+msgstr "Hai gia` un account? Accedi"
+
+# Decoration panel
+msgid "UI_DECO_TITLE"
+msgstr "Decorazioni"
+
+msgid "UI_DECO_MODE_ENABLE"
+msgstr "Modifica"
+
+msgid "UI_DECO_MODE_DISABLE"
+msgstr "Fine"
