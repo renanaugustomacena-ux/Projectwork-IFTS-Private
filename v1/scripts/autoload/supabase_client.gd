@@ -26,6 +26,11 @@ var _is_syncing: bool = false
 var _pending_requests: Dictionary = {}
 var _request_counter: int = 0
 
+# B-021 exponential backoff on HTTP 429. Max cap 5 min (300_000 ms).
+var _backoff_until_ms: int = 0
+var _retry_attempts: int = 0
+const _BACKOFF_MAX_MS: int = 300_000
+
 
 func _ready() -> void:
 	_config = _ConfigScript.load_config()
@@ -287,8 +292,20 @@ func _on_request_completed(response: Dictionary) -> void:
 			"rid": rid,
 		})
 	elif status == 429:
-		AppLogger.warn("SupabaseClient", "Rate limited", {"rid": rid})
+		# B-021: exponential backoff invece di ritentare al prossimo tick.
+		# delay = min(2^attempts * 1000, 300_000). Reset a 0 su 2xx.
+		_retry_attempts += 1
+		var delay_ms: int = min(
+			int(pow(2, _retry_attempts) * 1000), _BACKOFF_MAX_MS
+		)
+		_backoff_until_ms = Time.get_ticks_msec() + delay_ms
+		AppLogger.warn(
+			"SupabaseClient", "Rate limited, backoff applied",
+			{"rid": rid, "delay_ms": delay_ms, "attempt": _retry_attempts}
+		)
 	elif status >= 200 and status < 300:
+		_retry_attempts = 0
+		_backoff_until_ms = 0
 		AppLogger.info("SupabaseClient", "Request OK", {"rid": rid})
 
 
@@ -475,6 +492,9 @@ func _setup_sync_timer() -> void:
 
 
 func _on_sync_timer() -> void:
+	# B-021: skip sync se in backoff window dopo HTTP 429
+	if Time.get_ticks_msec() < _backoff_until_ms:
+		return
 	if is_online() and not _is_syncing:
 		start_sync()
 
