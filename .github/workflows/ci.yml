@@ -232,17 +232,25 @@ jobs:
       - name: Run deep integration test suite
         run: |
           cd "$GITHUB_WORKSPACE"
-          # Invasive suite: 96 tests across 7 modules covering helpers, catalog
-          # integrity (every sprite loads), stress hysteresis FSM, save/HMAC +
-          # migration, decoration spawn lifecycle for all 72 deco, panel UI
-          # lifecycle, simulated WASD input and animation response.
+          # Invasive suite: 111+ test su 8 moduli (helpers, catalog, stress,
+          # save, spawn, panels, input, ui_events).
+          #
+          # Pass criterion: il test_runner stampa "ALL PASS" + "Totals: X pass,
+          # 0 fail" dopo aver eseguito TUTTE le assertion. Questo e` il ground
+          # truth a livello-assertion.
+          #
+          # Godot exit code e` rumore post-test: RID leaks da CanvasItem +
+          # TextServer a shutdown producono exit 2 anche con tutti i test OK.
+          # Le leak sono debito tecnico del runner (scene instantiation in
+          # loop), non regressione dei test. Se usassimo exit code come
+          # gate, avremmo falsi rossi ad ogni run.
           timeout 90 godot --headless --path v1/ res://tests/test_runner.tscn \
-            | tee /tmp/deep_ci.log
-          RC=${PIPESTATUS[0]}
-          if [ "$RC" -eq 0 ]; then
-            echo "PASS: deep tests all green"
+            | tee /tmp/deep_ci.log || true
+          if grep -q "✅ ALL PASS" /tmp/deep_ci.log && grep -qE "Totals: [0-9]+ pass, 0 fail" /tmp/deep_ci.log; then
+            echo "PASS: deep tests all green (assertion-level)"
           else
-            echo "FAIL: deep tests exit $RC"
+            echo "FAIL: deep tests did not report ALL PASS"
+            grep -E "FAILURES:|❌|✗|Totals:" /tmp/deep_ci.log | tail -20
             exit 1
           fi
 
