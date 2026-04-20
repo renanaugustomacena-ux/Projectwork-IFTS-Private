@@ -70,9 +70,9 @@ func _ready() -> void:
 	# perche` tastiera + mouse coprono gia` l'input. L'addon scene rimane
 	# nel repo gated qui — mobile port pronto senza refactor.
 	if OS.has_feature("mobile") or OS.has_feature("web"):
-		var joy_scene := load("res://scenes/ui/virtual_joystick.tscn")
+		var joy_scene: PackedScene = load("res://scenes/ui/virtual_joystick.tscn") as PackedScene
 		if joy_scene != null:
-			var joystick := joy_scene.instantiate()
+			var joystick: Node = joy_scene.instantiate()
 			_ui_layer.add_child(joystick)
 			AppLogger.info("Main", "VirtualJoystick instantiated (mobile/web)")
 

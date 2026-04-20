@@ -92,11 +92,13 @@ func _find_panel_manager() -> Node:
 
 
 func test_main_scene_loads_with_expected_children() -> void:
+	# SettingsButton rimosso dall'HUD quando T-R-015e ha spostato il bottone
+	# Impostazioni dentro ProfileHUDPanel. Il click su ⚙ del profile HUD ora
+	# fa la stessa azione. Test aggiornato di conseguenza.
 	await _setup_main_scene()
 	assert_non_null(_main_root, "main.tscn must instantiate")
 	assert_non_null(_find_control("UILayer/HUD"), "UILayer/HUD must exist")
 	assert_non_null(_find_control("UILayer/HUD/DecoButton"), "DecoButton must exist")
-	assert_non_null(_find_control("UILayer/HUD/SettingsButton"), "SettingsButton")
 	assert_non_null(_find_control("UILayer/HUD/ProfileButton"), "ProfileButton")
 	assert_non_null(_find_control("UILayer/HUD/MenuButton"), "MenuButton")
 
@@ -129,8 +131,9 @@ func test_drop_zone_mouse_filter_initial_state() -> void:
 
 func test_hud_buttons_have_nonzero_size() -> void:
 	# If size is zero, clicks can't hit them (invisible rect).
+	# SettingsButton rimosso post T-R-015e: ora dentro profile_hud_panel.
 	await _setup_main_scene()
-	for name in ["DecoButton", "SettingsButton", "ProfileButton", "MenuButton"]:
+	for name in ["DecoButton", "ProfileButton", "MenuButton"]:
 		var btn := _find_control("UILayer/HUD/" + name)
 		assert_non_null(btn, name)
 		assert_true(btn.size.x > 0 and btn.size.y > 0, "%s has zero size %s — layout did not apply" % [name, btn.size])
@@ -172,17 +175,26 @@ func test_click_deco_button_opens_deco_panel() -> void:
 	)
 
 
-func test_click_settings_button_opens_settings_panel() -> void:
+func test_settings_panel_opens_via_profile_hud_settings_button() -> void:
+	# T-R-015e: settings non ha piu` un bottone HUD dedicato; si apre via
+	# ⚙ del profile_hud_panel (SignalBus.profile_hud_closed).
+	# Apri profile_hud via signal diretto, poi emetti profile_hud_closed
+	# → main.gd._on_profile_hud_close_to_settings apre settings panel.
 	await _setup_main_scene()
 	var pm := _find_panel_manager()
-	var btn := _find_control("UILayer/HUD/SettingsButton") as Button
-	assert_non_null(btn)
-	btn.pressed.emit()
+	SignalBus.profile_hud_requested.emit()
+	await wait_frames(3)
+	assert_eq(
+		pm.get_current_panel_name(),
+		"profile_hud",
+		"profile_hud_requested must open profile_hud (got %s)" % pm.get_current_panel_name()
+	)
+	SignalBus.profile_hud_closed.emit()
 	await wait_frames(3)
 	assert_eq(
 		pm.get_current_panel_name(),
 		"settings",
-		"SettingsButton.pressed must open settings (got %s)" % pm.get_current_panel_name()
+		"profile_hud_closed must open settings (got %s)" % pm.get_current_panel_name()
 	)
 
 
