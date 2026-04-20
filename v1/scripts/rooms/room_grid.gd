@@ -14,6 +14,13 @@ const ROOM_BOTTOM := 670.0
 func _ready() -> void:
 	visible = false
 	SignalBus.decoration_mode_changed.connect(_on_decoration_mode_changed)
+	# B-004: ridisegna la griglia se il viewport cambia dimensione (resize
+	# finestra, stretch mode). Senza questo i quadrati diventano "giganti"
+	# perche` restano ancorati alle coordinate originali mentre il viewport
+	# si scala.
+	var vp := get_viewport()
+	if vp != null:
+		vp.size_changed.connect(queue_redraw)
 
 
 func _on_decoration_mode_changed(active: bool) -> void:
@@ -24,14 +31,20 @@ func _on_decoration_mode_changed(active: bool) -> void:
 func _exit_tree() -> void:
 	if SignalBus.decoration_mode_changed.is_connected(_on_decoration_mode_changed):
 		SignalBus.decoration_mode_changed.disconnect(_on_decoration_mode_changed)
+	var vp := get_viewport()
+	if vp != null and vp.size_changed.is_connected(queue_redraw):
+		vp.size_changed.disconnect(queue_redraw)
 
 
 func _draw() -> void:
 	if not visible:
 		return
 
-	var vp := Vector2(Constants.VIEWPORT_WIDTH, Constants.VIEWPORT_HEIGHT)
-	var floor_top := vp.y * WALL_ZONE_RATIO
+	# B-004: usa viewport size reale (stretched) invece di Constants fissi.
+	# Stretch mode canvas_items: vp mantiene 1280x720 virtuale, ma su DPI
+	# alti o window resize alcune piattaforme espongono size diversa.
+	var vp_size: Vector2 = get_viewport_rect().size
+	var floor_top: float = vp_size.y * WALL_ZONE_RATIO
 
 	var x := ROOM_LEFT
 	while x <= ROOM_RIGHT:
