@@ -123,6 +123,21 @@ jobs:
       - name: Check every runtime Button has focus_mode (B-001/B-003 regression guard)
         run: python ci/validate_button_focus.py v1/scripts
 
+  validate-version:
+    name: "Validate version sync"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check v1/VERSION matches export_presets + project.godot + constants.gd
+        run: python ci/validate_version_sync.py
+
   validate-signals:
     name: "Validate SignalBus Count"
     runs-on: ubuntu-22.04

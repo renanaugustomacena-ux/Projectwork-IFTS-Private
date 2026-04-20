@@ -63,3 +63,6 @@ const DEBUG_RNG_SEED := 0xC02E
 const MOOD_GLOOMY_THRESHOLD := 0.15
 const MOOD_STORMY_THRESHOLD := 0.10
 const MOOD_AUDIO_TRACK_STORM := "res://assets/audio/storm_ambient.ogg"
+
+# Application version — synced da scripts/bump_version.sh
+const APP_VERSION := "1.0.0"
