@@ -3,6 +3,19 @@
 > **Stato**: stub. Awaiting user-provided `pg_dump --schema-only` dal Supabase
 > dashboard (15 tabelle cloud).
 
+## Connection info
+
+- **Project ref**: `dofkdywubnhonxqpsmsh`
+- **Region**: `eu-central-1`
+- **API URL**: `https://dofkdywubnhonxqpsmsh.supabase.co`
+- **Publishable key**: `sb_publishable_cZywbZxGNzmbEufVuL2O_g_BMGwNmI-` (nuovo naming; safe per repo pubblico, protetto da RLS)
+- **Postgres conn**: `postgresql://postgres:<PASSWORD>@db.dofkdywubnhonxqpsmsh.supabase.co:5432/postgres`
+
+Il gioco legge la publishable key da `user://config.cfg` (generato al primo
+avvio o fornito dall'utente). **Non è un secret** — le Supabase publishable
+keys sono progettate per essere embeddabili in client code, con sicurezza
+garantita da Row Level Security (RLS) policies lato DB.
+
 ## Scope
 
 Versionare la DDL del database cloud Supabase (15 tabelle dichiarate nei doc
