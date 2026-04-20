@@ -20,6 +20,7 @@ var _idle_timer: float = 0.0
 var _wander_target := Vector2.ZERO
 var _home_position := Vector2.ZERO
 var _character_ref: CharacterBody2D = null
+var _rng := RandomNumberGenerator.new()
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -28,6 +29,11 @@ func _ready() -> void:
 	_home_position = position
 	collision_mask = 1  # Walls only, don't collide with decorations
 	collision_layer = 0  # Don't block anything
+	# B-030: seed deterministico in debug per riproducibilita` FSM pet
+	if OS.is_debug_build():
+		_rng.seed = Constants.DEBUG_RNG_SEED + 2
+	else:
+		_rng.randomize()
 	_find_character()
 	_set_state(State.IDLE)
 
@@ -54,7 +60,7 @@ func _process_idle(_delta: float) -> void:
 	_play_anim("idle")
 
 	if _state_timer > _random_duration():
-		var roll := randf()
+		var roll := _rng.randf()
 		# Priorita` 1: dopo cooldown lungo, chance di dormire
 		if _idle_timer > SLEEP_COOLDOWN and roll < 0.3:
 			_set_state(State.SLEEP)
@@ -165,8 +171,8 @@ func _set_state(new_state: State) -> void:
 
 func _pick_wander_target() -> void:
 	var offset := Vector2(
-		randf_range(-WANDER_RANGE, WANDER_RANGE),
-		randf_range(-WANDER_RANGE * 0.3, WANDER_RANGE * 0.3),
+		_rng.randf_range(-WANDER_RANGE, WANDER_RANGE),
+		_rng.randf_range(-WANDER_RANGE * 0.3, WANDER_RANGE * 0.3),
 	)
 	_wander_target = _home_position + offset
 	# Clamp to floor polygon instead of hardcoded rect
@@ -199,7 +205,7 @@ func _is_close_to_character() -> bool:
 
 
 func _random_duration() -> float:
-	return randf_range(STATE_CHANGE_MIN, STATE_CHANGE_MAX)
+	return _rng.randf_range(STATE_CHANGE_MIN, STATE_CHANGE_MAX)
 
 
 var _last_anim: String = ""

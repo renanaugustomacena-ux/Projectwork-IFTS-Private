@@ -53,7 +53,11 @@ func _ready() -> void:
 	SignalBus.load_completed.connect(_on_load_completed)
 	SignalBus.mood_changed.connect(_on_mood_changed)
 
-	_mood_rng.randomize()
+	# B-030: seed deterministico in debug per riproducibilita` bug report
+	if OS.is_debug_build():
+		_mood_rng.seed = Constants.DEBUG_RNG_SEED
+	else:
+		_mood_rng.randomize()
 	_load_tracks()
 	call_deferred("_auto_start_music")
 

@@ -53,3 +53,13 @@ const SUPABASE_MAX_RETRY := 5
 # Viewport resolution
 const VIEWPORT_WIDTH := 1280
 const VIEWPORT_HEIGHT := 720
+
+# RNG determinism
+# Debug build: seed costante → bug/issue report riproducibili
+# Release build: randomize() → varieta` gameplay
+const DEBUG_RNG_SEED := 0xC02E
+
+# Mood thresholds (T-R-015i)
+const MOOD_GLOOMY_THRESHOLD := 0.15
+const MOOD_STORMY_THRESHOLD := 0.10
+const MOOD_AUDIO_TRACK_STORM := "res://assets/audio/storm_ambient.ogg"

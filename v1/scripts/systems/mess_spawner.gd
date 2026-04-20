@@ -21,7 +21,11 @@ var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
-	_rng.randomize()
+	# B-030: seed deterministico in debug per riproducibilita`
+	if OS.is_debug_build():
+		_rng.seed = Constants.DEBUG_RNG_SEED + 1  # offset per non collidere con altri RNG
+	else:
+		_rng.randomize()
 	_timer = Timer.new()
 	_timer.one_shot = true
 	_timer.timeout.connect(_on_timer_timeout)
