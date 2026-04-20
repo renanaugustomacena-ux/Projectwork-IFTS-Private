@@ -26,6 +26,7 @@ var _close_btn: Button = null
 var _mood_slider: HSlider = null
 var _loading: bool = false
 var _file_dialog: FileDialog = null
+var _badges_row: HBoxContainer = null  # T-R-015d
 
 
 func _ready() -> void:
@@ -84,11 +85,15 @@ func _build_ui() -> void:
 	_name_label.add_theme_font_size_override("font_size", 16)
 	info_vbox.add_child(_name_label)
 
-	var badges_label := Label.new()
-	badges_label.text = "🏅 Badge in arrivo..."
-	badges_label.add_theme_font_size_override("font_size", 11)
-	badges_label.modulate.a = 0.6
-	info_vbox.add_child(badges_label)
+	# T-R-015d: riga badge. HBoxContainer di Label (emoji icon) — unlocked
+	# colore pieno, locked grayed. Aggiornato al boot + su badge_unlocked.
+	var badges_row := HBoxContainer.new()
+	badges_row.name = "BadgesRow"
+	badges_row.add_theme_constant_override("separation", 4)
+	info_vbox.add_child(badges_row)
+	_badges_row = badges_row
+	_refresh_badges()
+	SignalBus.badge_unlocked.connect(_on_badge_unlocked)
 
 	# Language toggle — nascosto pre-demo, i18n completa in arrivo post-demo.
 	_lang_btn = Button.new()
@@ -275,6 +280,38 @@ func _on_mood_changed(value: float) -> void:
 	SignalBus.settings_updated.emit(MOOD_SETTING_KEY, value)
 
 
+func _refresh_badges() -> void:
+	if _badges_row == null:
+		return
+	# Rimuovi children vecchi
+	for child in _badges_row.get_children():
+		child.queue_free()
+	var catalog: Array = GameManager.badges_catalog.get("badges", [])
+	var unlocked_rows: Array = BadgeManager.get_unlocked_badges()
+	var unlocked_ids: Dictionary = {}
+	for row in unlocked_rows:
+		if row is Dictionary:
+			unlocked_ids[row.get("badge_id", "")] = true
+	for badge in catalog:
+		if not (badge is Dictionary):
+			continue
+		var icon: String = badge.get("icon", "🏅")
+		var is_unlocked: bool = unlocked_ids.has(badge.get("id", ""))
+		var lbl := Label.new()
+		lbl.text = icon
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.tooltip_text = "%s — %s" % [
+			badge.get("name", ""), badge.get("description", "")
+		]
+		if not is_unlocked:
+			lbl.modulate = Color(0.4, 0.4, 0.4, 0.5)  # locked grey
+		_badges_row.add_child(lbl)
+
+
+func _on_badge_unlocked(_badge_id: String) -> void:
+	_refresh_badges()
+
+
 func _exit_tree() -> void:
 	if _settings_btn != null and _settings_btn.pressed.is_connected(_on_settings_pressed):
 		_settings_btn.pressed.disconnect(_on_settings_pressed)
@@ -289,3 +326,5 @@ func _exit_tree() -> void:
 	if _file_dialog != null and is_instance_valid(_file_dialog):
 		if _file_dialog.file_selected.is_connected(_on_profile_image_selected):
 			_file_dialog.file_selected.disconnect(_on_profile_image_selected)
+	if SignalBus.badge_unlocked.is_connected(_on_badge_unlocked):
+		SignalBus.badge_unlocked.disconnect(_on_badge_unlocked)
