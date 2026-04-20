@@ -10,6 +10,7 @@ extends Node
 var _decorations_placed_counter: int = 0
 var _mood_changes_counter: int = 0
 var _session_start_ms: int = 0
+var _stormy_mood_reached: bool = false  # flag per badge storm_survivor
 
 
 func _ready() -> void:
@@ -39,9 +40,9 @@ func _on_decoration_placed(_item_id: String, _position: Vector2) -> void:
 
 func _on_mood_level_changed(mood: float) -> void:
 	_mood_changes_counter += 1
-	_check_all_conditions()
 	if mood < Constants.MOOD_STORMY_THRESHOLD:
-		_try_unlock_by_type("stormy_mood", 1)
+		_stormy_mood_reached = true
+	_check_all_conditions()
 
 
 func _check_all_conditions() -> void:
@@ -54,18 +55,6 @@ func _check_all_conditions() -> void:
 		var threshold: int = cond.get("threshold", 0)
 		var current: int = _get_counter_for_type(cond_type)
 		if current >= threshold:
-			_try_unlock(badge.get("id", ""))
-
-
-func _try_unlock_by_type(cond_type: String, threshold: int) -> void:
-	var catalog: Array = GameManager.badges_catalog.get("badges", [])
-	for badge in catalog:
-		if not (badge is Dictionary):
-			continue
-		var cond: Dictionary = badge.get("condition", {})
-		if cond.get("type", "") != cond_type:
-			continue
-		if _get_counter_for_type(cond_type) >= cond.get("threshold", threshold):
 			_try_unlock(badge.get("id", ""))
 
 
@@ -107,9 +96,10 @@ func _get_counter_for_type(cond_type: String) -> int:
 		"play_time_seconds":
 			return int((Time.get_ticks_msec() - _session_start_ms) / 1000.0)
 		"stormy_mood":
-			# Incrementato inline in _on_mood_level_changed quando attraversata
-			# la soglia; conservato implicitamente via _try_unlock_by_type.
-			return 1
+			# Solo quando user ha realmente attraversato la soglia stormy
+			# (flag settato da _on_mood_level_changed). Previene unlock
+			# spurio al boot prima che qualunque evento mood sia avvenuto.
+			return 1 if _stormy_mood_reached else 0
 	return 0
 
 
