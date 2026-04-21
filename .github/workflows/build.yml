@@ -39,6 +39,12 @@ concurrency:
   group: build-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 
+# barichello/godot-ci container default shell e` busybox sh; forziamo bash
+# per usare [[, ${VAR:0:N} substring, arithmetic (( )), etc.
+defaults:
+  run:
+    shell: bash
+
 env:
   GODOT_VERSION: "4.6"
   PROJECT_PATH: "v1"
