@@ -1,26 +1,72 @@
-# Pipeline Build — Export Windows and HTML5 builds
+# Pipeline Build — Export Windows / Android / HTML5 builds (Fase D).
 #
-# Documentazione:
-# Eseguita su push al branch main e su tag v*. Produce artifact scaricabili
-# per Windows (.exe) e Web (HTML5). Usa il container Docker godot-ci
-# per build deterministiche e riproducibili.
+# Strategy post Fase D (plan BUILD_RELEASE_PLAN §5):
+# - Non-tag push main -> debug builds (keystore debug container)
+# - Tag push v*.*.* -> release builds (keystore release from GitHub Secrets)
+# - Ogni job e` atomico: SHA256SUMS per artifact, size check in smoke-binaries
+# - Fase F (successivo): build dipende da CI green via workflow_run trigger
+#
+# Uses barichello/godot-ci:4.6 container (include templates + Android SDK +
+# Java 17). LFS: true per scaricare godot-sqlite multi-platform binaries.
 
 name: build
-run-name: "Build ${{ github.ref_name }}"
+run-name: "${{ github.event_name }} — ${{ github.ref_name }} — Build"
 
+# Fase F (plan §7): build depends on CI green via workflow_run trigger.
+# Branch push main -> CI runs -> (if green) build fires via workflow_run.
+# Tag push v*.*.* -> build fires direttamente (release must build, even
+#   if CI doesn't re-run on tag trigger).
+# workflow_dispatch: fallback manuale con skip_ci_gate emergency.
 on:
-  push:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
     branches: [main]
-    tags: ["v*"]
+  push:
+    tags: ["v*.*.*"]
   workflow_dispatch:
+    inputs:
+      skip_android:
+        type: boolean
+        default: false
+        description: "Skip Android build (debug iterations)"
+      skip_ci_gate:
+        type: boolean
+        default: false
+        description: "Skip CI gate (emergency, solo admin)"
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: build-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  export-windows:
-    name: "Export Windows"
+  ci-gate:
+    name: "CI gate — verify CI passed"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    # Fallisce se workflow_run fired con CI conclusion != success.
+    # Su push tag / workflow_dispatch la condizione e` permissiva.
+    if: |
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success' ||
+      inputs.skip_ci_gate == true
+    steps:
+      - name: Emit gate status
+        run: |
+          echo "Trigger: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "CI conclusion: ${{ github.event.workflow_run.conclusion }}"
+          fi
+          echo "CI gate PASS — build jobs may proceed"
+
+env:
+  GODOT_VERSION: "4.6"
+  PROJECT_PATH: "v1"
+
+  build-windows:
+    name: "Build Windows x64"
+    needs: [ci-gate]
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     container:
@@ -29,6 +75,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
 
       - name: Setup export templates
         run: |
@@ -38,29 +85,71 @@ jobs:
               ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
           fi
 
-      - name: Export Windows build
+      - name: Compute artifact filename
+        id: name
         run: |
-          mkdir -p v1/export/windows
-          cd v1
-          godot --headless --export-release "Windows Desktop" export/windows/RelaxRoom.exe
+          REF="${GITHUB_REF_NAME}"
+          # Tag build: use ref_name (v1.0.0). Branch: use short SHA.
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "fname=RelaxRoom-${REF}-x64.exe" >> "$GITHUB_OUTPUT"
+          else
+            SHORT_SHA="${GITHUB_SHA:0:7}"
+            echo "fname=RelaxRoom-dev-${SHORT_SHA}-x64.exe" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pre-import resources
+        run: |
+          cd "${{ env.PROJECT_PATH }}"
+          godot --headless --import --path . || true
+          godot --headless --import --path .
+
+      - name: Export Windows release
+        run: |
+          mkdir -p builds/windows
+          cd "${{ env.PROJECT_PATH }}"
+          godot --headless --export-release "Windows Desktop" \
+            "../builds/windows/${{ steps.name.outputs.fname }}"
+
+      - name: Verify .exe created + size sane
+        run: |
+          cd builds/windows
+          ls -lh
+          # Size >= 50MB (template ~80MB + pck 15MB typical)
+          SIZE=$(stat -c%s *.exe)
+          if (( SIZE < 50000000 || SIZE > 400000000 )); then
+            echo "ERROR: .exe size unexpected: $SIZE bytes"
+            exit 1
+          fi
+          echo ".exe size OK: $SIZE bytes"
+
+      - name: Compute SHA256SUMS
+        run: |
+          cd builds/windows
+          sha256sum *.exe > SHA256SUMS.windows.txt
+          cat SHA256SUMS.windows.txt
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: relax-room-windows-${{ github.sha }}
-          path: v1/export/windows/
+          name: relaxroom-windows-${{ github.sha }}
+          path: |
+            builds/windows/*.exe
+            builds/windows/SHA256SUMS.windows.txt
           retention-days: 30
 
-  export-html5:
-    name: "Export HTML5"
+  build-android:
+    name: "Build Android APK"
+    needs: [ci-gate]
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     container:
       image: barichello/godot-ci:4.6
+    if: ${{ !inputs.skip_android }}
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
 
       - name: Setup export templates
         run: |
@@ -70,60 +159,67 @@ jobs:
               ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
           fi
 
-      - name: Export HTML5 build
+      - name: Prepare output + keystore dirs
+        run: mkdir -p builds/android certs
+
+      - name: Decode release keystore (tag build only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_RELEASE_KEY_PASS }}
         run: |
-          mkdir -p v1/export/html5
-          cd v1
-          godot --headless --export-release "Web" export/html5/index.html
-
-      - name: Upload HTML5 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: relax-room-html5-${{ github.sha }}
-          path: v1/export/html5/
-          retention-days: 30
-
-  export-android:
-    name: "Export Android APK"
-    runs-on: ubuntu-22.04
-    timeout-minutes: 25
-    container:
-      image: barichello/godot-ci:4.6
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - name: Setup export templates
-        run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
-              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASS" ] || \
+             [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASS" ]; then
+            echo "ERROR: Release keystore secrets missing. Cannot sign release APK."
+            echo "See docs/ANDROID_SIGNING.md Fase B."
+            exit 1
           fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > certs/release.keystore
+          test -s certs/release.keystore
+          cd "${{ env.PROJECT_PATH }}"
+          # Inject release keystore into preset. export_credentials.cfg would
+          # be cleaner but Godot CI container does not auto-load it; sed is
+          # explicit + inspectable in CI logs.
+          python3 - <<'PY'
+          import re
+          import os
+          from pathlib import Path
 
-      - name: Setup Android debug keystore
+          presets = Path("export_presets.cfg")
+          text = presets.read_text(encoding="utf-8")
+          replacements = {
+              r'keystore/release=""': f'keystore/release="res://../certs/release.keystore"',
+              r'keystore/release_user=""': f'keystore/release_user="{os.environ["KEY_ALIAS"]}"',
+              r'keystore/release_password=""': f'keystore/release_password="{os.environ["KEY_PASS"]}"',
+          }
+          for pattern, replacement in replacements.items():
+              text = re.sub(re.escape(pattern), replacement, text, count=1)
+          presets.write_text(text, encoding="utf-8")
+          print("Injected release keystore paths into export_presets.cfg")
+          PY
+
+      - name: Setup debug keystore (non-tag build)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: |
-          # barichello/godot-ci ships with debug.keystore at a known path;
-          # ensure Godot editor settings point to it for signing.
+          # barichello/godot-ci ships with debug.keystore at /root/.android/
           KEYSTORE_PATH="/root/.android/debug.keystore"
           mkdir -p ~/.android
           if [ -f "$KEYSTORE_PATH" ]; then
             cp "$KEYSTORE_PATH" ~/.android/debug.keystore
           else
-            # Generate a fresh debug keystore if the container image changed
+            # Fallback if container image changes
             keytool -keyalg RSA -genkeypair -alias androiddebugkey \
               -keypass android \
               -keystore ~/.android/debug.keystore \
               -storepass android \
               -dname "CN=Android Debug,O=Android,C=US" \
-              -validity 9999 \
-              -deststoretype pkcs12
+              -validity 9999 -deststoretype pkcs12
           fi
 
       - name: Configure Godot Android editor settings
         run: |
-          # Godot export needs editor_settings with Android SDK + Java + keystore.
           mkdir -p ~/.config/godot
           JAVA_BIN=$(readlink -f "$(which java)")
           JAVA_DIR=$(dirname "$(dirname "$JAVA_BIN")")
@@ -138,25 +234,192 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
-          cat ~/.config/godot/editor_settings-4.6.tres
+
+      - name: Compute artifact filename
+        id: name
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "fname=RelaxRoom-${GITHUB_REF_NAME}.apk" >> "$GITHUB_OUTPUT"
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+          else
+            SHORT_SHA="${GITHUB_SHA:0:7}"
+            echo "fname=RelaxRoom-dev-${SHORT_SHA}.apk" >> "$GITHUB_OUTPUT"
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Pre-import resources
         run: |
-          cd v1
+          cd "${{ env.PROJECT_PATH }}"
           godot --headless --import --path . || true
-          godot --headless --import --path . || true
+          godot --headless --import --path .
 
-      - name: Export Android APK (debug)
-        continue-on-error: true
+      - name: Export Android APK
         run: |
-          mkdir -p v1/export/android
-          cd v1
-          godot --headless --export-debug "Android" export/android/RelaxRoom.apk || echo "Android export failed — investigate post-demo"
-          ls -lh export/android/ || true
+          cd "${{ env.PROJECT_PATH }}"
+          if [ "${{ steps.name.outputs.mode }}" = "release" ]; then
+            godot --headless --export-release "Android" \
+              "../builds/android/${{ steps.name.outputs.fname }}"
+          else
+            godot --headless --export-debug "Android" \
+              "../builds/android/${{ steps.name.outputs.fname }}" || {
+                echo "Android export failed (debug) — investigate."
+                exit 1
+              }
+          fi
 
-      - name: Upload Android APK artifact
+      - name: Verify APK
+        run: |
+          cd builds/android
+          ls -lh
+          APK=$(ls *.apk | head -1)
+          SIZE=$(stat -c%s "$APK")
+          # APK expected 30-200 MB (multi-arch + SQLite native)
+          if (( SIZE < 20000000 || SIZE > 300000000 )); then
+            echo "ERROR: APK size unexpected: $SIZE bytes"
+            exit 1
+          fi
+          echo "APK size OK: $SIZE bytes"
+          # Signature verify (apksigner in Android SDK)
+          if command -v apksigner >/dev/null 2>&1; then
+            apksigner verify --verbose "$APK" || {
+              echo "WARN: apksigner verify failed; continuing"
+            }
+          else
+            echo "apksigner not available; skipping signature verify"
+          fi
+
+      - name: Compute SHA256SUMS
+        run: |
+          cd builds/android
+          sha256sum *.apk > SHA256SUMS.android.txt
+          cat SHA256SUMS.android.txt
+
+      - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
-          name: relax-room-android-${{ github.sha }}
-          path: v1/export/android/
+          name: relaxroom-android-${{ github.sha }}
+          path: |
+            builds/android/*.apk
+            builds/android/SHA256SUMS.android.txt
           retention-days: 30
+
+      - name: Cleanup keystore (always)
+        if: always()
+        run: rm -f certs/release.keystore
+
+  build-html5:
+    name: "Build HTML5 Web"
+    needs: [ci-gate]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    container:
+      image: barichello/godot-ci:4.6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
+          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
+              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
+          fi
+
+      - name: Pre-import resources
+        run: |
+          cd "${{ env.PROJECT_PATH }}"
+          godot --headless --import --path . || true
+
+      - name: Export HTML5
+        run: |
+          mkdir -p builds/html5
+          cd "${{ env.PROJECT_PATH }}"
+          godot --headless --export-release "Web" ../builds/html5/index.html
+
+      - name: Verify HTML5 output
+        run: |
+          ls -lh builds/html5/
+          test -f builds/html5/index.html
+          test -f builds/html5/index.pck
+          test -f builds/html5/index.wasm
+          grep -q "Relax Room" builds/html5/index.html || {
+            echo "ERROR: index.html missing project name"; exit 1
+          }
+
+      - name: Compute artifact filename
+        id: name
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "fname=RelaxRoom-${GITHUB_REF_NAME}-html5.zip" >> "$GITHUB_OUTPUT"
+          else
+            SHORT_SHA="${GITHUB_SHA:0:7}"
+            echo "fname=RelaxRoom-dev-${SHORT_SHA}-html5.zip" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Zip HTML5 + compute SHA256
+        run: |
+          cd builds
+          zip -r "${{ steps.name.outputs.fname }}" html5/
+          sha256sum "${{ steps.name.outputs.fname }}" > SHA256SUMS.html5.txt
+          ls -lh
+          cat SHA256SUMS.html5.txt
+
+      - name: Upload HTML5 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: relaxroom-html5-${{ github.sha }}
+          path: |
+            builds/*.zip
+            builds/SHA256SUMS.html5.txt
+          retention-days: 30
+
+  smoke-binaries:
+    name: "Smoke test built binaries"
+    needs: [build-windows, build-html5]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Verify Windows .exe structural integrity
+        run: |
+          exe_path=$(find artifacts -name "*.exe" | head -1)
+          if [ -z "$exe_path" ]; then
+            echo "ERROR: no .exe artifact found"
+            exit 1
+          fi
+          size=$(stat -c%s "$exe_path")
+          echo "Windows .exe: $exe_path ($size bytes)"
+          # MZ header check (PE executable magic bytes)
+          head -c 2 "$exe_path" | xxd | grep -q "4d5a" || {
+            echo "ERROR: .exe does not start with MZ magic bytes"; exit 1
+          }
+
+      - name: Verify HTML5 contains critical strings
+        run: |
+          zip_path=$(find artifacts -name "*-html5.zip" | head -1)
+          if [ -z "$zip_path" ]; then
+            echo "ERROR: no html5 zip artifact found"
+            exit 1
+          fi
+          unzip -p "$zip_path" html5/index.html | grep -q "Relax Room" || {
+            echo "ERROR: index.html missing project name"; exit 1
+          }
+          echo "HTML5 zip OK"
+
+      - name: Verify SHA256SUMS parseable
+        run: |
+          for f in $(find artifacts -name "SHA256SUMS*.txt"); do
+            echo "=== $f ==="
+            cat "$f"
+            # Parse + validate format (<hex64> <2 spaces> <filename>)
+            grep -Eq '^[0-9a-f]{64}  \S+' "$f" || {
+              echo "ERROR: $f format invalid"; exit 1
+            }
+          done

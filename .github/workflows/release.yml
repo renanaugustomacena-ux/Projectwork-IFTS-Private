@@ -1,0 +1,151 @@
+# Release workflow — crea GitHub Release su tag v*.*.* (Fase E).
+#
+# Trigger: push tag v*.*.*
+#
+# Flow:
+#   1. wait-for-builds: aspetta che build.yml completi green sullo
+#      stesso commit del tag (Windows + Android + HTML5).
+#   2. create-release: scarica 3 artifact da build.yml, consolida
+#      SHA256SUMS.txt, estrae changelog della versione, crea la
+#      Release con 4 asset via softprops/action-gh-release.
+#
+# Note: softprops/action-gh-release@v2 e` preferito vs `gh release
+# create` per robustness in CI (gestisce existing tag, permissions,
+# automatic release notes fallback).
+
+name: release
+run-name: "Release ${{ github.ref_name }}"
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write  # necessario per creare Release
+
+jobs:
+  wait-for-builds:
+    name: "Wait for build workflow"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for Windows build
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Build Windows x64"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+      - name: Wait for Android build
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Build Android APK"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+      - name: Wait for HTML5 build
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Build HTML5 Web"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+      - name: Wait for smoke-binaries
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Smoke test built binaries"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+  create-release:
+    name: "Create GitHub Release"
+    needs: wait-for-builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # per extract_changelog.py
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download Windows artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build.yml
+          name: relaxroom-windows-${{ github.sha }}
+          path: release-assets/windows/
+
+      - name: Download Android artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build.yml
+          name: relaxroom-android-${{ github.sha }}
+          path: release-assets/android/
+
+      - name: Download HTML5 artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build.yml
+          name: relaxroom-html5-${{ github.sha }}
+          path: release-assets/html5/
+
+      - name: Flatten assets + consolidate SHA256SUMS
+        run: |
+          mkdir -p release-flat
+          # Move all files from each subdir (flatten)
+          find release-assets -type f \( -name "*.exe" -o -name "*.apk" -o -name "*.zip" \) \
+            -exec mv {} release-flat/ \;
+          cd release-flat
+          # Merge individual SHA256SUMS into one
+          # (separate files came from build.yml subjobs)
+          cat ../release-assets/*/SHA256SUMS.*.txt 2>/dev/null > SHA256SUMS.txt || true
+          # If cat produced empty, regenerate on the fly
+          if [ ! -s SHA256SUMS.txt ]; then
+            rm -f SHA256SUMS.txt
+            sha256sum *.exe *.apk *.zip > SHA256SUMS.txt 2>/dev/null || \
+              sha256sum * > SHA256SUMS.txt
+          fi
+          echo "=== Final release assets ==="
+          ls -lh
+          echo "=== SHA256SUMS ==="
+          cat SHA256SUMS.txt
+
+      - name: Extract changelog section for this version
+        id: changelog
+        run: |
+          python3 scripts/ci/extract_changelog.py "${{ github.ref_name }}" \
+            > /tmp/release-body.md
+          echo "=== Release body ==="
+          cat /tmp/release-body.md
+          echo "body_path=/tmp/release-body.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Relax Room ${{ github.ref_name }}"
+          body_path: /tmp/release-body.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          files: |
+            release-flat/*.exe
+            release-flat/*.apk
+            release-flat/*.zip
+            release-flat/SHA256SUMS.txt
+          generate_release_notes: false  # we use CHANGELOG.md body
+          fail_on_unmatched_files: true  # ensure all 4 asset groups present
