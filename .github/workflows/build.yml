@@ -430,8 +430,9 @@ jobs:
             echo "=== $f ==="
             cat "$f"
             # Skip file se contiene solo righe commento (Android placeholder
-            # quando export fallisce, vedi build-android known-issue)
-            non_comment_lines=$(grep -v '^#' "$f" | grep -v '^$' | wc -l)
+            # quando export fallisce, vedi build-android known-issue).
+            # `|| echo` evita exit di pipefail quando grep -v non matcha.
+            non_comment_lines=$( { grep -v '^#' "$f" || echo ""; } | { grep -v '^$' || echo ""; } | wc -l)
             if [ "$non_comment_lines" -eq 0 ]; then
               echo "(comment-only placeholder — skip validation)"
               continue
