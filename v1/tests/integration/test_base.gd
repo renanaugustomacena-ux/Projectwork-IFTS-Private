@@ -2,8 +2,8 @@
 ##
 ## Fornisce metodi di asserzione che il runner esterno conteggia.
 ## Ogni modulo di test extends questa classe e dichiara metodi `test_*`.
-extends Node
 class_name TestBase
+extends Node
 
 # Variables manipulated by the runner between tests.
 # Do NOT rename — runner accesses them via set()/get() reflection.

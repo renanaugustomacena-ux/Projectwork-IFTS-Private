@@ -1,5 +1,9 @@
+# gdlint: disable=max-file-lines
 ## SaveManager — Handles JSON-based persistence of all game state.
 ## Auto-saves periodically and on significant state changes.
+##
+## TODO B-033 post-demo: split helpers (_migrate, _apply_save_data,
+## HMAC utils) in save_manager/*.gd moduli per rientrare sotto 500 righe.
 extends Node
 
 const SAVE_PATH := "user://save_data.json"
@@ -8,6 +12,23 @@ const BACKUP_PATH := "user://save_data.backup.json"
 const SECRET_PATH := "user://integrity.key"
 const SAVE_VERSION := "5.0.0"
 const AUTO_SAVE_INTERVAL := 60.0
+
+# Character data (maps to CHARACTER table) — public per accesso esterno
+var character_data: Dictionary = {
+	"nome": "",
+	"genere": true,
+	"colore_occhi": 0,
+	"colore_capelli": 0,
+	"colore_pelle": 0,
+	"livello_stress": 0,
+}
+
+# Inventory data (maps to INVENTARIO table) — public per accesso esterno
+var inventory_data: Dictionary = {
+	"coins": 0,
+	"capacita": 50,
+	"items": [],
+}
 
 # Room decoration state
 var _decorations: Array = []
@@ -29,6 +50,10 @@ var _settings: Dictionary = {
 	"ambience_volume": 0.4,
 	"pet_variant": "simple",
 }
+
+var _auto_save_timer: Timer
+var _save_dirty: bool = false
+var _is_saving: bool = false
 
 
 func get_decorations() -> Array:
@@ -55,28 +80,6 @@ func get_setting(key: String, default: Variant = null) -> Variant:
 
 func get_music_state() -> Dictionary:
 	return _music_state
-
-
-# Character data (maps to CHARACTER table)
-var character_data: Dictionary = {
-	"nome": "",
-	"genere": true,
-	"colore_occhi": 0,
-	"colore_capelli": 0,
-	"colore_pelle": 0,
-	"livello_stress": 0,
-}
-
-# Inventory data (maps to INVENTARIO table)
-var inventory_data: Dictionary = {
-	"coins": 0,
-	"capacita": 50,
-	"items": [],
-}
-
-var _auto_save_timer: Timer
-var _save_dirty: bool = false
-var _is_saving: bool = false
 
 
 func _ready() -> void:
@@ -219,45 +222,51 @@ func load_game() -> void:
 
 
 func _load_from_file(path: String) -> Variant:
+	# Refactor (max-returns): parse + HMAC extraction estratti in helper.
+	var wrapper: Variant = _load_wrapper_from_disk(path)
+	if not wrapper is Dictionary:
+		return null
+	var wrapper_dict: Dictionary = wrapper
+	# New HMAC-wrapped format
+	if wrapper_dict.has("hmac") and wrapper_dict.has("data"):
+		return _extract_hmac_inner(wrapper_dict, path)
+	# Legacy format (no HMAC wrapper) — accept but will re-save with HMAC
+	return wrapper_dict
+
+
+func _load_wrapper_from_disk(path: String) -> Variant:
 	if not FileAccess.file_exists(path):
 		return null
-
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		AppLogger.error("SaveManager", "Cannot read file", {"path": path})
 		return null
-
 	var raw_text := file.get_as_text()
 	file.close()
-
 	var json := JSON.new()
-	var parse_result := json.parse(raw_text)
-	if parse_result != OK:
+	if json.parse(raw_text) != OK:
 		AppLogger.error("SaveManager", "JSON parse error", {"path": path, "line": json.get_error_line()})
 		return null
-
 	var wrapper = json.data
 	if not wrapper is Dictionary:
 		AppLogger.error("SaveManager", "Root is not Dictionary", {"path": path})
 		return null
-
-	# New HMAC-wrapped format
-	if wrapper.has("hmac") and wrapper.has("data"):
-		var stored_hmac: String = wrapper.get("hmac", "")
-		var json_string: String = wrapper.get("data", "")
-		var expected := _compute_hmac(json_string)
-		if stored_hmac != expected:
-			AppLogger.warn("SaveManager", "HMAC mismatch — save file may be tampered", {"path": path})
-			return null
-		var inner := JSON.new()
-		if inner.parse(json_string) != OK:
-			return null
-		if inner.data is Dictionary:
-			return inner.data
-		return null
-
-	# Legacy format (no HMAC wrapper) — accept but will re-save with HMAC
 	return wrapper
+
+
+func _extract_hmac_inner(wrapper: Dictionary, path: String) -> Variant:
+	var stored_hmac: String = wrapper.get("hmac", "")
+	var json_string: String = wrapper.get("data", "")
+	var expected := _compute_hmac(json_string)
+	if stored_hmac != expected:
+		AppLogger.warn("SaveManager", "HMAC mismatch — save file may be tampered", {"path": path})
+		return null
+	var inner := JSON.new()
+	if inner.parse(json_string) != OK:
+		return null
+	if inner.data is Dictionary:
+		return inner.data
+	return null
 
 
 func _apply_save_data(data: Dictionary) -> void:

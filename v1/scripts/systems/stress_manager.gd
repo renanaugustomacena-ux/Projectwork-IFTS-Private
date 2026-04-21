@@ -128,28 +128,40 @@ func _persist() -> void:
 
 
 func _compute_level(value: float, previous_level: String) -> String:
-	# Isteresi: per salire serve superare le soglie up, per scendere servono le down
+	# Isteresi: per salire serve superare le soglie up, per scendere servono le down.
+	# Split in helper per mantenere max-returns <= 6 (ogni helper ha al massimo 3).
 	match previous_level:
 		LEVEL_CALM:
-			if value >= THRESHOLD_UP_NEUTRAL:
-				if value >= THRESHOLD_UP_TENSE:
-					return LEVEL_TENSE
-				return LEVEL_NEUTRAL
-			return LEVEL_CALM
+			return _level_from_calm(value)
 		LEVEL_NEUTRAL:
-			if value >= THRESHOLD_UP_TENSE:
-				return LEVEL_TENSE
-			if value < THRESHOLD_DOWN_CALM:
-				return LEVEL_CALM
-			return LEVEL_NEUTRAL
+			return _level_from_neutral(value)
 		LEVEL_TENSE:
-			if value < THRESHOLD_DOWN_NEUTRAL:
-				if value < THRESHOLD_DOWN_CALM:
-					return LEVEL_CALM
-				return LEVEL_NEUTRAL
-			return LEVEL_TENSE
-		_:
-			return LEVEL_CALM
+			return _level_from_tense(value)
+	return LEVEL_CALM
+
+
+func _level_from_calm(value: float) -> String:
+	if value >= THRESHOLD_UP_TENSE:
+		return LEVEL_TENSE
+	if value >= THRESHOLD_UP_NEUTRAL:
+		return LEVEL_NEUTRAL
+	return LEVEL_CALM
+
+
+func _level_from_neutral(value: float) -> String:
+	if value >= THRESHOLD_UP_TENSE:
+		return LEVEL_TENSE
+	if value < THRESHOLD_DOWN_CALM:
+		return LEVEL_CALM
+	return LEVEL_NEUTRAL
+
+
+func _level_from_tense(value: float) -> String:
+	if value < THRESHOLD_DOWN_CALM:
+		return LEVEL_CALM
+	if value < THRESHOLD_DOWN_NEUTRAL:
+		return LEVEL_NEUTRAL
+	return LEVEL_TENSE
 
 
 func _lookup_mess_weight(mess_id: String) -> float:

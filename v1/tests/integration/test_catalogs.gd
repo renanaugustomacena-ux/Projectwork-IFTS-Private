@@ -1,8 +1,12 @@
+# gdlint: disable=max-public-methods
 ## test_catalogs — verifies every asset referenced in JSON catalogs loads.
 ##
 ## Copre 72 decoration sprites, 2 character scenes (+ every animation path for
 ## the directional one), 2 audio tracks, 6 mess placeholder colors, 1 room +
 ## 3 themes + hex colors.
+##
+## Test suite: una funzione per ogni case -> excedes max-public-methods by
+## design.
 extends "res://tests/integration/test_base.gd"
 
 

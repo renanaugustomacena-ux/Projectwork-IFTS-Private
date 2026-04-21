@@ -5,6 +5,7 @@ extends Node
 const VOLUME_DB_FLOOR := -80.0
 const MAX_AUDIO_FILE_SIZE := 52_428_800  # 50 MB limit for external audio imports
 
+# ---- Public state (gdlint order: pubvars before prvvars) ----
 var tracks: Array = []
 var current_track_index: int = 0
 var is_playing: bool = false
@@ -15,23 +16,21 @@ var playlist_mode: String = "shuffle":  # "sequential", "shuffle", "repeat_one"
 			value = "shuffle"
 		playlist_mode = value
 		_sync_music_state()
-
-# Active ambience sound IDs (private — use get_active_ambience() to read)
-var _active_ambience: Array = []
-
 # Volume levels (0.0 to 1.0, converted to dB for AudioStreamPlayer)
 var master_volume: float = 0.8
 var music_volume: float = 0.6
 var ambience_volume: float = 0.4
+# Stato mood per il crossfade dinamico pilotato da StressManager
+var current_mood: String = "calm"
 
+# ---- Private state ----
+# Active ambience sound IDs (use get_active_ambience() to read)
+var _active_ambience: Array = []
 var _music_player_a: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer
 var _active_player: AudioStreamPlayer
 var _crossfade_tween: Tween
 var _ambience_players: Dictionary = {}
-
-# Stato mood per il crossfade dinamico pilotato da StressManager
-var current_mood: String = "calm"
 var _mood_rng := RandomNumberGenerator.new()
 
 

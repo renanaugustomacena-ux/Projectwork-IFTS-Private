@@ -1,18 +1,29 @@
+# gdlint: disable=max-file-lines
 ## SupabaseClient — Cloud sync via Supabase REST API.
 ## Offline-first: all operations degrade gracefully when network is unavailable.
 ## Elia is actively evolving the Supabase schema — this client handles missing
 ## tables and columns without crashing.
+##
+## TODO B-033 post-demo: split auth + sync + session persistence in moduli
+## dedicati per rientrare sotto 500 righe.
 extends Node
+
+enum ConnectionState { OFFLINE, CONNECTING, ONLINE, ERROR }
 
 const ConfigScript := preload("res://scripts/utils/supabase_config.gd")
 const HttpScript := preload("res://scripts/utils/supabase_http.gd")
 const MapperScript := preload("res://scripts/utils/supabase_mapper.gd")
-
-enum ConnectionState { OFFLINE, CONNECTING, ONLINE, ERROR }
-
 const AUTH_ENDPOINT := "/auth/v1"
 const REST_ENDPOINT := "/rest/v1"
 const SESSION_PATH := "user://supabase_session.cfg"
+# B-021 exponential backoff on HTTP 429. Max cap 5 min (300_000 ms).
+const _BACKOFF_MAX_MS: int = 300_000
+# Salt per derivare chiave di cifratura dal percorso user data dir.
+# Stesso device → stessa chiave. Altro device → non riesce a decifrare.
+# Raddrizza il pattern plaintext su disco (fix B-019: token encryption).
+# Nota: non protegge da attacker che legge memoria del processo, ma blocca
+# grep banale + copia del .cfg su altro PC.
+const _SESSION_SALT := "relax-room-2026-session-v1"
 
 var connection_state: int = ConnectionState.OFFLINE
 var supabase_user_id: String = ""
@@ -25,11 +36,8 @@ var _sync_timer: Timer = null
 var _is_syncing: bool = false
 var _pending_requests: Dictionary = {}
 var _request_counter: int = 0
-
-# B-021 exponential backoff on HTTP 429. Max cap 5 min (300_000 ms).
 var _backoff_until_ms: int = 0
 var _retry_attempts: int = 0
-const _BACKOFF_MAX_MS: int = 300_000
 
 
 func _ready() -> void:
@@ -118,14 +126,8 @@ func sign_out_cloud() -> void:
 
 # ---- Session Persistence ----
 
+
 ## Derive una chiave di cifratura dal percorso user data dir + salt costante.
-## Stesso device → stessa chiave. Altro device → non riesce a decifrare.
-## Raddrizza il pattern plaintext su disco (fix B-019: token encryption).
-## Nota: non protegge da attacker che legge memoria del processo, ma blocca
-## grep banale + copia del .cfg su altro PC.
-const _SESSION_SALT := "relax-room-2026-session-v1"
-
-
 func _derive_session_key() -> String:
 	return (OS.get_user_data_dir() + _SESSION_SALT).sha256_text()
 

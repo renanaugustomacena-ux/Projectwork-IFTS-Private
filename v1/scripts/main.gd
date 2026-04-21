@@ -3,6 +3,9 @@
 extends Node2D
 
 const OVERLAY_ALPHA := 0.6
+const TUTORIAL_SCRIPT := preload("res://scripts/menu/tutorial_manager.gd")
+const TOAST_SCRIPT := preload("res://scripts/ui/toast_manager.gd")
+const GAME_HUD_SCRIPT := preload("res://scripts/ui/game_hud.gd")
 
 var _panel_manager: PanelManager
 @onready var _ui_layer: CanvasLayer = $UILayer
@@ -10,10 +13,6 @@ var _panel_manager: PanelManager
 @onready var _room_bg: Sprite2D = $RoomBackground
 @onready var _wall_rect: ColorRect = $WallRect
 @onready var _floor_rect: ColorRect = $FloorRect
-
-const TUTORIAL_SCRIPT := preload("res://scripts/menu/tutorial_manager.gd")
-const TOAST_SCRIPT := preload("res://scripts/ui/toast_manager.gd")
-const GAME_HUD_SCRIPT := preload("res://scripts/ui/game_hud.gd")
 
 
 func _ready() -> void:

@@ -5,6 +5,8 @@ extends Sprite2D
 const DRAG_THRESHOLD := 5.0
 const SCALE_STEPS := [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0]
 
+static var _active_popup_owner: Sprite2D = null
+
 var item_id: String = ""
 var base_item_scale: float = 1.0
 var deco_data: Dictionary = {}
@@ -15,8 +17,6 @@ var _click_start_pos: Vector2 = Vector2.ZERO
 var _mouse_pressed: bool = false
 var _popup_layer: CanvasLayer = null
 var _popup: PanelContainer = null
-
-static var _active_popup_owner: Sprite2D = null
 
 
 func _ready() -> void:

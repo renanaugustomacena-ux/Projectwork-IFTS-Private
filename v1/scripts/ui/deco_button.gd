@@ -23,8 +23,8 @@
 ## Meta `drag_data` settato da `deco_panel.gd._create_drag_button` contiene
 ## `item_id`, `sprite_path`, `item_scale`, `placement_type` — stesso payload
 ## che DropZone si aspetta in `_drop_data`.
-extends TextureRect
 class_name DecoButton
+extends TextureRect
 
 
 func _ready() -> void:
