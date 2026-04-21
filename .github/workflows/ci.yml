@@ -142,6 +142,21 @@ jobs:
       - name: Check v1/VERSION matches export_presets + project.godot + constants.gd
         run: python ci/validate_version_sync.py
 
+  validate-no-keystore:
+    name: "Validate no keystore tracked (Fase B guard)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Scan for *.keystore / *.jks / *.p12 / export_credentials.cfg
+        run: python ci/validate_no_keystore.py
+
   validate-signals:
     name: "Validate SignalBus Count"
     runs-on: ubuntu-22.04
