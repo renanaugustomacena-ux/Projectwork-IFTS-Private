@@ -39,6 +39,10 @@ concurrency:
   group: build-${{ github.event.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  GODOT_VERSION: "4.6"
+  PROJECT_PATH: "v1"
+
 jobs:
   ci-gate:
     name: "CI gate — verify CI passed"
@@ -59,10 +63,6 @@ jobs:
             echo "CI conclusion: ${{ github.event.workflow_run.conclusion }}"
           fi
           echo "CI gate PASS — build jobs may proceed"
-
-env:
-  GODOT_VERSION: "4.6"
-  PROJECT_PATH: "v1"
 
   build-windows:
     name: "Build Windows x64"
