@@ -191,7 +191,7 @@ jobs:
           sed -i "s|keystore/release_user=\"\"|keystore/release_user=\"${KEY_ALIAS}\"|" export_presets.cfg
           sed -i "s|keystore/release_password=\"\"|keystore/release_password=\"${KEY_PASS}\"|" export_presets.cfg
           echo "Injected release keystore paths (ALIAS+PASS redacted)"
-          grep "keystore/release=" export_presets.cfg
+          grep "keystore/release=" export_presets.cfg || echo "(grep: no match)"
 
       - name: Setup debug keystore (non-tag build)
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
@@ -220,7 +220,7 @@ jobs:
           sed -i 's|keystore/debug_user=""|keystore/debug_user="androiddebugkey"|' export_presets.cfg
           sed -i 's|keystore/debug_password=""|keystore/debug_password="android"|' export_presets.cfg
           echo "Injected debug keystore paths:"
-          grep "keystore/debug" export_presets.cfg
+          grep "keystore/debug" export_presets.cfg || echo "(grep: no match — sed may have failed silently)"
 
       - name: Configure Godot Android editor settings
         run: |
