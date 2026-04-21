@@ -182,26 +182,32 @@ jobs:
             echo "See docs/ANDROID_SIGNING.md Fase B."
             exit 1
           fi
-          printf '%s' "$KEYSTORE_B64" | base64 -d > certs/release.keystore
-          test -s certs/release.keystore
+          # Keystore dentro v1/ per poter usare res://certs/... path.
+          mkdir -p "${{ env.PROJECT_PATH }}/certs"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "${{ env.PROJECT_PATH }}/certs/release.keystore"
+          test -s "${{ env.PROJECT_PATH }}/certs/release.keystore"
           cd "${{ env.PROJECT_PATH }}"
-          # Inject release keystore into preset via sed (python3 non in
-          # barichello/godot-ci:4.6). ALIAS/PASS via env var escape-safe.
-          sed -i 's|keystore/release=""|keystore/release="res://../certs/release.keystore"|' export_presets.cfg
+          # Tag release: patch preset package/signed=true + inject release
+          # keystore path. Sed usa | come delimitatore per evitare collision
+          # con / nei path res://. ALIAS/PASS via env var escape-safe.
+          sed -i 's|package/signed=false|package/signed=true|' export_presets.cfg
+          sed -i 's|keystore/release=""|keystore/release="res://certs/release.keystore"|' export_presets.cfg
           sed -i "s|keystore/release_user=\"\"|keystore/release_user=\"${KEY_ALIAS}\"|" export_presets.cfg
           sed -i "s|keystore/release_password=\"\"|keystore/release_password=\"${KEY_PASS}\"|" export_presets.cfg
-          echo "Injected release keystore paths (ALIAS+PASS redacted)"
-          grep "keystore/release=" export_presets.cfg || echo "(grep: no match)"
+          echo "Injected release keystore config:"
+          grep -E "package/signed|keystore/release=" export_presets.cfg || echo "(grep: no match)"
 
       - name: Setup debug keystore (non-tag build)
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: |
           # barichello/godot-ci ships with debug.keystore at /root/.android/
-          mkdir -p certs ~/.android
+          # Godot editor_settings-4.6.tres punta a ~/.android/debug.keystore
+          # (vedi step successivo). Preset package/signed=false -> Godot usa
+          # editor_settings debug per firmare APK -debug.
+          mkdir -p ~/.android
           KEYSTORE_PATH="/root/.android/debug.keystore"
           if [ -f "$KEYSTORE_PATH" ]; then
             cp "$KEYSTORE_PATH" ~/.android/debug.keystore
-            cp "$KEYSTORE_PATH" certs/debug.keystore
           else
             # Fallback if container image changes
             keytool -keyalg RSA -genkeypair -alias androiddebugkey \
@@ -210,17 +216,7 @@ jobs:
               -storepass android \
               -dname "CN=Android Debug,O=Android,C=US" \
               -validity 9999 -deststoretype pkcs12
-            cp ~/.android/debug.keystore certs/debug.keystore
           fi
-          # Inject debug keystore paths nel preset (altrimenti package/signed=
-          # true con paths vuoti fa fallire il validator export). python3 non
-          # disponibile in barichello/godot-ci; uso sed POSIX.
-          cd "${{ env.PROJECT_PATH }}"
-          sed -i 's|keystore/debug=""|keystore/debug="res://../certs/debug.keystore"|' export_presets.cfg
-          sed -i 's|keystore/debug_user=""|keystore/debug_user="androiddebugkey"|' export_presets.cfg
-          sed -i 's|keystore/debug_password=""|keystore/debug_password="android"|' export_presets.cfg
-          echo "Injected debug keystore paths:"
-          grep "keystore/debug" export_presets.cfg || echo "(grep: no match — sed may have failed silently)"
 
       - name: Configure Godot Android editor settings
         run: |
@@ -309,7 +305,7 @@ jobs:
 
       - name: Cleanup keystore (always)
         if: always()
-        run: rm -f certs/release.keystore
+        run: rm -f "${{ env.PROJECT_PATH }}/certs/release.keystore"
 
   build-html5:
     name: "Build HTML5 Web"
