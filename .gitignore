@@ -44,6 +44,16 @@ TECHNICAL_GUIDE.md
 .env
 *.cfg.local
 
+# Android signing — MAI committare (vedi docs/ANDROID_SIGNING.md)
+*.keystore
+*.jks
+*.p12
+*.pfx
+keystore-credentials.properties
+keystore-credentials.env
+v1/certs/
+v1/keystore-credentials.properties
+
 # Playwright MCP (local testing tool)
 .playwright-mcp/
 
