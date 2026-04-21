@@ -17,17 +17,16 @@ var tracks_catalog: Dictionary = {}
 var mess_catalog: Dictionary = {}
 var badges_catalog: Dictionary = {}  # T-R-015d
 
+# Character selected in character_select but not yet applied (load would overwrite).
+var _pending_character: String = ""
+var _pending_outfit: String = ""
+
 
 func _ready() -> void:
 	_load_catalogs()
 	_validate_catalogs()
 	SignalBus.load_completed.connect(_on_load_completed)
 	call_deferred("_deferred_load")
-
-
-## Character selected in character_select but not yet applied (load would overwrite).
-var _pending_character: String = ""
-var _pending_outfit: String = ""
 
 
 func _deferred_load() -> void:

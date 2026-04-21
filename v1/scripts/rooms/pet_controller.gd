@@ -26,6 +26,7 @@ var _rng := RandomNumberGenerator.new()
 var _wild_mode_active: bool = false
 var _wild_redirect_timer: float = 0.0
 var _wild_direction: Vector2 = Vector2.RIGHT
+var _last_anim: String = ""
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -234,9 +235,6 @@ func _is_close_to_character() -> bool:
 
 func _random_duration() -> float:
 	return _rng.randf_range(STATE_CHANGE_MIN, STATE_CHANGE_MAX)
-
-
-var _last_anim: String = ""
 
 
 func _play_anim(anim_name: String) -> void:

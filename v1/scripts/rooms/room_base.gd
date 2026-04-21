@@ -22,12 +22,12 @@ const PET_SCENES := {
 }
 const PET_VARIANT_DEFAULT := "simple"
 
+var mess_container: Node2D
+var mess_spawner: Node  # MessSpawner instance (typed Node to avoid class_name cache staleness)
+
 @onready var decorations_container: Node2D = $Decorations
 @onready var character_node: Node2D = $Character
 @onready var _floor_bounds_node: CollisionPolygon2D = $RoomBounds/FloorBounds
-
-var mess_container: Node2D
-var mess_spawner: Node  # MessSpawner instance (typed Node to avoid class_name cache staleness)
 
 
 func _ready() -> void:
