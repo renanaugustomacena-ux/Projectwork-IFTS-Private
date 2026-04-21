@@ -210,10 +210,11 @@ jobs:
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: |
           # barichello/godot-ci ships with debug.keystore at /root/.android/
+          mkdir -p certs ~/.android
           KEYSTORE_PATH="/root/.android/debug.keystore"
-          mkdir -p ~/.android
           if [ -f "$KEYSTORE_PATH" ]; then
             cp "$KEYSTORE_PATH" ~/.android/debug.keystore
+            cp "$KEYSTORE_PATH" certs/debug.keystore
           else
             # Fallback if container image changes
             keytool -keyalg RSA -genkeypair -alias androiddebugkey \
@@ -222,7 +223,27 @@ jobs:
               -storepass android \
               -dname "CN=Android Debug,O=Android,C=US" \
               -validity 9999 -deststoretype pkcs12
+            cp ~/.android/debug.keystore certs/debug.keystore
           fi
+          # Inject debug keystore paths nel preset (altrimenti package/signed=
+          # true con paths vuoti fa fallire il validator export).
+          cd "${{ env.PROJECT_PATH }}"
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          presets = Path("export_presets.cfg")
+          text = presets.read_text(encoding="utf-8")
+          replacements = {
+              'keystore/debug=""': 'keystore/debug="res://../certs/debug.keystore"',
+              'keystore/debug_user=""': 'keystore/debug_user="androiddebugkey"',
+              'keystore/debug_password=""': 'keystore/debug_password="android"',
+          }
+          for k, v in replacements.items():
+              text = re.sub(re.escape(k), v, text, count=1)
+          presets.write_text(text, encoding="utf-8")
+          print("Injected debug keystore paths into export_presets.cfg")
+          PY
 
       - name: Configure Godot Android editor settings
         run: |
