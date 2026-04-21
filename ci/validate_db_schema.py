@@ -13,15 +13,28 @@ import sys
 
 
 def extract_create_tables_region(content):
-    """Extract the body of _create_tables() from GDScript source."""
-    # Find the start of _create_tables()
-    match = re.search(r'^func _create_tables\(\)[^:]*:', content, re.MULTILINE)
+    """Extract the body of the schema-creation function from GDScript source.
+
+    Supporta entrambi i pattern:
+    - Pre B-033: `func _create_tables()` in local_database.gd
+    - Post B-033: `static func create_all_tables(db: SQLite)` in schema.gd
+    """
+    # Cerca static func (post-split) prima, poi func (pre-split) come fallback
+    patterns = [
+        r'^static func create_all_tables\([^)]*\)[^:]*:',
+        r'^func _create_tables\(\)[^:]*:',
+    ]
+    match = None
+    for pattern in patterns:
+        match = re.search(pattern, content, re.MULTILINE)
+        if match:
+            break
     if not match:
         return None
     start = match.end()
 
-    # Find the next top-level function (line starting with 'func ')
-    next_func = re.search(r'^\nfunc ', content[start:], re.MULTILINE)
+    # Find the next top-level function (line starting with 'func ' or 'static func ')
+    next_func = re.search(r'^\n(?:static )?func ', content[start:], re.MULTILINE)
     if next_func:
         end = start + next_func.start()
     else:
@@ -31,24 +44,32 @@ def extract_create_tables_region(content):
 
 
 def extract_sql_from_execute_calls(region):
-    """Extract SQL strings from _execute(...) calls in a GDScript region.
+    """Extract SQL strings from execute(...) / _execute(...) calls.
 
-    Handles patterns like:
-        _execute("CREATE TABLE..." + "col1," + "col2" + ");")
-        _execute("CREATE TABLE...);")
+    Supporta entrambi i pattern:
+    - Pre B-033: `_execute("...")` (metodo locale)
+    - Post B-033: `DBHelpers.execute(db, "...")` (static helper)
     """
     sql_statements = []
 
-    # Find all _execute( ... ) calls — handle multiline with parenthesis nesting
-    # Strategy: find each _execute( and then collect until matching )
+    # Candidati: nuovo pattern post-split prima, legacy dopo
+    call_patterns = ["DBHelpers.execute(", "_execute("]
+
     i = 0
     while i < len(region):
-        idx = region.find("_execute(", i)
+        # Trova il primo pattern che matcha a partire da i
+        idx = -1
+        matched_pattern = None
+        for pat in call_patterns:
+            p = region.find(pat, i)
+            if p != -1 and (idx == -1 or p < idx):
+                idx = p
+                matched_pattern = pat
         if idx == -1:
             break
 
-        # Find the content between _execute( and the matching closing )
-        start = idx + len("_execute(")
+        # Find the content between pattern( and the matching closing )
+        start = idx + len(matched_pattern)
         depth = 1
         pos = start
         while pos < len(region) and depth > 0:

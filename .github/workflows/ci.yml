@@ -109,8 +109,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate SQL syntax
-        run: python ci/validate_db_schema.py v1/scripts/autoload/local_database.gd
+      - name: Validate SQL syntax (post B-033 split -> schema.gd)
+        run: python ci/validate_db_schema.py v1/scripts/autoload/database/schema.gd
 
   validate-button-focus:
     name: "Validate Button.new() focus_mode"
