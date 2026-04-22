@@ -52,10 +52,11 @@ func _build_ui() -> void:
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
-	# Language — hidden until translation files (.po) are added
+	# Language selector: visibile (.po files in v1/locale/ presenti).
+	# N.B.: la maggior parte delle stringhe UI e` italiano hardcoded, solo ~16
+	# passaggi con tr() cambiano lingua al momento. i18n completo e` WIP.
 	var lang_row := HBoxContainer.new()
 	lang_row.add_theme_constant_override("separation", 8)
-	lang_row.visible = false
 	vbox.add_child(lang_row)
 
 	var lang_label := Label.new()
@@ -165,6 +166,11 @@ func _on_ambience_changed(value: float) -> void:
 
 func _on_language_selected(index: int) -> void:
 	var lang_code: String = _language_option.get_item_metadata(index)
+	# Applica locale runtime: i nodi con auto_translate_mode = ALWAYS (default
+	# Godot 4.2+) e testo = "UI_KEY" si ri-traducono. I nodi con .text = tr()
+	# hanno gia` risolto la traduzione al momento del build → NON si aggiornano
+	# senza rebuild. i18n completo e` WIP post-demo.
+	TranslationServer.set_locale(lang_code)
 	SignalBus.settings_updated.emit("language", lang_code)
 	SignalBus.language_changed.emit(lang_code)
 	AppLogger.info("SettingsPanel", "Language changed", {"lang": lang_code})

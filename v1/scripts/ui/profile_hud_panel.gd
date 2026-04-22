@@ -248,14 +248,10 @@ func _on_settings_pressed() -> void:
 
 
 func _on_close_pressed() -> void:
-	# Trova PanelManager e chiudi direttamente — no signal bouncing.
-	var root := get_tree().root
-	var pm := root.find_child("PanelManager", true, false)
-	if pm != null and pm.has_method("close_current_panel"):
-		pm.close_current_panel()
-		return
-	# Fallback — auto-destroy se PanelManager non trovato.
-	queue_free()
+	# Re-emit profile_hud_requested: main.gd lo instrada a toggle_panel, che
+	# col pannello aperto sullo stesso nome esegue close_current_panel.
+	# Identico percorso usato dal bottone icona profilo → un solo code path.
+	SignalBus.profile_hud_requested.emit()
 
 
 func _on_mood_changed(value: float) -> void:

@@ -63,22 +63,9 @@ func _setup_graphical_loading_screen() -> void:
 			viewport.add_child(scene.instantiate())
 			_loading_screen.add_child(container)
 			return
-		push_warning("MainMenu: loading screen scene failed to load, using procedural fallback")
-	# Procedural fallback: solo Label centrata. Lo sprite `loading_people.png`
-	# e` un strip 236x19 (non chiara la frame size) che appariva flashata in
-	# alto durante la transizione breve. Meglio minimal pulito per ora; se un
-	# vero `loading_screen.tscn` sara` creato in futuro sovrascrive questo.
-	# Fix BUG-B-2: niente scene → fallback visivo decente invece di schermo nero.
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_loading_screen.add_child(center)
-	var lbl := Label.new()
-	lbl.text = "Caricamento..."
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font_size", 32)
-	lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8, 1.0))
-	center.add_child(lbl)
+	# Fallback: ColorRect pieno che fada fuori — nessuna scritta sovrapposta.
+	# Il fade ColorRect → trasparente copre gli 0.4s del caricamento iniziale.
+	_loading_screen.color = Color(0.08, 0.06, 0.10, 1.0)
 
 
 func _play_intro() -> void:
