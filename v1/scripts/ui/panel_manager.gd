@@ -79,11 +79,14 @@ func close_current_panel() -> void:
 		_current_panel_name = ""
 		return
 
+	# Se il panel corrente sta gia` fadendo out, non ri-avviare il tween:
+	# l'ulteriore click e` rumore, il panel sta gia` chiudendosi.
+	if _current_panel.get_meta("closing", false):
+		return
+
 	var closing_name := _current_panel_name
 	var closing_panel := _current_panel
-
-	_current_panel = null
-	_current_panel_name = ""
+	closing_panel.set_meta("closing", true)
 	closing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Rilascia focus esplicito se il panel che si sta chiudendo lo aveva grabbato.
@@ -101,10 +104,16 @@ func close_current_panel() -> void:
 		_tween = null
 	_tween = create_tween()
 	_tween.tween_property(closing_panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
-	_tween.tween_callback(closing_panel.queue_free)
-
-	SignalBus.panel_closed.emit(closing_name)
-	AppLogger.info("PanelManager", "Panel closed", {"name": closing_name})
+	# Clear state SOLO al termine del tween, cosi` toggle_panel durante il fade
+	# vede il panel come ancora corrente e puo` decidere close vs swap coerente.
+	_tween.tween_callback(func() -> void:
+		if _current_panel == closing_panel:
+			_current_panel = null
+			_current_panel_name = ""
+		closing_panel.queue_free()
+		SignalBus.panel_closed.emit(closing_name)
+	)
+	AppLogger.info("PanelManager", "Panel closing", {"name": closing_name})
 
 
 func is_panel_open() -> bool:
