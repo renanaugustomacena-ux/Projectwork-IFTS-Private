@@ -135,4 +135,3 @@ Usa gli asset del pack Kenney (sottocartella `9-Slice/Ancient/`).
 - [README Tecnico](../README.md) — Architettura e contenuti di gioco
 - [README Database](../data/README.md) — Cataloghi JSON che referenziano gli asset
 - [README Scene](../scenes/README.md) — Scene che utilizzano questi asset
-- [GUIDA_CRISTIAN_CICD.md](../guide/GUIDA_CRISTIAN_CICD.md) — Task 7-8: trovare nuovi asset

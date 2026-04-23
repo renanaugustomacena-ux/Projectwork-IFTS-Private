@@ -403,7 +403,8 @@ injection risk). Transazioni con ROLLBACK esplicito su error batch.
 
 - [scripts/README.md](../scripts/README.md) — moduli GDScript che interagiscono con DB
 - [addons/README.md](../addons/README.md) — godot-sqlite GDExtension
-- [guide/GUIDA_ELIA_DATABASE.md](../guide/GUIDA_ELIA_DATABASE.md) — guida operativa
-- `scripts/autoload/local_database.gd` — implementazione
+- `scripts/autoload/local_database.gd` — facade SQLite
+- `scripts/autoload/database/*` — 9 repo modulari (B-033)
 - `scripts/autoload/save_manager.gd` — JSON + HMAC + migrazioni
 - `scripts/autoload/supabase_client.gd` — cloud sync
+- [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — § 4.7 db-review
