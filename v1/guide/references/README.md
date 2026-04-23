@@ -45,8 +45,6 @@ Questo pack è **32×32**, il nostro progetto è **23×23**. Non copiare pixel: 
 
 ## Link utili (NON scaricati — vai sul browser)
 
-Tutti già elencati nella sezione 17 di `GUIDA_ALEX_PIXEL_ART.md`. I due più importanti se non hai tempo di leggerli tutti:
-
 - https://www.slynyrd.com/blog/2019/10/21/pixelblog-22-top-down-character-sprites — bibbia personaggi top-down.
 - https://bowpixel.itch.io/cat-anim-16x16-black — gatto nero 16×16 (stile quasi identico al nostro).
 
@@ -62,4 +60,5 @@ Tutti già elencati nella sezione 17 di `GUIDA_ALEX_PIXEL_ART.md`. I due più im
 
 ---
 
-Se trovi altri pack pubblici CC0 utili (OpenGameArt, itch.io "free"), aggiungili in questa cartella + aggiorna `LICENSE_NOTES.md` con la fonte e la licenza.
+Se trovi altri pack pubblici CC0 utili (OpenGameArt, itch.io "free"), aggiungili
+in questa cartella + aggiorna `LICENSE_NOTES.md` con la fonte e la licenza.

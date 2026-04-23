@@ -136,7 +136,8 @@ Questo e' il compito principale di **Cristian** (vedi Task 7 nella sua guida).
 4. **Non modificare** `data/characters.json` se i nomi file restano identici
 5. Testare in Godot: il personaggio dovrebbe muoversi con le nuove sprite
 
-Per istruzioni dettagliate passo-passo: [GUIDA_CRISTIAN_CICD.md](../../guide/GUIDA_CRISTIAN_CICD.md) Task 7.
+Per la pipeline asset (import, `.import`, reimport-all) vedi
+`.github/workflows/ci.yml` job `validate-pixelart` e `ci/validate_pixelart_deliverables.py`.
 
 ## Come Aggiungere un Secondo Personaggio
 

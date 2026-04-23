@@ -80,3 +80,8 @@ policy `USING (auth.uid() = user_id)`.
 Una volta versionato il dump, il validator `ci/validate_db_schema.py` verra`
 esteso per validare anche il SQL Supabase (sintassi Postgres + presenza RLS
 su ogni table con user_id).
+
+## Vedi anche
+
+- [v1/data/README.md](../v1/data/README.md) — schema SQLite locale (9 tabelle)
+- [AUDIT_REPORT 2026-04-23](../AUDIT_REPORT_2026-04-23.md) — § 4.7.3 supabase schema audit

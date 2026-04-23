@@ -1,14 +1,14 @@
 # Relax Room — Script GDScript
 
-**37 script GDScript** organizzati per dominio + `main.gd` root controller.
+**49 script GDScript** (~8,732 LOC) organizzati per dominio + `main.gd` root controller.
 Architettura **signal-driven**: tutta la comunicazione cross-modulo passa per
-`SignalBus` (46 segnali typed). Nessun sistema conosce gli altri direttamente.
+`SignalBus` (**48 segnali typed**). Nessun sistema conosce gli altri direttamente.
 
 ## Convenzioni
 
 - **Linguaggio codice**: inglese (variabili, funzioni, commenti inline)
 - **Documentazione**: italiano
-- **Stile**: conforme `gdtoolkit` v4 (max-line-length=120, max-function-length=50, max-file-length=500)
+- **Stile**: `gdtoolkit` v4 (max-line 120, max-function 50, max-file 500)
 - **Pattern**:
   - Signal-driven via SignalBus (`SignalBus.xxx.connect` in `_ready`, `disconnect` in `_exit_tree`)
   - Catalog-driven (contenuto in `data/*.json`, zero hardcoding)
@@ -19,251 +19,159 @@ Architettura **signal-driven**: tutta la comunicazione cross-modulo passa per
 
 ```
 scripts/
-├── autoload/                       # 8 singleton caricati da project.godot
-│   ├── signal_bus.gd                #   46 segnali typed globali
-│   ├── logger.gd                    #   JSON Lines rotating 5MB×5, crypto session ID
-│   ├── local_database.gd            #   SQLite WAL, 9 tabelle, 3 migrazioni
-│   ├── auth_manager.gd              #   Guest + user/pass PBKDF2 v2, rate limit
+├── autoload/                       # 10 core singleton caricati da project.godot
+│   ├── signal_bus.gd                #   48 segnali typed globali
+│   ├── logger.gd                    #   JSONL rotating 5MB×5, crypto session ID
+│   ├── local_database.gd            #   SQLite WAL facade, 9 tabelle, delega ai 9 repo
+│   ├── auth_manager.gd              #   Guest + user/pass iterated-SHA-256 v3
 │   ├── game_manager.gd              #   Stato di gioco + catalog loading JSON
 │   ├── save_manager.gd              #   Save JSON v5 + HMAC + backup atomic
 │   ├── supabase_client.gd           #   REST cloud sync HTTPS-only, session encrypt
-│   └── audio_manager.gd             #   Dual-player crossfade 2s, mood-driven switch
-├── systems/                        # 3 autoload di sistemi + 1 runtime-instanced
+│   ├── audio_manager.gd             #   Dual-player crossfade 2s, mood-driven switch
+│   ├── mood_manager.gd              #   Overlay gloomy + rain + pet WILD FSM
+│   └── badge_manager.gd             #   Badge catalog + SQLite table badges_unlocked
+├── autoload/database/              # 9 repo modulari (B-033 split)
+│   ├── schema.gd                    #   CREATE TABLE + migrations
+│   ├── db_helpers.gd                #   execute / execute_bound / select wrapper
+│   ├── accounts_repo.gd             #   accounts CRUD + soft delete
+│   ├── badges_repo.gd               #   badges_unlocked INSERT OR IGNORE
+│   ├── characters_repo.gd           #   characters upsert + get
+│   ├── inventory_repo.gd            #   inventario DELETE+INSERT (vedi audit 4.1.16)
+│   ├── rooms_deco_repo.gd           #   rooms + placed_decorations dual-storage
+│   ├── settings_repo.gd             #   key-value settings + music_state
+│   └── sync_queue_repo.gd           #   sync_queue enqueue / pending
+├── systems/                        # 3 autoload di sistemi
 │   ├── performance_manager.gd       #   FPS cap 60/15, window pos persistence
 │   ├── stress_manager.gd            #   Stress 0..1 con isteresi, 3 livelli, decay 2%/min
-│   └── mess_spawner.gd              #   MessSpawner classe istanziata da RoomBase
+│   └── mess_spawner.gd              #   MessSpawner class istanziata da RoomBase
 ├── rooms/                          # Logica stanza + runtime gameplay
 │   ├── room_base.gd                 #   Spawn decorazioni, character swap, pet, mess container
 │   ├── decoration_system.gd         #   Popup R/F/S/X su CanvasLayer 100, drag, snap grid
 │   ├── character_controller.gd      #   Movimento WASD 120 px/s + animazioni 8 direzioni
-│   ├── pet_controller.gd            #   FSM 5 stati (IDLE/WANDER/FOLLOW/SLEEP/PLAY)
+│   ├── pet_controller.gd            #   FSM 6 stati (IDLE/WANDER/FOLLOW/SLEEP/PLAY/WILD)
 │   ├── window_background.gd         #   Parallasse 8 layer foresta Eder Muniz
-│   ├── room_grid.gd                 #   Grid 64px overlay visual (edit mode)
+│   ├── room_grid.gd                 #   Grid 64px overlay (edit mode)
 │   └── mess_node.gd                 #   Area2D mess cleanable interagente
-├── menu/                           # Menu principale + auth + tutorial
-│   ├── main_menu.gd                 #   Loading + 5 bottoni (skip char_select se 1 char)
+├── menu/                           # Menu + auth + tutorial
+│   ├── main_menu.gd                 #   Loading + 5 bottoni
 │   ├── auth_screen.gd               #   Login/register/guest overlay programmatico
-│   ├── character_select.gd          #   Preview carousel char (attualmente bypassed)
-│   ├── menu_character.gd            #   Walk-in animato male_old al menu
-│   └── tutorial_manager.gd          #   9 step scripted signal-driven (422 righe)
+│   ├── character_select.gd          #   Preview carousel char
+│   ├── menu_character.gd            #   Walk-in animato male_old
+│   └── tutorial_manager.gd          #   9 step scripted signal-driven
 ├── ui/                             # Pannelli UI + HUD + overlay
 │   ├── panel_manager.gd             #   Lifecycle 4 panel (deco/settings/profile/profile_hud)
 │   ├── deco_panel.gd                #   Catalog browser con DecoButton drag sources
 │   ├── deco_button.gd               #   TextureRect subclass con _get_drag_data override
-│   ├── settings_panel.gd            #   Volume sliders + lang selector (nascosto pre-i18n)
+│   ├── settings_panel.gd            #   Volume sliders + lang selector
 │   ├── profile_panel.gd             #   Account info + delete char/account buttons
 │   ├── profile_hud_panel.gd         #   Mini panel top-right con mood slider + lang toggle
 │   ├── drop_zone.gd                 #   Control full-rect, _drop_data emette decoration_placed
-│   ├── game_hud.gd                  #   CanvasLayer 50 con serenity bar + coin + profile btn
+│   ├── game_hud.gd                  #   CanvasLayer 50: serenity bar + coin + profile btn
 │   └── toast_manager.gd             #   CanvasLayer 90 con VBox container (IGNORE!)
 ├── utils/                          # Utilità condivise
-│   ├── constants.gd                 #   class_name Constants: FPS, viewport, auth, lang, crossfade
-│   ├── helpers.gd                   #   class_name Helpers: snap_to_grid, clamp_inside_floor, HMAC-related
-│   ├── supabase_config.gd           #   load/validate url HTTPS + anon_key da user://config.cfg
+│   ├── constants.gd                 #   class_name Constants: FPS, viewport, auth, lang
+│   ├── helpers.gd                   #   class_name Helpers: snap_to_grid, clamp_inside_floor
+│   ├── supabase_config.gd           #   load/validate url HTTPS + anon_key
 │   ├── supabase_http.gd             #   HTTP pool (3 concurrent), queue cap 500
 │   └── supabase_mapper.gd           #   local ↔ cloud field mapping bidirectional
 └── main.gd                         # Controller scena gameplay, HUD wiring, tutorial launch
 ```
 
-## Autoload singleton (10, ordine critico)
+## Autoload singleton (12 core, ordine critico)
 
-Caricati in ordine da `project.godot` `[autoload]`. Ognuno può dipendere solo
-dai precedenti:
+Caricati in ordine da `project.godot` `[autoload]`:
 
-| # | Nome | Script | Responsabilità | Deps |
-|---|------|--------|----------------|------|
-| 1 | `SignalBus` | `autoload/signal_bus.gd` | 46 segnali globali typed | — |
-| 2 | `AppLogger` | `autoload/logger.gd` | JSONL + session ID crypto | — |
-| 3 | `LocalDatabase` | `autoload/local_database.gd` | SQLite + migrazioni | SignalBus, AppLogger |
-| 4 | `AuthManager` | `autoload/auth_manager.gd` | Auth locale + rate limit | LocalDatabase, SignalBus |
-| 5 | `GameManager` | `autoload/game_manager.gd` | Catalog loading + state | SignalBus, AuthManager |
-| 6 | `SaveManager` | `autoload/save_manager.gd` | JSON v5 + HMAC | SignalBus, AuthManager, GameManager |
-| 7 | `SupabaseClient` | `autoload/supabase_client.gd` | Cloud sync (off default) | AuthManager, SaveManager |
-| 8 | `AudioManager` | `autoload/audio_manager.gd` | Music + mood switch | SignalBus, GameManager, SaveManager |
-| 9 | `PerformanceManager` | `systems/performance_manager.gd` | FPS cap + window pos | SignalBus, SaveManager |
-| 10 | `StressManager` | `systems/stress_manager.gd` | Stress FSM + decay | SignalBus, GameManager, SaveManager |
+| # | Nome | Script | Deps |
+|---|------|--------|------|
+| 1 | `SignalBus` | `autoload/signal_bus.gd` | — |
+| 2 | `AppLogger` | `autoload/logger.gd` | — |
+| 3 | `LocalDatabase` | `autoload/local_database.gd` | SignalBus, AppLogger |
+| 4 | `AuthManager` | `autoload/auth_manager.gd` | LocalDatabase, SignalBus |
+| 5 | `GameManager` | `autoload/game_manager.gd` | SignalBus, AuthManager |
+| 6 | `SaveManager` | `autoload/save_manager.gd` | SignalBus, AuthManager, GameManager |
+| 7 | `SupabaseClient` | `autoload/supabase_client.gd` | AuthManager, SaveManager |
+| 8 | `AudioManager` | `autoload/audio_manager.gd` | SignalBus, GameManager, SaveManager |
+| 9 | `PerformanceManager` | `systems/performance_manager.gd` | SignalBus, SaveManager |
+| 10 | `StressManager` | `systems/stress_manager.gd` | SignalBus, GameManager, SaveManager |
+| 11 | `MoodManager` | `autoload/mood_manager.gd` | SignalBus, StressManager |
+| 12 | `BadgeManager` | `autoload/badge_manager.gd` | SignalBus, LocalDatabase |
 
-**Nota**: `PerformanceManager` e `StressManager` sono in `systems/` non
-`autoload/` per organizzazione logica, ma sono tutti caricati come autoload
-via `project.godot`.
+**Nota crypto** (audit 4.4.1): AuthManager usa un costrutto SHA-256 iterato con salt+password concatenati. L'etichetta "PBKDF2" nei commenti **non** corrisponde a RFC 2898. Migrazione a PBKDF2-HMAC-SHA256 vero pianificata pre-v1.1.
 
-## SignalBus — 46 segnali typed
+## SignalBus — 48 segnali typed
 
-14 domini. Ogni segnale è **typed** (parametri con type hints). Categorie:
+48 signal confermati via `rg -c "^signal " signal_bus.gd`. Raggruppati per dominio: Room (4) · Character (5) · Audio (4) · Decoration mode (5) · UI (3) · Save/Load (3) · Settings (4) · Auth (5) · Cloud (4) · Stress/Mood (3) · Mess (2) · Economy (1) · Profile HUD (3) · Badges (2).
 
-### Room (4)
-
-- `room_changed(room_id: String, theme: String)`
-- `decoration_placed(item_id: String, position: Vector2)`
-- `decoration_removed(item_id: String)`
-- `decoration_moved(item_id: String, new_position: Vector2)`
-
-### Character (5)
-
-- `character_changed(character_id: String)`
-- `interaction_available(item_id: String, interaction_type: String)`
-- `interaction_unavailable`
-- `interaction_started(item_id: String, interaction_type: String)`
-- `outfit_changed(outfit_id: String)`
-
-### Audio (4)
-
-- `track_changed(track_index: int)`
-- `track_play_pause_toggled(is_playing: bool)`
-- `ambience_toggled(ambience_id: String, is_active: bool)`
-- `volume_changed(bus_name: String, volume: float)`
-
-### Decoration mode (5)
-
-- `decoration_mode_changed(active: bool)`
-- `decoration_selected(item_id: String)`
-- `decoration_deselected`
-- `decoration_rotated(item_id: String, rotation_deg: float)`
-- `decoration_scaled(item_id: String, new_scale: float)`
-
-### UI (3)
-
-- `panel_opened(panel_name: String)`
-- `panel_closed(panel_name: String)`
-- `toast_requested(message: String, toast_type: String)`
-
-### Save/Load (3)
-
-- `save_requested`
-- `save_completed`
-- `load_completed`
-
-### Settings (4)
-
-- `settings_updated(key: String, value: Variant)`
-- `music_state_updated(state: Dictionary)`
-- `save_to_database_requested(data: Dictionary)`
-- `language_changed(lang_code: String)`
-
-### Auth (5)
-
-- `auth_state_changed(state: int)`
-- `auth_error(message: String)`
-- `account_created(account_id: int)`
-- `account_deleted`
-- `character_deleted`
-
-### Cloud (4)
-
-- `sync_started`
-- `sync_completed(success: bool)`
-- `cloud_auth_completed(success: bool)`
-- `cloud_connection_changed(state: int)`
-
-### Stress / Mood (3)
-
-- `stress_changed(stress_value: float, level: String)`
-- `stress_threshold_crossed(level: String)`
-- `mood_changed(mood: String)` (listened by AudioManager for track switch)
-
-### Mess (2)
-
-- `mess_spawned(mess_id: String, mess_position: Vector2)`
-- `mess_cleaned(mess_id: String)`
-
-### Economy (1)
-
-- `coins_changed(delta: int, total: int)`
-
-### Profile HUD (3, feature T-R-015)
-
-- `profile_hud_requested` (emitted by GameHud profile_btn click)
-- `profile_hud_closed` (bridge to settings from profile_hud_panel)
-- `mood_level_changed(mood: float)` (0.0=gloomy/stormy, 1.0=cozy)
-
-**Totale: 46 signals**, verificato da `ci/validate_signal_count.py` (floor 40).
+> **Audit 4.3**: solo 1 signal è di tipo errore (`auth_error`). Nessun `save_failed`, `save_integrity_violation`, `sync_error`, `db_error`. Propagation gap HIGH — vedi `AUDIT_REPORT_2026-04-23.md` § 4.3.
 
 ---
 
 ## Dettaglio moduli chiave
 
-### `autoload/signal_bus.gd` (80 righe)
+### `autoload/signal_bus.gd` (~85 L)
 
-Dichiarazioni signal solo, no logic. Docstring header + raggruppamento logico
-per commenti. Nessun `_ready`/`_exit_tree` — è puro namespace per segnali.
+Dichiarazioni signal solo, no logic. Commenti raggruppano per dominio.
 
-### `autoload/local_database.gd` (831 righe)
+### `autoload/local_database.gd` (323 L)
 
-SQLite CRUD completo per 9 tabelle. Migrations idempotenti con backup pre-DROP
-(fix B-015). `BEGIN TRANSACTION / COMMIT / ROLLBACK` in `_on_save_requested`
-per atomicity. Query parametrizzate ovunque (zero SQL injection). WAL mode +
-foreign_keys ON + busy_timeout=5000ms (B-026).
+Facade SQLite. Delega ai 9 repo in `autoload/database/`. `PRAGMA journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`. Transaction wrapper in `_on_save_requested` (vedi audit 4.1.4 per BEGIN/COMMIT return-check finding).
 
-### `autoload/save_manager.gd` (523 righe)
+### `autoload/save_manager.gd` (535 L)
 
-JSON v5.0.0 + HMAC-SHA256 integrity. Atomic write: temp → rename. Backup pre-overwrite.
-Migrazione chain v1 → v5. Auto-save Timer 60s. Dual-save signal emesso ma SQLite
-writer dual-write incompleto (B-016).
+JSON v5.0.0 + HMAC-SHA256. Atomic write: temp → rename + copy fallback. Backup pre-overwrite. Migrazione chain v1→v5. Auto-save Timer 60 s. Vedi audit 4.1.2 per 4 HIGH finding sul path rename/copy + HMAC loss.
 
-### `autoload/auth_manager.gd` (193 righe)
+### `autoload/auth_manager.gd` (217 L)
 
-State machine (LOGGED_OUT / GUEST / AUTHENTICATED). PBKDF2-v2 format
-`v2:salt_hex:hash_hex` con 10.000 iterazioni SHA-256. Legacy hash auto-migration
-su login. Rate limit 5 fail / 300s lockout.
+State machine (LOGGED_OUT / GUEST / AUTHENTICATED). Format hash `v3:iter:salt_hex:hash_hex` (100 k iter). Legacy v2/v1 auto-migration on login. Rate limit 5 fail / 300 s lockout (in-memory — audit 4.4.2 HIGH).
 
-### `autoload/supabase_client.gd` (499 righe)
+### `autoload/supabase_client.gd` (547 L)
 
-REST client con `HTTPRequest` pool (via `supabase_http.gd`). Token JWT+refresh
-cifrati via `ConfigFile.save_encrypted_pass` con chiave device-local (B-019).
-HTTPS-only validation (B-020). Sync cycle 120s. Graceful degradation su schema
-changes cloud (ignores 404 + `relation does not exist`).
+REST client via `supabase_http.gd`. Token JWT+refresh cifrati `ConfigFile.save_encrypted_pass`. HTTPS-only validation. Backoff exp su 429, cap 300 s. Schema-changes-tolerant (ignora 404 + "relation does not exist"). Vedi audit 4.1.1 per 3 HIGH + 5 MEDIUM.
 
-### `autoload/audio_manager.gd` (425 righe)
+### `autoload/audio_manager.gd` (473 L)
 
-Dual-player crossfade pattern: `_music_player_a/_b`, `_active_player`, tween.
-Ascolta `mood_changed` per sceglier track con matching mood array e crossfadare.
-MP3 da `user://` manualmente caricato via `AudioStreamMP3.data`. Max 50MB import.
+Dual-player crossfade: `_music_player_a/_b`, `_active_player`, tween. Ascolta `mood_changed` per track switch. Max 50 MB import OGG/WAV.
 
-### `systems/stress_manager.gd` (169 righe)
+### `autoload/mood_manager.gd` (~150 L)
 
-Stress continuo clamp 0..1 + livelli discreti con **isteresi**:
+Overlay gloomy (alpha + CanvasModulate) + rain particles scene + pet WILD FSM trigger + audio crossfade coordination.
+
+### `autoload/badge_manager.gd` (~90 L)
+
+Carica `data/badges.json`, ascolta eventi di gioco (decorations_placed, mood_changes, stormy_mood, play_time). Unlocks persistiti in SQLite.
+
+### `systems/stress_manager.gd` (181 L)
+
+Stress continuo 0.0–1.0 + livelli discreti con **isteresi**:
 
 - Up: calm→neutral @ 0.35, neutral→tense @ 0.60
 - Down: tense→neutral @ 0.50, neutral→calm @ 0.25
 
 Decay passivo `0.02 / 60.0 * delta` per secondo. Persist a `character_data.livello_stress` int 0-100.
 
-### `rooms/room_base.gd` (325 righe)
+### `rooms/room_base.gd` (303 L)
 
-Idempotency guard in `_on_character_changed` (previene character duplication
-B-001). Null guard + viewport-center fallback in `_spawn_pet`. Telemetry logs
-su ogni decoration placed/moved per debug.
+Idempotency guard in `_on_character_changed` (previene character duplication B-001). Null guard + viewport-center fallback in `_spawn_pet`. Vedi audit 4.1.8 per 1 HIGH + 2 MEDIUM.
 
-### `rooms/pet_controller.gd` (226 righe)
+### `rooms/pet_controller.gd` (268 L)
 
-FSM completo:
-- IDLE → WANDER (~55% chance dopo timer) / FOLLOW (se char >120px) / SLEEP (dopo 120s idle, 30% chance)
-- WANDER → IDLE (se target raggiunto o 6s timeout)
-- FOLLOW → IDLE (se <40px char distance) / continues following
-- SLEEP → IDLE (15s timeout) / PLAY (se char <60px)
-- PLAY → FOLLOW (dopo 3s bounce)
+FSM 6 stati: IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD (stormy mood). Breathing scale pulse in SLEEP. Bounce animation in PLAY. Vedi audit 4.1.10 per WILD out-of-bounds finding.
 
-Breathing scale pulse in SLEEP (sin wave 1.5Hz, ±3%). Bounce animation in PLAY.
+### `ui/panel_manager.gd` (~175 L)
 
-### `ui/panel_manager.gd` (165 righe)
+Scene cache per evitare re-load. Fade-in/out tween 0.3 s. `gui_release_focus()` su close (fix B-001 focus chain blocking movement). Esc handler via `_unhandled_input`. Mutual exclusion fra pannelli.
 
-Scene cache per evitare re-load. Fade-in/out tween 0.3s. `gui_release_focus()`
-su close (fix B-001 focus chain blocking movement). Esc handler via
-`_unhandled_input`. Mutual exclusion: apri B quando A già aperto → close A
-immediate + open B.
+### `ui/deco_button.gd` (~50 L)
 
-### `ui/deco_button.gd` (46 righe)
+`extends TextureRect` (critico: non Button — Button `_pressing_inside` rompe drag detection Godot 4). Override `_get_drag_data` ritorna drag_data Dict da meta + `set_drag_preview`.
 
-`extends TextureRect` (NON Button, critical — Button `_pressing_inside`
-interferisce con drag detection Godot 4). Override `_get_drag_data` ritorna
-drag_data Dict da meta + `set_drag_preview(TextureRect)`.
+### `ui/toast_manager.gd` (~155 L)
 
-### `ui/toast_manager.gd` (152 righe)
+CanvasLayer 90. `_container.mouse_filter = IGNORE` (critico: STOP blocca click in upper-right quadrant coprendo deco panel + profile_hud). Toast IGNORE + auto-dismiss 3 s. Metodi (no lambda) per evitare zombie callbacks (B-011).
 
-CanvasLayer layer=90. `_container.mouse_filter = IGNORE` (critical — default
-STOP blocca clicks in upper-right quadrant coprendo deco panel + profile_hud
-fix 2026-04-17). Toast panels IGNORE + auto-dismiss 3s. Metodi (NO lambda) per
-evitare zombie callbacks (B-011).
+### `menu/tutorial_manager.gd` (376 L)
+
+9 step scripted. Step state machine con filter su SignalBus. Vedi audit 4.1.6 per connection-accumulation e cap-10 findings.
 
 ---
 
@@ -272,12 +180,12 @@ evitare zombie callbacks (B-011).
 1. **Never extend Button as drag source** — usa `TextureRect` o `MarginContainer`.
 2. **`_ready` connects → `_exit_tree` disconnects** symmetrically per ogni signal.
 3. **`class_name` cache è inaffidabile** — usa `preload("path.gd")` + confronto `get_script()` invece di `is ClassName`.
-4. **Decoration anchor = bottom-center** (sprites NOT centered, vedi `decoration_system._floor_anchor_offset`).
-5. **Floor polygon è source of truth** per clamping movement/placement. Viewport rect deprecato.
-6. **Focus management**: script-created Button senza `focus_mode = FOCUS_NONE` → blocca movement character (ui_* input captured).
-7. **CanvasLayer Control input routing**: ogni VBox/HBox/MarginContainer full-rect DEVE avere `mouse_filter = IGNORE` se non deve intercettare clicks.
-8. **HMAC key stability**: non cambiare path `user://integrity.key` (tutti i save esistenti diventerebbero invalidi).
-9. **Catalog loading order**: GameManager.`_load_catalogs()` prima di ogni accesso. `GameManager._ready()` chiama tutti i 5 loader.
+4. **Decoration anchor = bottom-center** (`decoration_system._floor_anchor_offset`).
+5. **Floor polygon = source of truth** per clamping movement/placement.
+6. **Focus management**: script-created Button senza `focus_mode = FOCUS_NONE` → blocca movement character.
+7. **CanvasLayer Control input routing**: VBox/HBox/MarginContainer full-rect DEVE avere `mouse_filter = IGNORE` se non deve intercettare click.
+8. **`user://integrity.key` immutabile**: cambiare path invalida tutti i save esistenti.
+9. **Catalog loading order**: `GameManager._load_catalogs()` prima di ogni accesso.
 10. **Async test pattern**: `await callable.call()` funziona per sync + async methods in Godot 4.
 
 ---
@@ -288,5 +196,4 @@ evitare zombie callbacks (B-011).
 - [README data](../data/README.md) — schema SQLite + cataloghi JSON
 - [README scenes](../scenes/README.md) — scene Godot (.tscn)
 - [README tests](../tests/README.md) — 112 test harness
-- [guide/GUIDA_RENAN_GAMEPLAY_UI.md](../guide/GUIDA_RENAN_GAMEPLAY_UI.md) — guida operativa runtime+UI
-- [docs/DEEP_READ_REGISTRY_2026-04-16.md](../docs/DEEP_READ_REGISTRY_2026-04-16.md) — source of truth post-audit
+- [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità

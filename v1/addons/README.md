@@ -80,4 +80,4 @@ Decisione USE/REMOVE pending post-demo (B-023 open in backlog).
 
 - [README data](../data/README.md) — schema 9 tabelle SQLite + cataloghi JSON
 - [README scripts](../scripts/README.md) — `autoload/local_database.gd` + `autoload/supabase_client.gd`
-- [GUIDA_ELIA_DATABASE.md](../guide/GUIDA_ELIA_DATABASE.md) — guida operativa DB
+- [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — § 4.11.1 addon dependency audit

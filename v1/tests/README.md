@@ -128,5 +128,6 @@ scene full spawn, isteresi edge cases** — e non richiede dipendenze esterne.
 ## Vedi anche
 
 - [README scripts](../scripts/README.md) — moduli testati
-- [GUIDA_CRISTIAN_CICD.md](../guide/GUIDA_CRISTIAN_CICD.md) — CI jobs + test integration
+- `.github/workflows/ci.yml` — job `smoke-headless` + `deep-tests`
 - `scripts/deep_test.sh`, `scripts/preflight.sh`, `scripts/godot-validate.sh` — tooling
+- [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità

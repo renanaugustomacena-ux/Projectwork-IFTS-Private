@@ -1,7 +1,8 @@
 # Relax Room — Scene Godot
 
-**17 scene** `.tscn` che definiscono le gerarchie di nodi, composizione componenti
-e layout UI. Le scene vivono accanto ai loro script in `v1/scripts/*/`.
+**22 scene** `.tscn` + **1 theme resource** `.tres` (`assets/ui/cozy_theme.tres`).
+Le scene definiscono le gerarchie di nodi, composizione componenti e layout UI.
+Vivono accanto ai loro script in `v1/scripts/*/`.
 
 ## Struttura directory
 
@@ -182,7 +183,7 @@ In main.tscn:
 
 ## Vedi anche
 
-- [README scripts](../scripts/README.md) — 37 script GDScript attaccati alle scene
+- [README scripts](../scripts/README.md) — 49 script GDScript attaccati alle scene
 - [README v1](../README.md) — architettura + autoload + scene tree dettagliato
 - [README assets](../assets/README.md) — sprite + audio usati dalle scene
-- [docs/DEEP_READ_REGISTRY_2026-04-16.md](../docs/DEEP_READ_REGISTRY_2026-04-16.md) — analisi integrale scene
+- [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità
