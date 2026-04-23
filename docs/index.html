@@ -11,15 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
+    <!-- Lucide Icons (pinned) -->
+    <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js" crossorigin="anonymous"></script>
+
     <!-- Particles.js -->
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" crossorigin="anonymous"></script>
+
     <!-- AOS Animation Library -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" crossorigin="anonymous"></script>
     
     <link rel="stylesheet" href="style.css">
     <!-- Prevent flash of wrong theme -->
@@ -97,7 +97,7 @@
             <div class="hero-content" data-aos="fade-up" data-aos-duration="800">
                 <div class="hero-badge">
                     <i data-lucide="star" class="badge-icon"></i>
-                    <span>Project Work IFTS 2026</span>
+                    <span>Project Work IFTS 2026 · v1.0.0</span>
                 </div>
                 
                 <h1 class="hero-title">
@@ -122,7 +122,7 @@
             
             <div class="hero-image" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
                 <div class="hero-image-glow"></div>
-                <img src="https://static.prod-images.emergentagent.com/jobs/65fd861e-d54d-45a0-9015-f372d001031b/images/34d254e2ee874e04c6c35ca57068c2404fabb898c8b149a26af4a36da648635a.png" alt="Cozy Pixel Art Room" class="floating-image">
+                <img src="assets/hero.png" alt="Cozy Pixel Art Room" class="floating-image" loading="eager" fetchpriority="high">
             </div>
         </div>
         
@@ -178,7 +178,7 @@
                 </div>
                 
                 <div class="vision-card vision-card-image" data-aos="fade-up" data-aos-delay="500">
-                    <img src="https://static.prod-images.emergentagent.com/jobs/65fd861e-d54d-45a0-9015-f372d001031b/images/6e25a2caefec0464790e4c5b3aaa13ba567bc4ad0d223a7aeb7945702266bc99.png" alt="Pixel Art Cat" class="vision-mascot">
+                    <img src="assets/mascot.png" alt="Pixel Art Cat" class="vision-mascot" loading="lazy">
                 </div>
             </div>
             
@@ -332,26 +332,27 @@
             <div class="download-content" data-aos="fade-up">
                 <h2 class="download-title">Prova Relax Room</h2>
                 <p class="download-subtitle">
-                    Versione Windows Desktop e Web già disponibili. Android APK in arrivo (build in corso).
+                    Build v1.0.0-demo via GitHub Actions. Windows + Web disponibili; Android in arrivo in v1.1.
                 </p>
 
                 <div class="download-buttons">
-                    <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/releases/latest" target="_blank" rel="noopener" class="btn btn-download">
+                    <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/releases/download/v1.0.0-demo/RelaxRoom-Windows-v1.0.zip" class="btn btn-download" download>
                         <i data-lucide="monitor"></i>
-                        Windows (.exe) — Demo
+                        Windows (.zip) — 52 MB
                     </a>
-                    <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/releases/latest" target="_blank" rel="noopener" class="btn btn-download">
+                    <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/releases/download/v1.0.0-demo/RelaxRoom-Web-v1.0.zip" class="btn btn-download" download>
                         <i data-lucide="globe"></i>
-                        Web (HTML5) — Demo
+                        Web HTML5 (.zip) — 25 MB
                     </a>
                     <button type="button" class="btn btn-download disabled" disabled aria-disabled="true" title="APK in build — disponibile a breve">
                         <i data-lucide="lock"></i>
-                        Android (.apk) — Coming Soon
+                        Android (.apk) — Coming in v1.1
                     </button>
                 </div>
 
                 <p class="download-note" style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">
                     Windows: estrai lo zip e lancia RelaxRoom.exe. Web: apri index.html in Chrome/Firefox. Nessun account obbligatorio.
+                    Tutte le versioni sono anche sulla pagina <a href="https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/releases/latest" target="_blank" rel="noopener">GitHub Releases</a>.
                 </p>
             </div>
         </div>
