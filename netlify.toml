@@ -1,0 +1,35 @@
+[build]
+publish = "docs"
+command = ""
+
+[build.environment]
+NODE_VERSION = "20"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[redirects]]
+  from = "/releases"
+  to = "https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/releases/latest"
+  status = 302
+
+[[redirects]]
+  from = "/github"
+  to = "https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private"
+  status = 302
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
