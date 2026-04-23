@@ -15,7 +15,7 @@ func test_decorations_catalog_size() -> void:
 	var decos: Array = catalog.get("decorations", [])
 	# Current state: 129 decorations (72 original + 57 kenney_furniture_cc0
 	# added 2026-04-17). If this changes intentionally, update the assertion
-	# AND the docs (README, speech, pptx, DEEP_READ_REGISTRY).
+	# AND the relevant READMEs + CHANGELOG.
 	assert_eq(decos.size(), 129, "decoration count changed — update docs if intentional")
 
 

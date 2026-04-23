@@ -83,7 +83,7 @@ def main() -> int:
     print("  3. Commit the removal")
     print("  4. If keystore file: TREAT AS COMPROMISED — rotate via")
     print("     scripts/generate_keystores.sh + update GitHub Secrets.")
-    print("     See docs/ANDROID_SIGNING.md §9 (incident response).")
+    print("     See CHANGELOG.md Security section for keystore handling.")
     return 1
 
 

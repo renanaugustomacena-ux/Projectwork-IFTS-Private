@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # scripts/generate_keystores.sh
-# Genera debug + release keystore per Android signing (Fase B, plan
-# BUILD_RELEASE_PLAN.md §3).
+# Genera debug + release keystore per Android signing.
+# Per il flusso completo vedi .github/workflows/build.yml (job build-android)
+# e CHANGELOG.md (sezione Security).
 #
 # IMPORTANTE:
 # - Esegue UNA SOLA VOLTA per computer

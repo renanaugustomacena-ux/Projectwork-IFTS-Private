@@ -5,8 +5,7 @@ Usage: extract_changelog.py v1.0.0
        extract_changelog.py 1.0.0  (with/without v prefix)
 
 Output su stdout: markdown della sezione, pronto per GitHub Release body.
-
-Fase E del piano BUILD_RELEASE_PLAN §6.
+Invoked by .github/workflows/release.yml when a tag v*.*.* is pushed.
 """
 
 from __future__ import annotations
