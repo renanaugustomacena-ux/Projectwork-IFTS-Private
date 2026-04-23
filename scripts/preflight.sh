@@ -148,10 +148,6 @@ echo ""
 
 echo "[8] Presentation artifacts"
 check "pptx presentazione presente" "test -f Mini-Cozy-Room-Presentazione-Progetto.pptx"
-check "speech_renan presente" "test -f v1/docs/speech_renan.md"
-check "speech_elia presente" "test -f v1/docs/speech_elia.md"
-check "speech_cristian presente" "test -f v1/docs/speech_cristian.md"
-check "speech_esteso presente" "test -f v1/docs/speech_esteso.md"
 echo ""
 
 echo "==============================="
@@ -160,7 +156,7 @@ if [ "$FAIL" -eq 0 ]; then
     echo ""
     echo "Prossimi step consigliati:"
     echo "  1. godot4 --path v1/  — test manuale GUI per validazione finale"
-    echo "  2. Rileggi FIX_SUMMARY_2026-04-16.md"
+    echo "  2. Rileggi CHANGELOG.md (sezione corrente) + AUDIT_REPORT_*.md"
     echo "  3. Apri Mini-Cozy-Room-Presentazione-Progetto.pptx per verifica slide"
     exit 0
 else
