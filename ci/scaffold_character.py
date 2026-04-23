@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Create empty folder structure for a new character deliverable.
 
-Run once per character (Task 2 / Task 3 of GUIDA_ALEX_PIXEL_ART.md) after Renan
-and Alex have agreed on the character name. The validator
+Run once per character after the character name is agreed. The validator
 (ci/validate_pixelart_deliverables.py) will then check that the expected PNGs
 and .aseprite sources land inside this structure.
 

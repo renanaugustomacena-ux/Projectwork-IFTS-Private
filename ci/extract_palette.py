@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Extract shared palette from male/old PNGs into a GIMP .gpl file.
 
-Automates Task 1 of v1/guide/GUIDA_ALEX_PIXEL_ART.md.
 Scans every non-transparent pixel in v1/assets/charachters/male/old/**/*.png,
 collects unique RGB tuples, writes v1/assets/palette/palette_projectwork.gpl.
+
+Used by the pixel-art asset validator (ci/validate_pixelart_deliverables.py).
 
 Usage: python ci/extract_palette.py [--check]
   --check  exit non-zero if palette file is missing or stale vs sources

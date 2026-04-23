@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate pixel-art deliverables per v1/guide/GUIDA_ALEX_PIXEL_ART.md.
+"""Validate pixel-art deliverables for the Relax Room character pipeline.
 
 Checks:
   - Each character folder contains idle/walk/interact/rotate PNG with correct size.
