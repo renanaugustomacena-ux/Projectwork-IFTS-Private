@@ -22,6 +22,10 @@ mono_crash.*.json
 
 # CI/CD build artifacts
 export/
+dist/
+
+# LibreOffice lock files
+.~lock.*#
 
 # Old project scaffold (non necessario)
 projectwork/
