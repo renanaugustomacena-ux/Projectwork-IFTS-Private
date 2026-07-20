@@ -58,7 +58,9 @@ static func currency_to_cloud(
 	return {
 		"user_id": supabase_uid,
 		"coins": account.get("coins", 0),
-		"total_earned": account.get("coins", 0),  # TODO: track lifetime earnings separately (needs DB column)
+		# F.2: lifetime earnings tracked by BadgeManager (settings counter),
+		# with the current balance as fallback for profiles created before it.
+		"total_earned": _lifetime_earned(account),
 		"updated_at": Time.get_datetime_string_from_system(),
 	}
 
@@ -90,6 +92,7 @@ static func music_to_cloud(
 		"updated_at": Time.get_datetime_string_from_system(),
 	}
 
+
 # inventory_to_cloud removed (Phase E): dead code with zero call sites and no
 # matching table in supabase/schema.sql, violating the mapper<->schema parity
 # contract. Re-add together with its table when inventory push sync lands.
@@ -98,3 +101,16 @@ static func music_to_cloud(
 # implementata. Quando servirà, reintrodurre con logica specifica di
 # conflict resolution (LWW vs CRDT) invece di copia cieca. Vedi git
 # history di questo file per il pattern precedente.
+
+
+## Monete guadagnate nella vita del profilo. Il contatore vive in
+## BadgeManager (settings persistiti); se e` a zero — profilo antecedente
+## all'introduzione del contatore — si usa il saldo corrente.
+static func _lifetime_earned(account: Dictionary) -> int:
+	var current: int = int(account.get("coins", 0))
+	var manager: Node = Engine.get_main_loop().root.get_node_or_null("/root/BadgeManager")
+	if manager != null and manager.has_method("get_lifetime_coins_earned"):
+		var lifetime: int = int(manager.call("get_lifetime_coins_earned"))
+		if lifetime > 0:
+			return maxi(lifetime, current)
+	return current

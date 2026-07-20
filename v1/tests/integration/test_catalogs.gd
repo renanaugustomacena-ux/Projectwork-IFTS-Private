@@ -112,9 +112,18 @@ func test_decoration_item_scale_positive() -> void:
 
 
 func test_characters_catalog_size() -> void:
-	# Currently 1 playable character (male_old). Female moved out of project
-	# on 2026-04-17 pending proper aseprite creation.
-	assert_eq(GameManager.characters_catalog.get("characters", []).size(), 1)
+	# Il conteggio esatto non e` piu` un invariante: aggiungere un personaggio
+	# e` un'operazione di soli dati (F.3). Quello che deve valere e` che ogni
+	# entry sia selezionabile davvero — id presente e scena caricabile.
+	var characters: Array = GameManager.characters_catalog.get("characters", [])
+	assert_true(characters.size() >= 1, "at least one playable character")
+	for entry in characters:
+		assert_true(entry is Dictionary, "character entry must be a Dictionary")
+		var id: String = str(entry.get("id", ""))
+		assert_false(id.is_empty(), "character entry must carry an id")
+		var scene_path: String = str(entry.get("scene", ""))
+		assert_false(scene_path.is_empty(), "character '%s' must declare a scene" % id)
+		assert_true(ResourceLoader.exists(scene_path), "character '%s' scene must exist" % id)
 
 
 func test_male_old_all_sprites_load() -> void:

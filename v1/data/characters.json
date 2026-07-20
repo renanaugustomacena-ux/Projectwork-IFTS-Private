@@ -38,7 +38,53 @@
 					"up_side_sx": "res://assets/charachters/male/old/male_interact/male_interact_up_side_sx.png"
 				},
 				"rotate": "res://assets/charachters/male/old/male_rotate/male_rotate.png"
-			}
+			},
+			"scene": "res://scenes/male-old-character.tscn",
+			"name_it": "Ragazzo Classico",
+			"name_en": "Classic Guy"
+		},
+		{
+			"id": "male_rose",
+			"name": "Ragazzo Rosa",
+			"gender": "male",
+			"sprite_path": "res://assets/charachters/male/male_rose/male_idle/male_idle_down.png",
+			"sprite_type": "directional",
+			"animations": {
+				"idle": {
+					"down": "res://assets/charachters/male/male_rose/male_idle/male_idle_down.png",
+					"down_side": "res://assets/charachters/male/male_rose/male_idle/male_idle_down_side.png",
+					"down_side_sx": "res://assets/charachters/male/male_rose/male_idle/male_idle_down_side_sx.png",
+					"side": "res://assets/charachters/male/male_rose/male_idle/male_idle_side.png",
+					"side_sx": "res://assets/charachters/male/male_rose/male_idle/male_idle_side_sx.png",
+					"up": "res://assets/charachters/male/male_rose/male_idle/male_idle_up.png",
+					"up_side": "res://assets/charachters/male/male_rose/male_idle/male_idle_up_side.png",
+					"up_side_sx": "res://assets/charachters/male/male_rose/male_idle/male_idle_up_side_sx.png"
+				},
+				"walk": {
+					"down": "res://assets/charachters/male/male_rose/male_walk/male_walk_down.png",
+					"down_side": "res://assets/charachters/male/male_rose/male_walk/male_walk_down_side.png",
+					"down_side_sx": "res://assets/charachters/male/male_rose/male_walk/male_walk_down_side_sx.png",
+					"side": "res://assets/charachters/male/male_rose/male_walk/male_walk_side.png",
+					"side_sx": "res://assets/charachters/male/male_rose/male_walk/male_walk_side_sx.png",
+					"up": "res://assets/charachters/male/male_rose/male_walk/male_walk_up.png",
+					"up_side": "res://assets/charachters/male/male_rose/male_walk/male_walk_up_side.png",
+					"up_side_sx": "res://assets/charachters/male/male_rose/male_walk/male_walk_up_side_sx.png"
+				},
+				"interact": {
+					"down": "res://assets/charachters/male/male_rose/male_interact/male_interact_down.png",
+					"down_side": "res://assets/charachters/male/male_rose/male_interact/male_interact_down_side.png",
+					"down_side_sx": "res://assets/charachters/male/male_rose/male_interact/male_interact_down_side_sx.png",
+					"side": "res://assets/charachters/male/male_rose/male_interact/male_interact_side.png",
+					"side_sx": "res://assets/charachters/male/male_rose/male_interact/male_interact_side_sx.png",
+					"up": "res://assets/charachters/male/male_rose/male_interact/male_interact_up.png",
+					"up_side": "res://assets/charachters/male/male_rose/male_interact/male_interact_up_side.png",
+					"up_side_sx": "res://assets/charachters/male/male_rose/male_interact/male_interact_up_side_sx.png"
+				},
+				"rotate": "res://assets/charachters/male/male_rose/male_rotate/male_rotate.png"
+			},
+			"scene": "res://scenes/male-rose-character.tscn",
+			"name_it": "Ragazzo Rosa",
+			"name_en": "Rose Guy"
 		}
 	]
 }

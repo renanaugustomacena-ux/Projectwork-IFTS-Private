@@ -63,6 +63,12 @@ var _settings: Dictionary = {
 	"pet_variant": "simple",
 	"window_pos_x": -1,
 	"window_pos_y": -1,
+	# F.2 lifetime badge counters: cumulative across sessions, so the 25/100
+	# decoration badges and total_earned no longer drift with session-only
+	# proxies. Written by BadgeManager through settings_updated.
+	"stat_decos_placed_total": 0,
+	"stat_coins_earned_total": 0,
+	"stat_play_time_total": 0,
 }
 
 var _auto_save_timer: Timer

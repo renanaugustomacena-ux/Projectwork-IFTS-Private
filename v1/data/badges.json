@@ -9,7 +9,11 @@
 				"type": "decorations_placed",
 				"threshold": 1
 			},
-			"icon_path": "res://assets/menu/ui/badges/first_decor.png"
+			"icon_path": "res://assets/menu/ui/badges/first_decor.png",
+			"name_it": "Primo Arredo",
+			"name_en": "First Decoration",
+			"description_it": "Piazza la tua prima decorazione nella stanza",
+			"description_en": "Place your first decoration in the room"
 		},
 		{
 			"id": "cozy_collector",
@@ -20,7 +24,11 @@
 				"type": "decorations_placed",
 				"threshold": 25
 			},
-			"icon_path": "res://assets/menu/ui/badges/cozy_collector.png"
+			"icon_path": "res://assets/menu/ui/badges/cozy_collector.png",
+			"name_it": "Collezionista Cozy",
+			"name_en": "Cozy Collector",
+			"description_it": "Piazza 25 decorazioni in totale",
+			"description_en": "Place 25 decorations in total"
 		},
 		{
 			"id": "interior_designer",
@@ -31,7 +39,11 @@
 				"type": "decorations_placed",
 				"threshold": 100
 			},
-			"icon_path": "res://assets/menu/ui/badges/interior_designer.png"
+			"icon_path": "res://assets/menu/ui/badges/interior_designer.png",
+			"name_it": "Interior Designer",
+			"name_en": "Interior Designer",
+			"description_it": "Piazza 100 decorazioni in totale",
+			"description_en": "Place 100 decorations in total"
 		},
 		{
 			"id": "mood_explorer",
@@ -42,7 +54,11 @@
 				"type": "mood_changes",
 				"threshold": 10
 			},
-			"icon_path": "res://assets/menu/ui/badges/mood_explorer.png"
+			"icon_path": "res://assets/menu/ui/badges/mood_explorer.png",
+			"name_it": "Esploratore Mood",
+			"name_en": "Mood Explorer",
+			"description_it": "Cambia il mood slider 10 volte",
+			"description_en": "Change the mood slider 10 times"
 		},
 		{
 			"id": "storm_survivor",
@@ -53,18 +69,26 @@
 				"type": "stormy_mood",
 				"threshold": 1
 			},
-			"icon_path": "res://assets/menu/ui/badges/storm_survivor.png"
+			"icon_path": "res://assets/menu/ui/badges/storm_survivor.png",
+			"name_it": "Superstite Tempesta",
+			"name_en": "Storm Survivor",
+			"description_it": "Attiva la modalita` stormy (mood < 10%)",
+			"description_en": "Reach stormy mood (below 10%)"
 		},
 		{
 			"id": "night_owl",
 			"name": "Nottambulo",
-			"description": "Gioca per 30 minuti consecutivi",
+			"description": "Gioca per 30 minuti in totale",
 			"icon": "🦉",
 			"condition": {
 				"type": "play_time_seconds",
 				"threshold": 1800
 			},
-			"icon_path": "res://assets/menu/ui/badges/night_owl.png"
+			"icon_path": "res://assets/menu/ui/badges/night_owl.png",
+			"name_it": "Nottambulo",
+			"name_en": "Night Owl",
+			"description_it": "Gioca per 30 minuti in totale",
+			"description_en": "Play for 30 minutes in total"
 		}
 	]
 }

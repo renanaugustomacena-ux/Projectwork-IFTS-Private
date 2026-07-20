@@ -168,3 +168,37 @@ static func _polygon_centroid(poly: PackedVector2Array) -> Vector2:
 	for p in poly:
 		sum += p
 	return sum / float(poly.size())
+
+
+## Etichetta localizzata di una entry di catalogo. Cerca prima i campi
+## specifici per lingua (label_it/label_en, name_it/name_en), poi ricade su
+## label, name e infine id: cosi` un catalogo monolingua continua a funzionare
+## mentre quelli bilingui seguono la lingua attiva.
+static func locale_label(entry: Dictionary) -> String:
+	if entry.is_empty():
+		return ""
+	var suffix := "_en"
+	if TranslationServer.get_locale().begins_with("it"):
+		suffix = "_it"
+	for base in ["label", "name", "title"]:
+		var localized: String = str(entry.get(base + suffix, ""))
+		if not localized.is_empty():
+			return localized
+	for base in ["label", "name", "title"]:
+		var generic: String = str(entry.get(base, ""))
+		if not generic.is_empty():
+			return generic
+	return str(entry.get("id", ""))
+
+
+## Descrizione localizzata (stessa strategia di locale_label).
+static func locale_description(entry: Dictionary) -> String:
+	if entry.is_empty():
+		return ""
+	var suffix := "_en"
+	if TranslationServer.get_locale().begins_with("it"):
+		suffix = "_it"
+	var localized: String = str(entry.get("description" + suffix, ""))
+	if not localized.is_empty():
+		return localized
+	return str(entry.get("description", ""))

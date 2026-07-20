@@ -6,16 +6,18 @@ signal character_selected(character_id: String)
 
 const CHARACTER_SCENE := "res://scenes/menu/character_select.tscn"
 
-## Available characters — must match CHARACTER_SCENES in room_base.gd.
-## Currently only 1 character (male_old). character_select screen
-## may be bypassed by main_menu.gd when size() == 1.
-const CHARACTERS := [
+## Fallback usato solo se il catalogo e` illeggibile: la lista reale arriva
+## da data/characters.json (campo "scene" per entry), cosi` aggiungere un
+## personaggio e` un'operazione di soli dati.
+const CHARACTERS_FALLBACK := [
 	{
 		"id": "male_old",
 		"name": "Ragazzo Classico",
 		"scene": "res://scenes/male-old-character.tscn",
 	},
 ]
+
+var _characters: Array = []
 
 var _current_index: int = 0
 var _preview_node: Node = null
@@ -29,8 +31,28 @@ var _tween: Tween = null
 
 
 func _ready() -> void:
+	_load_characters()
 	_build_ui()
 	_show_character(_current_index)
+
+
+## Catalogo -> lista di scelta. Scarta le entry senza id o senza scena
+## esistente: meglio una scelta in meno che un bottone che non avvia nulla.
+func _load_characters() -> void:
+	_characters = []
+	var catalog: Array = GameManager.characters_catalog.get("characters", [])
+	for entry in catalog:
+		if not (entry is Dictionary):
+			continue
+		var id: String = str(entry.get("id", ""))
+		var scene_path: String = str(entry.get("scene", ""))
+		if id.is_empty() or scene_path.is_empty() or not ResourceLoader.exists(scene_path):
+			AppLogger.warn("CharacterSelect", "character_entry_skipped", {"id": id, "scene": scene_path})
+			continue
+		_characters.append({"id": id, "name": Helpers.locale_label(entry), "scene": scene_path})
+	if _characters.is_empty():
+		AppLogger.error("CharacterSelect", "catalog_unusable_using_fallback")
+		_characters = CHARACTERS_FALLBACK.duplicate(true)
 
 
 func _build_ui() -> void:
@@ -55,7 +77,7 @@ func _build_ui() -> void:
 
 	# Title
 	_title_label = Label.new()
-	_title_label.text = "Scegli il tuo Personaggio"
+	_title_label.text = tr("UI_CHARSEL_TITLE")
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 28)
 	_title_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7, 1.0))
@@ -132,7 +154,7 @@ func _build_ui() -> void:
 	# Start button
 	_start_btn = Button.new()
 	_start_btn.focus_mode = Control.FOCUS_ALL  # keyboard nav (Enter)
-	_start_btn.text = "Inizia a Giocare"
+	_start_btn.text = tr("UI_CHARSEL_CONFIRM")
 	_start_btn.custom_minimum_size = Vector2(200, 48)
 	_start_btn.pressed.connect(_on_start)
 	var start_container := CenterContainer.new()
@@ -141,17 +163,17 @@ func _build_ui() -> void:
 
 
 func _on_prev() -> void:
-	_current_index = ((_current_index - 1 + CHARACTERS.size()) % CHARACTERS.size())
+	_current_index = ((_current_index - 1 + _characters.size()) % _characters.size())
 	_show_character(_current_index)
 
 
 func _on_next() -> void:
-	_current_index = (_current_index + 1) % CHARACTERS.size()
+	_current_index = (_current_index + 1) % _characters.size()
 	_show_character(_current_index)
 
 
 func _on_start() -> void:
-	var char_data: Dictionary = CHARACTERS[_current_index]
+	var char_data: Dictionary = _characters[_current_index]
 	var char_id: String = char_data["id"]
 	GameManager.current_character_id = char_id
 	character_selected.emit(char_id)
@@ -164,9 +186,9 @@ func _show_character(index: int) -> void:
 	for child in _preview_node.get_children():
 		child.queue_free()
 
-	var char_data: Dictionary = CHARACTERS[index]
-	_name_label.text = char_data["name"]
-	_counter_label.text = "%d / %d" % [index + 1, CHARACTERS.size()]
+	var char_data: Dictionary = _characters[index]
+	_name_label.text = str(char_data.get("name", char_data.get("id", "")))
+	_counter_label.text = "%d / %d" % [index + 1, _characters.size()]
 
 	var scene := load(char_data["scene"]) as PackedScene
 	if scene == null:

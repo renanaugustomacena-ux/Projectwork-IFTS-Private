@@ -132,3 +132,10 @@ msgstr "Edit"
 
 msgid "UI_DECO_MODE_DISABLE"
 msgstr "Done"
+
+# Character select
+msgid "UI_CHARSEL_TITLE"
+msgstr "Choose your character"
+
+msgid "UI_CHARSEL_CONFIRM"
+msgstr "Start playing"

@@ -12,8 +12,12 @@ const INTERACTION_PADDING := 8.0
 ## Distance the character is pushed past a decoration edge when nudged away.
 const NUDGE_MARGIN := 20.0
 
+## Fallback: la mappa reale id -> scena arriva dal catalogo
+## (data/characters.json, campo "scene"), cosi` un personaggio nuovo si
+## aggiunge senza toccare il codice.
 const CHARACTER_SCENES := {
 	"male_old": "res://scenes/male-old-character.tscn",
+	"male_rose": "res://scenes/male-rose-character.tscn",
 }
 
 ## Pet variants. The active one is selected via SaveManager setting "pet_variant"
@@ -67,8 +71,24 @@ func _on_load_completed() -> void:
 	_reload_decorations()
 
 
+## Percorso scena del personaggio: prima il catalogo (dato), poi la mappa
+## di fallback nel codice. Restituisce "" se nessuna delle due ha una scena
+## caricabile, cosi` il chiamante puo` segnalare l'errore invece di crashare.
+func _resolve_character_scene(character_id: String) -> String:
+	for entry in GameManager.characters_catalog.get("characters", []):
+		if entry is Dictionary and str(entry.get("id", "")) == character_id:
+			var path: String = str(entry.get("scene", ""))
+			if not path.is_empty() and ResourceLoader.exists(path):
+				return path
+			break
+	var fallback: String = CHARACTER_SCENES.get(character_id, "")
+	if not fallback.is_empty() and ResourceLoader.exists(fallback):
+		return fallback
+	return ""
+
+
 func _on_character_changed(character_id: String) -> void:
-	var scene_path: String = CHARACTER_SCENES.get(character_id, "")
+	var scene_path: String = _resolve_character_scene(character_id)
 	if scene_path.is_empty():
 		push_warning("RoomBase: no scene for character '%s'" % character_id)
 		return

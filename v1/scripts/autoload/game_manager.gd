@@ -135,7 +135,9 @@ func _find_room(room_id: String) -> Dictionary:
 	return {}
 
 
-# TODO: Phase 5 — add character selection UI and outfit system
+# La selezione personaggio e` implementata (menu/character_select.gd, guidata
+# dal catalogo data/characters.json). Il sistema outfit resta fuori ambito per
+# v1.1: il parametro e` accettato e propagato ma nessun catalogo lo popola.
 func change_character(character_id: String, outfit_id: String = "") -> void:
 	current_character_id = character_id
 	if outfit_id != "":
