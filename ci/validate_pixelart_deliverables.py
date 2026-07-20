@@ -75,6 +75,13 @@ def png_palette_violations(p: Path, allowed: set[tuple[int, int, int]]) -> set[t
 
 def check_character(folder: Path, errors: list[str], warnings: list[str], palette: set | None) -> None:
     name = folder.name
+    # I set derivati (ricolorazioni generate da un altro personaggio) non
+    # hanno una sorgente .aseprite propria e rispecchiano la struttura di
+    # cartelle dell'originale: il marcatore DERIVED.md lo dichiara e li fa
+    # verificare solo sulla palette, che resta un vincolo reale.
+    if (folder / "DERIVED.md").is_file():
+        check_derived_character(folder, errors, warnings, palette)
+        return
     if not NAME_RE.match(name):
         errors.append(f"{folder}: name '{name}' violates lowercase_underscore convention")
 
@@ -105,6 +112,21 @@ def check_character(folder: Path, errors: list[str], warnings: list[str], palett
     extra = set(found_pngs) - {f"{name}_{a}" for a in CHAR_ANIMS}
     for stem in sorted(extra):
         warnings.append(f"{folder}: unexpected PNG '{stem}.png' (not in idle/walk/interact/rotate)")
+
+
+def check_derived_character(folder: Path, errors: list[str], warnings: list[str], palette: set | None) -> None:
+    """Set derivato: deve avere PNG e rispettare la palette, niente sorgenti."""
+    pngs = [p for p in folder.rglob("*.png") if not p.name.endswith(".import")]
+    if not pngs:
+        errors.append(f"{folder}: derived character folder has no PNG")
+        return
+    for png in pngs:
+        if palette is None:
+            continue
+        bad = png_palette_violations(png, palette)
+        if bad:
+            sample = ", ".join(f"#{r:02x}{g:02x}{b:02x}" for r, g, b in list(bad)[:3])
+            warnings.append(f"{png.relative_to(REPO_ROOT)}: {len(bad)} colors outside palette ({sample}...)")
 
 
 def check_pets(errors: list[str], warnings: list[str], palette: set | None) -> None:
