@@ -93,3 +93,8 @@ files/
 /DioB.png
 /DioC.png
 /cozyico.png
+
+# Deck/render leftovers (not game content)
+_render/
+_render_orig/
+*.original.pptx
