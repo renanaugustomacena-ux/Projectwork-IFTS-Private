@@ -37,14 +37,21 @@ signal save_requested
 signal save_completed
 signal load_completed
 
+# Failure vocabulary (Phase C) — error propagation for save/db/sync/catalog.
+# Wired to user-visible toasts in main.gd.
+signal save_failed(reason: String)
+signal save_integrity_violation(path: String)
+signal save_integrity_unavailable
+signal sync_error(operation: String, reason: String)
+signal sync_payload_corrupted(queue_id: int, preview: String)
+signal catalog_load_failed(path: String, reason: String)
+signal db_error(context: String, reason: String)
+
 # Settings update signal (replaces direct writes to SaveManager.settings)
 signal settings_updated(key: String, value: Variant)
 
 # Music state signal (replaces direct write to SaveManager.music_state)
 signal music_state_updated(state: Dictionary)
-
-# Database persistence signal (replaces direct calls to LocalDatabase)
-signal save_to_database_requested(data: Dictionary)
 
 # Settings signals
 signal language_changed(lang_code: String)

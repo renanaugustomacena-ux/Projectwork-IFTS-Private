@@ -9,6 +9,17 @@ extends Node
 const SAVE_PATH := "user://save_data.json"
 const TEMP_PATH := "user://save_data.tmp.json"
 const BACKUP_PATH := "user://save_data.backup.json"
+# 4.13.2: 3-deep backup ring, newest first. Each successful save shifts
+# .backup.json -> .backup.2.json -> .backup.3.json (oldest dropped).
+const BACKUP_RING: Array[String] = [
+	BACKUP_PATH,
+	"user://save_data.backup.2.json",
+	"user://save_data.backup.3.json",
+]
+# 4.13.3: save files from a newer app version are parked here, never applied.
+const NEWER_SAVE_PATH := "user://save_data.newer.json"
+# 4.1.2-L381: write-once snapshot of a malformed v3 inventory before reset.
+const V3_PRESERVED_PATH := "user://save_data.v3_preserved.json"
 const SECRET_PATH := "user://integrity.key"
 const SAVE_VERSION := "5.0.0"
 const AUTO_SAVE_INTERVAL := 60.0
@@ -36,11 +47,12 @@ var _decorations: Array = []
 # Music state
 var _music_state: Dictionary = {
 	"current_track_index": 0,
-	"playlist_mode": "shuffle",
+	"playlist_mode": Constants.DEFAULT_PLAYLIST_MODE,
 	"active_ambience": [],
 }
 
-# Settings
+# Settings. window_pos_x/y must be listed here: _apply_save_data whitelists
+# on these keys, so a missing default silently drops the loaded value.
 var _settings: Dictionary = {
 	"language": "en",
 	"display_mode": "windowed",
@@ -49,11 +61,21 @@ var _settings: Dictionary = {
 	"music_volume": 0.6,
 	"ambience_volume": 0.4,
 	"pet_variant": "simple",
+	"window_pos_x": -1,
+	"window_pos_y": -1,
 }
 
 var _auto_save_timer: Timer
 var _save_dirty: bool = false
 var _is_saving: bool = false
+# 4.8.2-savemanager-latch: dirty/save requests landing while _is_saving queue
+# exactly one follow-up save that runs right after the current one completes.
+var _flush_queued: bool = false
+var _integrity_key_cache := PackedByteArray()
+# E.2 quit-after-save-confirmed: WM_CLOSE latch + gave-up marker (see
+# _final_save_and_quit for the retry/force-quit contract).
+var _quit_requested: bool = false
+var _quit_save_failed_once: bool = false
 
 
 func get_decorations() -> Array:
@@ -83,6 +105,10 @@ func get_music_state() -> Dictionary:
 
 
 func _ready() -> void:
+	# 4.1.2-L533-async: the OS close request must not tear the process down
+	# while save I/O is in flight — we quit ourselves after the final save.
+	# Explicit get_tree().quit() calls (test runner, menus) are unaffected.
+	get_tree().set_auto_accept_quit(false)
 	_auto_save_timer = Timer.new()
 	_auto_save_timer.wait_time = AUTO_SAVE_INTERVAL
 	_auto_save_timer.autostart = true
@@ -91,10 +117,62 @@ func _ready() -> void:
 	SignalBus.save_requested.connect(_mark_dirty)
 	SignalBus.settings_updated.connect(_on_settings_updated)
 	SignalBus.music_state_updated.connect(_on_music_state_updated)
+	_adopt_orphan_temp()
+
+
+func _adopt_orphan_temp() -> void:
+	# 4.8.3-orphan-temp: a crash between temp-write and rename leaves a newer,
+	# HMAC-valid save at TEMP_PATH that would otherwise be ignored forever.
+	# Adopt it as primary when it verifies and the primary is missing/invalid;
+	# otherwise drop it so it cannot shadow future saves.
+	if not FileAccess.file_exists(TEMP_PATH):
+		return
+	if _get_integrity_key().is_empty():
+		# Verification impossible — NOT proof the temp is bad. Leave it: the
+		# next save_game() truncates TEMP_PATH anyway, so it cannot go stale.
+		AppLogger.warn("SaveManager", "Orphan temp save found but integrity key unavailable, left in place")
+		return
+	if not _is_wrapper_hmac_valid(TEMP_PATH):
+		AppLogger.warn("SaveManager", "Removing invalid orphan temp save")
+		_remove_temp_file()
+		return
+	if FileAccess.file_exists(SAVE_PATH) and _is_wrapper_hmac_valid(SAVE_PATH):
+		# Healthy primary wins; the temp is leftover from a completed save.
+		_remove_temp_file()
+		return
+	if FileAccess.file_exists(SAVE_PATH):
+		# Invalid primary: move it aside for forensics before adopting.
+		_quarantine_file(SAVE_PATH)
+	var err := DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(TEMP_PATH), ProjectSettings.globalize_path(SAVE_PATH)
+	)
+	if err != OK:
+		# Temp kept on disk: next boot retries, next save truncates it.
+		AppLogger.error("SaveManager", "Orphan temp adoption failed", {"errore": err})
+		return
+	AppLogger.warn("SaveManager", "Adopted orphan temp save as primary")
+
+
+func _is_wrapper_hmac_valid(path: String) -> bool:
+	# Non-destructive HMAC probe: unlike _load_from_file it never quarantines
+	# and never emits signals — used for boot-time adoption decisions only.
+	var wrapper: Variant = _load_wrapper_from_disk(path)
+	if not wrapper is Dictionary:
+		return false
+	var wrapper_dict: Dictionary = wrapper
+	if not (wrapper_dict.has("hmac") and wrapper_dict.has("data")):
+		return false
+	var stored_hmac := str(wrapper_dict.get("hmac", ""))
+	var payload := str(wrapper_dict.get("data", ""))
+	return stored_hmac == _compute_hmac(payload)
 
 
 func _mark_dirty() -> void:
 	_save_dirty = true
+	if _is_saving:
+		# 4.8.2: dirty landed mid-save (e.g. via LocalDatabase side effects);
+		# chain one follow-up save instead of waiting AUTO_SAVE_INTERVAL.
+		_flush_queued = true
 
 
 func _on_settings_updated(key: String, value: Variant) -> void:
@@ -115,12 +193,72 @@ func _on_auto_save() -> void:
 
 func save_game() -> void:
 	if _is_saving:
-		AppLogger.warn("SaveManager", "Salvataggio gia' in corso, skip")
+		# 4.1.2-L533-reentry: don't drop the request — queue a follow-up save
+		# so the state that triggered this call is persisted right after.
+		AppLogger.warn("SaveManager", "Salvataggio gia' in corso, follow-up accodato")
+		_flush_queued = true
 		return
 
 	_is_saving = true
 
-	var save_data := {
+	# Refuse to sign with a key that could not be persisted: the next boot
+	# would regenerate a different key and orphan every HMAC-signed save.
+	if _get_integrity_key().is_empty():
+		AppLogger.error("SaveManager", "Integrity key unavailable, save aborted")
+		SignalBus.save_integrity_unavailable.emit()
+		_fail_save("integrity_key")
+		return
+
+	# Atomic write: write to temp file first, then rename
+	var json_string := JSON.stringify(_build_save_data(), "\t")
+	var hmac := _compute_hmac(json_string)
+	if not _write_temp_file({"data": json_string, "hmac": hmac}):
+		_fail_save("temp_write")
+		return
+
+	# Backup existing save before overwrite — abort if no durable backup
+	if not _backup_primary():
+		_remove_temp_file()
+		_fail_save("backup")
+		return
+
+	# Rename temp → primary (atomic), retried, with verified copy fallback
+	var promote_reason := _promote_temp_to_primary(hmac)
+	if promote_reason != "":
+		_fail_save(promote_reason)
+		return
+
+	# Secondary: synchronous SQLite mirror — must succeed for save_completed
+	if not LocalDatabase.apply_save(_build_db_payload()):
+		_fail_save("db_mirror")
+		return
+
+	_is_saving = false
+	SignalBus.save_completed.emit()
+	if _flush_queued:
+		# 4.8.2/4.1.2-L533-reentry: exactly one synchronous follow-up save.
+		# Synchronous (not deferred) so the WM_CLOSE final-save path flushes
+		# queued state before quit; the flag is consumed first, so a single
+		# queued request can never loop.
+		_flush_queued = false
+		_save_dirty = false
+		save_game()
+
+
+func _fail_save(reason: String) -> void:
+	# Failure contract (C.2): exactly one save_failed per failed save_game()
+	# call, never save_completed. Re-mark dirty so the next auto-save retries.
+	# The queued-flush flag is dropped too: _save_dirty already guarantees a
+	# retry, and an immediate re-run would most likely hit the same failure.
+	AppLogger.error("SaveManager", "save_failed", {"reason": reason})
+	_is_saving = false
+	_save_dirty = true
+	_flush_queued = false
+	SignalBus.save_failed.emit(reason)
+
+
+func _build_save_data() -> Dictionary:
+	return {
 		"version": SAVE_VERSION,
 		"last_saved": Time.get_datetime_string_from_system(),
 		"account":
@@ -145,80 +283,258 @@ func save_game() -> void:
 		"inventory": inventory_data,
 	}
 
-	# Atomic write: write to temp file first, then rename
-	var json_string := JSON.stringify(save_data, "\t")
-	var hmac := _compute_hmac(json_string)
-	var wrapper := {"data": json_string, "hmac": hmac}
+
+func _write_temp_file(wrapper: Dictionary) -> bool:
 	var file := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("SaveManager: cannot write temp file (error: %s)" % FileAccess.get_open_error())
-		_is_saving = false
-		return
+		return false
 	file.store_string(JSON.stringify(wrapper, "\t"))
+	# flush() BEFORE get_error(): FileAccess is buffered, so disk-full/I-O
+	# errors only surface once the buffer actually hits the filesystem.
+	file.flush()
+	var werr := file.get_error()
 	file.close()
+	if werr != OK:
+		AppLogger.error("SaveManager", "Temp write failed", {"errore": werr})
+		_remove_temp_file()
+		return false
+	return true
 
-	# Backup existing save before overwrite
-	if FileAccess.file_exists(SAVE_PATH):
-		var src := ProjectSettings.globalize_path(SAVE_PATH)
-		var dst := ProjectSettings.globalize_path(BACKUP_PATH)
-		var err := DirAccess.copy_absolute(src, dst)
+
+func _backup_primary() -> bool:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return true
+	if not _is_wrapper_hmac_valid(SAVE_PATH):
+		# An invalid primary must NEVER enter the backup ring: with a stuck
+		# primary (e.g. Windows read-share lock blocking rename), repeated
+		# failed saves would rotate the only good backup off the ring and
+		# refill every slot with corrupt copies. Quarantine it instead —
+		# there is nothing valid to back up, so the save may proceed.
+		AppLogger.warn("SaveManager", "Primary save invalid, quarantining instead of backing up")
+		_quarantine_file(SAVE_PATH)
+		return true
+	if not _rotate_backup_ring():
+		# Slot 1 still holds the previous backup (the .backup -> .2 shift
+		# failed). Overwriting it would clobber the only surviving copy of
+		# the older state; keep it and skip this cycle's fresh copy.
+		AppLogger.warn("SaveManager", "Backup slot 1 not clear after rotation, keeping existing backup")
+		return true
+	var src := ProjectSettings.globalize_path(SAVE_PATH)
+	var dst := ProjectSettings.globalize_path(BACKUP_PATH)
+	var err := DirAccess.copy_absolute(src, dst)
+	if err != OK:
+		AppLogger.error("SaveManager", "Backup fallito, save annullato", {"errore": err, "src": src, "dst": dst})
+		return false
+	return true
+
+
+func _rotate_backup_ring() -> bool:
+	# 4.13.2: oldest-first shift — .2 -> .3 (previous .3 dropped), then
+	# .backup -> .2 — before the fresh primary copy lands in .backup.
+	# Rotation is best-effort: a failed shift is logged but never blocks the
+	# save; the hard durability requirement stays on the slot-1 copy above.
+	# Returns whether slot 1 is clear: false means the previous backup still
+	# occupies it and the caller must NOT overwrite it (Phase E ring fix).
+	for i in range(BACKUP_RING.size() - 1, 0, -1):
+		var src_path: String = BACKUP_RING[i - 1]
+		var dst_path: String = BACKUP_RING[i]
+		if not FileAccess.file_exists(src_path):
+			continue
+		var dst_abs := ProjectSettings.globalize_path(dst_path)
+		if FileAccess.file_exists(dst_path):
+			# rename_absolute over an existing file is not portable (Windows).
+			DirAccess.remove_absolute(dst_abs)
+		var err := DirAccess.rename_absolute(ProjectSettings.globalize_path(src_path), dst_abs)
 		if err != OK:
-			AppLogger.error("SaveManager", "Backup fallito", {"errore": err, "src": src, "dst": dst})
-
-	# Rename temp → primary (atomic operation)
-	var rename_err := DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(TEMP_PATH), ProjectSettings.globalize_path(SAVE_PATH)
-	)
-	if rename_err != OK:
-		AppLogger.error("SaveManager", "Rename fallito, copia temp → save", {"errore": rename_err})
-		DirAccess.copy_absolute(ProjectSettings.globalize_path(TEMP_PATH), ProjectSettings.globalize_path(SAVE_PATH))
-
-	# Secondary: persist character and inventory to SQLite
-	_save_to_sqlite()
-
-	_is_saving = false
-	SignalBus.save_completed.emit()
+			AppLogger.warn(
+				"SaveManager", "Backup ring rotation failed", {"from": src_path, "to": dst_path, "errore": err}
+			)
+	return not FileAccess.file_exists(BACKUP_PATH)
 
 
-func _save_to_sqlite() -> void:
-	# B-016: payload completo dual-write JSON+SQLite. Prima solo character +
-	# inventory andavano al mirror; settings/music_state/room+deco erano su
-	# JSON soltanto causando divergenza silente fra i due storage.
+func _promote_temp_to_primary(expected_hmac: String) -> String:
+	# Returns "" on verified success, else the save_failed reason.
+	var temp_abs := ProjectSettings.globalize_path(TEMP_PATH)
+	var save_abs := ProjectSettings.globalize_path(SAVE_PATH)
+	var rename_err: int = FAILED
+	for _attempt in range(3):
+		rename_err = DirAccess.rename_absolute(temp_abs, save_abs)
+		if rename_err == OK:
+			# Uniform verification: rename is atomic but says nothing about the
+			# CONTENT that was promoted (a truncated temp renames "fine").
+			if _primary_hmac_matches(expected_hmac):
+				return ""
+			AppLogger.error("SaveManager", "Verifica post-rename fallita: HMAC mismatch su disco")
+			return "verify"
+		# Synchronous retry backoff: save_game must stay callable from
+		# NOTIFICATION_WM_CLOSE_REQUEST, where awaiting frames never resumes.
+		OS.delay_msec(15)
+	AppLogger.error("SaveManager", "Rename fallito 3x, copia temp → save", {"errore": rename_err})
+	var copy_err := DirAccess.copy_absolute(temp_abs, save_abs)
+	if copy_err != OK:
+		# Temp file kept on disk for forensics.
+		AppLogger.error("SaveManager", "Copy fallback fallita", {"errore": copy_err})
+		return "rename"
+	# Copy is non-atomic: re-read the primary and verify HMAC before trusting.
+	if not _primary_hmac_matches(expected_hmac):
+		# Temp file kept on disk for forensics.
+		AppLogger.error("SaveManager", "Verifica post-copy fallita: HMAC mismatch su disco")
+		return "verify"
+	_remove_temp_file()
+	return ""
+
+
+func _primary_hmac_matches(expected_hmac: String) -> bool:
+	var wrapper: Variant = _load_wrapper_from_disk(SAVE_PATH)
+	if not wrapper is Dictionary:
+		return false
+	return str((wrapper as Dictionary).get("hmac", "")) == expected_hmac
+
+
+func _remove_temp_file() -> void:
+	if FileAccess.file_exists(TEMP_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP_PATH))
+
+
+func _build_db_payload() -> Dictionary:
+	# B-016/C.6: full dual-write payload JSON+SQLite. The mirror is applied
+	# synchronously via LocalDatabase.apply_save() and save_completed only
+	# fires when BOTH the verified JSON write and the SQLite transaction
+	# succeed, so the two storages can no longer diverge silently.
 	var room_payload: Dictionary = {
 		"room_type": GameManager.current_room_id,
 		"theme": GameManager.current_theme,
 		"decorations": _decorations,
 	}
-	(
-		SignalBus
-		. save_to_database_requested
-		. emit(
-			{
-				"character": character_data,
-				"inventory": inventory_data,
-				"settings": _settings,
-				"music_state": _music_state,
-				"room": room_payload,
-			}
-		)
-	)
+	return {
+		"character": character_data,
+		"inventory": inventory_data,
+		"settings": _settings,
+		"music_state": _music_db_payload(),
+		"room": room_payload,
+	}
+
+
+func _music_db_payload() -> Dictionary:
+	# Phase E (C.6 follow-up): the music_state table speaks a different
+	# vocabulary than _music_state (current_track_id vs current_track_index,
+	# active_ambiences vs active_ambience). Translate at this single boundary;
+	# passing _music_state verbatim silently wrote schema defaults every save.
+	var active_ambience: Array = []
+	var raw_ambience: Variant = _music_state.get("active_ambience", [])
+	if raw_ambience is Array:
+		active_ambience = raw_ambience
+	return {
+		"current_track_id": _music_track_id_for_index(int(_music_state.get("current_track_index", 0))),
+		"track_position_sec": 0.0,
+		"playlist_mode": str(_music_state.get("playlist_mode", Constants.DEFAULT_PLAYLIST_MODE)),
+		"ambience_enabled": not active_ambience.is_empty(),
+		"active_ambiences": active_ambience,
+	}
+
+
+func _music_track_id_for_index(index: int) -> String:
+	# _music_state indexes into AudioManager.tracks (the validated catalog
+	# list); the DB column stores the catalog track id string.
+	var tracks: Array = AudioManager.tracks
+	if index >= 0 and index < tracks.size() and tracks[index] is Dictionary:
+		return str((tracks[index] as Dictionary).get("id", ""))
+	return ""
 
 
 func load_game() -> void:
-	var data = _load_from_file(SAVE_PATH)
-
-	if data == null and FileAccess.file_exists(BACKUP_PATH):
-		AppLogger.warn("SaveManager", "Primary save corrupt or missing, trying backup")
-		data = _load_from_file(BACKUP_PATH)
-
-	if data == null:
-		push_warning("SaveManager: no valid save file found, using defaults")
+	# 4.13.2: primary first, then each backup ring slot (newest first), with
+	# the same HMAC verification _load_from_file applies everywhere.
+	var candidates: Array[String] = [SAVE_PATH]
+	candidates.append_array(BACKUP_RING)
+	for path in candidates:
+		if not FileAccess.file_exists(path):
+			continue
+		if path != SAVE_PATH:
+			AppLogger.warn("SaveManager", "Primary save corrupt or missing, trying backup", {"path": path})
+		var data: Variant = _load_from_file(path)
+		if data == null:
+			continue
+		# 4.13.3-newer-save: refuse to apply a save from a newer app version —
+		# applying then re-saving would destructively downgrade its schema.
+		# Park it and keep scanning: an older ring slot may still hold a
+		# loadable, version-compatible save (Phase E).
+		var save_version := str((data as Dictionary).get("version", "1.0.0"))
+		if _compare_versions(save_version, SAVE_VERSION) > 0:
+			_park_newer_save(path, save_version, data)
+			continue
+		data = _migrate_save_data(data)
+		_apply_save_data(data)
 		SignalBus.load_completed.emit()
 		return
 
-	data = _migrate_save_data(data)
-	_apply_save_data(data)
+	push_warning("SaveManager: no valid save file found, using defaults")
 	SignalBus.load_completed.emit()
+
+
+func _park_newer_save(path: String, save_version: String, data: Dictionary) -> void:
+	# Move the file out of the save/load path so autosave cannot overwrite it;
+	# it stays recoverable at NEWER_SAVE_PATH once the app is updated.
+	(
+		AppLogger
+		. error(
+			"SaveManager",
+			"Save from newer app version, refusing to apply",
+			{"save": save_version, "app": SAVE_VERSION, "path": path},
+		)
+	)
+	var src := ProjectSettings.globalize_path(path)
+	var dst := ProjectSettings.globalize_path(NEWER_SAVE_PATH)
+	if FileAccess.file_exists(NEWER_SAVE_PATH):
+		# Phase E: never clobber a previously parked save with an older copy
+		# (e.g. a pre-downgrade ring slot routed here on a later boot) — that
+		# would destroy the newest progress the park exists to preserve.
+		if not _candidate_beats_parked(save_version, data):
+			(
+				AppLogger
+				. warn(
+					"SaveManager",
+					"Parked newer-version save kept: candidate is not newer",
+					{"candidate": save_version, "path": path},
+				)
+			)
+			SignalBus.save_failed.emit("newer_version")
+			return
+		DirAccess.remove_absolute(dst)
+	var err := DirAccess.rename_absolute(src, dst)
+	if err != OK:
+		err = DirAccess.copy_absolute(src, dst)
+	if err != OK:
+		AppLogger.error("SaveManager", "Failed to park newer-version save", {"errore": err, "path": path})
+	SignalBus.save_failed.emit("newer_version")
+
+
+func _candidate_beats_parked(candidate_version: String, candidate_data: Dictionary) -> bool:
+	# Keep the highest version; tie-break on last_saved (ISO-like timestamps
+	# from Time.get_datetime_string_from_system compare lexicographically).
+	var parked := _read_parked_save_meta(NEWER_SAVE_PATH)
+	if parked.is_empty():
+		# Unreadable/corrupt parked file: the verified candidate wins.
+		return true
+	var cmp := _compare_versions(candidate_version, str(parked.get("version", "0.0.0")))
+	if cmp != 0:
+		return cmp > 0
+	return str(candidate_data.get("last_saved", "")) > str(parked.get("last_saved", ""))
+
+
+func _read_parked_save_meta(path: String) -> Dictionary:
+	# Best-effort inner-payload probe for version/last_saved comparison.
+	# Unlike _load_from_file it never quarantines and never emits signals:
+	# a parked newer-schema file must not be judged by this app version.
+	var wrapper: Variant = _load_wrapper_from_disk(path)
+	if not wrapper is Dictionary:
+		return {}
+	var payload := str((wrapper as Dictionary).get("data", ""))
+	var json := JSON.new()
+	if json.parse(payload) != OK or not json.data is Dictionary:
+		return {}
+	return json.data
 
 
 func _load_from_file(path: String) -> Variant:
@@ -230,7 +546,15 @@ func _load_from_file(path: String) -> Variant:
 	# New HMAC-wrapped format
 	if wrapper_dict.has("hmac") and wrapper_dict.has("data"):
 		return _extract_hmac_inner(wrapper_dict, path)
-	# Legacy format (no HMAC wrapper) — accept but will re-save with HMAC
+	# Legacy format (no HMAC wrapper): acceptable ONLY on true first
+	# migration, i.e. before any integrity key exists. Once this install has
+	# ever signed a save, an unwrapped file means the wrapper was stripped —
+	# treat it as an integrity violation, not as a friendly legacy save.
+	if FileAccess.file_exists(SECRET_PATH):
+		AppLogger.warn("SaveManager", "Unwrapped save on HMAC-enabled install", {"path": path})
+		_quarantine_file(path)
+		SignalBus.save_integrity_violation.emit(path)
+		return null
 	return wrapper_dict
 
 
@@ -257,9 +581,16 @@ func _load_wrapper_from_disk(path: String) -> Variant:
 func _extract_hmac_inner(wrapper: Dictionary, path: String) -> Variant:
 	var stored_hmac: String = wrapper.get("hmac", "")
 	var json_string: String = wrapper.get("data", "")
+	if _get_integrity_key().is_empty():
+		# Key unavailable: verification is impossible — NOT proof of tampering,
+		# so do not quarantine a possibly good save.
+		AppLogger.error("SaveManager", "Integrity key unavailable, cannot verify save", {"path": path})
+		return null
 	var expected := _compute_hmac(json_string)
 	if stored_hmac != expected:
 		AppLogger.warn("SaveManager", "HMAC mismatch — save file may be tampered", {"path": path})
+		_quarantine_file(path)
+		SignalBus.save_integrity_violation.emit(path)
 		return null
 	var inner := JSON.new()
 	if inner.parse(json_string) != OK:
@@ -277,6 +608,10 @@ func _apply_save_data(data: Dictionary) -> void:
 				var loaded = data["settings"][key]
 				if typeof(loaded) == typeof(_settings[key]):
 					_settings[key] = loaded
+				elif loaded is float and _settings[key] is int:
+					# JSON parses every number as float: coerce back to the
+					# default's int type (window_pos_x/y) instead of dropping.
+					_settings[key] = int(loaded)
 				else:
 					AppLogger.warn("SaveManager", "Type mismatch in settings", {"key": key})
 	# Clamp volume ranges
@@ -386,12 +721,14 @@ func _migrate_save_data(data: Dictionary) -> Dictionary:
 					"Inventario corrotto durante migrazione v3->v4, reset",
 					{"inventory_keys": inv.keys()}
 				)
+				_preserve_v3_inventory(inv)
 				data["inventory"] = {
 					"coins": inv.get("coins", old_coins),
 					"capacita": inv.get("capacita", 50),
 					"items": [],
 				}
 			elif inv["items"] is not Array:
+				_preserve_v3_inventory(inv)
 				data["inventory"]["items"] = []
 
 		# Add new sections
@@ -414,6 +751,35 @@ func _migrate_save_data(data: Dictionary) -> Dictionary:
 		data["version"] = "5.0.0"
 
 	return data
+
+
+func _preserve_v3_inventory(inv: Dictionary) -> void:
+	# 4.1.2-L381: snapshot the original malformed inventory before the reset
+	# drops items. Write-once: never overwrite an existing preserve file.
+	if FileAccess.file_exists(V3_PRESERVED_PATH):
+		return
+	var f := FileAccess.open(V3_PRESERVED_PATH, FileAccess.WRITE)
+	if f == null:
+		(
+			AppLogger
+			. error(
+				"SaveManager",
+				"Cannot write v3 inventory preserve file",
+				{"errore": FileAccess.get_open_error()},
+			)
+		)
+		return
+	f.store_string(JSON.stringify(inv, "\t"))
+	f.flush()
+	var werr := f.get_error()
+	f.close()
+	if werr != OK:
+		AppLogger.error("SaveManager", "v3 inventory preserve write failed", {"errore": werr})
+		# Remove the truncated file: leaving it would burn the write-once slot
+		# with garbage and permanently block a later preserve retry (Phase E).
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(V3_PRESERVED_PATH))
+		return
+	AppLogger.warn("SaveManager", "Original v3 inventory preserved before reset", {"path": V3_PRESERVED_PATH})
 
 
 func _compare_versions(a: String, b: String) -> int:
@@ -451,7 +817,7 @@ func reset_all() -> void:
 	reset_character_data()
 	_music_state = {
 		"current_track_index": 0,
-		"playlist_mode": "shuffle",
+		"playlist_mode": Constants.DEFAULT_PLAYLIST_MODE,
 		"active_ambience": [],
 	}
 	inventory_data = {
@@ -467,29 +833,139 @@ func reset_all() -> void:
 		"music_volume": 0.6,
 		"ambience_volume": 0.4,
 		"pet_variant": "simple",
+		"window_pos_x": -1,
+		"window_pos_y": -1,
 	}
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
-	if FileAccess.file_exists(BACKUP_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(BACKUP_PATH))
+	# Drop every ring slot: a stale backup surviving reset_all would resurrect
+	# the old state through the load_game fallback chain.
+	for backup_path in BACKUP_RING:
+		if FileAccess.file_exists(backup_path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(backup_path))
+
+
+func _quarantine_file(path: String) -> void:
+	# C.2: move the tampered/corrupt file aside so the next save cannot
+	# silently overwrite the evidence and load never retries it.
+	# Name includes source basename + sub-second component: primary and backup
+	# can both be quarantined in the same second without clobbering evidence.
+	var q_path := (
+		"user://%s.quarantine.%d.%d.json"
+		% [path.get_file().get_basename(), int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+	)
+	var src := ProjectSettings.globalize_path(path)
+	var dst := ProjectSettings.globalize_path(q_path)
+	var err := DirAccess.rename_absolute(src, dst)
+	if err != OK:
+		err = DirAccess.copy_absolute(src, dst)
+		if err == OK:
+			# copy_absolute does not remove the source: without this the
+			# corrupt file stays at `path`, gets re-quarantined every boot
+			# (unbounded copies) and keeps re-entering the load path.
+			var rm_err := DirAccess.remove_absolute(src)
+			if rm_err != OK:
+				(
+					AppLogger
+					. error(
+						"SaveManager",
+						"Quarantine copy succeeded but original still present",
+						{"path": path, "errore": rm_err},
+					)
+				)
+	AppLogger.warn("SaveManager", "Save quarantined", {"from": path, "to": q_path, "errore": err})
 
 
 func _get_integrity_key() -> PackedByteArray:
+	# Returns an empty PackedByteArray when no persisted+verified key is
+	# available — callers must treat that as "HMAC signing unavailable".
+	if not _integrity_key_cache.is_empty():
+		return _integrity_key_cache
 	if FileAccess.file_exists(SECRET_PATH):
 		var f := FileAccess.open(SECRET_PATH, FileAccess.READ)
-		if f != null:
-			var hex := f.get_as_text().strip_edges()
-			f.close()
-			if hex.length() == 64:
-				return hex.hex_decode()
-	# Generate new key on first run
+		if f == null:
+			# Transient open failure (AV lock, EACCES, backup agent): NOT key
+			# corruption. Renaming the key aside here would make the next boot
+			# regenerate a fresh key and quarantine every existing save as
+			# tampered. Leave the file in place and fail closed for this call
+			# only — the next call (or next boot) retries (Phase E).
+			(
+				AppLogger
+				. error(
+					"SaveManager",
+					"Cannot open integrity key, signing unavailable",
+					{"errore": FileAccess.get_open_error()},
+				)
+			)
+			return PackedByteArray()
+		var hex := f.get_as_text().strip_edges()
+		f.close()
+		if _is_valid_hex_key(hex):
+			_integrity_key_cache = hex.hex_decode()
+			return _integrity_key_cache
+		# Read succeeded but content is invalid: genuine corruption, NOT first
+		# run. Regenerating here would orphan every HMAC ever written and
+		# quarantine good saves as tampered. Move the corrupt key aside for
+		# forensics and fail closed.
+		AppLogger.error("SaveManager", "Integrity key file corrupt, signing unavailable")
+		var corrupt_dst := ProjectSettings.globalize_path(SECRET_PATH + ".corrupt")
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(SECRET_PATH), corrupt_dst)
+		return PackedByteArray()
+	# Generate new key on first run — but only trust it once persisted,
+	# otherwise next boot regenerates and every existing HMAC is orphaned.
 	var crypto := Crypto.new()
 	var key := crypto.generate_random_bytes(32)
-	var f := FileAccess.open(SECRET_PATH, FileAccess.WRITE)
-	if f != null:
-		f.store_string(key.hex_encode())
-		f.close()
+	if not _persist_integrity_key(key):
+		return PackedByteArray()
+	_integrity_key_cache = key
 	return key
+
+
+static func _is_valid_hex_key(hex: String) -> bool:
+	# 4.1.2-L483: exactly 64 chars of [0-9a-fA-F] before hex_decode — a
+	# length-only gate lets garbage through and silently changes the HMAC key.
+	# Manual charset check: String.is_valid_hex_number() accepts a sign prefix.
+	if hex.length() != 64:
+		return false
+	for ch in hex:
+		var is_digit: bool = ch >= "0" and ch <= "9"
+		var is_lower_hex: bool = ch >= "a" and ch <= "f"
+		var is_upper_hex: bool = ch >= "A" and ch <= "F"
+		if not (is_digit or is_lower_hex or is_upper_hex):
+			return false
+	return true
+
+
+func _persist_integrity_key(key: PackedByteArray) -> bool:
+	var f := FileAccess.open(SECRET_PATH, FileAccess.WRITE)
+	if f == null:
+		(
+			AppLogger
+			. error(
+				"SaveManager",
+				"Cannot open integrity key for write",
+				{"errore": FileAccess.get_open_error()},
+			)
+		)
+		return false
+	f.store_string(key.hex_encode())
+	var werr := f.get_error()
+	f.flush()
+	f.close()
+	if werr != OK:
+		AppLogger.error("SaveManager", "Integrity key write failed", {"errore": werr})
+		return false
+	# Re-read and compare: the key must round-trip before we sign with it.
+	var rf := FileAccess.open(SECRET_PATH, FileAccess.READ)
+	if rf == null:
+		AppLogger.error("SaveManager", "Integrity key re-read failed")
+		return false
+	var on_disk := rf.get_as_text().strip_edges()
+	rf.close()
+	if on_disk != key.hex_encode():
+		AppLogger.error("SaveManager", "Integrity key verify mismatch after write")
+		return false
+	return true
 
 
 func _compute_hmac(message: String) -> String:
@@ -532,4 +1008,48 @@ func _exit_tree() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		save_game()
+		# 4.1.2-L533-async: auto_accept_quit is disabled in _ready(), so the
+		# process only exits once _final_save_and_quit decides to.
+		# Deferred (Phase E): propagate_notification visits autoloads in
+		# project.godot order, and PerformanceManager (after SaveManager)
+		# emits window_pos_x/y from its own WM_CLOSE handler. The deferred
+		# call runs after the whole propagation, so those settings land in
+		# _settings BEFORE the final save instead of after it.
+		if _quit_requested:
+			return
+		_quit_requested = true
+		_final_save_and_quit.call_deferred()
+
+
+func _final_save_and_quit() -> void:
+	# E.2 quit-after-save-confirmed: quit only once the final save succeeded
+	# (including any queued follow-up flush chained inside save_game).
+	if _run_final_save():
+		get_tree().quit()
+		return
+	if _quit_save_failed_once:
+		# A previous close attempt already failed, was surfaced, and stayed
+		# alive: this second explicit close is the force-quit.
+		AppLogger.error("SaveManager", "Final save failed again, force quitting")
+		get_tree().quit()
+		return
+	# Retry once synchronously before giving the user the choice.
+	if _run_final_save():
+		get_tree().quit()
+		return
+	# Stay alive: save_failed already emitted (toast/log). The next close
+	# request retries once more and then force-quits.
+	_quit_save_failed_once = true
+	_quit_requested = false
+	AppLogger.error("SaveManager", "Final save failed twice, staying alive; close again to force quit")
+
+
+func _run_final_save() -> bool:
+	# save_game() is fully synchronous, so save_completed/save_failed fire
+	# before it returns; capture the outcome with a temporary listener.
+	var outcome := {"ok": false}
+	var on_completed := func() -> void: outcome["ok"] = true
+	SignalBus.save_completed.connect(on_completed)
+	save_game()
+	SignalBus.save_completed.disconnect(on_completed)
+	return outcome["ok"]

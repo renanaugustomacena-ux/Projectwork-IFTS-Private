@@ -114,7 +114,7 @@ Dichiarazioni signal solo, no logic. Commenti raggruppano per dominio.
 
 ### `autoload/local_database.gd` (323 L)
 
-Facade SQLite. Delega ai 9 repo in `autoload/database/`. `PRAGMA journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`. Transaction wrapper in `_on_save_requested` (vedi audit 4.1.4 per BEGIN/COMMIT return-check finding).
+Facade SQLite. Delega ai 9 repo in `autoload/database/`. `PRAGMA journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`. Transaction wrapper sincrono in `apply_save` (BEGIN/COMMIT/ROLLBACK con return-check, remediation audit 4.1.4).
 
 ### `autoload/save_manager.gd` (535 L)
 

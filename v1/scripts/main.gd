@@ -58,6 +58,9 @@ func _ready() -> void:
 	toast_layer.name = "ToastManager"
 	add_child(toast_layer)
 
+	# C.1 failure vocabulary → user-visible toasts via ToastManager
+	_wire_error_toasts()
+
 	# In-game HUD (serenity bar + point counter)
 	var hud_layer := CanvasLayer.new()
 	hud_layer.set_script(GAME_HUD_SCRIPT)
@@ -152,6 +155,46 @@ func _on_tutorial_done() -> void:
 	SignalBus.save_requested.emit()
 
 
+func _wire_error_toasts() -> void:
+	# C.1: route every failure signal to a toast (error = red, warning =
+	# amber, see ToastManager styles). Disconnected in _exit_tree.
+	SignalBus.save_failed.connect(_on_save_failed_toast)
+	SignalBus.save_integrity_violation.connect(_on_save_integrity_violation_toast)
+	SignalBus.save_integrity_unavailable.connect(_on_save_integrity_unavailable_toast)
+	SignalBus.sync_error.connect(_on_sync_error_toast)
+	SignalBus.sync_payload_corrupted.connect(_on_sync_payload_corrupted_toast)
+	SignalBus.catalog_load_failed.connect(_on_catalog_load_failed_toast)
+	SignalBus.db_error.connect(_on_db_error_toast)
+
+
+func _on_save_failed_toast(_reason: String) -> void:
+	SignalBus.toast_requested.emit(tr("TOAST_SAVE_FAILED"), "error")
+
+
+func _on_save_integrity_violation_toast(_path: String) -> void:
+	SignalBus.toast_requested.emit(tr("TOAST_SAVE_TAMPERED"), "error")
+
+
+func _on_save_integrity_unavailable_toast() -> void:
+	SignalBus.toast_requested.emit(tr("TOAST_SAVE_KEY_ERROR"), "error")
+
+
+func _on_sync_error_toast(_operation: String, _reason: String) -> void:
+	SignalBus.toast_requested.emit(tr("TOAST_SYNC_ERROR"), "warning")
+
+
+func _on_sync_payload_corrupted_toast(_queue_id: int, _preview: String) -> void:
+	SignalBus.toast_requested.emit(tr("TOAST_SYNC_ERROR"), "warning")
+
+
+func _on_catalog_load_failed_toast(_path: String, _reason: String) -> void:
+	SignalBus.toast_requested.emit(tr("TOAST_CATALOG_ERROR"), "error")
+
+
+func _on_db_error_toast(_context: String, _reason: String) -> void:
+	SignalBus.toast_requested.emit(tr("TOAST_DB_ERROR"), "error")
+
+
 func _on_profile_hud_requested() -> void:
 	if _panel_manager != null:
 		_panel_manager.toggle_panel("profile_hud")
@@ -174,3 +217,17 @@ func _exit_tree() -> void:
 		SignalBus.profile_hud_requested.disconnect(_on_profile_hud_requested)
 	if SignalBus.profile_hud_closed.is_connected(_on_profile_hud_close_to_settings):
 		SignalBus.profile_hud_closed.disconnect(_on_profile_hud_close_to_settings)
+	if SignalBus.save_failed.is_connected(_on_save_failed_toast):
+		SignalBus.save_failed.disconnect(_on_save_failed_toast)
+	if SignalBus.save_integrity_violation.is_connected(_on_save_integrity_violation_toast):
+		SignalBus.save_integrity_violation.disconnect(_on_save_integrity_violation_toast)
+	if SignalBus.save_integrity_unavailable.is_connected(_on_save_integrity_unavailable_toast):
+		SignalBus.save_integrity_unavailable.disconnect(_on_save_integrity_unavailable_toast)
+	if SignalBus.sync_error.is_connected(_on_sync_error_toast):
+		SignalBus.sync_error.disconnect(_on_sync_error_toast)
+	if SignalBus.sync_payload_corrupted.is_connected(_on_sync_payload_corrupted_toast):
+		SignalBus.sync_payload_corrupted.disconnect(_on_sync_payload_corrupted_toast)
+	if SignalBus.catalog_load_failed.is_connected(_on_catalog_load_failed_toast):
+		SignalBus.catalog_load_failed.disconnect(_on_catalog_load_failed_toast)
+	if SignalBus.db_error.is_connected(_on_db_error_toast):
+		SignalBus.db_error.disconnect(_on_db_error_toast)

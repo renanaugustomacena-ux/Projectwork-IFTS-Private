@@ -4,7 +4,7 @@
 ## Responsabilita` residue nel root dopo split:
 ## - Lifecycle: _ready, _exit_tree, close, open
 ## - Schema delegation: create_all_tables + migrate_schema (via DBSchema)
-## - Transaction orchestration: _on_save_requested (dual-write atomico)
+## - Transaction orchestration: apply_save (dual-write atomico, C.6)
 ## - Public API delegate: ogni metodo delega a un repo (AccountsRepo,
 ##   CharactersRepo, InventoryRepo, RoomsDecoRepo, SettingsRepo,
 ##   SyncQueueRepo, BadgesRepo)
@@ -12,7 +12,7 @@
 ## Callers esterni NON cambiano: `LocalDatabase.get_account(id)` funziona
 ## identico a prima del split. Nessuna regressione API.
 ##
-## Facade pattern: 36 metodi pubblici delegate (superiamo il limit di 20
+## Facade pattern: 38 metodi pubblici delegate (superiamo il limit di 20
 ## per il facade pattern intenzionale). Gli effettivi "metodi pubblici
 ## funzionali" sono distribuiti fra le 7 repo (ognuna < 20 metodi).
 extends Node
@@ -36,20 +36,18 @@ var _is_open: bool = false
 func _ready() -> void:
 	_open_database()
 	if _is_open:
-		DBSchema.create_all_tables(_db)
+		if not DBSchema.create_all_tables(_db):
+			AppLogger.error("LocalDatabase", "Schema creation reported failures at startup")
 		DBSchema.migrate_schema(_db)
 		AppLogger.info("LocalDatabase", "Database initialized", {"path": DB_PATH})
-	SignalBus.save_to_database_requested.connect(_on_save_requested)
 
 
 func _exit_tree() -> void:
-	if SignalBus.save_to_database_requested.is_connected(_on_save_requested):
-		SignalBus.save_to_database_requested.disconnect(_on_save_requested)
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		close()
+	# Close in _exit_tree, NOT on NOTIFICATION_WM_CLOSE_REQUEST: autoloads are
+	# torn down in reverse registration order, so SaveManager (registered after
+	# this singleton) runs its quit-save while the DB is still open. Closing on
+	# WM_CLOSE would race the quit-save and fail every apply_save at shutdown.
+	close()
 
 
 func is_open() -> bool:
@@ -96,46 +94,24 @@ func _open_database() -> void:
 		AppLogger.warn("LocalDatabase", "Foreign keys not enabled")
 
 
-func _on_save_requested(data: Dictionary) -> void:
+## C.6 synchronous facade for the dual-write mirror (replaces the old
+## fire-and-forget save_to_database_requested signal path — SaveManager was
+## its only emitter). Returns true ONLY when the whole transaction committed;
+## SaveManager gates save_completed on this return value.
+func apply_save(data: Dictionary) -> bool:
 	if not _is_open:
-		return
-	var auth_uid: String = Constants.AUTH_GUEST_UID
-	if AuthManager.current_auth_uid != "":
-		auth_uid = AuthManager.current_auth_uid
-	var account := AccountsRepo.get_account_by_auth_uid(_db, auth_uid)
-	var account_id: int
-	if account.is_empty():
-		account_id = AccountsRepo.upsert_account(_db, auth_uid, Constants.AUTH_GUEST_EMAIL, "")
-	else:
-		account_id = account.get("account_id", -1)
+		SignalBus.db_error.emit("apply_save", "db_not_open")
+		return false
+	var account_id := _resolve_save_account_id()
 	if account_id < 0:
-		return
-	DBHelpers.execute(_db, "BEGIN TRANSACTION;")
-	var success := true
-	if data.has("character") and data["character"] is Dictionary:
-		if not CharactersRepo.upsert_character(_db, account_id, data["character"]):
-			success = false
-	if success and data.has("inventory") and data["inventory"] is Dictionary:
-		if not InventoryRepo.save_inventory(_db, account_id, data["inventory"]):
-			success = false
-	# B-016 dual-write completo: settings, music_state, room+decorations
-	if success and data.has("settings") and data["settings"] is Dictionary:
-		if not SettingsRepo.upsert_settings(_db, account_id, data["settings"]):
-			success = false
-	if success and data.has("music_state") and data["music_state"] is Dictionary:
-		if not SettingsRepo.upsert_music_state(_db, account_id, data["music_state"]):
-			success = false
-	if success and data.has("room") and data["room"] is Dictionary:
-		# upsert_room richiede character_id (rooms table ha FK su characters)
-		var char_row := CharactersRepo.get_character(_db, account_id)
-		if not char_row.is_empty():
-			var character_id: int = char_row.get("character_id", -1)
-			if character_id >= 0:
-				if not RoomsDecoRepo.upsert_room(_db, character_id, data["room"]):
-					success = false
-	if success:
-		DBHelpers.execute(_db, "COMMIT;")
-	else:
+		SignalBus.db_error.emit("apply_save", "account_resolve_failed")
+		return false
+	# C.3 transaction honesty: BEGIN/COMMIT returns checked, failure surfaced.
+	if not DBHelpers.execute(_db, "BEGIN TRANSACTION;"):
+		AppLogger.error("LocalDatabase", "BEGIN failed, save skipped", {"account_id": account_id})
+		SignalBus.db_error.emit("begin", "begin_failed")
+		return false
+	if not _apply_save_writes(account_id, data):
 		DBHelpers.execute(_db, "ROLLBACK;")
 		(
 			AppLogger
@@ -150,6 +126,49 @@ func _on_save_requested(data: Dictionary) -> void:
 				},
 			)
 		)
+		SignalBus.db_error.emit("apply_save", "repo_write_failed")
+		return false
+	if not DBHelpers.execute(_db, "COMMIT;"):
+		DBHelpers.execute(_db, "ROLLBACK;")
+		AppLogger.error("LocalDatabase", "COMMIT failed, forced rollback", {"account_id": account_id})
+		SignalBus.db_error.emit("commit", "commit_failed")
+		return false
+	return true
+
+
+func _resolve_save_account_id() -> int:
+	var auth_uid: String = Constants.AUTH_GUEST_UID
+	if AuthManager.current_auth_uid != "":
+		auth_uid = AuthManager.current_auth_uid
+	var account := AccountsRepo.get_account_by_auth_uid(_db, auth_uid)
+	if account.is_empty():
+		return AccountsRepo.upsert_account(_db, auth_uid, Constants.AUTH_GUEST_EMAIL, "")
+	return int(account.get("account_id", -1))
+
+
+func _apply_save_writes(account_id: int, data: Dictionary) -> bool:
+	if data.has("character") and data["character"] is Dictionary:
+		if not CharactersRepo.upsert_character(_db, account_id, data["character"]):
+			return false
+	if data.has("inventory") and data["inventory"] is Dictionary:
+		if not InventoryRepo.save_inventory(_db, account_id, data["inventory"]):
+			return false
+	# B-016 dual-write completo: settings, music_state, room+decorations
+	if data.has("settings") and data["settings"] is Dictionary:
+		if not SettingsRepo.upsert_settings(_db, account_id, data["settings"]):
+			return false
+	if data.has("music_state") and data["music_state"] is Dictionary:
+		if not SettingsRepo.upsert_music_state(_db, account_id, data["music_state"]):
+			return false
+	if data.has("room") and data["room"] is Dictionary:
+		# upsert_room richiede character_id (rooms table ha FK su characters)
+		var char_row := CharactersRepo.get_character(_db, account_id)
+		if not char_row.is_empty():
+			var character_id: int = char_row.get("character_id", -1)
+			if character_id >= 0:
+				if not RoomsDecoRepo.upsert_room(_db, character_id, data["room"]):
+					return false
+	return true
 
 
 # ==========================================================================
@@ -195,6 +214,15 @@ func update_password_hash(account_id: int, new_hash: String) -> bool:
 
 func update_auth_uid(account_id: int, new_auth_uid: String) -> bool:
 	return AccountsRepo.update_auth_uid(_db, account_id, new_auth_uid)
+
+
+## Phase D rate-limit persistence facade (audit 4.4.2).
+func get_rate_limit(username: String) -> Dictionary:
+	return AccountsRepo.get_rate_limit(_db, username)
+
+
+func set_rate_limit(username: String, attempts: int, lockout_until_unix: int) -> bool:
+	return AccountsRepo.set_rate_limit(_db, username, attempts, lockout_until_unix)
 
 
 # ---- Characters ----
@@ -306,6 +334,16 @@ func get_pending_sync() -> Array:
 
 func clear_sync_item(queue_id: int) -> bool:
 	return SyncQueueRepo.clear_sync_item(_db, queue_id)
+
+
+func increment_retry(queue_id: int) -> bool:
+	return SyncQueueRepo.increment_retry(_db, queue_id)
+
+
+## Phase D dead-letter facade (audit 4.1.1-L422): corrupt or retry-exhausted
+## sync payloads move to sync_dead_letter instead of being plain-deleted.
+func move_sync_item_to_dead_letter(queue_id: int, reason: String) -> bool:
+	return SyncQueueRepo.move_to_dead_letter(_db, queue_id, reason)
 
 
 # ---- Badges (T-R-015d) ----

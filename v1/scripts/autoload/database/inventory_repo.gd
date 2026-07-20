@@ -44,6 +44,13 @@ static func get_coins(db: SQLite, account_id: int) -> int:
 static func save_inventory(db: SQLite, account_id: int, inv_data: Dictionary) -> bool:
 	var coins: int = inv_data.get("coins", 0)
 	var capacita: int = inv_data.get("capacita", 50)
+	var items: Array = inv_data.get("items", [])
+	# C.5: the SAVEPOINT wraps the WHOLE mirror write (coins UPDATE included)
+	# so the function is atomic both inside and outside the caller's outer
+	# transaction (savepoints nest safely). A mid-loop failure can no longer
+	# leave coins committed with the item rows half-rewritten in autocommit.
+	if not DBHelpers.execute(db, "SAVEPOINT inventory_save;"):
+		return false
 	var ok := (
 		DBHelpers
 		. execute_bound(
@@ -52,9 +59,14 @@ static func save_inventory(db: SQLite, account_id: int, inv_data: Dictionary) ->
 			[coins, capacita, account_id],
 		)
 	)
-	if not ok:
+	if not ok or not _replace_items(db, account_id, items):
+		DBHelpers.execute(db, "ROLLBACK TO inventory_save;")
+		DBHelpers.execute(db, "RELEASE inventory_save;")
 		return false
-	var items: Array = inv_data.get("items", [])
+	return DBHelpers.execute(db, "RELEASE inventory_save;")
+
+
+static func _replace_items(db: SQLite, account_id: int, items: Array) -> bool:
 	if not DBHelpers.execute_bound(db, "DELETE FROM inventario WHERE account_id = ?;", [account_id]):
 		return false
 	for item in items:

@@ -7,9 +7,16 @@ class_name DBSchema
 const DBHelpers = preload("res://scripts/autoload/database/db_helpers.gd")
 
 
-static func create_all_tables(db: SQLite) -> void:
-	DBHelpers.execute(
-		db,
+static func create_all_tables(db: SQLite) -> bool:
+	# C.4: every statement return is checked; callers can gate on the result.
+	var ok := true
+	for stmt in _all_schema_statements():
+		ok = DBHelpers.execute(db, stmt) and ok
+	return ok
+
+
+static func _all_schema_statements() -> Array[String]:
+	var stmts: Array[String] = [
 		(
 			"CREATE TABLE IF NOT EXISTS accounts ("
 			+ "account_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -23,11 +30,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "inventario_capacita INTEGER DEFAULT 50,"
 			+ "updated_at TEXT DEFAULT (datetime('now'))"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS inventario ("
 			+ "inventario_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -35,11 +38,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "item_id INTEGER NOT NULL,"
 			+ "quantita INTEGER DEFAULT 1"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS characters ("
 			+ "character_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -51,11 +50,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "colore_pelle INTEGER DEFAULT 0,"
 			+ "livello_stress INTEGER DEFAULT 0"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS rooms ("
 			+ "room_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -65,11 +60,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "decorations TEXT DEFAULT '[]',"
 			+ "updated_at TEXT DEFAULT (datetime('now'))"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS sync_queue ("
 			+ "queue_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -79,11 +70,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "created_at TEXT DEFAULT (datetime('now')),"
 			+ "retry_count INTEGER DEFAULT 0"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS settings ("
 			+ "settings_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -96,11 +83,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "ui_scale REAL NOT NULL DEFAULT 1.0,"
 			+ "updated_at TEXT NOT NULL DEFAULT (datetime('now'))"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS save_metadata ("
 			+ "save_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -111,11 +94,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "last_saved_at TEXT NOT NULL DEFAULT (datetime('now')),"
 			+ "created_at TEXT NOT NULL DEFAULT (datetime('now'))"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS music_state ("
 			+ "music_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -127,11 +106,7 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "active_ambiences TEXT NOT NULL DEFAULT '[]',"
 			+ "updated_at TEXT NOT NULL DEFAULT (datetime('now'))"
 			+ ");"
-		)
-	)
-
-	DBHelpers.execute(
-		db,
+		),
 		(
 			"CREATE TABLE IF NOT EXISTS placed_decorations ("
 			+ "placement_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -146,12 +121,8 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "placement_zone TEXT NOT NULL DEFAULT 'floor',"
 			+ "placed_at TEXT NOT NULL DEFAULT (datetime('now'))"
 			+ ");"
-		)
-	)
-
-	# T-R-015d badges
-	DBHelpers.execute(
-		db,
+		),
+		# T-R-015d badges
 		(
 			"CREATE TABLE IF NOT EXISTS badges_unlocked ("
 			+ "id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -160,23 +131,42 @@ static func create_all_tables(db: SQLite) -> void:
 			+ "unlocked_at TEXT NOT NULL DEFAULT (datetime('now')),"
 			+ "UNIQUE(account_id, badge_id)"
 			+ ");"
-		)
-	)
-
+		),
+	]
 	# Indexes on foreign key columns for query performance
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);")
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);")
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_rooms_character ON rooms(character_id);")
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_settings_account ON settings(account_id);")
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_save_metadata_account ON save_metadata(account_id);")
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_music_state_account ON music_state(account_id);")
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_placed_decorations_room ON placed_decorations(room_id);")
-	DBHelpers.execute(db, "CREATE INDEX IF NOT EXISTS idx_badges_account ON badges_unlocked(account_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_rooms_character ON rooms(character_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_settings_account ON settings(account_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_save_metadata_account ON save_metadata(account_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_music_state_account ON music_state(account_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_placed_decorations_room ON placed_decorations(room_id);")
+	stmts.append("CREATE INDEX IF NOT EXISTS idx_badges_account ON badges_unlocked(account_id);")
+	return stmts
 
 
 static func migrate_schema(db: SQLite) -> void:
 	_migration_1_characters_schema(db)
 	_migration_2_accounts_columns(db)
+	_migration_3_sync_dlq_and_rate_limit(db)
+
+
+static func _table_has_column(db: SQLite, table: String, column: String) -> bool:
+	# C.4: exact column-name check via PRAGMA table_info (replaces the old
+	# substring match on raw sqlite_master DDL, which false-positived on any
+	# DDL text containing the column name, e.g. foo_character_id).
+	var cols := DBHelpers.select(db, "PRAGMA table_info('%s');" % table, [])
+	for col in cols:
+		if col.get("name", "") == column:
+			return true
+	return false
+
+
+static func _count_rows(db: SQLite, table: String) -> int:
+	var rows := DBHelpers.select(db, "SELECT COUNT(*) AS cnt FROM %s;" % table, [])
+	if rows.is_empty():
+		return -1
+	return int(rows[0].get("cnt", -1))
 
 
 static func _migration_1_characters_schema(db: SQLite) -> void:
@@ -184,44 +174,136 @@ static func _migration_1_characters_schema(db: SQLite) -> void:
 	var rows := DBHelpers.select(db, "SELECT sql FROM sqlite_master WHERE type='table' AND name='characters';", [])
 	if rows.is_empty():
 		return
-	var schema: String = rows[0].get("sql", "")
-	if "character_id" in schema:
+	if _table_has_column(db, "characters", "character_id"):
 		return
 	AppLogger.info("LocalDatabase", "Migrating characters to new schema")
-	# Safety net (fix B-015): backup dei dati PRIMA di DROP distruttivo.
-	# Salva snapshot characters + inventario in tabelle *_bak prima di
-	# droppare. Se migration fallisce o utente vuole rollback, recover
-	# e possibile. Tabelle bak sopravvivono al crash.
-	DBHelpers.execute(db, "DROP TABLE IF EXISTS characters_bak;")
-	DBHelpers.execute(db, "DROP TABLE IF EXISTS inventario_bak;")
-	DBHelpers.execute(db, "CREATE TABLE characters_bak AS SELECT * FROM characters;")
-	DBHelpers.execute(db, "CREATE TABLE inventario_bak AS SELECT * FROM inventario;")
-	var bak_rows := DBHelpers.select(db, "SELECT COUNT(*) as cnt FROM characters_bak;", [])
-	var bak_cnt: int = bak_rows[0].get("cnt", 0) if not bak_rows.is_empty() else 0
-	AppLogger.info("LocalDatabase", "migration_1_backup_created", {"characters_backed_up": bak_cnt})
-	DBHelpers.execute(db, "DROP TABLE IF EXISTS characters;")
-	DBHelpers.execute(db, "DROP TABLE IF EXISTS inventario;")
-	create_all_tables(db)
+	# C.4: whole migration in a checked transaction; backup row counts are
+	# verified against the source BEFORE any destructive DROP executes.
+	if not DBHelpers.execute(db, "BEGIN TRANSACTION;"):
+		AppLogger.error("LocalDatabase", "migration_1_begin_failed")
+		return
+	if not _migration_1_body(db):
+		DBHelpers.execute(db, "ROLLBACK;")
+		AppLogger.error("LocalDatabase", "migration_1_rolled_back")
+		return
+	if not DBHelpers.execute(db, "COMMIT;"):
+		DBHelpers.execute(db, "ROLLBACK;")
+		AppLogger.error("LocalDatabase", "migration_1_commit_failed_rolled_back")
+
+
+static func _migration_1_body(db: SQLite) -> bool:
+	# Safety net (fix B-015 + C.4): verified backup PRIMA di DROP distruttivo.
+	# Le tabelle *_bak sopravvivono al crash e permettono recovery manuale.
+	if not _migration_1_backup_verified(db):
+		return false
+	if not DBHelpers.execute(db, "DROP TABLE IF EXISTS characters;"):
+		return false
+	if not DBHelpers.execute(db, "DROP TABLE IF EXISTS inventario;"):
+		return false
+	return create_all_tables(db)
+
+
+static func _migration_1_backup_verified(db: SQLite) -> bool:
+	var src_chars := _count_rows(db, "characters")
+	var src_inv := _count_rows(db, "inventario")
+	if src_chars < 0 or src_inv < 0:
+		AppLogger.error("LocalDatabase", "migration_1_source_count_failed")
+		return false
+	var ok := DBHelpers.execute(db, "DROP TABLE IF EXISTS characters_bak;")
+	ok = DBHelpers.execute(db, "DROP TABLE IF EXISTS inventario_bak;") and ok
+	ok = DBHelpers.execute(db, "CREATE TABLE characters_bak AS SELECT * FROM characters;") and ok
+	ok = DBHelpers.execute(db, "CREATE TABLE inventario_bak AS SELECT * FROM inventario;") and ok
+	if not ok:
+		return false
+	var bak_chars := _count_rows(db, "characters_bak")
+	var bak_inv := _count_rows(db, "inventario_bak")
+	if bak_chars != src_chars or bak_inv != src_inv:
+		(
+			AppLogger
+			. error(
+				"LocalDatabase",
+				"migration_1_backup_count_mismatch",
+				{
+					"src_characters": src_chars,
+					"bak_characters": bak_chars,
+					"src_inventario": src_inv,
+					"bak_inventario": bak_inv,
+				},
+			)
+		)
+		return false
+	(
+		AppLogger
+		. info(
+			"LocalDatabase",
+			"migration_1_backup_created",
+			{"characters_backed_up": bak_chars, "inventario_backed_up": bak_inv},
+		)
+	)
+	return true
 
 
 static func _migration_2_accounts_columns(db: SQLite) -> void:
-	# Migration 2: add columns to accounts if missing
+	# Migration 2: add columns to accounts if missing (exact-name check, C.4)
 	var acc_rows := DBHelpers.select(db, "SELECT sql FROM sqlite_master WHERE type='table' AND name='accounts';", [])
 	if acc_rows.is_empty():
 		return
-	var acc_schema: String = acc_rows[0].get("sql", "")
-	if "display_name" not in acc_schema:
-		DBHelpers.execute(db, "ALTER TABLE accounts ADD COLUMN display_name TEXT DEFAULT '';")
-	if "updated_at" not in acc_schema:
+	var stmts: Array[String] = []
+	if not _table_has_column(db, "accounts", "display_name"):
+		stmts.append("ALTER TABLE accounts ADD COLUMN display_name TEXT DEFAULT '';")
+	if not _table_has_column(db, "accounts", "updated_at"):
 		# SQLite vieta DEFAULT non-costanti in ALTER TABLE ADD COLUMN.
 		# Aggiungiamo la colonna con default vuoto e poi popoliamo le righe esistenti.
-		DBHelpers.execute(db, "ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT '';")
-		DBHelpers.execute(db, "UPDATE accounts SET updated_at = datetime('now') WHERE updated_at = '';")
-	if "password_hash" not in acc_schema:
-		DBHelpers.execute(db, "ALTER TABLE accounts ADD COLUMN password_hash TEXT DEFAULT '';")
-	if "deleted_at" not in acc_schema:
-		DBHelpers.execute(db, "ALTER TABLE accounts ADD COLUMN deleted_at TEXT DEFAULT NULL;")
-	if "coins" not in acc_schema:
-		DBHelpers.execute(db, "ALTER TABLE accounts ADD COLUMN coins INTEGER DEFAULT 0;")
-	if "inventario_capacita" not in acc_schema:
-		DBHelpers.execute(db, "ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;")
+		stmts.append("ALTER TABLE accounts ADD COLUMN updated_at TEXT DEFAULT '';")
+		stmts.append("UPDATE accounts SET updated_at = datetime('now') WHERE updated_at = '';")
+	if not _table_has_column(db, "accounts", "password_hash"):
+		stmts.append("ALTER TABLE accounts ADD COLUMN password_hash TEXT DEFAULT '';")
+	if not _table_has_column(db, "accounts", "deleted_at"):
+		stmts.append("ALTER TABLE accounts ADD COLUMN deleted_at TEXT DEFAULT NULL;")
+	if not _table_has_column(db, "accounts", "coins"):
+		stmts.append("ALTER TABLE accounts ADD COLUMN coins INTEGER DEFAULT 0;")
+	if not _table_has_column(db, "accounts", "inventario_capacita"):
+		stmts.append("ALTER TABLE accounts ADD COLUMN inventario_capacita INTEGER DEFAULT 50;")
+	if stmts.is_empty():
+		return
+	_run_statements_in_transaction(db, "migration_2", stmts)
+
+
+static func _migration_3_sync_dlq_and_rate_limit(db: SQLite) -> void:
+	# Migration 3 (Phase D): dead-letter table for corrupt/exhausted sync
+	# payloads (audit 4.1.1-L422 — deleted-not-preserved queue items) and
+	# persisted per-account rate-limit state (audit 4.4.2 — in-memory-only
+	# lockout trivially reset by process restart).
+	var stmts: Array[String] = []
+	stmts.append(
+		(
+			"CREATE TABLE IF NOT EXISTS sync_dead_letter ("
+			+ "dlq_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+			+ "original_queue_id INTEGER, "
+			+ "table_name TEXT NOT NULL, "
+			+ "operation TEXT NOT NULL, "
+			+ "payload TEXT, "
+			+ "reason TEXT NOT NULL, "
+			+ "created_at TEXT DEFAULT (datetime('now')));"
+		)
+	)
+	if not _table_has_column(db, "accounts", "failed_attempts"):
+		stmts.append("ALTER TABLE accounts ADD COLUMN failed_attempts INTEGER DEFAULT 0;")
+	if not _table_has_column(db, "accounts", "lockout_until_unix"):
+		stmts.append("ALTER TABLE accounts ADD COLUMN lockout_until_unix INTEGER DEFAULT 0;")
+	_run_statements_in_transaction(db, "migration_3", stmts)
+
+
+static func _run_statements_in_transaction(db: SQLite, context: String, stmts: Array[String]) -> void:
+	# C.4: per-statement checks inside a checked BEGIN/COMMIT envelope.
+	if not DBHelpers.execute(db, "BEGIN TRANSACTION;"):
+		AppLogger.error("LocalDatabase", context + "_begin_failed")
+		return
+	for stmt in stmts:
+		if not DBHelpers.execute(db, stmt):
+			DBHelpers.execute(db, "ROLLBACK;")
+			AppLogger.error("LocalDatabase", context + "_rolled_back", {"stmt": stmt.left(80)})
+			return
+	if not DBHelpers.execute(db, "COMMIT;"):
+		DBHelpers.execute(db, "ROLLBACK;")
+		AppLogger.error("LocalDatabase", context + "_commit_failed_rolled_back")
