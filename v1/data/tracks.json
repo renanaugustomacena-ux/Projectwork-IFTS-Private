@@ -6,7 +6,10 @@
 			"artist": "Mixkit",
 			"path": "res://assets/audio/music/mixkit-light-rain-loop-1253.wav",
 			"genre": "ambient",
-			"moods": ["calm", "neutral"]
+			"moods": [
+				"calm",
+				"neutral"
+			]
 		},
 		{
 			"id": "rain_thunder",
@@ -14,8 +17,34 @@
 			"artist": "Mixkit",
 			"path": "res://assets/audio/music/mixkit-light-rain-with-thunderstorm-1290.wav",
 			"genre": "ambient",
-			"moods": ["tense"]
+			"moods": [
+				"tense",
+				"stormy"
+			]
 		}
 	],
-	"ambience": []
+	"ambience": [
+		{
+			"id": "ambience_rain_soft",
+			"title": "Soft Rain",
+			"artist": "Team IFTS (synth)",
+			"path": "res://assets/audio/ambience/ambience_rain_soft.wav",
+			"moods": [
+				"calm",
+				"neutral",
+				"tense",
+				"stormy"
+			]
+		},
+		{
+			"id": "ambience_fireplace",
+			"title": "Fireplace",
+			"artist": "Team IFTS (synth)",
+			"path": "res://assets/audio/ambience/ambience_fireplace.wav",
+			"moods": [
+				"calm",
+				"neutral"
+			]
+		}
+	]
 }

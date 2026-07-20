@@ -139,8 +139,8 @@ static func upsert_music_state(db: SQLite, account_id: int, data: Dictionary) ->
 				[
 					data.get("current_track_id", ""),
 					data.get("track_position_sec", 0.0),
-					data.get("playlist_mode", "sequential"),
-					1 if data.get("ambience_enabled", true) else 0,
+					data.get("playlist_mode", Constants.DEFAULT_PLAYLIST_MODE),
+					_coerce_flag(data.get("ambience_enabled", true), "ambience_enabled"),
 					JSON.stringify(data.get("active_ambiences", [])),
 					account_id,
 				],
@@ -160,9 +160,31 @@ static func upsert_music_state(db: SQLite, account_id: int, data: Dictionary) ->
 				account_id,
 				data.get("current_track_id", ""),
 				data.get("track_position_sec", 0.0),
-				data.get("playlist_mode", "sequential"),
-				1 if data.get("ambience_enabled", true) else 0,
+				data.get("playlist_mode", Constants.DEFAULT_PLAYLIST_MODE),
+				_coerce_flag(data.get("ambience_enabled", true), "ambience_enabled"),
 				JSON.stringify(data.get("active_ambiences", [])),
 			],
 		)
 	)
+
+
+## Coerces an untrusted boolean-ish flag to the 0/1 INTEGER the schema
+## expects (audit 4.1.18-L143). Save data arrives from JSON, so numbers may
+## parse as floats; anything that is not bool/int/float logs a WARN and
+## falls back to enabled (1).
+static func _coerce_flag(value: Variant, field: String) -> int:
+	if value is bool:
+		return 1 if value else 0
+	if value is int:
+		return clampi(value, 0, 1)
+	if value is float:
+		return clampi(int(value), 0, 1)
+	(
+		AppLogger
+		. warn(
+			"SettingsRepo",
+			"Unexpected %s type, defaulting to 1" % field,
+			{"type": type_string(typeof(value))},
+		)
+	)
+	return 1

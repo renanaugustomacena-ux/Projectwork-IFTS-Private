@@ -85,32 +85,14 @@ static func music_to_cloud(
 	return {
 		"user_id": supabase_uid,
 		"current_track_index": music_state.get("current_track_index", 0),
-		"playlist_mode": music_state.get("playlist_mode", "shuffle"),
+		"playlist_mode": music_state.get("playlist_mode", Constants.DEFAULT_PLAYLIST_MODE),
 		"active_ambience": music_state.get("active_ambience", []),
 		"updated_at": Time.get_datetime_string_from_system(),
 	}
 
-
-static func inventory_to_cloud(
-	items: Array,
-	supabase_uid: String,
-) -> Array[Dictionary]:
-	var rows: Array[Dictionary] = []
-	for item in items:
-		if item is not Dictionary:
-			continue
-		(
-			rows
-			. append(
-				{
-					"user_id": supabase_uid,
-					"item_id": str(item.get("item_id", "")),
-					"unlock_type": "currency",
-					"unlocked_at": Time.get_datetime_string_from_system(),
-				}
-			)
-		)
-	return rows
+# inventory_to_cloud removed (Phase E): dead code with zero call sites and no
+# matching table in supabase/schema.sql, violating the mapper<->schema parity
+# contract. Re-add together with its table when inventory push sync lands.
 
 # Cloud -> Local mappers rimossi (B-022): la pull sync non è mai stata
 # implementata. Quando servirà, reintrodurre con logica specifica di

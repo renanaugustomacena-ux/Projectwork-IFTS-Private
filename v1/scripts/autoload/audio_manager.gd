@@ -9,11 +9,11 @@ const MAX_AUDIO_FILE_SIZE := 52_428_800  # 50 MB limit for external audio import
 var tracks: Array = []
 var current_track_index: int = 0
 var is_playing: bool = false
-var playlist_mode: String = "shuffle":  # "sequential", "shuffle", "repeat_one"
+var playlist_mode: String = Constants.DEFAULT_PLAYLIST_MODE:  # "sequential", "shuffle", "repeat_one"
 	set(value):
 		if value not in ["sequential", "shuffle", "repeat_one"]:
-			push_warning("AudioManager: playlist_mode invalido '%s', fallback 'shuffle'" % value)
-			value = "shuffle"
+			push_warning("AudioManager: invalid playlist_mode '%s', using default" % value)
+			value = Constants.DEFAULT_PLAYLIST_MODE
 		playlist_mode = value
 		_sync_music_state()
 # Volume levels (0.0 to 1.0, converted to dB for AudioStreamPlayer)
@@ -24,6 +24,8 @@ var ambience_volume: float = 0.4
 var current_mood: String = "calm"
 
 # ---- Private state ----
+# Mood volume scalar (1.0 full, 0.5 at mood 0); folded into _get_music_volume_db (Phase D).
+var _mood_volume_scale: float = 1.0
 # Active ambience sound IDs (use get_active_ambience() to read)
 var _active_ambience: Array = []
 var _music_player_a: AudioStreamPlayer
@@ -51,6 +53,11 @@ func _ready() -> void:
 	SignalBus.ambience_toggled.connect(_on_ambience_toggled)
 	SignalBus.load_completed.connect(_on_load_completed)
 	SignalBus.mood_changed.connect(_on_mood_changed)
+	# G-054: release streams during teardown so the AudioServer drops its
+	# active AudioStreamPlayback before the ObjectDB exit-leak check.
+	# tree_exiting is a Node signal (SceneTree has none): connect this
+	# autoload's own, which fires just before _exit_tree at quit.
+	tree_exiting.connect(_release_streams)
 
 	# B-030: seed deterministico in debug per riproducibilita` bug report
 	if OS.is_debug_build():
@@ -62,14 +69,44 @@ func _ready() -> void:
 
 
 func _load_tracks() -> void:
-	if GameManager.tracks_catalog.has("tracks"):
-		tracks = GameManager.tracks_catalog["tracks"]
+	# Validate once at load so hot-path play()/_on_mood_changed never see
+	# malformed entries: Dictionary shape, unique non-empty id, existing
+	# path, non-empty moods array. Malformed entries are skipped with a WARN.
+	var raw_tracks: Array = GameManager.tracks_catalog.get("tracks", [])
+	var validated: Array = []
+	var seen_ids: Dictionary = {}
+	for entry in raw_tracks:
+		if entry is not Dictionary:
+			push_warning("AudioManager: skipping non-Dictionary track entry")
+			continue
+		var track: Dictionary = entry
+		var track_id := String(track.get("id", ""))
+		if track_id.is_empty():
+			push_warning("AudioManager: skipping track with empty id")
+			continue
+		if seen_ids.has(track_id):
+			push_warning("AudioManager: skipping track with duplicate id '%s'" % track_id)
+			continue
+		var path := String(track.get("path", ""))
+		if path.is_empty():
+			push_warning("AudioManager: skipping track '%s' with empty path" % track_id)
+			continue
+		if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
+			push_warning("AudioManager: skipping track '%s', file not found: '%s'" % [track_id, path])
+			continue
+		var moods: Variant = track.get("moods", [])
+		if moods is not Array or (moods as Array).is_empty():
+			push_warning("AudioManager: skipping track '%s' with empty moods array" % track_id)
+			continue
+		seen_ids[track_id] = true
+		validated.append(track)
+	tracks = validated
 
 
 func _on_load_completed() -> void:
 	var state: Dictionary = SaveManager.get_music_state()
 	current_track_index = state.get("current_track_index", 0)
-	playlist_mode = state.get("playlist_mode", "shuffle")
+	playlist_mode = state.get("playlist_mode", Constants.DEFAULT_PLAYLIST_MODE)
 	_active_ambience = state.get("active_ambience", [])
 
 	if not tracks.is_empty():
@@ -136,7 +173,7 @@ func next_track() -> void:
 		"shuffle":
 			var new_index := current_track_index
 			while new_index == current_track_index and tracks.size() > 1:
-				new_index = randi() % tracks.size()
+				new_index = _mood_rng.randi_range(0, tracks.size() - 1)
 			current_track_index = new_index
 		"repeat_one":
 			pass  # Same track
@@ -170,19 +207,9 @@ func _load_audio_stream(path: String) -> AudioStream:
 				AppLogger.error("AudioManager", "Cannot open audio file", {"path": path})
 				return null
 			if file.get_length() > MAX_AUDIO_FILE_SIZE:
+				var ctx := {"path": path, "size": file.get_length(), "max": MAX_AUDIO_FILE_SIZE}
 				file.close()
-				(
-					AppLogger
-					. error(
-						"AudioManager",
-						"Audio file too large",
-						{
-							"path": path,
-							"size": file.get_length(),
-							"max": MAX_AUDIO_FILE_SIZE,
-						}
-					)
-				)
+				AppLogger.error("AudioManager", "Audio file too large", ctx)
 				return null
 			var buffer := file.get_buffer(file.get_length())
 			file.close()
@@ -194,20 +221,38 @@ func _load_audio_stream(path: String) -> AudioStream:
 	return load(path) as AudioStream
 
 
-## Reagisce al cambio di mood emesso da StressManager: filtra i tracks
-## del catalog su quelli che includono il nuovo mood nell'array `moods`,
-## sceglie una traccia a caso (escludendo quella attualmente suonata se
-## possibile) e avvia il crossfade. Se non ci sono tracce matching, no-op.
+## Reacts to StressManager mood changes: picks a track for the new mood via
+## _pick_mood_track_index and crossfades to it (no-op when none matches).
 func _on_mood_changed(mood: String) -> void:
 	if mood == current_mood:
 		return
 	current_mood = mood
-	var candidates: Array = []
+	# Phase D: never resume music the user explicitly paused/stopped.
+	if not is_playing:
+		return
+	var choice := _pick_mood_track_index(mood)
+	if choice < 0:
+		return
+	var chosen_track: Dictionary = tracks[choice]
+	var stream := _load_audio_stream(String(chosen_track.get("path", "")))
+	if stream == null:
+		return
+	current_track_index = choice
+	is_playing = true
+	_crossfade_to(stream)
+	SignalBus.track_changed.emit(current_track_index)
+	_sync_music_state()
+
+
+## Track index to swap to for `mood`, or -1 for no swap: no match, or the
+## only match is already playing (no self-crossfade restart — Phase D fix).
+func _pick_mood_track_index(mood: String) -> int:
 	var current_path: String = ""
 	if current_track_index >= 0 and current_track_index < tracks.size():
 		var curr: Variant = tracks[current_track_index]
 		if curr is Dictionary:
 			current_path = String(curr.get("path", ""))
+	var candidates: Array = []
 	for i in range(tracks.size()):
 		var t = tracks[i]
 		if not (t is Dictionary):
@@ -215,35 +260,19 @@ func _on_mood_changed(mood: String) -> void:
 		var moods: Array = t.get("moods", [])
 		if moods is Array and mood in moods:
 			candidates.append(i)
-
 	if candidates.is_empty():
-		return
-
+		return -1
 	# Prova a escludere la traccia gia` in riproduzione per aumentare varieta`
 	var filtered: Array = []
 	for idx in candidates:
 		var t = tracks[idx]
 		if t is Dictionary and String(t.get("path", "")) != current_path:
 			filtered.append(idx)
+	if filtered.is_empty() and _active_player != null and _active_player.playing:
+		return -1  # only match is already audible: keep it running
 	if not filtered.is_empty():
 		candidates = filtered
-
-	var choice: int = candidates[_mood_rng.randi_range(0, candidates.size() - 1)]
-	var chosen_track = tracks[choice]
-	if not (chosen_track is Dictionary):
-		return
-	var stream_path := String(chosen_track.get("path", ""))
-	if stream_path.is_empty():
-		return
-	var stream := _load_audio_stream(stream_path)
-	if stream == null:
-		return
-
-	current_track_index = choice
-	is_playing = true
-	_crossfade_to(stream)
-	SignalBus.track_changed.emit(current_track_index)
-	_sync_music_state()
+	return candidates[_mood_rng.randi_range(0, candidates.size() - 1)]
 
 
 func _crossfade_to(stream: AudioStream) -> void:
@@ -372,7 +401,7 @@ func _on_volume_changed(bus_name: String, volume: float) -> void:
 
 
 func _get_music_volume_db() -> float:
-	var linear := master_volume * music_volume
+	var linear := master_volume * music_volume * _mood_volume_scale
 	if linear <= 0.0001:
 		return VOLUME_DB_FLOOR
 	return linear_to_db(linear)
@@ -384,32 +413,25 @@ func _apply_music_volume() -> void:
 		_active_player.volume_db = db
 
 
-# T-R-015i: crossfade audio in risposta al mood_level slider continuo 0..1.
-# Strategia demo-safe (no asset storm dedicato):
-#  - Abbassa il volume musica proporzionalmente al gloom (0.5 al minimo)
-#  - Se la soglia stormy viene attraversata, propaga mood_changed("tense")
-#    per riusare la track selection esistente basata sul catalog
-func crossfade_to_mood_track(mood: float) -> void:
+# T-R-015i: reacts to the continuous mood_level slider (0..1).
+#  - Scales music volume with gloom (50% at minimum) via _mood_volume_scale
+#    in _get_music_volume_db() so every volume path applies it (Phase D).
+#  - When a threshold band is crossed, emits the discrete mood_changed so
+#    _on_mood_changed reuses the catalog-based track selection + crossfade.
+# IMPORTANT: never pre-assign current_mood here — _on_mood_changed owns that
+# state, and pre-assigning would trip its dedupe guard and suppress the swap.
+func apply_mood_scalar(mood: float) -> void:
 	var clamped: float = clampf(mood, 0.0, 1.0)
-	# Scala volume: mood 1.0 -> volume normale, mood 0.0 -> 50% volume
-	var volume_scale: float = 0.5 + 0.5 * clamped
-	var effective_linear: float = maxf(master_volume * music_volume * volume_scale, 0.0001)
-	var target_db: float = linear_to_db(effective_linear)
-	if _active_player != null and _active_player.playing:
-		_active_player.volume_db = target_db
-	# Soglia stormy: propaga evento discreto per eventuale swap track
+	# Volume scale: mood 1.0 -> normal volume, mood 0.0 -> 50% volume
+	_mood_volume_scale = 0.5 + 0.5 * clamped
+	_apply_music_volume()
+	var target_mood := "calm"
 	if clamped < Constants.MOOD_STORMY_THRESHOLD:
-		if current_mood != "stormy":
-			current_mood = "stormy"
-			SignalBus.mood_changed.emit("stormy")
+		target_mood = "stormy"
 	elif clamped < Constants.MOOD_GLOOMY_THRESHOLD:
-		if current_mood != "tense":
-			current_mood = "tense"
-			SignalBus.mood_changed.emit("tense")
-	else:
-		if current_mood != "calm":
-			current_mood = "calm"
-			SignalBus.mood_changed.emit("calm")
+		target_mood = "tense"
+	if target_mood != current_mood:
+		SignalBus.mood_changed.emit(target_mood)
 
 
 func _apply_ambience_volume() -> void:
@@ -453,6 +475,8 @@ func _release_streams() -> void:
 
 func _exit_tree() -> void:
 	_release_streams()
+	if tree_exiting.is_connected(_release_streams):
+		tree_exiting.disconnect(_release_streams)
 	if SignalBus.volume_changed.is_connected(_on_volume_changed):
 		SignalBus.volume_changed.disconnect(_on_volume_changed)
 	if SignalBus.ambience_toggled.is_connected(_on_ambience_toggled):

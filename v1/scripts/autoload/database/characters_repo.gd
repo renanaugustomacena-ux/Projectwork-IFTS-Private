@@ -28,7 +28,7 @@ static func upsert_character(db: SQLite, account_id: int, data: Dictionary) -> b
 				),
 				[
 					data.get("nome", ""),
-					1 if data.get("genere", true) else 0,
+					_coerce_genere(data.get("genere", 1)),
 					data.get("colore_occhi", 0),
 					data.get("colore_capelli", 0),
 					data.get("colore_pelle", 0),
@@ -50,7 +50,7 @@ static func upsert_character(db: SQLite, account_id: int, data: Dictionary) -> b
 			[
 				account_id,
 				data.get("nome", ""),
-				1 if data.get("genere", true) else 0,
+				_coerce_genere(data.get("genere", 1)),
 				data.get("colore_occhi", 0),
 				data.get("colore_capelli", 0),
 				data.get("colore_pelle", 0),
@@ -62,3 +62,25 @@ static func upsert_character(db: SQLite, account_id: int, data: Dictionary) -> b
 
 static func delete_character(db: SQLite, account_id: int) -> bool:
 	return DBHelpers.execute_bound(db, "DELETE FROM characters WHERE account_id = ?;", [account_id])
+
+
+## Coerces an untrusted genere value to the 0/1 INTEGER the schema expects
+## (audit 4.1.15-L31). Save data arrives from JSON, so numbers may parse as
+## floats; anything that is not bool/int/float logs a WARN and falls back to
+## the schema default (1).
+static func _coerce_genere(value: Variant) -> int:
+	if value is bool:
+		return 1 if value else 0
+	if value is int:
+		return clampi(value, 0, 1)
+	if value is float:
+		return clampi(int(value), 0, 1)
+	(
+		AppLogger
+		. warn(
+			"CharactersRepo",
+			"Unexpected genere type, defaulting to 1",
+			{"type": type_string(typeof(value))},
+		)
+	)
+	return 1

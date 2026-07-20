@@ -8,15 +8,25 @@ func _ready() -> void:
 	get_viewport().focus_entered.connect(_on_focus_entered)
 	get_viewport().focus_exited.connect(_on_focus_exited)
 	SignalBus.load_completed.connect(_on_load_completed)
+	_report_fps_state(true)
 	AppLogger.info("PerformanceManager", "Initialized", {"fps": Engine.max_fps})
 
 
 func _on_focus_entered() -> void:
 	Engine.max_fps = Constants.FPS_FOCUSED
+	_report_fps_state(true)
 
 
 func _on_focus_exited() -> void:
 	Engine.max_fps = Constants.FPS_UNFOCUSED
+	_report_fps_state(false)
+
+
+## Feeds the fps cap and focus state into the periodic AppLogger metrics
+## snapshot line. (4.9.4)
+func _report_fps_state(focused: bool) -> void:
+	AppLogger.set_gauge("fps_cap", Engine.max_fps)
+	AppLogger.set_gauge("window_focused", focused)
 
 
 func _on_load_completed() -> void:

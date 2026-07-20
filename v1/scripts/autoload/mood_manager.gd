@@ -65,8 +65,8 @@ func _apply_effects(mood: float) -> void:
 		SignalBus.pet_wild_mode_requested.emit(want_wild)
 
 	# Audio crossfade: quando mood sotto soglia, segnala ad AudioManager
-	if AudioManager.has_method("crossfade_to_mood_track"):
-		AudioManager.crossfade_to_mood_track(mood)
+	if AudioManager.has_method("apply_mood_scalar"):
+		AudioManager.apply_mood_scalar(mood)
 
 
 func _ensure_overlay() -> void:
