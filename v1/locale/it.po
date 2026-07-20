@@ -99,7 +99,7 @@ msgid "UI_SETTINGS_LANGUAGE"
 msgstr "Lingua"
 
 msgid "UI_SETTINGS_REPLAY_TUTORIAL"
-msgstr "Ripeti Tutorial"
+msgstr "Ripeti tutorial"
 
 # Auth screen
 msgid "UI_AUTH_PLAY_GUEST"
@@ -139,3 +139,25 @@ msgstr "Scegli il tuo personaggio"
 
 msgid "UI_CHARSEL_CONFIRM"
 msgstr "Inizia a giocare"
+
+# Settings panel + credits
+msgid "UI_SETTINGS_VOLUME"
+msgstr "Volume"
+
+msgid "UI_SETTINGS_MASTER"
+msgstr "Generale"
+
+msgid "UI_SETTINGS_MUSIC"
+msgstr "Musica"
+
+msgid "UI_SETTINGS_AMBIENCE"
+msgstr "Ambiente"
+
+msgid "UI_SETTINGS_AMBIENCE_ENABLED"
+msgstr "Suoni ambientali"
+
+msgid "UI_SETTINGS_CREDITS"
+msgstr "Crediti"
+
+msgid "CREDITS_BODY"
+msgstr "Foresta pixel art: Eder Muniz. Piante da interno: SoppyCraft. Isometric Room Builder: Thurraya. Mobili e UI pack: Kenney (CC0). Suoni di pioggia: Mixkit. Loop ambientali, personaggi, stanza, pet e icone: Team IFTS."

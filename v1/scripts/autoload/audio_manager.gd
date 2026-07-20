@@ -2,6 +2,8 @@
 ## Supports dual-player crossfade, simultaneous music + multiple ambience streams.
 extends Node
 
+const AmbienceControllerScript := preload("res://scripts/systems/ambience_controller.gd")
+
 const VOLUME_DB_FLOOR := -80.0
 const MAX_AUDIO_FILE_SIZE := 52_428_800  # 50 MB limit for external audio imports
 
@@ -26,13 +28,12 @@ var current_mood: String = "calm"
 # ---- Private state ----
 # Mood volume scalar (1.0 full, 0.5 at mood 0); folded into _get_music_volume_db (Phase D).
 var _mood_volume_scale: float = 1.0
-# Active ambience sound IDs (use get_active_ambience() to read)
-var _active_ambience: Array = []
+# Ambience: macchina separata (F.5) — vedi systems/ambience_controller.gd
+var _ambience: Node = null  # AmbienceControllerScript instance
 var _music_player_a: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer
 var _active_player: AudioStreamPlayer
 var _crossfade_tween: Tween
-var _ambience_players: Dictionary = {}
 var _mood_rng := RandomNumberGenerator.new()
 
 
@@ -48,6 +49,11 @@ func _ready() -> void:
 	add_child(_music_player_b)
 
 	_active_player = _music_player_a
+
+	_ambience = AmbienceControllerScript.new()
+	_ambience.name = "AmbienceController"
+	_ambience.setup(func() -> float: return master_volume * ambience_volume)
+	add_child(_ambience)
 
 	SignalBus.volume_changed.connect(_on_volume_changed)
 	SignalBus.ambience_toggled.connect(_on_ambience_toggled)
@@ -107,7 +113,7 @@ func _on_load_completed() -> void:
 	var state: Dictionary = SaveManager.get_music_state()
 	current_track_index = state.get("current_track_index", 0)
 	playlist_mode = state.get("playlist_mode", Constants.DEFAULT_PLAYLIST_MODE)
-	_active_ambience = state.get("active_ambience", [])
+	var saved_ambience: Array = state.get("active_ambience", [])
 
 	if not tracks.is_empty():
 		current_track_index = clampi(current_track_index, 0, tracks.size() - 1)
@@ -118,8 +124,12 @@ func _on_load_completed() -> void:
 
 	_apply_music_volume()
 
-	for amb_id in _active_ambience:
-		_start_ambience(amb_id)
+	if _ambience != null:
+		if saved_ambience.is_empty():
+			_ambience.refresh_for_mood(current_mood)
+		else:
+			for amb_id in saved_ambience:
+				_ambience.start(String(amb_id))
 
 
 func play() -> void:
@@ -227,6 +237,10 @@ func _on_mood_changed(mood: String) -> void:
 	if mood == current_mood:
 		return
 	current_mood = mood
+	# F.5: l'ambience segue il mood anche a musica ferma — e` un tappeto
+	# sonoro indipendente dalla playlist.
+	if _ambience != null:
+		_ambience.refresh_for_mood(mood)
 	# Phase D: never resume music the user explicitly paused/stopped.
 	if not is_playing:
 		return
@@ -318,70 +332,33 @@ func _on_track_finished(player: AudioStreamPlayer) -> void:
 		next_track()
 
 
-func get_active_ambience() -> Array:
-	return _active_ambience.duplicate()
-
-
-func _start_ambience(ambience_id: String) -> void:
-	if ambience_id in _ambience_players:
-		return  # Already playing
-
-	var amb_path := _find_ambience_path(ambience_id)
-	if amb_path.is_empty():
-		push_warning("AudioManager: ambience file not found for '%s'" % ambience_id)
-		return
-
-	var stream: AudioStream = _load_audio_stream(amb_path)
-	if stream == null:
-		return
-
-	var player := AudioStreamPlayer.new()
-	player.stream = stream
-	player.bus = "Master"
-	player.volume_db = linear_to_db(maxf(master_volume * ambience_volume, 0.0001))
-	player.autoplay = true
-	add_child(player)
-	_ambience_players[ambience_id] = player
-
-	if ambience_id not in _active_ambience:
-		_active_ambience.append(ambience_id)
-	_sync_music_state()
-
-
-func _find_ambience_path(ambience_id: String) -> String:
-	# Check tracks catalog first
-	var ambience_list: Array = GameManager.tracks_catalog.get("ambience", [])
-	for amb_data in ambience_list:
-		if amb_data is Dictionary and amb_data.get("id", "") == ambience_id:
-			return amb_data.get("path", "")
-
-	# Fallback: try standard paths
-	var ogg_path := "res://assets/audio/ambience/%s.ogg" % ambience_id
-	if FileAccess.file_exists(ogg_path):
-		return ogg_path
-	var wav_path := "res://assets/audio/ambience/%s.wav" % ambience_id
-	if FileAccess.file_exists(wav_path):
-		return wav_path
-	return ""
-
-
-func _stop_ambience(ambience_id: String) -> void:
-	if ambience_id not in _ambience_players:
-		return
-	var player: AudioStreamPlayer = _ambience_players[ambience_id]
-	_ambience_players.erase(ambience_id)
-	_active_ambience.erase(ambience_id)
-	if is_instance_valid(player):
-		player.stop()
-		player.queue_free()
-	_sync_music_state()
-
-
 func _on_ambience_toggled(ambience_id: String, is_active: bool) -> void:
+	if _ambience == null:
+		return
 	if is_active:
-		_start_ambience(ambience_id)
+		_ambience.start(ambience_id)
 	else:
-		_stop_ambience(ambience_id)
+		_ambience.stop(ambience_id)
+	_sync_music_state()
+
+
+## API pubblica ambience (delegata al controller, F.5).
+func get_active_ambience() -> Array:
+	return _ambience.get_active() if _ambience != null else []
+
+
+func set_ambience_enabled(enabled: bool) -> void:
+	if _ambience != null:
+		_ambience.set_enabled(enabled, current_mood)
+		_sync_music_state()
+
+
+func is_ambience_enabled() -> bool:
+	return _ambience.is_enabled() if _ambience != null else true
+
+
+func is_ambience_playing() -> bool:
+	return _ambience.is_playing() if _ambience != null else false
 
 
 func _on_volume_changed(bus_name: String, volume: float) -> void:
@@ -435,9 +412,8 @@ func apply_mood_scalar(mood: float) -> void:
 
 
 func _apply_ambience_volume() -> void:
-	var db := linear_to_db(maxf(master_volume * ambience_volume, 0.0001))
-	for player: AudioStreamPlayer in _ambience_players.values():
-		player.volume_db = db
+	if _ambience != null:
+		_ambience.apply_volume()
 
 
 func _sync_music_state() -> void:
@@ -448,7 +424,7 @@ func _sync_music_state() -> void:
 			{
 				"current_track_index": current_track_index,
 				"playlist_mode": playlist_mode,
-				"active_ambience": _active_ambience.duplicate(),
+				"active_ambience": get_active_ambience(),
 			}
 		)
 	)
@@ -466,11 +442,8 @@ func _release_streams() -> void:
 	if _music_player_b and is_instance_valid(_music_player_b):
 		_music_player_b.stop()
 		_music_player_b.stream = null
-	for amb_id in _ambience_players.keys():
-		var player: AudioStreamPlayer = _ambience_players[amb_id]
-		if is_instance_valid(player):
-			player.stop()
-			player.stream = null
+	if _ambience != null and is_instance_valid(_ambience):
+		_ambience.release_streams()
 
 
 func _exit_tree() -> void:
@@ -488,10 +461,5 @@ func _exit_tree() -> void:
 	if _crossfade_tween != null and _crossfade_tween.is_running():
 		_crossfade_tween.kill()
 		_crossfade_tween = null
-	for amb_id in _ambience_players.keys():
-		var player: AudioStreamPlayer = _ambience_players[amb_id]
-		if is_instance_valid(player):
-			player.stop()
-			player.queue_free()
-	_ambience_players.clear()
-	_active_ambience.clear()
+	if _ambience != null and is_instance_valid(_ambience):
+		_ambience.stop_all()

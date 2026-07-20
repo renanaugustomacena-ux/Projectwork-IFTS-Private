@@ -6,12 +6,15 @@ var _master_slider: HSlider
 var _music_slider: HSlider
 var _ambience_slider: HSlider
 var _language_option: OptionButton
+var _ambience_check: CheckButton
 var _loading: bool = false
+var _root_box: VBoxContainer
 
 
 func _ready() -> void:
 	_build_ui()
 	_load_settings()
+	SignalBus.language_changed.connect(_on_language_changed)
 
 
 func _build_ui() -> void:
@@ -25,42 +28,42 @@ func _build_ui() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	margin.add_child(vbox)
+	_root_box = vbox
 
 	# Title
 	var title := Label.new()
-	title.text = "Impostazioni"
+	title.text = tr("UI_SETTINGS_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	# Audio section
 	var audio_label := Label.new()
-	audio_label.text = "Volume"
+	audio_label.text = tr("UI_SETTINGS_VOLUME")
 	audio_label.add_theme_font_size_override("font_size", 11)
 	audio_label.modulate.a = 0.7
 	vbox.add_child(audio_label)
 
-	_master_slider = _create_slider(vbox, "Master", 0.8)
+	_master_slider = _create_slider(vbox, tr("UI_SETTINGS_MASTER"), 0.8)
 	_master_slider.value_changed.connect(_on_master_changed)
 
-	_music_slider = _create_slider(vbox, "Music", 0.6)
+	_music_slider = _create_slider(vbox, tr("UI_SETTINGS_MUSIC"), 0.6)
 	_music_slider.value_changed.connect(_on_music_changed)
 
-	_ambience_slider = _create_slider(vbox, "Ambience", 0.4)
+	_ambience_slider = _create_slider(vbox, tr("UI_SETTINGS_AMBIENCE"), 0.4)
 	_ambience_slider.value_changed.connect(_on_ambience_changed)
 
 	# Separator
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
-	# Language selector: visibile (.po files in v1/locale/ presenti).
-	# N.B.: la maggior parte delle stringhe UI e` italiano hardcoded, solo ~16
-	# passaggi con tr() cambiano lingua al momento. i18n completo e` WIP.
+	# Selettore lingua: le stringhe del pannello passano da tr() e il pannello
+	# si ricostruisce su language_changed, quindi il cambio e` immediato.
 	var lang_row := HBoxContainer.new()
 	lang_row.add_theme_constant_override("separation", 8)
 	vbox.add_child(lang_row)
 
 	var lang_label := Label.new()
-	lang_label.text = "Language"
+	lang_label.text = tr("UI_SETTINGS_LANGUAGE")
 	lang_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lang_row.add_child(lang_label)
 
@@ -74,9 +77,18 @@ func _build_ui() -> void:
 	_language_option.item_selected.connect(_on_language_selected)
 	lang_row.add_child(_language_option)
 
+	# Ambience on/off: il tappeto sonoro e` indipendente dalla playlist.
+	_ambience_check = CheckButton.new()
+	_ambience_check.focus_mode = Control.FOCUS_NONE
+	_ambience_check.text = tr("UI_SETTINGS_AMBIENCE_ENABLED")
+	_ambience_check.toggled.connect(_on_ambience_enabled_toggled)
+	vbox.add_child(_ambience_check)
+
 	# Separator
 	var sep2 := HSeparator.new()
 	vbox.add_child(sep2)
+
+	_build_credits(vbox)
 
 	# Replay Tutorial — only show in-game, not from main menu
 	var current_scene := get_tree().current_scene
@@ -84,9 +96,47 @@ func _build_ui() -> void:
 	if in_game:
 		var tutorial_btn := Button.new()
 		tutorial_btn.focus_mode = Control.FOCUS_NONE
-		tutorial_btn.text = "Ripeti Tutorial"
+		tutorial_btn.text = tr("UI_SETTINGS_REPLAY_TUTORIAL")
 		tutorial_btn.pressed.connect(_on_replay_tutorial)
 		vbox.add_child(tutorial_btn)
+
+
+## Crediti: la licenza del pack foresta (Eder Muniz) richiede attribuzione
+## visibile nel gioco, non solo nel repository.
+func _build_credits(parent: VBoxContainer) -> void:
+	var credits_label := Label.new()
+	credits_label.text = tr("UI_SETTINGS_CREDITS")
+	credits_label.add_theme_font_size_override("font_size", 11)
+	credits_label.modulate.a = 0.7
+	parent.add_child(credits_label)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 88)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	parent.add_child(scroll)
+
+	var body := Label.new()
+	body.text = tr("CREDITS_BODY")
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_font_size_override("font_size", 10)
+	scroll.add_child(body)
+
+
+func _on_ambience_enabled_toggled(pressed: bool) -> void:
+	if _loading:
+		return
+	AudioManager.set_ambience_enabled(pressed)
+
+
+## Ricostruisce il pannello dopo un cambio lingua: le stringhe passate da
+## tr() sono gia` risolte nei nodi, quindi l'unico modo onesto di aggiornarle
+## e` rifare la UI con lo stato corrente.
+func _on_language_changed(_lang_code: String) -> void:
+	for child in get_children():
+		child.queue_free()
+	_build_ui()
+	_load_settings()
 
 
 func _on_replay_tutorial() -> void:
@@ -134,6 +184,8 @@ func _load_settings() -> void:
 	_master_slider.value = SaveManager.get_setting("master_volume", 0.8)
 	_music_slider.value = SaveManager.get_setting("music_volume", 0.6)
 	_ambience_slider.value = SaveManager.get_setting("ambience_volume", 0.4)
+	if _ambience_check != null:
+		_ambience_check.button_pressed = bool(SaveManager.get_setting("ambience_enabled", true))
 	_loading = false
 
 	var current_lang: String = SaveManager.get_setting("language", "en")
@@ -166,10 +218,9 @@ func _on_ambience_changed(value: float) -> void:
 
 func _on_language_selected(index: int) -> void:
 	var lang_code: String = _language_option.get_item_metadata(index)
-	# Applica locale runtime: i nodi con auto_translate_mode = ALWAYS (default
-	# Godot 4.2+) e testo = "UI_KEY" si ri-traducono. I nodi con .text = tr()
-	# hanno gia` risolto la traduzione al momento del build → NON si aggiornano
-	# senza rebuild. i18n completo e` WIP post-demo.
+	# I nodi con testo = "UI_KEY" si ri-traducono da soli; quelli costruiti da
+	# script con tr() hanno gia` risolto la stringa, per questo il pannello si
+	# ricostruisce alla ricezione di language_changed (_on_language_changed).
 	TranslationServer.set_locale(lang_code)
 	SignalBus.settings_updated.emit("language", lang_code)
 	SignalBus.language_changed.emit(lang_code)
@@ -177,6 +228,10 @@ func _on_language_selected(index: int) -> void:
 
 
 func _exit_tree() -> void:
+	if SignalBus.language_changed.is_connected(_on_language_changed):
+		SignalBus.language_changed.disconnect(_on_language_changed)
+	if _ambience_check and _ambience_check.toggled.is_connected(_on_ambience_enabled_toggled):
+		_ambience_check.toggled.disconnect(_on_ambience_enabled_toggled)
 	if _master_slider and _master_slider.value_changed.is_connected(_on_master_changed):
 		_master_slider.value_changed.disconnect(_on_master_changed)
 	if _music_slider and _music_slider.value_changed.is_connected(_on_music_changed):

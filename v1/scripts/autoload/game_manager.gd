@@ -28,8 +28,22 @@ var _last_catalog_error: String = ""
 func _ready() -> void:
 	_load_catalogs()
 	_validate_catalogs()
+	_apply_saved_locale()
 	SignalBus.load_completed.connect(_on_load_completed)
 	call_deferred("_deferred_load")
+
+
+## F.1: la lingua salvata va applicata prima che la UI si costruisca,
+## altrimenti il gioco parte sempre nel locale di fallback e la scelta
+## dell'utente sembra ignorata fino al primo cambio manuale.
+## Catena: impostazione salvata -> lingua di sistema se supportata -> "it".
+func _apply_saved_locale() -> void:
+	var saved: String = str(SaveManager.get_setting("language", ""))
+	if saved.is_empty() or not Constants.LANGUAGES.has(saved):
+		var system_lang := OS.get_locale_language()
+		saved = system_lang if Constants.LANGUAGES.has(system_lang) else "it"
+	TranslationServer.set_locale(saved)
+	AppLogger.info("GameManager", "locale_applied", {"locale": saved})
 
 
 func _deferred_load() -> void:
@@ -160,6 +174,13 @@ func _on_load_completed() -> void:
 		current_outfit_id = _pending_outfit
 		_pending_character = ""
 		_pending_outfit = ""
+	# Il save appena caricato puo` portare una lingua diversa da quella
+	# applicata al boot (profilo diverso): riallinea e notifica chi ricostruisce.
+	var saved_lang: String = str(SaveManager.get_setting("language", ""))
+	if not saved_lang.is_empty() and Constants.LANGUAGES.has(saved_lang):
+		if TranslationServer.get_locale() != saved_lang:
+			TranslationServer.set_locale(saved_lang)
+			SignalBus.language_changed.emit(saved_lang)
 	SignalBus.room_changed.emit(current_room_id, current_theme)
 	SignalBus.character_changed.emit(current_character_id)
 
