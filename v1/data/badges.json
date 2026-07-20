@@ -5,42 +5,66 @@
 			"name": "Primo Arredo",
 			"description": "Piazza la tua prima decorazione nella stanza",
 			"icon": "🏠",
-			"condition": {"type": "decorations_placed", "threshold": 1}
+			"condition": {
+				"type": "decorations_placed",
+				"threshold": 1
+			},
+			"icon_path": "res://assets/menu/ui/badges/first_decor.png"
 		},
 		{
 			"id": "cozy_collector",
 			"name": "Collezionista Cozy",
 			"description": "Piazza 25 decorazioni in totale",
 			"icon": "🏛️",
-			"condition": {"type": "decorations_placed", "threshold": 25}
+			"condition": {
+				"type": "decorations_placed",
+				"threshold": 25
+			},
+			"icon_path": "res://assets/menu/ui/badges/cozy_collector.png"
 		},
 		{
 			"id": "interior_designer",
 			"name": "Interior Designer",
 			"description": "Piazza 100 decorazioni in totale",
 			"icon": "🎨",
-			"condition": {"type": "decorations_placed", "threshold": 100}
+			"condition": {
+				"type": "decorations_placed",
+				"threshold": 100
+			},
+			"icon_path": "res://assets/menu/ui/badges/interior_designer.png"
 		},
 		{
 			"id": "mood_explorer",
 			"name": "Esploratore Mood",
 			"description": "Cambia il mood slider 10 volte",
 			"icon": "🌈",
-			"condition": {"type": "mood_changes", "threshold": 10}
+			"condition": {
+				"type": "mood_changes",
+				"threshold": 10
+			},
+			"icon_path": "res://assets/menu/ui/badges/mood_explorer.png"
 		},
 		{
 			"id": "storm_survivor",
 			"name": "Superstite Tempesta",
 			"description": "Attiva la modalita` stormy (mood < 10%)",
 			"icon": "⛈️",
-			"condition": {"type": "stormy_mood", "threshold": 1}
+			"condition": {
+				"type": "stormy_mood",
+				"threshold": 1
+			},
+			"icon_path": "res://assets/menu/ui/badges/storm_survivor.png"
 		},
 		{
 			"id": "night_owl",
 			"name": "Nottambulo",
 			"description": "Gioca per 30 minuti consecutivi",
 			"icon": "🦉",
-			"condition": {"type": "play_time_seconds", "threshold": 1800}
+			"condition": {
+				"type": "play_time_seconds",
+				"threshold": 1800
+			},
+			"icon_path": "res://assets/menu/ui/badges/night_owl.png"
 		}
 	]
 }
