@@ -16,6 +16,10 @@ const CHAR_MALE_OLD := "male_old"
 const PLAYLIST_SEQUENTIAL := "sequential"
 const PLAYLIST_SHUFFLE := "shuffle"
 const PLAYLIST_REPEAT_ONE := "repeat_one"
+# Single-source playlist default (audit 4.1.18-L139). The music_state DDL
+# default stays 'sequential' (schema migration not worth it); every read
+# path funnels through this constant instead.
+const DEFAULT_PLAYLIST_MODE := PLAYLIST_SHUFFLE
 
 # Display modes
 const DISPLAY_WINDOWED := "windowed"
@@ -49,6 +53,11 @@ const AUTH_MAX_USERNAME_LENGTH := 50
 const SUPABASE_SYNC_INTERVAL := 120.0
 const SUPABASE_REQUEST_TIMEOUT := 15.0
 const SUPABASE_MAX_RETRY := 5
+## Pre-schema-freeze concession: when true, a missing cloud table (404 /
+## PostgREST relation error) is skipped with a WARN instead of failing the
+## sync. Flip to false once the Supabase schema is frozen so table-name
+## typos surface as sync_error instead of silent data loss (audit 4.1.1-L300).
+const SUPABASE_ALLOW_MISSING_TABLES := true
 
 # Viewport resolution
 const VIEWPORT_WIDTH := 1280
@@ -62,7 +71,6 @@ const DEBUG_RNG_SEED := 0xC02E
 # Mood thresholds (T-R-015i)
 const MOOD_GLOOMY_THRESHOLD := 0.15
 const MOOD_STORMY_THRESHOLD := 0.10
-const MOOD_AUDIO_TRACK_STORM := "res://assets/audio/storm_ambient.ogg"
 
 # Application version — synced da scripts/bump_version.sh
 const APP_VERSION := "1.0.0"

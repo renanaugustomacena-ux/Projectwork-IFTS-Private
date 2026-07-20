@@ -1,87 +1,112 @@
-# Supabase Schema — Versioning
+# Supabase Cloud Schema
 
-> **Stato**: stub. Awaiting user-provided `pg_dump --schema-only` dal Supabase
-> dashboard (15 tabelle cloud).
+**Status**: [`schema.sql`](schema.sql) is the versioned, reproducible DDL for
+every table the game client pushes. It replaces the earlier stub that waited
+for a `pg_dump` from the dashboard (audit ref 4.7.3 / V-008).
 
 ## Connection info
 
 - **Project ref**: `dofkdywubnhonxqpsmsh`
 - **Region**: `eu-central-1`
 - **API URL**: `https://dofkdywubnhonxqpsmsh.supabase.co`
-- **Publishable key**: `sb_publishable_cZywbZxGNzmbEufVuL2O_g_BMGwNmI-` (nuovo naming; safe per repo pubblico, protetto da RLS)
+- **Publishable key**: `sb_publishable_cZywbZxGNzmbEufVuL2O_g_BMGwNmI-` (new
+  naming; safe for a public repo — publishable keys are designed to ship in
+  client code, protected by Row Level Security on the DB side)
 - **Postgres conn**: `postgresql://postgres:<PASSWORD>@db.dofkdywubnhonxqpsmsh.supabase.co:5432/postgres`
 
-Il gioco legge la publishable key da `user://config.cfg` (generato al primo
-avvio o fornito dall'utente). **Non è un secret** — le Supabase publishable
-keys sono progettate per essere embeddabili in client code, con sicurezza
-garantita da Row Level Security (RLS) policies lato DB.
+The game reads the publishable key from `user://config.cfg` (generated on
+first launch or provided by the user).
 
-## Scope
+## What `schema.sql` contains
 
-Versionare la DDL del database cloud Supabase (15 tabelle dichiarate nei doc
-ma mai tracked in repo). Senza DDL in git, impossibile ricostruire il DB
-cloud da zero in caso di incident o staging environment. Task B-032.
+The 5 tables the sync engine (`v1/scripts/autoload/supabase_client.gd`)
+actually pushes:
 
-## Come contribuire il dump
+| Table | Rows per user | Written via |
+|---|---|---|
+| `profiles` | 1 (PK `user_id`) | upsert |
+| `user_currency` | 1 (PK `user_id`) | upsert |
+| `user_settings` | 1 (PK `user_id`) | upsert |
+| `music_preferences` | 1 (PK `user_id`) | upsert |
+| `room_decorations` | N (surrogate uuid PK) | delete-by-user, then insert |
 
-Opzione A — Supabase CLI (raccomandata):
+Each table has: `user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE`,
+`updated_at timestamptz DEFAULT now()`, RLS enabled with owner-only
+select/insert/update/delete policies (`auth.uid() = user_id`), and grants
+limited to the `authenticated` role (`anon` is revoked).
+
+Tables that appeared in older docs but that the client does not write
+(friends, leaderboards, telemetry, ...) are intentionally **not** in
+`schema.sql`. Add them here the day the client code actually uses them.
+
+## Keep in sync with the client mapper
+
+`schema.sql` is **derived by hand from
+[`v1/scripts/utils/supabase_mapper.gd`](../v1/scripts/utils/supabase_mapper.gd)** —
+the single point of truth for local-to-cloud field mapping. Every key a
+`*_to_cloud()` function emits must exist as a column with a compatible type.
+
+Whenever you touch the mapper (add/rename/remove a payload key, add a new
+`*_to_cloud()` function that the sync engine dispatches), you MUST update
+`schema.sql` in the same change set, bump the "Last synced with the mapper"
+date in its header, and apply the migration to the cloud project.
+
+## How to apply
+
+`schema.sql` is idempotent (`CREATE TABLE IF NOT EXISTS`,
+`DROP POLICY IF EXISTS` before each `CREATE POLICY`), so re-running it
+against an existing project is safe.
+
+### Option A — Supabase SQL editor (fastest)
+
+1. Open the project dashboard → **SQL Editor** → new query.
+2. Paste the full contents of `supabase/schema.sql`.
+3. Run. Re-running after future edits is safe.
+
+### Option B — Supabase CLI (`supabase db push`)
+
+The CLI applies files from `supabase/migrations/`, so register the schema as
+a migration first:
 
 ```bash
-# Dal progetto locale con supabase CLI installato
-supabase db dump --schema-only > supabase/migrations/0001_initial.sql
-# oppure per snapshot specifico:
-supabase db dump --data-only --schema public > supabase/migrations/seed.sql
+supabase link --project-ref dofkdywubnhonxqpsmsh
+supabase migration new initial_schema          # creates supabase/migrations/<ts>_initial_schema.sql
+cp supabase/schema.sql supabase/migrations/<ts>_initial_schema.sql
+supabase db push
 ```
 
-Opzione B — SQL Editor dashboard:
+Future schema changes: create a new incremental migration with only the delta
+and `supabase db push` again, keeping `schema.sql` updated as the full
+current-state reference.
 
-1. Accedi al dashboard Supabase del progetto
-2. SQL Editor -> nuova query
-3. `SELECT pg_get_ddl_from_database('public');` (o via Database -> Schema)
-4. Copia l'output in `supabase/migrations/0001_initial.sql`
-5. Aggiungi RLS policies separate se non incluse
+### Option C — psql
 
-## Struttura cartella (target)
-
-```
-supabase/
-├── README.md               (questo file)
-├── migrations/
-│   ├── 0001_initial.sql    15 tabelle cloud + RLS policies
-│   └── (future incrementali)
-└── seed.sql                (opzionale: dati demo per dev local)
+```bash
+psql "postgresql://postgres:<PASSWORD>@db.dofkdywubnhonxqpsmsh.supabase.co:5432/postgres" \
+  -f supabase/schema.sql
 ```
 
-## 15 tabelle cloud attese (dai doc e mapper)
+## Verifying an environment
 
-Basato su `v1/scripts/utils/supabase_mapper.gd` + documentazione storica:
+After applying, confirm RLS is active on all 5 tables:
 
-1. `profiles` — display_name, avatar_character_id, current_room, locale
-2. `accounts_cloud` — mirror account locali
-3. `characters_cloud` — mirror character (avatar fields)
-4. `inventory_cloud` — mirror inventario
-5. `rooms_cloud` — mirror rooms
-6. `placed_decorations_cloud` — mirror decorazioni
-7. `user_settings` — volumi, lingua, display_mode
-8. `music_preferences` — track index, playlist mode, ambience
-9. `user_currency` — coins + lifetime earnings
-10. `room_decorations` — array decorazioni cross-device
-11. `save_snapshots` — JSON blob backup periodici
-12. `friends` — relazioni user-user (bidirectional)
-13. `friend_requests` — pending requests
-14. `leaderboard_entries` — score pubblici
-15. `telemetry_events` — analytics opt-in
-
-Tutte con `user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE` e RLS
-policy `USING (auth.uid() = user_id)`.
+```sql
+select tablename, rowsecurity
+from pg_tables
+where schemaname = 'public'
+  and tablename in ('profiles', 'user_currency', 'user_settings',
+                    'music_preferences', 'room_decorations');
+-- rowsecurity must be true for every row returned
+```
 
 ## CI validation
 
-Una volta versionato il dump, il validator `ci/validate_db_schema.py` verra`
-esteso per validare anche il SQL Supabase (sintassi Postgres + presenza RLS
-su ogni table con user_id).
+`ci/validate_db_schema.py` currently validates the local SQLite schema. A
+follow-up can extend it to parse `supabase/schema.sql` and assert RLS is
+enabled on every table that has a `user_id` column.
 
-## Vedi anche
+## See also
 
-- [v1/data/README.md](../v1/data/README.md) — schema SQLite locale (9 tabelle)
+- [v1/data/README.md](../v1/data/README.md) — local SQLite schema
+- [v1/scripts/utils/supabase_mapper.gd](../v1/scripts/utils/supabase_mapper.gd) — payload shapes (source of truth)
 - [AUDIT_REPORT 2026-04-23](../AUDIT_REPORT_2026-04-23.md) — § 4.7.3 supabase schema audit
