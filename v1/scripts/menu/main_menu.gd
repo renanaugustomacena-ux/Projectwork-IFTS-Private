@@ -37,6 +37,8 @@ func _ready() -> void:
 	_loading_screen.modulate.a = 1.0
 	_setup_graphical_loading_screen()
 
+	_apply_button_labels()
+	SignalBus.language_changed.connect(_on_language_changed)
 	_nuova_btn.pressed.connect(_on_nuova_partita)
 	_carica_btn.pressed.connect(_on_carica_partita)
 	_opzioni_btn.pressed.connect(_on_opzioni)
@@ -87,6 +89,20 @@ func _on_walk_in_done() -> void:
 		_intro_tween.kill()
 	_intro_tween = create_tween()
 	_intro_tween.tween_property(_button_container, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
+
+
+## Etichette dei bottoni dal catalogo traduzioni: la scena tiene il testo
+## italiano come fallback leggibile, ma la lingua attiva vince sempre.
+func _apply_button_labels() -> void:
+	_nuova_btn.text = tr("UI_MENU_NEW_GAME")
+	_carica_btn.text = tr("UI_MENU_LOAD_GAME")
+	_opzioni_btn.text = tr("UI_MENU_OPTIONS")
+	_profilo_btn.text = tr("UI_MENU_PROFILE")
+	_esci_btn.text = tr("UI_MENU_QUIT")
+
+
+func _on_language_changed(_lang_code: String) -> void:
+	_apply_button_labels()
 
 
 func _on_nuova_partita() -> void:
@@ -315,6 +331,8 @@ func _exit_tree() -> void:
 		_settings_panel.queue_free()
 	if _profile_panel and is_instance_valid(_profile_panel):
 		_profile_panel.queue_free()
+	if SignalBus.language_changed.is_connected(_on_language_changed):
+		SignalBus.language_changed.disconnect(_on_language_changed)
 	if _nuova_btn and _nuova_btn.pressed.is_connected(_on_nuova_partita):
 		_nuova_btn.pressed.disconnect(_on_nuova_partita)
 	if _carica_btn and _carica_btn.pressed.is_connected(_on_carica_partita):

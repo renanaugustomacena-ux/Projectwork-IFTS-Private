@@ -134,7 +134,7 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
 		AppLogger.warn("RoomBase", "decoration_placed_unknown_item", {"item_id": item_id, "pos": pos})
-		SignalBus.toast_requested.emit("Decorazione sconosciuta: %s" % item_id, "error")
+		SignalBus.toast_requested.emit(tr("TOAST_UNKNOWN_DECORATION") % item_id, "error")
 		return
 	AppLogger.info("RoomBase", "decoration_placed_accepted", {"item_id": item_id, "pos": pos})
 	var item_scale: float = item_data.get("item_scale", 1.0)

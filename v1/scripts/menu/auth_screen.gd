@@ -52,7 +52,7 @@ func _build_ui() -> void:
 
 	# Subtitle
 	var subtitle := Label.new()
-	subtitle.text = "Your cozy desktop companion"
+	subtitle.text = tr("UI_AUTH_SUBTITLE")
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 12)
 	subtitle.modulate.a = 0.6
@@ -87,7 +87,7 @@ func _build_ui() -> void:
 	# Guest play button
 	var guest_btn := Button.new()
 	guest_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
-	guest_btn.text = "Play as Guest"
+	guest_btn.text = tr("UI_AUTH_GUEST")
 	guest_btn.custom_minimum_size = Vector2(0, 40)
 	guest_btn.pressed.connect(_on_guest_pressed)
 	vbox.add_child(guest_btn)
@@ -95,12 +95,12 @@ func _build_ui() -> void:
 
 func _build_login_form(container: VBoxContainer) -> void:
 	_username_input = LineEdit.new()
-	_username_input.placeholder_text = "Username"
+	_username_input.placeholder_text = tr("UI_AUTH_USERNAME")
 	_username_input.custom_minimum_size = Vector2(0, 36)
 	container.add_child(_username_input)
 
 	_password_input = LineEdit.new()
-	_password_input.placeholder_text = "Password"
+	_password_input.placeholder_text = tr("UI_AUTH_PASSWORD")
 	_password_input.secret = true
 	_password_input.custom_minimum_size = Vector2(0, 36)
 	_password_input.text_submitted.connect(func(_t: String) -> void: _on_login_pressed())
@@ -108,14 +108,14 @@ func _build_login_form(container: VBoxContainer) -> void:
 
 	var login_btn := Button.new()
 	login_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
-	login_btn.text = "Login"
+	login_btn.text = tr("UI_AUTH_LOGIN")
 	login_btn.custom_minimum_size = Vector2(0, 42)
 	login_btn.pressed.connect(_on_login_pressed)
 	container.add_child(login_btn)
 
 	var switch_btn := Button.new()
 	switch_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
-	switch_btn.text = "Don't have an account? Register"
+	switch_btn.text = tr("UI_AUTH_SWITCH_TO_REGISTER")
 	switch_btn.flat = true
 	switch_btn.add_theme_font_size_override("font_size", 11)
 	switch_btn.pressed.connect(_show_register)
@@ -124,20 +124,20 @@ func _build_login_form(container: VBoxContainer) -> void:
 
 func _build_register_form(container: VBoxContainer) -> void:
 	var reg_user := LineEdit.new()
-	reg_user.placeholder_text = "Choose a username"
+	reg_user.placeholder_text = tr("UI_AUTH_USERNAME_HINT")
 	reg_user.custom_minimum_size = Vector2(0, 36)
 	reg_user.name = "RegUsername"
 	container.add_child(reg_user)
 
 	var reg_pass := LineEdit.new()
-	reg_pass.placeholder_text = "Choose a password"
+	reg_pass.placeholder_text = tr("UI_AUTH_PASSWORD_HINT")
 	reg_pass.secret = true
 	reg_pass.custom_minimum_size = Vector2(0, 36)
 	reg_pass.name = "RegPassword"
 	container.add_child(reg_pass)
 
 	_confirm_input = LineEdit.new()
-	_confirm_input.placeholder_text = "Confirm password"
+	_confirm_input.placeholder_text = tr("UI_AUTH_CONFIRM")
 	_confirm_input.secret = true
 	_confirm_input.custom_minimum_size = Vector2(0, 36)
 	_confirm_input.text_submitted.connect(func(_t: String) -> void: _on_register_pressed())
@@ -145,14 +145,14 @@ func _build_register_form(container: VBoxContainer) -> void:
 
 	var reg_btn := Button.new()
 	reg_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
-	reg_btn.text = "Register"
+	reg_btn.text = tr("UI_AUTH_REGISTER")
 	reg_btn.custom_minimum_size = Vector2(0, 42)
 	reg_btn.pressed.connect(_on_register_pressed)
 	container.add_child(reg_btn)
 
 	var switch_btn := Button.new()
 	switch_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
-	switch_btn.text = "Already have an account? Login"
+	switch_btn.text = tr("UI_AUTH_SWITCH_TO_LOGIN")
 	switch_btn.flat = true
 	switch_btn.add_theme_font_size_override("font_size", 11)
 	switch_btn.pressed.connect(_show_login)

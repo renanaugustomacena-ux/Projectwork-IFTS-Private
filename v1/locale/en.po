@@ -48,15 +48,7 @@ msgstr "Mood"
 msgid "UI_PROFILE_MOOD_HINT"
 msgstr "🌧 ↔ 🌸"
 
-msgid "UI_PROFILE_LANG_TOOLTIP"
-msgstr "Change language — click for IT/EN"
-
 # Toast messages
-msgid "TOAST_IMAGE_LOAD_ERROR"
-msgstr "Cannot read the selected image"
-
-msgid "TOAST_IMAGE_SAVED"
-msgstr "Profile image updated (local only)"
 
 msgid "TOAST_LANG_CHANGED"
 msgstr "Language changed: %s"
@@ -86,15 +78,6 @@ msgstr "Error loading game data"
 msgid "UI_SETTINGS_TITLE"
 msgstr "Settings"
 
-msgid "UI_SETTINGS_VOLUME_MASTER"
-msgstr "Master volume"
-
-msgid "UI_SETTINGS_VOLUME_MUSIC"
-msgstr "Music volume"
-
-msgid "UI_SETTINGS_VOLUME_AMBIENCE"
-msgstr "Ambience volume"
-
 msgid "UI_SETTINGS_LANGUAGE"
 msgstr "Language"
 
@@ -102,8 +85,6 @@ msgid "UI_SETTINGS_REPLAY_TUTORIAL"
 msgstr "Replay tutorial"
 
 # Auth screen
-msgid "UI_AUTH_PLAY_GUEST"
-msgstr "Play as Guest"
 
 msgid "UI_AUTH_LOGIN"
 msgstr "Login"
@@ -126,12 +107,6 @@ msgstr "Already have an account? Login"
 # Decoration panel
 msgid "UI_DECO_TITLE"
 msgstr "Decorations"
-
-msgid "UI_DECO_MODE_ENABLE"
-msgstr "Edit"
-
-msgid "UI_DECO_MODE_DISABLE"
-msgstr "Done"
 
 # Character select
 msgid "UI_CHARSEL_TITLE"
@@ -161,3 +136,87 @@ msgstr "Credits"
 
 msgid "CREDITS_BODY"
 msgstr "Pixel art forest: Eder Muniz. Indoor plants: SoppyCraft. Isometric Room Builder: Thurraya. Furniture and UI packs: Kenney (CC0). Rain sounds: Mixkit. Ambience loops, characters, room, pet and icons: Team IFTS."
+
+msgid "UI_AUTH_SUBTITLE"
+msgstr "Your cozy desktop companion"
+
+msgid "UI_AUTH_GUEST"
+msgstr "Play as guest"
+
+msgid "UI_AUTH_USERNAME_HINT"
+msgstr "Choose a username"
+
+msgid "UI_AUTH_PASSWORD_HINT"
+msgstr "Choose a password"
+
+msgid "UI_AUTH_CONFIRM"
+msgstr "Confirm password"
+
+msgid "UI_DECO_EMPTY"
+msgstr "No decorations available."
+
+msgid "UI_DECO_EDIT_EXIT"
+msgstr "Exit edit mode"
+
+msgid "UI_DECO_EDIT_ENTER"
+msgstr "Edit mode"
+
+msgid "UI_HUD_SERENITY"
+msgstr "Serenity"
+
+msgid "TOAST_ROOM_NOT_READY"
+msgstr "Room not ready yet, try again in a moment"
+
+msgid "TOAST_IMG_UNREADABLE"
+msgstr "Cannot read the selected image"
+
+msgid "TOAST_IMG_TOO_LARGE"
+msgstr "Image too large (10 MB maximum)"
+
+msgid "TOAST_IMG_INVALID"
+msgstr "Invalid image format (PNG or JPG only)"
+
+msgid "TOAST_IMG_UPDATED"
+msgstr "Profile picture updated (local only)"
+
+msgid "TUTORIAL_SKIP"
+msgstr "Skip tutorial"
+
+msgid "TUTORIAL_DONE"
+msgstr "Close"
+
+msgid "UI_PROFILE_TITLE"
+msgstr "Profile"
+
+msgid "UI_PROFILE_ACCOUNT"
+msgstr "Account"
+
+msgid "UI_PROFILE_ACTIONS"
+msgstr "Actions"
+
+msgid "UI_PROFILE_DELETE_CHARACTER"
+msgstr "Delete character"
+
+msgid "UI_PROFILE_DELETE_ACCOUNT"
+msgstr "Delete account"
+
+msgid "UI_PROFILE_LOGOUT"
+msgstr "Log out"
+
+msgid "UI_PROFILE_REGISTERED"
+msgstr "Registered"
+
+msgid "UI_PROFILE_LOGGED_OUT"
+msgstr "Not signed in"
+
+msgid "TOAST_UNKNOWN_DECORATION"
+msgstr "Unknown decoration: %s"
+
+msgid "TUTORIAL_PROGRESS"
+msgstr "Step %d / %d"
+
+msgid "TOAST_IMG_SAVE_ERROR"
+msgstr "Error saving image (%d)"
+
+msgid "UI_MENU_PROFILE"
+msgstr "Profile"

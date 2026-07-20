@@ -28,7 +28,7 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Decorazioni"
+	title.text = tr("UI_DECO_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer_vbox.add_child(title)
 
@@ -66,7 +66,7 @@ func _populate_catalog() -> void:
 
 	if items.is_empty():
 		var empty := Label.new()
-		empty.text = "Nessuna decorazione disponibile."
+		empty.text = tr("UI_DECO_EMPTY")
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.modulate.a = 0.6
 		_vbox.add_child(empty)
@@ -175,9 +175,9 @@ func _on_mode_toggled() -> void:
 
 func _update_mode_button() -> void:
 	if GameManager.is_decoration_mode:
-		_mode_button.text = "Esci Modalità Modifica"
+		_mode_button.text = tr("UI_DECO_EDIT_EXIT")
 	else:
-		_mode_button.text = "Modalità Modifica"
+		_mode_button.text = tr("UI_DECO_EDIT_ENTER")
 
 
 func _exit_tree() -> void:

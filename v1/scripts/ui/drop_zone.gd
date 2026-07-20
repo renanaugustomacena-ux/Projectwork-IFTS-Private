@@ -49,7 +49,7 @@ func _drop_data(at_position: Vector2, data: Variant) -> void:
 				"floor_polygon_not_initialized",
 				{"item_id": item_id, "raw_pos": raw_pos, "snap_pos": at_position}
 			)
-			SignalBus.toast_requested.emit("Stanza non pronta, riprova fra un attimo", "warning")
+			SignalBus.toast_requested.emit(tr("TOAST_ROOM_NOT_READY"), "warning")
 			return
 		at_position = Helpers.clamp_inside_floor(at_position)
 	AppLogger.info(

@@ -84,7 +84,7 @@ func _build_ui() -> void:
 	row_top.add_child(info_vbox)
 
 	_name_label = Label.new()
-	_name_label.text = "Ospite"
+	_name_label.text = tr("UI_PROFILE_GUEST")
 	_name_label.add_theme_font_size_override("font_size", 16)
 	info_vbox.add_child(_name_label)
 
@@ -221,16 +221,16 @@ func _on_profile_image_selected(path: String) -> void:
 	# FileDialog extension filter is advisory only and can be bypassed.
 	var bytes := FileAccess.get_file_as_bytes(path)
 	if bytes.is_empty():
-		SignalBus.toast_requested.emit("Impossibile leggere l'immagine selezionata", "error")
+		SignalBus.toast_requested.emit(tr("TOAST_IMG_UNREADABLE"), "error")
 		return
 	if bytes.size() > MAX_PROFILE_IMAGE_BYTES:
 		# i18n key in Phase F
-		SignalBus.toast_requested.emit("Immagine troppo grande (max 10 MB)", "error")
+		SignalBus.toast_requested.emit(tr("TOAST_IMG_TOO_LARGE"), "error")
 		return
 	var img := _decode_profile_image(bytes)
 	if img == null or img.is_empty():
 		# i18n key in Phase F
-		SignalBus.toast_requested.emit("Formato immagine non valido (solo PNG/JPG)", "error")
+		SignalBus.toast_requested.emit(tr("TOAST_IMG_INVALID"), "error")
 		return
 	img.resize(PROFILE_IMAGE_SIZE, PROFILE_IMAGE_SIZE, Image.INTERPOLATE_LANCZOS)
 	# Write-then-rename (Phase D): saving straight onto PROFILE_IMAGE_PATH and
@@ -240,16 +240,16 @@ func _on_profile_image_selected(path: String) -> void:
 	var err := img.save_png(PROFILE_IMAGE_TMP_PATH)
 	if err != OK:
 		_remove_tmp_profile_image()
-		SignalBus.toast_requested.emit("Errore salvataggio immagine (%d)" % err, "error")
+		SignalBus.toast_requested.emit(tr("TOAST_IMG_SAVE_ERROR") % err, "error")
 		return
 	var rename_err := DirAccess.rename_absolute(PROFILE_IMAGE_TMP_PATH, PROFILE_IMAGE_PATH)
 	if rename_err != OK:
 		_remove_tmp_profile_image()
-		SignalBus.toast_requested.emit("Errore salvataggio immagine (%d)" % rename_err, "error")
+		SignalBus.toast_requested.emit(tr("TOAST_IMG_SAVE_ERROR") % rename_err, "error")
 		return
 	SignalBus.settings_updated.emit("profile_image_path", PROFILE_IMAGE_PATH)
 	_refresh_profile_image()
-	SignalBus.toast_requested.emit("Immagine profilo aggiornata (solo locale)", "success")
+	SignalBus.toast_requested.emit(tr("TOAST_IMG_UPDATED"), "success")
 
 
 ## Decodes the raw bytes as PNG or JPEG after magic-byte sniffing.

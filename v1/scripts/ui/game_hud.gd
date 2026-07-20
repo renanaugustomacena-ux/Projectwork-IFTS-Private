@@ -65,7 +65,7 @@ func _build_ui() -> void:
 	row.add_child(serenity_block)
 
 	var serenity_header := Label.new()
-	serenity_header.text = "Serenita"
+	serenity_header.text = tr("UI_HUD_SERENITY")
 	serenity_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	serenity_header.add_theme_font_size_override("font_size", 12)
 	serenity_header.add_theme_color_override("font_color", Color(1, 1, 1, 0.92))

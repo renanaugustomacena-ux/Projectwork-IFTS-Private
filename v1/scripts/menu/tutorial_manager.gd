@@ -184,7 +184,7 @@ func _build_ui() -> void:
 	hbox.add_child(_progress_label)
 
 	_skip_btn = Button.new()
-	_skip_btn.text = "Salta tutorial"
+	_skip_btn.text = tr("TUTORIAL_SKIP")
 	_skip_btn.flat = true
 	_skip_btn.focus_mode = Control.FOCUS_NONE
 	_skip_btn.add_theme_font_size_override("font_size", 12)
@@ -212,7 +212,7 @@ func _advance_step() -> void:
 
 	var step: Dictionary = _steps[_current_step]
 	_dialog_label.text = step.get("message", "")
-	_progress_label.text = "Passo %d / %d" % [_current_step + 1, _steps.size()]
+	_progress_label.text = tr("TUTORIAL_PROGRESS") % [_current_step + 1, _steps.size()]
 	_step_timer = 0.0
 	_arrow.visible = false
 
@@ -221,7 +221,7 @@ func _advance_step() -> void:
 
 	# Final step — bottone di chiusura
 	if step.get("is_final", false):
-		_skip_btn.text = "Chiudi"
+		_skip_btn.text = tr("TUTORIAL_DONE")
 
 	# Auto-advance step (timed, no signal)
 	var auto_time: float = step.get("auto_advance", 0.0)

@@ -98,6 +98,27 @@ func _wire_hud_buttons() -> void:
 	if menu_btn:
 		menu_btn.pressed.connect(_on_menu_pressed)
 
+	_apply_hud_labels()
+	SignalBus.language_changed.connect(_on_language_changed)
+
+
+## Etichette HUD dal catalogo traduzioni (la scena tiene l'italiano come
+## fallback leggibile); rifatte a ogni cambio lingua.
+func _apply_hud_labels() -> void:
+	var labels := {
+		"MenuButton": "UI_HUD_MENU",
+		"DecoButton": "UI_HUD_DECO",
+		"ProfileButton": "UI_HUD_PROFILE",
+	}
+	for node_name: String in labels:
+		var button := _hud.get_node_or_null(node_name) as Button
+		if button != null:
+			button.text = tr(labels[node_name])
+
+
+func _on_language_changed(_lang_code: String) -> void:
+	_apply_hud_labels()
+
 
 func _on_room_changed(room_id: String, theme: String) -> void:
 	_apply_theme(room_id, theme)
@@ -211,6 +232,8 @@ func _on_profile_hud_close_to_settings() -> void:
 
 
 func _exit_tree() -> void:
+	if SignalBus.language_changed.is_connected(_on_language_changed):
+		SignalBus.language_changed.disconnect(_on_language_changed)
 	if SignalBus.room_changed.is_connected(_on_room_changed):
 		SignalBus.room_changed.disconnect(_on_room_changed)
 	if SignalBus.profile_hud_requested.is_connected(_on_profile_hud_requested):

@@ -48,15 +48,7 @@ msgstr "Umore"
 msgid "UI_PROFILE_MOOD_HINT"
 msgstr "🌧 ↔ 🌸"
 
-msgid "UI_PROFILE_LANG_TOOLTIP"
-msgstr "Cambia lingua — click per IT/EN"
-
 # Toast messages
-msgid "TOAST_IMAGE_LOAD_ERROR"
-msgstr "Impossibile leggere l'immagine selezionata"
-
-msgid "TOAST_IMAGE_SAVED"
-msgstr "Immagine profilo aggiornata (solo locale)"
 
 msgid "TOAST_LANG_CHANGED"
 msgstr "Lingua cambiata: %s"
@@ -86,15 +78,6 @@ msgstr "Errore nel caricamento dei dati di gioco"
 msgid "UI_SETTINGS_TITLE"
 msgstr "Impostazioni"
 
-msgid "UI_SETTINGS_VOLUME_MASTER"
-msgstr "Volume generale"
-
-msgid "UI_SETTINGS_VOLUME_MUSIC"
-msgstr "Volume musica"
-
-msgid "UI_SETTINGS_VOLUME_AMBIENCE"
-msgstr "Volume ambiente"
-
 msgid "UI_SETTINGS_LANGUAGE"
 msgstr "Lingua"
 
@@ -102,8 +85,6 @@ msgid "UI_SETTINGS_REPLAY_TUTORIAL"
 msgstr "Ripeti tutorial"
 
 # Auth screen
-msgid "UI_AUTH_PLAY_GUEST"
-msgstr "Gioca come Ospite"
 
 msgid "UI_AUTH_LOGIN"
 msgstr "Accedi"
@@ -126,12 +107,6 @@ msgstr "Hai gia` un account? Accedi"
 # Decoration panel
 msgid "UI_DECO_TITLE"
 msgstr "Decorazioni"
-
-msgid "UI_DECO_MODE_ENABLE"
-msgstr "Modifica"
-
-msgid "UI_DECO_MODE_DISABLE"
-msgstr "Fine"
 
 # Character select
 msgid "UI_CHARSEL_TITLE"
@@ -161,3 +136,87 @@ msgstr "Crediti"
 
 msgid "CREDITS_BODY"
 msgstr "Foresta pixel art: Eder Muniz. Piante da interno: SoppyCraft. Isometric Room Builder: Thurraya. Mobili e UI pack: Kenney (CC0). Suoni di pioggia: Mixkit. Loop ambientali, personaggi, stanza, pet e icone: Team IFTS."
+
+msgid "UI_AUTH_SUBTITLE"
+msgstr "Il tuo angolo tranquillo sul desktop"
+
+msgid "UI_AUTH_GUEST"
+msgstr "Gioca come ospite"
+
+msgid "UI_AUTH_USERNAME_HINT"
+msgstr "Scegli un nome utente"
+
+msgid "UI_AUTH_PASSWORD_HINT"
+msgstr "Scegli una password"
+
+msgid "UI_AUTH_CONFIRM"
+msgstr "Conferma la password"
+
+msgid "UI_DECO_EMPTY"
+msgstr "Nessuna decorazione disponibile."
+
+msgid "UI_DECO_EDIT_EXIT"
+msgstr "Esci da modifica"
+
+msgid "UI_DECO_EDIT_ENTER"
+msgstr "Modalita modifica"
+
+msgid "UI_HUD_SERENITY"
+msgstr "Serenita"
+
+msgid "TOAST_ROOM_NOT_READY"
+msgstr "Stanza non pronta, riprova fra un attimo"
+
+msgid "TOAST_IMG_UNREADABLE"
+msgstr "Impossibile leggere l'immagine selezionata"
+
+msgid "TOAST_IMG_TOO_LARGE"
+msgstr "Immagine troppo grande (massimo 10 MB)"
+
+msgid "TOAST_IMG_INVALID"
+msgstr "Formato immagine non valido (solo PNG o JPG)"
+
+msgid "TOAST_IMG_UPDATED"
+msgstr "Immagine profilo aggiornata (solo in locale)"
+
+msgid "TUTORIAL_SKIP"
+msgstr "Salta tutorial"
+
+msgid "TUTORIAL_DONE"
+msgstr "Chiudi"
+
+msgid "UI_PROFILE_TITLE"
+msgstr "Profilo"
+
+msgid "UI_PROFILE_ACCOUNT"
+msgstr "Account"
+
+msgid "UI_PROFILE_ACTIONS"
+msgstr "Azioni"
+
+msgid "UI_PROFILE_DELETE_CHARACTER"
+msgstr "Elimina personaggio"
+
+msgid "UI_PROFILE_DELETE_ACCOUNT"
+msgstr "Elimina account"
+
+msgid "UI_PROFILE_LOGOUT"
+msgstr "Esci dall'account"
+
+msgid "UI_PROFILE_REGISTERED"
+msgstr "Registrato"
+
+msgid "UI_PROFILE_LOGGED_OUT"
+msgstr "Non connesso"
+
+msgid "TOAST_UNKNOWN_DECORATION"
+msgstr "Decorazione sconosciuta: %s"
+
+msgid "TUTORIAL_PROGRESS"
+msgstr "Passo %d / %d"
+
+msgid "TOAST_IMG_SAVE_ERROR"
+msgstr "Errore nel salvataggio dell'immagine (%d)"
+
+msgid "UI_MENU_PROFILE"
+msgstr "Profilo"

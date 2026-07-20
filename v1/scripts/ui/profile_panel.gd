@@ -36,13 +36,13 @@ func _build_ui() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "Profilo"
+	title.text = tr("UI_PROFILE_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	# Account info section
 	var info_label := Label.new()
-	info_label.text = "Account"
+	info_label.text = tr("UI_PROFILE_ACCOUNT")
 	info_label.add_theme_font_size_override("font_size", 11)
 	info_label.modulate.a = 0.7
 	vbox.add_child(info_label)
@@ -56,7 +56,7 @@ func _build_ui() -> void:
 
 	# Actions section
 	var actions_label := Label.new()
-	actions_label.text = "Azioni"
+	actions_label.text = tr("UI_PROFILE_ACTIONS")
 	actions_label.add_theme_font_size_override("font_size", 11)
 	actions_label.modulate.a = 0.7
 	vbox.add_child(actions_label)
@@ -64,7 +64,7 @@ func _build_ui() -> void:
 	# Delete Character
 	_delete_char_btn = Button.new()
 	_delete_char_btn.focus_mode = Control.FOCUS_NONE
-	_delete_char_btn.text = "Elimina Personaggio"
+	_delete_char_btn.text = tr("UI_PROFILE_DELETE_CHARACTER")
 	_delete_char_btn.custom_minimum_size = Vector2(0, 32)
 	(
 		_delete_char_btn
@@ -85,7 +85,7 @@ func _build_ui() -> void:
 	# Delete Account
 	_delete_account_btn = Button.new()
 	_delete_account_btn.focus_mode = Control.FOCUS_NONE
-	_delete_account_btn.text = "Elimina Account"
+	_delete_account_btn.text = tr("UI_PROFILE_DELETE_ACCOUNT")
 	_delete_account_btn.custom_minimum_size = Vector2(0, 32)
 	(
 		_delete_account_btn
@@ -109,7 +109,7 @@ func _build_ui() -> void:
 	# Logout
 	var logout_btn := Button.new()
 	logout_btn.focus_mode = Control.FOCUS_NONE
-	logout_btn.text = "Esci dall'account"
+	logout_btn.text = tr("UI_PROFILE_LOGOUT")
 	logout_btn.custom_minimum_size = Vector2(0, 32)
 	logout_btn.pressed.connect(_on_logout_pressed)
 	vbox.add_child(logout_btn)
@@ -144,13 +144,13 @@ func _create_info_row(parent: VBoxContainer, label_text: String) -> Label:
 
 func _update_info() -> void:
 	if AuthManager.auth_state == AuthManager.AuthState.GUEST:
-		_account_type_label.text = "Ospite"
+		_account_type_label.text = tr("UI_PROFILE_GUEST")
 		_email_label.text = "—"
 	elif AuthManager.auth_state == AuthManager.AuthState.AUTHENTICATED:
-		_account_type_label.text = "Registrato"
+		_account_type_label.text = tr("UI_PROFILE_REGISTERED")
 		_email_label.text = AuthManager.current_username
 	else:
-		_account_type_label.text = "Non connesso"
+		_account_type_label.text = tr("UI_PROFILE_LOGGED_OUT")
 		_email_label.text = "—"
 
 	var coins := LocalDatabase.get_coins(AuthManager.current_account_id)
