@@ -73,4 +73,4 @@ const MOOD_GLOOMY_THRESHOLD := 0.15
 const MOOD_STORMY_THRESHOLD := 0.10
 
 # Application version — synced da scripts/bump_version.sh
-const APP_VERSION := "1.0.0"
+const APP_VERSION := "1.1.0"

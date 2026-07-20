@@ -84,21 +84,21 @@ jobs:
           python-version: "3.12"
 
       - name: Download Windows artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe  # v3
         with:
           workflow: build.yml
           name: relaxroom-windows-${{ github.sha }}
           path: release-assets/windows/
 
       - name: Download Android artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe  # v3
         with:
           workflow: build.yml
           name: relaxroom-android-${{ github.sha }}
           path: release-assets/android/
 
       - name: Download HTML5 artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe  # v3
         with:
           workflow: build.yml
           name: relaxroom-html5-${{ github.sha }}
@@ -135,7 +135,7 @@ jobs:
           echo "body_path=/tmp/release-body.md" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65  # v2
         with:
           tag_name: ${{ github.ref_name }}
           name: "Relax Room ${{ github.ref_name }}"

@@ -7,10 +7,118 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-20
+
+Release di consolidamento: riverifica completa delle 127 rilevazioni
+dell'audit del 2026-04-23 piu' 70 lacune nuove emerse da una campagna di
+analisi su otto dimensioni (test, asset, i18n, scene, funzionalita', CI,
+cataloghi, avvio a runtime). Dettaglio con ancoraggi riga per riga in
+`MASTER_PLAN_2026-07-20.md`.
+
+### Security
+
+- **Hashing password v4: PBKDF2-HMAC-SHA256 reale** secondo RFC 8018 par. 5.2
+  (100.000 iterazioni, salt 16 byte, chiave derivata 32 byte), verificato
+  contro tre vettori di `hashlib.pbkdf2_hmac`. Il costrutto precedente era
+  SHA-256 iterato con salt concatenato, privo di HMAC e di accumulo XOR, ma
+  veniva descritto come PBKDF2 in README e CHANGELOG. Gli hash v1/v2/v3
+  restano verificabili e vengono migrati a v4 al primo accesso riuscito.
+- **Rate limit anti-brute-force persistito** per username (colonne
+  `accounts.failed_attempts` e `lockout_until_unix`): prima viveva solo in
+  memoria e bastava riavviare il processo per azzerare i tentativi.
+- **Password vuota e conteggi di iterazione fuori scala** falliscono subito:
+  entrambi bloccavano il thread principale in modo permanente.
+- **I binding SQL non finiscono piu' nei log**: in caso di query fallita
+  venivano scritti in chiaro, hash delle password compresi.
+- **Immagine profilo validata** (tetto 10 MB e controllo dei magic byte)
+  prima del caricamento.
+- Landing page: sfondi serviti dal repository invece che da una CDN di terze
+  parti fuori controllo, Lucide fissato a versione precisa su tutte le
+  pagine, hash SRI su ogni risorsa CDN.
+- Azioni GitHub di terze parti e container CI ancorati a SHA/digest; i
+  binari dell'addon SQLite hanno un file SHA256SUMS verificato in CI.
+
+### Fixed
+
+- **Il salvataggio non mente piu'**: `save_completed` viene emesso solo dopo
+  una scrittura verificata (errore controllato dopo il flush, backup
+  obbligatorio, rename con tre tentativi, fallback a copia con confronto
+  HMAC). Ogni percorso di errore emette `save_failed` una volta sola e
+  l'utente vede un avviso.
+- **File di salvataggio manomesso** messo in quarantena con nome univoco e
+  segnalato, invece di far ripartire il giocatore dai valori di default in
+  silenzio. Una chiave di integrita' corrotta viene trattata come "firma non
+  disponibile" e non come primo avvio, cosi' i salvataggi validi non vengono
+  piu' accusati di manomissione.
+- **Scritture SQLite realmente transazionali**: BEGIN, COMMIT e ROLLBACK
+  hanno il valore di ritorno controllato, l'inventario e' protetto da un
+  SAVEPOINT e le migrazioni verificano il conteggio delle righe di backup
+  prima di qualunque DROP.
+- **Sincronizzazione cloud non piu' bloccabile**: gli identificativi di
+  richiesta erano incoerenti fra tracciamento e livello HTTP, quindi dopo il
+  primo push lo stato "sincronizzazione in corso" non si liberava mai.
+  Aggiunti watchdog, ripetizione singola dopo 401 e coda di lettere morte
+  per i payload corrotti, che prima venivano cancellati senza traccia.
+- **Il cursore del mood cambia davvero la musica**: la funzione di crossfade
+  assegnava il mood prima di emettere il segnale, cosi' l'unico ascoltatore
+  scartava il proprio evento. Il mood "stormy" non aveva alcuna traccia
+  associata.
+- **Secondo click sul pulsante HUD** richiude il pannello: la chiusura
+  differiva stato e segnale alla fine della dissolvenza.
+- **Lingua salvata applicata all'avvio** (prima veniva ignorata fino al
+  primo cambio manuale) e cambio a runtime che aggiorna menu, HUD e
+  impostazioni senza riavvio.
+- Log senza perdite silenziose: file aperto in append, righe scartate
+  dichiarate, anello dedicato agli ERROR che sopravvive alle tempeste.
+- Limiti della stanza rispettati da personaggio e pet anche in stato WILD.
+
 ### Added
-- Build/release pipeline production (Fase A-F): versioning centrale,
-  keystore Android automation, export presets hardening, smoke-binaries
-  gate, release workflow, CI gate.
+
+- **Suoni ambientali**: due loop sintetizzati (pioggia leggera e camino) con
+  crossfade di giunzione, selezione guidata dal mood e interruttore nelle
+  impostazioni. Il sottosistema esisteva ma non aveva ne' asset ne' innesco.
+- **Sprite originali per i sei tipi di disordine**, prima disegnati come
+  cerchi a runtime.
+- **Icone dei sei badge**, segnaposto profilo, icona applicazione e icone
+  adattive Android: prima l'icona era il robot di Godot.
+- **Secondo personaggio selezionabile** (male_rose) e schermata di selezione
+  guidata dal catalogo: con un solo personaggio era codice irraggiungibile.
+  Aggiungere il terzo e' un'operazione di soli dati.
+- **Texture del joystick virtuale** ricreate: la scena mobile puntava a due
+  file inesistenti.
+- **Contatori a vita per i badge** (decorazioni, monete, tempo di gioco) e
+  timer che rivaluta le condizioni a tempo: "Nottambulo" si sbloccava solo
+  se per caso arrivava un evento non correlato.
+- **Sezione crediti in gioco** con l'attribuzione a Eder Muniz richiesta
+  dalla licenza del pack foresta.
+- **Vocabolario di segnali di errore** su SignalBus, collegato ai toast:
+  prima 48 segnali e uno solo portava un errore.
+- **Schema Supabase riproducibile** (`supabase/schema.sql`) con RLS.
+- **19 test di regressione** (suite da 111 a 130) su crittografia, percorsi
+  di fallimento del salvataggio, parita' delle traduzioni e presenza degli
+  asset; i validator dei cataloghi coprono anche badge e disordine.
+- `ci/recolor_character.py`: generatore riproducibile del set derivato, con
+  modalita' di verifica per accorgersi se i fogli versionati divergono.
+
+### Changed
+
+- L'anello di backup conserva tre generazioni; un salvataggio prodotto da
+  una versione futura viene messo da parte invece che applicato.
+- Le decorazioni hanno una sola fonte di verita' (righe normalizzate), con
+  il blob JSON mantenuto allineato per compatibilita' dei salvataggi.
+- Chiusura del database spostata in `_exit_tree`: il salvataggio di uscita
+  trovava il database gia' chiuso e falliva a ogni chiusura del gioco.
+- I binari GDExtension non sono piu' dichiarati LFS (il repository non ha
+  oggetti LFS): risolto il diff fantasma permanente su venti file.
+
+### Known limitations
+
+- La sincronizzazione cloud resta solo in scrittura: il richiamo dei dati
+  dal cloud non e' implementato e la documentazione ora lo dice.
+- Il sistema di outfit resta fuori ambito.
+- L'export Android nel container CI fallisce per un problema noto del
+  container; l'esito e' ora riportato esplicitamente nel summary invece di
+  essere inghiottito. Windows e HTML5 non sono interessati.
 
 ## [1.0.0] - 2026-04-22
 

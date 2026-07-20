@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     container:
-      image: barichello/godot-ci:4.6
+      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
     steps:
       - uses: actions/checkout@v4
         with:
@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     container:
-      image: barichello/godot-ci:4.6
+      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
     if: ${{ !inputs.skip_android }}
     steps:
       - uses: actions/checkout@v4
@@ -254,11 +254,14 @@ jobs:
           godot --headless --import --path .
 
       - name: Export Android APK
-        # Android export in barichello/godot-ci:4.6 container emette "Cannot
+        # L'export Android nel container barichello/godot-ci emette "Cannot
         # export project with preset 'Android' due to configuration errors"
-        # SENZA specifica quale config error. Known issue pre-Fase C; era
-        # mascherato con continue-on-error dalla baseline. TODO post-demo:
-        # switchare a gradle_build/use_gradle_build=true + custom template.
+        # senza dire quale. Il job resta non bloccante (Windows e HTML5 sono
+        # i target di rilascio), ma l'esito viene registrato esplicitamente
+        # invece di essere inghiottito: lo step successivo lo riporta nel
+        # summary, cosi' "Android non prodotto" e' un fatto visibile e non
+        # un silenzio che somiglia al successo.
+        id: android_export
         continue-on-error: true
         run: |
           cd "${{ env.PROJECT_PATH }}"
@@ -272,13 +275,25 @@ jobs:
               echo "Android debug export failed — see known-issue comment"
           fi
 
+      - name: Report Android export outcome
+        if: always()
+        run: |
+          OUTCOME="${{ steps.android_export.outcome }}"
+          if [ -f builds/android/*.apk ] 2>/dev/null || ls builds/android/*.apk >/dev/null 2>&1; then
+            echo "### Android: APK prodotto (step $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Android: NESSUN APK prodotto (step $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Problema noto del container: preset Android con errori di configurazione." >> "$GITHUB_STEP_SUMMARY"
+            echo "Windows e HTML5 non sono interessati." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Verify APK (if present)
         continue-on-error: true
         run: |
           cd builds/android
           ls -lh || echo "(no android artifacts)"
           if ! ls *.apk >/dev/null 2>&1; then
-            echo "Skipping verify: no APK generated (Android known-broken pre-demo)"
+            echo "Skipping verify: no APK generated (see the outcome step above)"
             exit 0
           fi
           APK=$(ls *.apk | head -1)
@@ -324,7 +339,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     container:
-      image: barichello/godot-ci:4.6
+      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
     steps:
       - uses: actions/checkout@v4
         with:

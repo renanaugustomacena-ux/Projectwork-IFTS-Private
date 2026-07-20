@@ -142,6 +142,21 @@ jobs:
       - name: Check v1/VERSION matches export_presets + project.godot + constants.gd
         run: python ci/validate_version_sync.py
 
+  validate-addon-binaries:
+    name: "Validate addon binary checksums (supply chain)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      # I binari GDExtension sono committati: senza checksum uno scambio di
+      # .dll o .so passerebbe come un normale diff binario, invisibile in
+      # review. Il file SHA256SUMS li ancora a un contenuto noto.
+      - name: Verify godot-sqlite binaries against SHA256SUMS
+        run: |
+          cd v1/addons/godot-sqlite/bin
+          sha256sum -c ../SHA256SUMS
+
   validate-no-keystore:
     name: "Validate no keystore tracked (Fase B guard)"
     runs-on: ubuntu-22.04
@@ -200,7 +215,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 6
     container:
-      image: barichello/godot-ci:4.6
+      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
     steps:
       - uses: actions/checkout@v4
         with:
@@ -237,7 +252,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     container:
-      image: barichello/godot-ci:4.6
+      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
     needs: [smoke-headless]
     steps:
       - uses: actions/checkout@v4
