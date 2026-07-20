@@ -65,7 +65,7 @@ Caricati in ordine da `project.godot`. Ognuno può dipendere solo dai precedenti
 | 11 | `MoodManager` | `autoload/mood_manager.gd` | Overlay gloomy, rain particles, pet WILD FSM state, audio crossfade |
 | 12 | `BadgeManager` | `autoload/badge_manager.gd` | Badge catalog + SQLite table `badges_unlocked` |
 
-> **Nota cripto**: l'etichetta "PBKDF2" presente in alcuni commenti storici non corrisponde a RFC 2898 vero PBKDF2-HMAC-SHA256; il costrutto attuale è SHA-256 iterato con salt concatenato (vedi § 4.4.1 di `AUDIT_REPORT_2026-04-23.md`). Remediazione pianificata pre-v1.1.
+> **Nota cripto**: dal formato hash v4 (v1.1.0) le password usano vero PBKDF2-HMAC-SHA256 RFC 8018 §5.2 (100k iterazioni, salt 16 B, chiave derivata 32 B) via `Crypto.hmac_digest`. Le build storiche (formati v1/v2/v3) usavano SHA-256 iterato con salt concatenato, etichettato impropriamente "PBKDF2" (vedi § 4.4.1 di `AUDIT_REPORT_2026-04-23.md`); gli hash legacy vengono verificati con la routine storica e ri-hashati a v4 al primo login riuscito.
 
 ### Scene Tree — Stanza di Gioco (`scenes/main/main.tscn`)
 

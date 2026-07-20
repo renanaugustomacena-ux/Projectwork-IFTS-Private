@@ -19,8 +19,12 @@ def extract_create_tables_region(content):
     - Pre B-033: `func _create_tables()` in local_database.gd
     - Post B-033: `static func create_all_tables(db: SQLite)` in schema.gd
     """
-    # Cerca static func (post-split) prima, poi func (pre-split) come fallback
+    # Cerca il pattern piu` recente prima, poi i fallback storici:
+    # - Fase C: `static func _all_schema_statements()` (array di stringhe SQL)
+    # - Post B-033: `static func create_all_tables(db: SQLite)`
+    # - Pre B-033: `func _create_tables()` in local_database.gd
     patterns = [
+        r'^static func _all_schema_statements\([^)]*\)[^:]*:',
         r'^static func create_all_tables\([^)]*\)[^:]*:',
         r'^func _create_tables\(\)[^:]*:',
     ]
@@ -51,6 +55,17 @@ def extract_sql_from_execute_calls(region):
     - Post B-033: `DBHelpers.execute(db, "...")` (static helper)
     """
     sql_statements = []
+
+    # Fase C: la region e` un array literal di stringhe SQL concatenate con
+    # `+` (nessuna call execute). Ogni statement termina con ';' — estrai
+    # tutte le stringhe, riunisci e splitta sui ';'.
+    if "DBHelpers.execute(" not in region and "_execute(" not in region:
+        strings = re.findall(r'"([^"]*)"', region)
+        blob = "".join(strings)
+        for stmt in blob.split(";"):
+            if stmt.strip():
+                sql_statements.append(stmt.strip() + ";")
+        return sql_statements
 
     # Candidati: nuovo pattern post-split prima, legacy dopo
     call_patterns = ["DBHelpers.execute(", "_execute("]

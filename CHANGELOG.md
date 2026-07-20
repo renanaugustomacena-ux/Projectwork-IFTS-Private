@@ -31,8 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `badges.json`
 - **Virtual joystick** gated `OS.has_feature("mobile")` (attivo solo
   Android/Web, dead-code su desktop)
-- **PBKDF2 v3** password hashing 100k iter SHA-256 + migration trasparente
-  v1/v2→v3 al login
+- **Password hashing v3** 100k iter salted SHA-256 + migration trasparente
+  v1/v2→v3 al login (storicamente etichettato "PBKDF2": NON era RFC 8018;
+  il vero PBKDF2-HMAC-SHA256 arriva con il formato v4 in v1.1.0)
 
 ### Changed
 - **Save format v5.0.0** con dual-write atomico JSON + SQLite
@@ -59,13 +60,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **B-023** virtual_joystick dead code (mobile-gated)
 - **B-024** CI no focus_mode check (new validator + fix 13 existing
   Button.new())
-- **B-029** PBKDF2 10k→100k iter + v2→v3 migration chain
+- **B-029** password hash 10k→100k iter salted SHA-256 + v2→v3 migration
+  chain (vero RFC 8018 PBKDF2-HMAC-SHA256 dal formato v4, v1.1.0)
 - **B-030** RNG non deterministico in debug build
 - **B-033** local_database 894-line monolith splittato in 9 moduli
 
 ### Security
-- PBKDF2 password hash 100k iter SHA-256 (OWASP trade-off per UX
-  login responsiva)
+- Password hash 100k iter salted SHA-256 (storico: NON RFC 8018 PBKDF2;
+  dal formato v4 in v1.1.0 le password usano vero PBKDF2-HMAC-SHA256
+  100k iter — trade-off OWASP per UX login responsiva)
 - Migration trasparente v1/v2→v3 al primo login successful
 - Profile image locale only (privacy-first, mai upload Supabase)
 - Supabase publishable key: safe in repo pubblico (RLS-protected)

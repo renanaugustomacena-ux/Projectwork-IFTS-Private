@@ -349,7 +349,7 @@ body {
 .hero-bg {
     position: absolute;
     inset: 0;
-    background-image: url('https://static.prod-images.emergentagent.com/jobs/65fd861e-d54d-45a0-9015-f372d001031b/images/c2bce3429df6d9797243ecf6d9c6eec60271334281207023232aed61deb6d798.png');
+    background-image: url('assets/hero-bg.png');
     background-size: cover;
     background-position: center;
     z-index: 0;
@@ -729,7 +729,7 @@ body {
 .features-bg {
     position: absolute;
     inset: 0;
-    background-image: url('https://static.prod-images.emergentagent.com/jobs/65fd861e-d54d-45a0-9015-f372d001031b/images/4ea9dc3ea9844c972817cb38010e20788cd1f97e4ec1aecdbd49197905b5fab8.png');
+    background-image: url('assets/section-bg.png');
     background-size: cover;
     background-position: center;
     opacity: 0.1;
@@ -977,7 +977,7 @@ body {
 .download-bg {
     position: absolute;
     inset: 0;
-    background-image: url('https://static.prod-images.emergentagent.com/jobs/65fd861e-d54d-45a0-9015-f372d001031b/images/4ea9dc3ea9844c972817cb38010e20788cd1f97e4ec1aecdbd49197905b5fab8.png');
+    background-image: url('assets/section-bg.png');
     background-size: cover;
     background-position: center;
     opacity: 0.3;

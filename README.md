@@ -75,7 +75,7 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 | 1 | **SignalBus** | `autoload/signal_bus.gd` | 48 signal typed. Tutti i sistemi passano per il bus |
 | 2 | **AppLogger** | `autoload/logger.gd` | JSONL rotating 5 MB × 5. Session id, redact su chiavi sensibili |
 | 3 | **LocalDatabase** | `autoload/local_database.gd` | SQLite WAL, 9 tabelle, 9 repo modulari (B-033) |
-| 4 | **AuthManager** | `autoload/auth_manager.gd` | Guest + user/password iterated-SHA-256 v3, 100 k iter, salt 128 bit |
+| 4 | **AuthManager** | `autoload/auth_manager.gd` | Guest + user/password PBKDF2-HMAC-SHA256 RFC 8018 (v4, 100 k iter, salt 128 bit; build storiche: SHA-256 iterato con salt, re-hash a v4 al login) |
 | 5 | **GameManager** | `autoload/game_manager.gd` | Carica cataloghi JSON, orchestra stato |
 | 6 | **SaveManager** | `autoload/save_manager.gd` | Save v5.0.0, atomic write + backup, HMAC-SHA256 |
 | 7 | **SupabaseClient** | `autoload/supabase_client.gd` | Token cifrato device-local, HTTPS, 5 tabelle cloud push |

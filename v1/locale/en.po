@@ -64,6 +64,24 @@ msgstr "Language changed: %s"
 msgid "TOAST_BADGE_UNLOCKED"
 msgstr "🏅 Badge unlocked: %s"
 
+msgid "TOAST_SAVE_FAILED"
+msgstr "Save failed — progress not written to disk"
+
+msgid "TOAST_SAVE_TAMPERED"
+msgstr "Save file failed integrity check — moved to quarantine"
+
+msgid "TOAST_SAVE_KEY_ERROR"
+msgstr "Cannot secure save data — saving aborted"
+
+msgid "TOAST_SYNC_ERROR"
+msgstr "Cloud sync error — changes kept locally"
+
+msgid "TOAST_DB_ERROR"
+msgstr "Local database error"
+
+msgid "TOAST_CATALOG_ERROR"
+msgstr "Error loading game data"
+
 # Settings panel
 msgid "UI_SETTINGS_TITLE"
 msgstr "Settings"
