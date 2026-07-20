@@ -8,9 +8,15 @@ const AUTH_SCREEN_SCENE := "res://scenes/menu/auth_screen.tscn"
 const LOADING_SCREEN_SCENE := "res://scenes/menu/loading_screen.tscn"
 const CHARACTER_SELECT_SCENE := "res://scenes/menu/character_select.tscn"
 const LOADING_PAUSE := 0.4
+## Failure-detector window for scene transitions (V-040): if the scene swap
+## has not happened after this long, something went wrong.
+const TRANSITION_TIMEOUT := 5.0
 
 var _settings_panel: PanelContainer = null
 var _profile_panel: PanelContainer = null
+# Live character-select overlay (Phase D guard): a double-click on Nuova
+# Partita must never stack a second select screen.
+var _select_screen: Control = null
 var _transitioning: bool = false
 var _intro_tween: Tween = null
 var _panel_tween: Tween = null
@@ -37,9 +43,7 @@ func _ready() -> void:
 	_profilo_btn.pressed.connect(_on_profilo)
 	_esci_btn.pressed.connect(_on_esci)
 
-	if not FileAccess.file_exists(SaveManager.SAVE_PATH):
-		_carica_btn.disabled = true
-		_carica_btn.modulate.a = 0.5
+	_refresh_carica_partita_enabled()
 
 	_menu_character.walk_in_completed.connect(_on_walk_in_done)
 
@@ -88,18 +92,34 @@ func _on_walk_in_done() -> void:
 func _on_nuova_partita() -> void:
 	if _transitioning:
 		return
+	# Hard error path (V-039 / 4.1.9-L101): an empty/corrupt character catalog
+	# must never invent a character id. Validated BEFORE reset_character_data
+	# so a broken install cannot wipe an existing save. The menu scene has no
+	# ToastManager (it lives in the gameplay scene), so the visible feedback
+	# is the disabled button; the ERROR log carries the diagnosis.
+	var characters: Array = GameManager.characters_catalog.get("characters", [])
+	if characters.is_empty():
+		AppLogger.error("MainMenu", "characters_catalog_empty", {"action": "nuova_partita_blocked"})
+		_disable_nuova_partita()
+		return
+	var char_id := ""
+	if characters.size() == 1:
+		var entry: Variant = characters[0]
+		char_id = str(entry.get("id", "")) if entry is Dictionary else ""
+		if char_id.is_empty():
+			AppLogger.error("MainMenu", "characters_catalog_entry_invalid", {"entry": str(entry)})
+			_disable_nuova_partita()
+			return
 	SaveManager.reset_character_data()
 	# Ripristina il flag tutorial cosi` una nuova partita riavvia sempre
 	# la sessione di onboarding, indipendentemente da precedenti completamenti.
 	# Flush sincrono necessario prima della scene transition.
 	SignalBus.settings_updated.emit("tutorial_completed", false)
 	SaveManager.save_game()
-	# Con 1 solo personaggio in catalog (male_old), saltiamo character_select
-	# e andiamo dritti in game. Quando il catalog crescera`, il ramo
+	# Con 1 solo personaggio in catalog, saltiamo character_select e andiamo
+	# dritti in game. Quando il catalog crescera`, il ramo
 	# _show_character_select() torna attivo.
-	var characters: Array = GameManager.characters_catalog.get("characters", [])
-	if characters.size() <= 1:
-		var char_id: String = characters[0].get("id", "male_old") if not characters.is_empty() else "male_old"
+	if not char_id.is_empty():
 		GameManager.current_character_id = char_id
 		SignalBus.character_changed.emit(char_id)
 		_transitioning = true
@@ -108,7 +128,20 @@ func _on_nuova_partita() -> void:
 		_show_character_select()
 
 
+func _disable_nuova_partita() -> void:
+	# Same disabled styling as _carica_btn in _ready.
+	_nuova_btn.disabled = true
+	_nuova_btn.modulate.a = 0.5
+
+
 func _show_character_select() -> void:
+	# Phase D guard (latent until the catalog gains a 2nd character): the
+	# multi-character path reaches here without _transitioning set, so a
+	# double-click on Nuova Partita — or a click while the select screen is
+	# open — would stack a second overlay, each with its own one-shot
+	# character_selected connection able to fire a transition.
+	if _select_screen != null and is_instance_valid(_select_screen):
+		return
 	var scene := load(CHARACTER_SELECT_SCENE) as PackedScene
 	if scene == null:
 		push_warning("MainMenu: character select not found")
@@ -122,10 +155,12 @@ func _show_character_select() -> void:
 		_transition_to_scene(GAMEPLAY_SCENE)
 		return
 	select_screen.character_selected.connect(_on_character_chosen, CONNECT_ONE_SHOT)
+	_select_screen = select_screen
 	$UILayer.add_child(select_screen)
 
 
 func _on_character_chosen(character_id: String) -> void:
+	_select_screen = null
 	GameManager.current_character_id = character_id
 	SignalBus.character_changed.emit(character_id)
 	_transitioning = true
@@ -166,7 +201,25 @@ func _show_auth_screen() -> void:
 
 
 func _on_auth_completed() -> void:
+	# Re-evaluate now that the session points at a real account: a DB-backed
+	# character makes Carica Partita valid even without a JSON save file.
+	_refresh_carica_partita_enabled()
 	_play_intro()
+
+
+## Enables Carica Partita when restorable progress exists in EITHER store:
+## the JSON save file OR a SQLite account owning a character row (V-081 /
+## 4.1.9-L40). A guest account with a character counts — DB lookups are cheap.
+func _refresh_carica_partita_enabled() -> void:
+	var has_state := FileAccess.file_exists(SaveManager.SAVE_PATH) or _has_db_character()
+	_carica_btn.disabled = not has_state
+	_carica_btn.modulate.a = 1.0 if has_state else 0.5
+
+
+func _has_db_character() -> bool:
+	if AuthManager.current_account_id < 0 or not LocalDatabase.is_open():
+		return false
+	return not LocalDatabase.get_character(AuthManager.current_account_id).is_empty()
 
 
 func _on_profilo() -> void:
@@ -274,6 +327,9 @@ func _exit_tree() -> void:
 		_esci_btn.pressed.disconnect(_on_esci)
 	if _menu_character and _menu_character.walk_in_completed.is_connected(_on_walk_in_done):
 		_menu_character.walk_in_completed.disconnect(_on_walk_in_done)
+	var tree := get_tree()
+	if tree != null and tree.scene_changed.is_connected(_on_scene_changed):
+		tree.scene_changed.disconnect(_on_scene_changed)
 
 
 func _transition_to_scene(scene_path: String) -> void:
@@ -283,6 +339,42 @@ func _transition_to_scene(scene_path: String) -> void:
 		_intro_tween.kill()
 	_intro_tween = create_tween()
 	_intro_tween.tween_property(_loading_screen, "modulate:a", 1.0, Constants.FADE_DURATION)
-	_intro_tween.tween_callback(get_tree().change_scene_to_file.bind(scene_path))
-	# Safety: reset _transitioning after 5s in case scene change fails silently
-	get_tree().create_timer(5.0).timeout.connect(func() -> void: _transitioning = false, CONNECT_ONE_SHOT)
+	_intro_tween.tween_callback(_change_scene.bind(scene_path))
+	# Failure detector only (V-040 / 4.1.9-L286): on a confirmed swap this
+	# node is freed with the outgoing scene and Godot auto-disconnects method
+	# callables of freed objects, so the watchdog fires ONLY when the
+	# transition did not happen.
+	get_tree().create_timer(TRANSITION_TIMEOUT).timeout.connect(_on_transition_watchdog, CONNECT_ONE_SHOT)
+
+
+func _change_scene(scene_path: String) -> void:
+	# _transitioning is released only on a confirmed swap via
+	# SceneTree.scene_changed (verified present, zero args, in Godot 4.6).
+	# On success this node is freed with the outgoing scene, so the handler
+	# (and the watchdog) die with it — both connections are auto-cleaned.
+	if not get_tree().scene_changed.is_connected(_on_scene_changed):
+		get_tree().scene_changed.connect(_on_scene_changed, CONNECT_ONE_SHOT)
+	var err := get_tree().change_scene_to_file(scene_path)
+	if err != OK:
+		AppLogger.error("MainMenu", "change_scene_failed", {"path": scene_path, "error": error_string(err)})
+		if get_tree().scene_changed.is_connected(_on_scene_changed):
+			get_tree().scene_changed.disconnect(_on_scene_changed)
+		_abort_transition()
+
+
+func _on_scene_changed() -> void:
+	_transitioning = false
+
+
+func _on_transition_watchdog() -> void:
+	if not _transitioning:
+		return
+	AppLogger.error("MainMenu", "scene_transition_timeout", {"timeout_s": TRANSITION_TIMEOUT})
+	_abort_transition()
+
+
+func _abort_transition() -> void:
+	# No ToastManager exists in the menu scene, so the user feedback is
+	# restoring the interactive menu (loading overlay off, buttons usable).
+	_transitioning = false
+	_loading_screen.visible = false

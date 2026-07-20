@@ -21,6 +21,9 @@ var badges_catalog: Dictionary = {}  # T-R-015d
 var _pending_character: String = ""
 var _pending_outfit: String = ""
 
+# Distinct failure reason set by _load_json when it returns null (V-019).
+var _last_catalog_error: String = ""
+
 
 func _ready() -> void:
 	_load_catalogs()
@@ -42,12 +45,26 @@ func _deferred_load() -> void:
 
 
 func _load_catalogs() -> void:
-	rooms_catalog = _load_json("res://data/rooms.json")
-	decorations_catalog = _load_json("res://data/decorations.json")
-	characters_catalog = _load_json("res://data/characters.json")
-	tracks_catalog = _load_json("res://data/tracks.json")
-	mess_catalog = _load_json("res://data/mess_catalog.json")
-	badges_catalog = _load_json("res://data/badges.json")
+	rooms_catalog = _load_catalog_or_empty("res://data/rooms.json")
+	decorations_catalog = _load_catalog_or_empty("res://data/decorations.json")
+	characters_catalog = _load_catalog_or_empty("res://data/characters.json")
+	tracks_catalog = _load_catalog_or_empty("res://data/tracks.json")
+	mess_catalog = _load_catalog_or_empty("res://data/mess_catalog.json")
+	badges_catalog = _load_catalog_or_empty("res://data/badges.json")
+
+
+## Load one catalog; on failure log ERROR, emit SignalBus.catalog_load_failed
+## and fall back to {} so boot continues (V-019 / 4.2-gamemanager-catalog).
+## main.gd's _wire_error_toasts (Phase C) subscribes to catalog_load_failed and
+## surfaces it as a toast once the gameplay scene is up; during autoload boot,
+## before any listener exists, the AppLogger ERROR is the surviving record.
+func _load_catalog_or_empty(path: String) -> Dictionary:
+	var data: Variant = _load_json(path)
+	if data is Dictionary:
+		return data
+	AppLogger.error("GameManager", "catalog_load_failed", {"path": path, "reason": _last_catalog_error})
+	SignalBus.catalog_load_failed.emit(path, _last_catalog_error)
+	return {}
 
 
 func _validate_catalogs() -> void:
@@ -61,36 +78,35 @@ func _validate_catalogs() -> void:
 	}
 	AppLogger.info("GameManager", "Catalogs loaded", counts)
 
-	if counts["rooms"] == 0:
-		push_warning("GameManager: rooms catalog is empty — no rooms available")
-	if counts["decorations"] == 0:
-		push_warning("GameManager: decorations catalog is empty — no items available")
+	# Warn on every empty catalog, not just rooms/decorations (V-019).
+	for key in counts:
+		if counts[key] == 0:
+			push_warning("GameManager: %s catalog is empty" % key)
 
 
-func _load_json(path: String) -> Dictionary:
+## Returns the parsed root Dictionary, or null on any failure ({} is returned
+## only for a genuinely empty JSON object). When null is returned,
+## _last_catalog_error holds a distinct machine-readable reason.
+func _load_json(path: String) -> Variant:
+	_last_catalog_error = ""
 	if not FileAccess.file_exists(path):
-		push_warning("GameManager: catalog file not found: %s" % path)
-		return {}
+		_last_catalog_error = "file_not_found"
+		return null
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		push_error("GameManager: failed to open catalog: %s (error: %s)" % [path, FileAccess.get_open_error()])
-		return {}
+		_last_catalog_error = "open_failed: %s" % error_string(FileAccess.get_open_error())
+		return null
 	var json_text := file.get_as_text()
 	var json := JSON.new()
 	var parse_result := json.parse(json_text)
 	if parse_result != OK:
-		push_error(
-			(
-				"GameManager: JSON parse error in %s at line %d: %s"
-				% [path, json.get_error_line(), json.get_error_message()]
-			)
-		)
-		return {}
+		_last_catalog_error = ("parse_error: line %d: %s" % [json.get_error_line(), json.get_error_message()])
+		return null
 	var data: Variant = json.data
 	if data is Dictionary:
 		return data
-	push_error("GameManager: expected Dictionary from %s, got %s" % [path, typeof(data)])
-	return {}
+	_last_catalog_error = "wrong_root_type: %s" % type_string(typeof(data))
+	return null
 
 
 func change_room(room_id: String, theme: String = "") -> void:

@@ -21,7 +21,10 @@ var _popup: PanelContainer = null
 
 func _ready() -> void:
 	set_process_unhandled_input(true)
-	base_item_scale = scale.x
+	# base_item_scale is assigned by the spawner (room_base) with the CATALOG
+	# scale before add_child. Do NOT rebase it to scale.x here: after a
+	# save/reload scale.x is the saved absolute scale, and rebasing made the
+	# SCALE_STEPS ladder compound unboundedly across sessions (Phase E).
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -229,7 +232,10 @@ func _save_scale(new_scale: float) -> void:
 
 
 func _remove_from_room() -> void:
-	SaveManager.remove_decoration(deco_data)
+	# V-059 companion: remove_decoration reports whether the entry existed.
+	# A did-not-exist removal is logged as WARN instead of silently ignored.
+	if not SaveManager.remove_decoration(deco_data):
+		AppLogger.warn("DecorationSystem", "remove_decoration_not_found", {"item_id": item_id})
 	SignalBus.decoration_removed.emit(item_id)
 	SignalBus.save_requested.emit()
 	queue_free()

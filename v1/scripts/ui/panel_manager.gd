@@ -13,6 +13,11 @@ const PANEL_SCENES: Dictionary = {
 var _ui_layer: CanvasLayer = null
 var _current_panel: PanelContainer = null
 var _current_panel_name: String = ""
+# B-036 guard (D.3): the panel currently fading out. A re-toggle of the same
+# panel during its fade must be ignored, otherwise the third click within
+# PANEL_TWEEN_DURATION spawns a second overlapping instance.
+var _closing_panel: PanelContainer = null
+var _closing_panel_name: String = ""
 var _scene_cache: Dictionary = {}
 var _tween: Tween = null
 
@@ -25,6 +30,10 @@ func initialize(ui_layer: CanvasLayer) -> void:
 
 
 func toggle_panel(panel_name: String) -> void:
+	# B-036 guard: a re-click on a panel during its own fade-out is noise —
+	# the panel is already closing, do not spawn a fresh instance on top.
+	if panel_name == _closing_panel_name and is_instance_valid(_closing_panel):
+		return
 	if _current_panel_name == panel_name:
 		close_current_panel()
 	else:
@@ -79,15 +88,14 @@ func close_current_panel() -> void:
 		_current_panel_name = ""
 		return
 
-	# Se il panel corrente sta gia` fadendo out, non ri-avviare il tween:
-	# l'ulteriore click e` rumore, il panel sta gia` chiudendosi.
-	if _current_panel.get_meta("closing", false):
-		return
-
 	var closing_name := _current_panel_name
 	var closing_panel := _current_panel
-	closing_panel.set_meta("closing", true)
 	closing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# B-036: remember the fading panel so toggle_panel ignores re-clicks on it
+	# until the fade completes. (Double-close of the same node is impossible:
+	# _current_panel is nulled below, so a second call early-returns.)
+	_closing_panel = closing_panel
+	_closing_panel_name = closing_name
 
 	# Rilascia focus esplicito se il panel che si sta chiudendo lo aveva grabbato.
 	# Godot 4.5 non auto-rilascia il focus al queue_free, e il focus residuo su un
@@ -99,21 +107,36 @@ func close_current_panel() -> void:
 		if focus_owner != null and closing_panel.is_ancestor_of(focus_owner):
 			viewport.gui_release_focus()
 
+	# Stop a still-running open fade-in on this panel before fading it out.
 	if _tween and _tween.is_running():
 		_tween.kill()
 		_tween = null
-	_tween = create_tween()
-	_tween.tween_property(closing_panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
-	# Clear state SOLO al termine del tween, cosi` toggle_panel durante il fade
-	# vede il panel come ancora corrente e puo` decidere close vs swap coerente.
-	_tween.tween_callback(func() -> void:
-		if _current_panel == closing_panel:
-			_current_panel = null
-			_current_panel_name = ""
-		closing_panel.queue_free()
-		SignalBus.panel_closed.emit(closing_name)
-	)
+
+	# Clear state and notify listeners immediately at close-start; the fade
+	# below only animates the captured node before freeing it. Re-toggling the
+	# SAME panel during its fade-out is swallowed by the _closing_panel guard
+	# in toggle_panel (B-036); other panels open normally.
+	_current_panel = null
+	_current_panel_name = ""
+	SignalBus.panel_closed.emit(closing_name)
+
+	# Panel-owned tween: killing the shared open-fade tween (_tween) can
+	# never cancel this pending queue_free.
+	var close_tween := closing_panel.create_tween()
+	close_tween.tween_property(closing_panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
+	close_tween.tween_callback(_finalize_panel_close.bind(closing_panel))
 	AppLogger.info("PanelManager", "Panel closing", {"name": closing_name})
+
+
+## Frees the faded-out panel and releases the B-036 closing guard. The guard
+## fields are cleared only while they still point at this panel: a newer close
+## may have overwritten them before this fade finished.
+func _finalize_panel_close(closing_panel: PanelContainer) -> void:
+	if _closing_panel == closing_panel:
+		_closing_panel = null
+		_closing_panel_name = ""
+	if is_instance_valid(closing_panel):
+		closing_panel.queue_free()
 
 
 func is_panel_open() -> bool:
@@ -133,6 +156,15 @@ func _close_immediate() -> void:
 	if _tween and _tween.is_running():
 		_tween.kill()
 		_tween = null
+
+	# B-001 focus release, aligned with close_current_panel (D.3): a focused
+	# control inside the dying panel would otherwise stay gui_get_focus_owner()
+	# for the rest of the frame and swallow movement input.
+	var viewport := _current_panel.get_viewport()
+	if viewport != null:
+		var focus_owner := viewport.gui_get_focus_owner()
+		if focus_owner != null and _current_panel.is_ancestor_of(focus_owner):
+			viewport.gui_release_focus()
 
 	var closing_name := _current_panel_name
 	_current_panel.queue_free()
@@ -165,6 +197,10 @@ func _exit_tree() -> void:
 		_tween.kill()
 	if _current_panel and is_instance_valid(_current_panel):
 		_current_panel.queue_free()
+	# A panel still mid-fade must not outlive the manager: freeing it also
+	# kills its close tween, whose callback targets this (dying) node.
+	if _closing_panel and is_instance_valid(_closing_panel):
+		_closing_panel.queue_free()
 
 
 func _unhandled_input(event: InputEvent) -> void:

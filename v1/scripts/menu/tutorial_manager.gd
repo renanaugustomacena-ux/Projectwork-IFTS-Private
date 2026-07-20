@@ -6,13 +6,18 @@ signal tutorial_completed
 signal tutorial_skipped
 
 const STEP_TIMEOUT := 30.0
-const ARROW_ANIMATE_SPEED := 2.0
 
 ## Tutorial steps — each step waits for a specific signal or action.
 var _steps: Array[Dictionary] = []
 var _current_step: int = -1
 var _is_active: bool = false
 var _step_timer: float = 0.0
+
+## Stateful per-step SignalBus connection handle. Exactly one connection is
+## alive at a time; it is created in _advance_step and torn down in
+## _disconnect_step_signal on accept, step change, skip, finish or exit.
+var _step_signal_name: String = ""
+var _step_callable: Callable = Callable()
 
 # UI nodes
 var _overlay: ColorRect = null
@@ -22,6 +27,9 @@ var _progress_label: Label = null
 var _skip_btn: Button = null
 var _arrow: Label = null
 var _tween: Tween = null
+## Anchor y set once per target by _show_arrow; the bob in _process writes an
+## absolute offset from it (V-104 / 4.2-L300-arrow-drift — no cumulative +=).
+var _arrow_base_y: float = 0.0
 
 
 func _ready() -> void:
@@ -208,8 +216,8 @@ func _advance_step() -> void:
 	_step_timer = 0.0
 	_arrow.visible = false
 
-	# Disconnect previous signal listeners
-	_disconnect_all_signals()
+	# Disconnect the previous step's signal listener
+	_disconnect_step_signal()
 
 	# Final step — bottone di chiusura
 	if step.get("is_final", false):
@@ -230,12 +238,15 @@ func _advance_step() -> void:
 		# Handled in _process, just wait for input
 		return
 
-	# Signal-based step
+	# Signal-based step — single stateful connection per step. The filter is
+	# checked inside _on_signal_received: a non-matching event simply returns,
+	# keeping the connection alive (no disconnect/reconnect churn).
 	var sig_name: String = step.get("signal_name", "")
 	if not sig_name.is_empty() and SignalBus.has_signal(sig_name):
 		var sig: Signal = SignalBus.get(sig_name)
-		if sig.get_connections().size() < 10:
-			sig.connect(_on_signal_received.bind(sig_name), CONNECT_ONE_SHOT)
+		_step_signal_name = sig_name
+		_step_callable = _on_signal_received
+		sig.connect(_step_callable)
 
 	# Show arrow pointing to a specific button
 	var arrow_target: String = step.get("arrow_target", "")
@@ -246,17 +257,17 @@ func _advance_step() -> void:
 	_animate_dialog_in()
 
 
-## Variadic-style signal handler. The signal can emit 0..2 args; the bind()
-## appends `sig_name` always as the LAST arg. So the callable is invoked as:
-##   0-arg signal -> (sig_name)
-##   1-arg signal -> (a, sig_name)
-##   2-arg signal -> (a, b, sig_name)
-## Accept up to 3 args with defaults so any signal arity works without crash.
+## Variadic-style signal handler. SignalBus signals emit 0..2 args; accept up
+## to 3 args with defaults so any signal arity works without crash. The
+## connection is stateful (one per step): a filter miss just logs and returns,
+## keeping the connection alive — no disconnect/reconnect churn.
 func _on_signal_received(
 	a: Variant = null,
 	b: Variant = null,
 	c: Variant = null,
 ) -> void:
+	if _current_step < 0 or _current_step >= _steps.size():
+		return
 	var step: Dictionary = _steps[_current_step]
 	var filter: String = step.get("signal_filter", "")
 	if not filter.is_empty():
@@ -264,13 +275,16 @@ func _on_signal_received(
 		if a is String:
 			received = a
 		if filter not in received:
-			var sig_name: String = step.get("signal_name", "")
-			if SignalBus.has_signal(sig_name):
-				var sig: Signal = SignalBus.get(sig_name)
-				sig.connect(_on_signal_received.bind(sig_name), CONNECT_ONE_SHOT)
+			var miss_ctx := {
+				"step": _current_step,
+				"signal": _step_signal_name,
+				"got": received,
+				"want": filter,
+			}
+			AppLogger.debug("Tutorial", "Step filter miss", miss_ctx)
 			return
-	# a, b, c sono i parametri variadici dei signal: li consumiamo cosi` per
-	# silenziare gdlint (varargs non possono essere prefixati con _)
+	# a, b, c are the variadic signal parameters: consume them this way to
+	# silence gdlint (varargs cannot be prefixed with _)
 	var unused_sig_args := [a, b, c]
 	unused_sig_args.clear()
 	_advance_step()
@@ -295,28 +309,44 @@ func _process(delta: float) -> void:
 	if _step_timer > STEP_TIMEOUT:
 		_advance_step()
 
-	# Animate arrow
+	# Animate arrow — absolute write from the stored anchor: frame-rate
+	# independent, no floating-point drift over long steps.
 	if _arrow.visible:
-		_arrow.position.y += sin(Time.get_ticks_msec() / 300.0) * 0.3
+		_arrow.position.y = _arrow_base_y + sin(Time.get_ticks_msec() / 300.0) * 0.3
 
 
 func _show_arrow(target_name: String) -> void:
-	# Find the target button in the scene tree
-	var target := _find_node_by_name(get_tree().root, target_name)
+	# Godot does not enforce node-name uniqueness across branches, so collect
+	# EVERY match in the walked tree (V-082 / 4.1.6-L305): warn on duplicates
+	# instead of silently trusting the first depth-first hit, and warn on a
+	# missing target instead of the old silent no-arrow no-op.
+	var matches: Array[Node] = []
+	_collect_nodes_by_name(get_tree().root, target_name, matches)
+	if matches.is_empty():
+		AppLogger.warn("Tutorial", "Arrow target not found", {"target": target_name})
+		return
+	if matches.size() > 1:
+		var dup_ctx := {"target": target_name, "count": matches.size()}
+		AppLogger.warn("Tutorial", "Arrow target name not unique", dup_ctx)
+	# Prefer the first VISIBLE match — a hidden duplicate must not steal the
+	# arrow. Fall back to the first match when none is visible.
+	var target: Node = matches[0]
+	for candidate: Node in matches:
+		if candidate is Control and (candidate as Control).is_visible_in_tree():
+			target = candidate
+			break
 	if target is Control:
 		var pos: Vector2 = target.global_position
-		_arrow.position = Vector2(pos.x + target.size.x / 2.0 - 12, pos.y - 30)
+		_arrow_base_y = pos.y - 30.0
+		_arrow.position = Vector2(pos.x + target.size.x / 2.0 - 12.0, _arrow_base_y)
 		_arrow.visible = true
 
 
-func _find_node_by_name(root: Node, node_name: String) -> Node:
+func _collect_nodes_by_name(root: Node, node_name: String, matches: Array[Node]) -> void:
 	if root.name == node_name:
-		return root
+		matches.append(root)
 	for child in root.get_children():
-		var found := _find_node_by_name(child, node_name)
-		if found != null:
-			return found
-	return null
+		_collect_nodes_by_name(child, node_name, matches)
 
 
 func _animate_dialog_in() -> void:
@@ -332,7 +362,7 @@ func _animate_dialog_in() -> void:
 func _on_skip() -> void:
 	_is_active = false
 	visible = false
-	_disconnect_all_signals()
+	_disconnect_step_signal()
 	tutorial_skipped.emit()
 	AppLogger.info("Tutorial", "Tutorial skipped", {"step": _current_step})
 	queue_free()
@@ -349,28 +379,26 @@ func _finish() -> void:
 
 func _on_tutorial_done() -> void:
 	visible = false
-	_disconnect_all_signals()
+	_disconnect_step_signal()
 	tutorial_completed.emit()
 	AppLogger.info("Tutorial", "Tutorial completed", {})
 	queue_free()
 
 
-func _disconnect_all_signals() -> void:
-	for step in _steps:
-		var sig_name: String = step.get("signal_name", "")
-		if sig_name.is_empty():
-			continue
-		if not SignalBus.has_signal(sig_name):
-			continue
-		var sig: Signal = SignalBus.get(sig_name)
-		for conn in sig.get_connections():
-			if conn["callable"].get_object() == self:
-				sig.disconnect(conn["callable"])
+func _disconnect_step_signal() -> void:
+	if _step_signal_name.is_empty():
+		return
+	if SignalBus.has_signal(_step_signal_name):
+		var sig: Signal = SignalBus.get(_step_signal_name)
+		if not _step_callable.is_null() and sig.is_connected(_step_callable):
+			sig.disconnect(_step_callable)
+	_step_signal_name = ""
+	_step_callable = Callable()
 
 
 func _exit_tree() -> void:
 	if _tween and _tween.is_running():
 		_tween.kill()
-	_disconnect_all_signals()
+	_disconnect_step_signal()
 	if _skip_btn and _skip_btn.pressed.is_connected(_on_skip):
 		_skip_btn.pressed.disconnect(_on_skip)

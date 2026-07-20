@@ -15,7 +15,14 @@ extends PanelContainer
 const MOOD_SETTING_KEY := "mood_level"
 const LANGUAGE_SETTING_KEY := "language"
 const PROFILE_IMAGE_PATH := "user://profile_image.png"
+# Write-then-rename staging path (Phase D): the previous good avatar must
+# survive any failed save, so writes never touch PROFILE_IMAGE_PATH directly.
+const PROFILE_IMAGE_TMP_PATH := "user://profile_image.tmp.png"
 const PROFILE_IMAGE_SIZE := 128
+const MAX_PROFILE_IMAGE_BYTES := 10 * 1024 * 1024  # 10 MB cap on selected file
+# Decompression-bomb cap (Phase D): a ~1 MB 16000x16000 PNG passes the byte
+# cap but decodes to 1+ GB. Either dimension above this rejects the file.
+const MAX_PROFILE_IMAGE_DIMENSION := 8192
 
 var _name_label: Label = null
 var _profile_btn: Button = null
@@ -24,7 +31,6 @@ var _settings_btn: Button = null
 var _lang_btn: Button = null
 var _close_btn: Button = null
 var _mood_slider: HSlider = null
-var _loading: bool = false
 var _file_dialog: FileDialog = null
 var _badges_row: HBoxContainer = null  # T-R-015d
 
@@ -83,19 +89,24 @@ func _build_ui() -> void:
 	info_vbox.add_child(_name_label)
 
 	# T-R-015d: riga badge. HBoxContainer di Label (emoji icon) — unlocked
-	# colore pieno, locked grayed. Aggiornato al boot + su badge_unlocked.
+	# colore pieno, locked grayed. First fill happens in _load_state (after
+	# account state is available — V-088 / 4.1.7-L271), then on badge_unlocked
+	# and on every load_completed so boot always shows real badges.
 	var badges_row := HBoxContainer.new()
 	badges_row.name = "BadgesRow"
 	badges_row.add_theme_constant_override("separation", 4)
 	info_vbox.add_child(badges_row)
 	_badges_row = badges_row
-	_refresh_badges()
 	SignalBus.badge_unlocked.connect(_on_badge_unlocked)
+	SignalBus.load_completed.connect(_refresh_badges)
 
 	# Language toggle — nascosto pre-demo, i18n completa in arrivo post-demo.
+	# Parented hidden (Phase D): an unparented Button leaked one orphan Object
+	# per panel open; in the tree it is owned and freed with the panel.
 	_lang_btn = Button.new()
 	_lang_btn.focus_mode = Control.FOCUS_NONE
 	_lang_btn.visible = false
+	row_top.add_child(_lang_btn)
 
 	# Settings button
 	_settings_btn = Button.new()
@@ -146,7 +157,6 @@ func _build_ui() -> void:
 
 
 func _load_state() -> void:
-	_loading = true
 	# Nome utente da AuthManager
 	if _name_label != null:
 		var username: String = AuthManager.current_username
@@ -154,15 +164,18 @@ func _load_state() -> void:
 			_name_label.text = tr("UI_PROFILE_GUEST")
 		else:
 			_name_label.text = username
-	# Mood slider da settings
+	# Mood slider from settings. set_value_no_signal (V-087 / 4.1.7-L160):
+	# the initial value must not fire value_changed, so no _loading latch is
+	# needed — only real user interaction reaches _on_mood_changed.
 	if _mood_slider != null:
 		var saved_mood: float = SaveManager.get_setting(MOOD_SETTING_KEY, 1.0)
-		_mood_slider.value = clampf(saved_mood, 0.0, 1.0)
+		_mood_slider.set_value_no_signal(clampf(saved_mood, 0.0, 1.0))
 	# Language button label
 	_refresh_lang_button()
 	# Profile image (T-R-015c): carica da user:// se esiste
 	_refresh_profile_image()
-	_loading = false
+	# Badges last: account state is loaded now (V-088 / 4.1.7-L271).
+	_refresh_badges()
 
 
 func _refresh_profile_image() -> void:
@@ -204,18 +217,90 @@ func _on_profile_btn_pressed() -> void:
 func _on_profile_image_selected(path: String) -> void:
 	# Carica, ridimensiona a 128x128 per risparmiare disco, salva in user://
 	# Privacy: MAI upload cloud, solo filesystem locale.
-	var img := Image.load_from_file(path)
-	if img == null or img.is_empty():
+	# Validation: byte-size cap + magic-byte sniff BEFORE any decode — the
+	# FileDialog extension filter is advisory only and can be bypassed.
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.is_empty():
 		SignalBus.toast_requested.emit("Impossibile leggere l'immagine selezionata", "error")
 		return
+	if bytes.size() > MAX_PROFILE_IMAGE_BYTES:
+		# i18n key in Phase F
+		SignalBus.toast_requested.emit("Immagine troppo grande (max 10 MB)", "error")
+		return
+	var img := _decode_profile_image(bytes)
+	if img == null or img.is_empty():
+		# i18n key in Phase F
+		SignalBus.toast_requested.emit("Formato immagine non valido (solo PNG/JPG)", "error")
+		return
 	img.resize(PROFILE_IMAGE_SIZE, PROFILE_IMAGE_SIZE, Image.INTERPOLATE_LANCZOS)
-	var err := img.save_png(PROFILE_IMAGE_PATH)
+	# Write-then-rename (Phase D): saving straight onto PROFILE_IMAGE_PATH and
+	# deleting on failure destroyed the user's previous good avatar whenever
+	# the write failed WITHOUT truncating (e.g. read-only file). The rename
+	# replaces the old image only after a fully successful write.
+	var err := img.save_png(PROFILE_IMAGE_TMP_PATH)
 	if err != OK:
+		_remove_tmp_profile_image()
 		SignalBus.toast_requested.emit("Errore salvataggio immagine (%d)" % err, "error")
+		return
+	var rename_err := DirAccess.rename_absolute(PROFILE_IMAGE_TMP_PATH, PROFILE_IMAGE_PATH)
+	if rename_err != OK:
+		_remove_tmp_profile_image()
+		SignalBus.toast_requested.emit("Errore salvataggio immagine (%d)" % rename_err, "error")
 		return
 	SignalBus.settings_updated.emit("profile_image_path", PROFILE_IMAGE_PATH)
 	_refresh_profile_image()
 	SignalBus.toast_requested.emit("Immagine profilo aggiornata (solo locale)", "success")
+
+
+## Decodes the raw bytes as PNG or JPEG after magic-byte sniffing.
+## Returns null when the bytes are neither PNG (89 50 4E 47) nor JPEG
+## (FF D8 FF), when the declared/decoded dimensions exceed
+## MAX_PROFILE_IMAGE_DIMENSION (decompression-bomb guard, Phase D), or when
+## the matching decoder rejects the buffer.
+func _decode_profile_image(bytes: PackedByteArray) -> Image:
+	var is_png := bytes.size() >= 4 and bytes[0] == 0x89 and bytes[1] == 0x50 and bytes[2] == 0x4E and bytes[3] == 0x47
+	var is_jpg := bytes.size() >= 3 and bytes[0] == 0xFF and bytes[1] == 0xD8 and bytes[2] == 0xFF
+	if not is_png and not is_jpg:
+		return null
+	# PNG dimensions come straight from the IHDR header BEFORE any decode —
+	# rejecting here avoids the 1+ GB transient allocation entirely.
+	if is_png and not _png_dimensions_ok(bytes):
+		return null
+	var img := Image.new()
+	var err := img.load_png_from_buffer(bytes) if is_png else img.load_jpg_from_buffer(bytes)
+	if err != OK:
+		return null
+	# JPEG dimensions are not cheaply parseable pre-decode: enforce the cap
+	# right after decode, before the main-thread Lanczos resize.
+	if img.get_width() > MAX_PROFILE_IMAGE_DIMENSION or img.get_height() > MAX_PROFILE_IMAGE_DIMENSION:
+		return null
+	return img
+
+
+## True when the PNG IHDR declares sane dimensions. IHDR is the mandatory
+## first chunk: width and height are big-endian uint32 at byte offsets 16 and
+## 20 (8-byte signature + 4-byte chunk length + 4-byte "IHDR" type).
+func _png_dimensions_ok(bytes: PackedByteArray) -> bool:
+	if bytes.size() < 24:
+		return false
+	if bytes[12] != 0x49 or bytes[13] != 0x48 or bytes[14] != 0x44 or bytes[15] != 0x52:
+		return false  # first chunk is not IHDR — malformed PNG
+	var width := (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]
+	var height := (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]
+	if width < 1 or height < 1:
+		return false
+	return width <= MAX_PROFILE_IMAGE_DIMENSION and height <= MAX_PROFILE_IMAGE_DIMENSION
+
+
+## Removes the temporary avatar file left behind by a failed save or rename.
+## The final PROFILE_IMAGE_PATH is deliberately never deleted here: on any
+## failure the previous good avatar must survive (Phase D).
+func _remove_tmp_profile_image() -> void:
+	if not FileAccess.file_exists(PROFILE_IMAGE_TMP_PATH):
+		return
+	var err := DirAccess.remove_absolute(PROFILE_IMAGE_TMP_PATH)
+	if err != OK:
+		AppLogger.warn("ProfileHUD", "Failed to remove tmp profile image", {"err": err})
 
 
 func _refresh_lang_button() -> void:
@@ -255,8 +340,6 @@ func _on_close_pressed() -> void:
 
 
 func _on_mood_changed(value: float) -> void:
-	if _loading:
-		return
 	SignalBus.mood_level_changed.emit(value)
 	SignalBus.settings_updated.emit(MOOD_SETTING_KEY, value)
 
@@ -307,3 +390,5 @@ func _exit_tree() -> void:
 			_file_dialog.file_selected.disconnect(_on_profile_image_selected)
 	if SignalBus.badge_unlocked.is_connected(_on_badge_unlocked):
 		SignalBus.badge_unlocked.disconnect(_on_badge_unlocked)
+	if SignalBus.load_completed.is_connected(_refresh_badges):
+		SignalBus.load_completed.disconnect(_refresh_badges)

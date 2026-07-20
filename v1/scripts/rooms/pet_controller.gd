@@ -42,9 +42,10 @@ func _ready() -> void:
 		_rng.randomize()
 	_find_character()
 	_set_state(State.IDLE)
-	# T-R-015i: ascolta richieste WILD da MoodManager quando mood < stormy
-	if SignalBus.has_signal("pet_wild_mode_requested"):
-		SignalBus.pet_wild_mode_requested.connect(_on_wild_mode_requested)
+	# T-R-015i: listen for WILD requests from MoodManager when mood < stormy.
+	# Direct static reference (V-083 / 4.1.10-L46): a bus-side rename must
+	# fail loudly at parse time, not silently disable WILD behind has_signal.
+	SignalBus.pet_wild_mode_requested.connect(_on_wild_mode_requested)
 
 
 func _on_wild_mode_requested(active: bool) -> void:
@@ -83,6 +84,13 @@ func _process_wild(delta: float) -> void:
 		_wild_direction = Vector2(cos(angle), sin(angle))
 	velocity = _wild_direction * WILD_SPEED
 	move_and_slide()
+	# Clamp inside the floor polygon (V-043 / 4.1.10-L77) — same helper WANDER
+	# uses for its target. Reflect the direction only when the clamp actually
+	# moved the pet, so it bounces off the boundary instead of grinding on it.
+	var clamped := Helpers.clamp_inside_floor(position)
+	if clamped != position:
+		position = clamped
+		_wild_direction = -_wild_direction
 	if _anim != null:
 		_anim.flip_h = _wild_direction.x < 0
 		_play_anim("walk")
@@ -260,9 +268,6 @@ func _reset_anim_position() -> void:
 
 
 func _exit_tree() -> void:
-	# T-R-015i: disconnect WILD mode signal per evitare zombie su reload scena
-	if (
-		SignalBus.has_signal("pet_wild_mode_requested")
-		and SignalBus.pet_wild_mode_requested.is_connected(_on_wild_mode_requested)
-	):
+	# T-R-015i: disconnect WILD mode signal to avoid zombies on scene reload
+	if SignalBus.pet_wild_mode_requested.is_connected(_on_wild_mode_requested):
 		SignalBus.pet_wild_mode_requested.disconnect(_on_wild_mode_requested)

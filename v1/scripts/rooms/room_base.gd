@@ -9,6 +9,8 @@ const COLLISION_WIDTH_RATIO := 0.7
 const COLLISION_HEIGHT_RATIO := 0.3
 ## Interaction area extends slightly beyond collision so character can reach.
 const INTERACTION_PADDING := 8.0
+## Distance the character is pushed past a decoration edge when nudged away.
+const NUDGE_MARGIN := 20.0
 
 const CHARACTER_SCENES := {
 	"male_old": "res://scenes/male-old-character.tscn",
@@ -24,6 +26,10 @@ const PET_VARIANT_DEFAULT := "simple"
 
 var mess_container: Node2D
 var mess_spawner: Node  # MessSpawner instance (typed Node to avoid class_name cache staleness)
+## True once character_node holds a trustworthy position (V-085 / 4.1.8-L280).
+## Replaces the old `position != Vector2.ZERO` sentinel that silently
+## redirected the pet to viewport centre for a legal (0,0) spawn.
+var _character_pos_ready: bool = false
 
 @onready var decorations_container: Node2D = $Decorations
 @onready var character_node: Node2D = $Character
@@ -42,6 +48,10 @@ func _ready() -> void:
 	# su posizione male_old poi lasciato lì. (fix BUG-B-6 + BUG-B-7)
 	if GameManager.current_character_id != "male_old":
 		_on_character_changed(GameManager.current_character_id)
+	# Whatever branch ran, a valid character_node now carries a real position
+	# (editor-set for the default scene, swap-set otherwise) — mark it ready.
+	if character_node != null and is_instance_valid(character_node):
+		_character_pos_ready = true
 	_spawn_pet()
 	_setup_mess_spawner()
 
@@ -72,13 +82,21 @@ func _on_character_changed(character_id: String) -> void:
 	# rispondeva all'input. Root cause documentata in detail nel log
 	# diagnostico del 2026-04-15.
 	if character_node != null and is_instance_valid(character_node) and character_node.scene_file_path == scene_path:
+		_character_pos_ready = true
 		return
 	var scene := load(scene_path) as PackedScene
 	if scene == null:
 		push_warning("RoomBase: failed to load scene '%s'" % scene_path)
 		return
-	var old_pos := character_node.position
-	character_node.queue_free()
+	# Swap guard (V-044 / 4.1.8-L80): a null or freed character_node must not
+	# be dereferenced. Fall back to the default spawn position (same viewport
+	# centre used by _spawn_pet) instead of hard-faulting.
+	var old_pos := Vector2(640, 360)
+	if character_node != null and is_instance_valid(character_node):
+		old_pos = character_node.position
+		character_node.queue_free()
+	else:
+		AppLogger.warn("RoomBase", "character_swap_invalid_node", {"id": character_id})
 	var new_char := scene.instantiate()
 	new_char.name = "Character"
 	new_char.position = old_pos
@@ -88,6 +106,7 @@ func _on_character_changed(character_id: String) -> void:
 	# la female molto piu` piccola del previsto (fix extra BUG-B-6).
 	add_child(new_char)
 	character_node = new_char
+	_character_pos_ready = true
 	AppLogger.info("RoomBase", "character_changed", {"id": character_id, "pos": old_pos, "scale": new_char.scale})
 
 
@@ -105,6 +124,10 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 		"item_scale": item_scale,
 		"rotation": 0.0,
 		"flip_h": false,
+		# Phase E: persisted so decoration_system's edit-mode drag keeps wall
+		# items on the wall — without it the default "floor" re-clamps every
+		# wall decoration into the floor polygon on the first drag.
+		"placement_type": item_data.get("placement_type", "floor"),
 	}
 	# Check if placement would overlap with character and nudge if needed
 	var char_pos := character_node.position
@@ -112,9 +135,11 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 	if tex_data != null:
 		var deco_rect := Rect2(pos, tex_data.get_size() * item_scale)
 		if deco_rect.has_point(char_pos):
-			# Nudge character out of overlap (push to nearest edge)
-			var nudge_pos := _find_nearest_free_position(char_pos, deco_rect)
-			character_node.position = nudge_pos
+			# Nudge character out of overlap. Each edge candidate is clamped
+			# inside the floor polygon (V-084 / 4.1.8-L110) AND re-checked
+			# against the rect: for an edge-spanning decoration the clamp can
+			# push the target straight back inside the footprint (Phase D).
+			character_node.position = _find_nearest_free_position(char_pos, deco_rect)
 	SaveManager.add_decoration(deco_data)
 	_spawn_decoration(item_id, pos, item_scale, 0.0, false, deco_data)
 	SignalBus.save_requested.emit()
@@ -126,9 +151,15 @@ func _reload_decorations() -> void:
 
 	for deco_data in SaveManager.get_decorations():
 		var item_id: String = deco_data.get("item_id", "")
-		if _find_item_data(item_id).is_empty():
+		var item_data := _find_item_data(item_id)
+		if item_data.is_empty():
 			push_warning("RoomBase: skipping unknown decoration '%s'" % item_id)
 			continue
+		if not deco_data.has("placement_type"):
+			# Phase E backfill: entries saved before placement_type was
+			# persisted inherit the catalog value (in-place: the entry lives
+			# inside SaveManager._decorations, so the next save keeps it).
+			deco_data["placement_type"] = item_data.get("placement_type", "floor")
 		var pos: Array = deco_data.get("position", [0, 0])
 		var item_scale: float = deco_data.get("item_scale", 1.0)
 		var rot: float = deco_data.get("rotation", 0.0)
@@ -173,7 +204,10 @@ func _spawn_decoration(
 	if DecorationScript:
 		sprite.set_script(DecorationScript)
 		sprite.item_id = item_id
-		sprite.base_item_scale = item_scale
+		# Phase E: the scale-step base is ALWAYS the catalog scale, never the
+		# saved absolute scale — rebasing on the saved value made the S-button
+		# ladder compound across sessions (3.0 -> 4.5 -> ... unbounded).
+		sprite.base_item_scale = item_data.get("item_scale", 1.0)
 		sprite.deco_data = deco_data
 
 	# --- Collision: footprint-based (bottom portion only) ---
@@ -229,21 +263,39 @@ func _on_interaction_body_exited(body: Node2D, _area: Area2D) -> void:
 		SignalBus.interaction_unavailable.emit()
 
 
+## Returns a position outside `blocked` AND inside the floor polygon, trying
+## the four edge exits nearest-first. A candidate that the floor clamp pushes
+## back inside the rect is discarded (Phase D: an edge-spanning decoration
+## made the old single-candidate clamp re-embed the character in the new
+## collider). Falls back toward the floor centre, then to the floor-clamped
+## original position (physics resolves the residual overlap).
 func _find_nearest_free_position(char_pos: Vector2, blocked: Rect2) -> Vector2:
 	var cx: float = clampf(char_pos.x, blocked.position.x, blocked.end.x)
 	var cy: float = clampf(char_pos.y, blocked.position.y, blocked.end.y)
-	var dist_left: float = abs(cx - blocked.position.x)
-	var dist_right: float = abs(cx - blocked.end.x)
-	var dist_top: float = abs(cy - blocked.position.y)
-	var dist_bottom: float = abs(cy - blocked.end.y)
-	var min_dist: float = minf(minf(dist_left, dist_right), minf(dist_top, dist_bottom))
-	if min_dist == dist_left:
-		return Vector2(blocked.position.x - 20.0, char_pos.y)
-	if min_dist == dist_right:
-		return Vector2(blocked.end.x + 20.0, char_pos.y)
-	if min_dist == dist_top:
-		return Vector2(char_pos.x, blocked.position.y - 20.0)
-	return Vector2(char_pos.x, blocked.end.y + 20.0)
+	var candidates: Array[Vector2] = [
+		Vector2(blocked.position.x - NUDGE_MARGIN, char_pos.y),
+		Vector2(blocked.end.x + NUDGE_MARGIN, char_pos.y),
+		Vector2(char_pos.x, blocked.position.y - NUDGE_MARGIN),
+		Vector2(char_pos.x, blocked.end.y + NUDGE_MARGIN),
+	]
+	var distances: Array[float] = [
+		absf(cx - blocked.position.x),
+		absf(cx - blocked.end.x),
+		absf(cy - blocked.position.y),
+		absf(cy - blocked.end.y),
+	]
+	var order: Array = [0, 1, 2, 3]
+	order.sort_custom(func(a: int, b: int) -> bool: return distances[a] < distances[b])
+	for idx: int in order:
+		var clamped: Vector2 = Helpers.clamp_inside_floor(candidates[idx])
+		if not blocked.has_point(clamped):
+			return clamped
+	var floor_bounds: Rect2 = Helpers.get_floor_bounds()
+	if floor_bounds.has_area():
+		var centre: Vector2 = Helpers.clamp_inside_floor(floor_bounds.get_center())
+		if not blocked.has_point(centre):
+			return centre
+	return Helpers.clamp_inside_floor(char_pos)
 
 
 func _get_texture_for_id(item_id: String) -> Texture2D:
@@ -275,12 +327,13 @@ func _spawn_pet() -> void:
 		return
 	var pet := scene.instantiate()
 	pet.name = "Pet"
-	# Spawn near the character. Null guard + fallback: se character_node e` null o
-	# a (0,0) (default scene), usa centro viewport come posizione safe (fix BUG-B-7).
-	var char_pos: Vector2 = Vector2(640, 360)  # viewport centro 1280x720
-	if character_node != null and is_instance_valid(character_node):
-		if character_node.position != Vector2.ZERO:
-			char_pos = character_node.position
+	# Spawn near the character. Readiness flag instead of the Vector2.ZERO
+	# sentinel (V-085 / 4.1.8-L280): a legal (0,0) character spawn is trusted;
+	# only a null/invalid/not-yet-ready character falls back to viewport
+	# centre (fix BUG-B-7).
+	var char_pos: Vector2 = Vector2(640, 360)  # viewport centre 1280x720
+	if _character_pos_ready and character_node != null and is_instance_valid(character_node):
+		char_pos = character_node.position
 	pet.position = Vector2(char_pos.x + 60.0, char_pos.y + 20.0)
 	add_child(pet)
 	AppLogger.info("RoomBase", "pet_spawned", {"variant": variant, "pos": pet.position})
