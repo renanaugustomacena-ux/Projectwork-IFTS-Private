@@ -22,6 +22,9 @@ const TEST_MODULES := [
 	"res://tests/integration/test_panels.gd",
 	"res://tests/integration/test_input.gd",
 	"res://tests/integration/test_ui_events.gd",
+	"res://tests/integration/test_crypto.gd",
+	"res://tests/integration/test_save_failures.gd",
+	"res://tests/integration/test_i18n_assets.gd",
 ]
 
 const RESULTS_PATH := "user://test_results.jsonl"

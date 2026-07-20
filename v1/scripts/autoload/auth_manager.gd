@@ -319,7 +319,10 @@ func _verify_v4_hash(password: String, stored_hash: String) -> bool:
 	# Fail closed on malformed iteration fields: int() saturates huge numeric
 	# strings to INT64_MAX, which would turn a corrupt hash into a permanent
 	# main-thread hang instead of a clean "invalid credentials".
-	if not parts[2].is_valid_int():
+	# Il campo iterazioni deve essere numerico E di lunghezza plausibile:
+	# int() satura silenziosamente a INT64_MAX sulle cifre lunghe (con tanto
+	# di errore di motore), quindi si taglia prima della conversione.
+	if not parts[2].is_valid_int() or parts[2].length() > 9:
 		return false
 	var iterations := int(parts[2])
 	var salt := parts[3].hex_decode()

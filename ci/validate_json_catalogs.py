@@ -175,12 +175,107 @@ def validate_tracks(data, errors):
         seen_ids.add(track_id)
 
 
+
+def validate_badges(data, errors):
+    """Badges: id univoco, condizione sensata, nomi bilingui, icona esistente."""
+    if "badges" not in data or not isinstance(data["badges"], list):
+        errors.append(("badges.json", "", "missing or invalid 'badges' array"))
+        return
+
+    valid_conditions = {
+        "decorations_placed",
+        "mood_changes",
+        "play_time_seconds",
+        "stormy_mood",
+    }
+    seen_ids = set()
+    for i, badge in enumerate(data["badges"]):
+        prefix = f"badges[{i}]"
+        for field in ("id", "name_it", "name_en", "description_it", "description_en", "icon_path"):
+            if field not in badge:
+                errors.append(("badges.json", prefix, f"missing required field '{field}'"))
+
+        badge_id = badge.get("id", "")
+        if badge_id in seen_ids:
+            errors.append(("badges.json", f"{prefix}.id", f"duplicate id '{badge_id}'"))
+        seen_ids.add(badge_id)
+
+        condition = badge.get("condition", {})
+        if not isinstance(condition, dict):
+            errors.append(("badges.json", f"{prefix}.condition", "condition must be an object"))
+            continue
+        cond_type = condition.get("type", "")
+        if cond_type not in valid_conditions:
+            errors.append(
+                ("badges.json", f"{prefix}.condition.type", f"unknown condition type '{cond_type}'")
+            )
+        threshold = condition.get("threshold", 0)
+        if not isinstance(threshold, int) or threshold < 1:
+            errors.append(
+                ("badges.json", f"{prefix}.condition.threshold", "threshold must be an int >= 1")
+            )
+
+        icon_path = badge.get("icon_path", "")
+        if icon_path and not _res_exists(icon_path):
+            errors.append(("badges.json", f"{prefix}.icon_path", f"file not found: {icon_path}"))
+
+
+def validate_mess(data, errors):
+    """Mess: id univoco, sprite reale, pesi entro i limiti usati dal codice."""
+    if "mess" not in data or not isinstance(data["mess"], list):
+        errors.append(("mess_catalog.json", "", "missing or invalid 'mess' array"))
+        return
+
+    seen_ids = set()
+    for i, entry in enumerate(data["mess"]):
+        prefix = f"mess[{i}]"
+        for field in ("id", "label_it", "label_en", "stress_weight", "spawn_weight", "sprite_path", "size_px"):
+            if field not in entry:
+                errors.append(("mess_catalog.json", prefix, f"missing required field '{field}'"))
+
+        mess_id = entry.get("id", "")
+        if mess_id in seen_ids:
+            errors.append(("mess_catalog.json", f"{prefix}.id", f"duplicate id '{mess_id}'"))
+        seen_ids.add(mess_id)
+
+        stress = entry.get("stress_weight", 0)
+        if not isinstance(stress, (int, float)) or not 0 < stress <= 1:
+            errors.append(
+                ("mess_catalog.json", f"{prefix}.stress_weight", "stress_weight must be in (0, 1]")
+            )
+
+        size_px = entry.get("size_px", 0)
+        # mess_node clamps to 12..96: valori fuori range mentono sul risultato
+        if not isinstance(size_px, int) or not 12 <= size_px <= 96:
+            errors.append(("mess_catalog.json", f"{prefix}.size_px", "size_px must be an int in 12..96"))
+
+        sprite_path = entry.get("sprite_path", "")
+        if not sprite_path:
+            errors.append(
+                ("mess_catalog.json", f"{prefix}.sprite_path", "sprite_path is empty (runtime placeholder)")
+            )
+        elif not _res_exists(sprite_path):
+            errors.append(("mess_catalog.json", f"{prefix}.sprite_path", f"file not found: {sprite_path}"))
+
+
+def _res_exists(res_path):
+    """res:// -> percorso reale, relativo alla cartella data/ passata a main()."""
+    if not res_path.startswith("res://"):
+        return False
+    return os.path.isfile(os.path.join(_PROJECT_ROOT, res_path[len("res://"):]))
+
+
 VALIDATORS = {
     "characters.json": validate_characters,
     "decorations.json": validate_decorations,
     "rooms.json": validate_rooms,
     "tracks.json": validate_tracks,
+    "badges.json": validate_badges,
+    "mess_catalog.json": validate_mess,
 }
+
+# Radice del progetto Godot: i cataloghi vivono in <root>/data/
+_PROJECT_ROOT = ""
 
 
 def main():
@@ -189,6 +284,8 @@ def main():
         sys.exit(2)
 
     data_dir = sys.argv[1]
+    global _PROJECT_ROOT
+    _PROJECT_ROOT = os.path.dirname(os.path.abspath(data_dir))
     errors = []
     counts = {}
 
@@ -217,7 +314,13 @@ def main():
             themes = sum(len(r.get("themes", [])) for r in rooms)
             counts[filename] = f"{len(rooms)} rooms, {themes} themes"
         elif filename == "tracks.json":
-            counts[filename] = f"{len(data.get('tracks', []))} tracks"
+            counts[filename] = (
+                f"{len(data.get('tracks', []))} tracks, {len(data.get('ambience', []))} ambience"
+            )
+        elif filename == "badges.json":
+            counts[filename] = f"{len(data.get('badges', []))} badges"
+        elif filename == "mess_catalog.json":
+            counts[filename] = f"{len(data.get('mess', []))} mess types"
 
         if len(errors) == before:
             print(f"OK: {filename} — {counts.get(filename, 'validated')}")
