@@ -36,6 +36,8 @@ func _ready() -> void:
 	SignalBus.mood_level_changed.connect(_on_mood_level_changed)
 	SignalBus.coins_changed.connect(_on_coins_changed)
 	SignalBus.load_completed.connect(_on_load_completed)
+	SignalBus.final_save_pending.connect(_persist_play_time)
+	SignalBus.profile_reset.connect(_on_profile_reset)
 	_time_timer = Timer.new()
 	_time_timer.wait_time = TIME_CHECK_INTERVAL
 	_time_timer.autostart = true
@@ -46,7 +48,9 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	_persist_play_time()
+	# No _persist_play_time() here: the quit path saves BEFORE the tree tears
+	# down, so anything emitted from _exit_tree reaches a SaveManager that will
+	# never write again. The tail is flushed via SignalBus.final_save_pending.
 	if SignalBus.decoration_placed.is_connected(_on_decoration_placed):
 		SignalBus.decoration_placed.disconnect(_on_decoration_placed)
 	if SignalBus.mood_level_changed.is_connected(_on_mood_level_changed):
@@ -55,6 +59,10 @@ func _exit_tree() -> void:
 		SignalBus.coins_changed.disconnect(_on_coins_changed)
 	if SignalBus.load_completed.is_connected(_on_load_completed):
 		SignalBus.load_completed.disconnect(_on_load_completed)
+	if SignalBus.final_save_pending.is_connected(_persist_play_time):
+		SignalBus.final_save_pending.disconnect(_persist_play_time)
+	if SignalBus.profile_reset.is_connected(_on_profile_reset):
+		SignalBus.profile_reset.disconnect(_on_profile_reset)
 	if _time_timer != null and _time_timer.timeout.is_connected(_on_time_check):
 		_time_timer.timeout.disconnect(_on_time_check)
 
@@ -65,6 +73,11 @@ func _load_lifetime_counters() -> void:
 	_decorations_placed_total = int(SaveManager.get_setting(STAT_DECOS, 0))
 	_coins_earned_total = int(SaveManager.get_setting(STAT_COINS, 0))
 	_play_time_base_sec = int(SaveManager.get_setting(STAT_PLAY_TIME, 0))
+	# The reloaded base already contains the session elapsed so far (the 60 s
+	# timer persists base + session). Without rebasing the session clock here,
+	# every load_completed would add the same elapsed time a second time and
+	# night_owl would unlock long before 30 real minutes.
+	_session_start_ms = Time.get_ticks_msec()
 	if _decorations_placed_total <= 0:
 		var saved_decos: Array = SaveManager.get_decorations()
 		_decorations_placed_total = saved_decos.size()
@@ -76,6 +89,18 @@ func _on_load_completed() -> void:
 	# fino al primo evento utile.
 	_load_lifetime_counters()
 	_check_all_conditions()
+
+
+## Il profilo e` stato azzerato (account cancellato): i totali in RAM devono
+## sparire con lui, altrimenti il primo evento sul profilo nuovo li riscrive
+## nei settings appena resettati e sblocca i badge del profilo precedente.
+func _on_profile_reset() -> void:
+	_decorations_placed_total = 0
+	_coins_earned_total = 0
+	_play_time_base_sec = 0
+	_mood_changes_counter = 0
+	_stormy_mood_reached = false
+	_session_start_ms = Time.get_ticks_msec()
 
 
 func _on_decoration_placed(_item_id: String, _position: Vector2) -> void:

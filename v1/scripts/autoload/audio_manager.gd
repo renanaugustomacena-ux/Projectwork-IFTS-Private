@@ -431,7 +431,13 @@ func _sync_music_state() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+	# NOTIFICATION_WM_CLOSE_REQUEST deliberately does NOT release here: a close
+	# request is a request, not a quit. SaveManager disables auto_accept_quit
+	# and stays alive when the final save fails twice, and releasing on the
+	# request left that still-interactive app permanently silent. The real
+	# teardown is already covered by tree_exiting/_exit_tree (both wired in
+	# _ready), which run before the engine's leak check.
+	if what == NOTIFICATION_PREDELETE:
 		_release_streams()
 
 

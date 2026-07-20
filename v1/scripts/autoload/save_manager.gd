@@ -24,6 +24,38 @@ const SECRET_PATH := "user://integrity.key"
 const SAVE_VERSION := "5.0.0"
 const AUTO_SAVE_INTERVAL := 60.0
 
+# Settings defaults. Every persisted setting MUST be declared here:
+# _apply_save_data whitelists on these keys, so a missing default silently
+# drops the loaded value (window_pos_x/y, ambience_enabled, stat_* all learned
+# that the hard way). Single source of truth — reset_all() rebuilds from this
+# same constant, so a key can never be added to one copy and forgotten in the
+# other.
+const DEFAULT_SETTINGS := {
+	"language": "en",
+	"display_mode": "windowed",
+	"mini_mode_position": "bottom_right",
+	"master_volume": 0.8,
+	"music_volume": 0.6,
+	"ambience_volume": 0.4,
+	"ambience_enabled": true,
+	"pet_variant": "simple",
+	"window_pos_x": -1,
+	"window_pos_y": -1,
+	# Same class of bug as ambience_enabled: all three are written through
+	# settings_updated and read back with get_setting, so without a declared
+	# default the whitelist dropped them on every load — the tutorial replayed
+	# at each launch and mood/avatar reverted.
+	"tutorial_completed": false,
+	"mood_level": 1.0,
+	"profile_image_path": "",
+	# F.2 lifetime badge counters: cumulative across sessions, so the 25/100
+	# decoration badges and total_earned no longer drift with session-only
+	# proxies. Written by BadgeManager through settings_updated.
+	"stat_decos_placed_total": 0,
+	"stat_coins_earned_total": 0,
+	"stat_play_time_total": 0,
+}
+
 # Character data (maps to CHARACTER table) — public per accesso esterno
 var character_data: Dictionary = {
 	"nome": "",
@@ -51,25 +83,7 @@ var _music_state: Dictionary = {
 	"active_ambience": [],
 }
 
-# Settings. window_pos_x/y must be listed here: _apply_save_data whitelists
-# on these keys, so a missing default silently drops the loaded value.
-var _settings: Dictionary = {
-	"language": "en",
-	"display_mode": "windowed",
-	"mini_mode_position": "bottom_right",
-	"master_volume": 0.8,
-	"music_volume": 0.6,
-	"ambience_volume": 0.4,
-	"pet_variant": "simple",
-	"window_pos_x": -1,
-	"window_pos_y": -1,
-	# F.2 lifetime badge counters: cumulative across sessions, so the 25/100
-	# decoration badges and total_earned no longer drift with session-only
-	# proxies. Written by BadgeManager through settings_updated.
-	"stat_decos_placed_total": 0,
-	"stat_coins_earned_total": 0,
-	"stat_play_time_total": 0,
-}
+var _settings: Dictionary = DEFAULT_SETTINGS.duplicate(true)
 
 var _auto_save_timer: Timer
 var _save_dirty: bool = false
@@ -78,6 +92,20 @@ var _is_saving: bool = false
 # exactly one follow-up save that runs right after the current one completes.
 var _flush_queued: bool = false
 var _integrity_key_cache := PackedByteArray()
+# F.7 no-save-before-load latch. False until a real save has been applied
+# (_apply_save_data), load_game() proved there is nothing to load, or the user
+# explicitly reset the profile. save_game() refuses while false: the shipped
+# main scene is the main menu, where load_game() never runs, so every autoload
+# still holds its hardcoded defaults — writing those out replaces the profile
+# with coins 0 / no decorations / empty name and, ring slot after ring slot,
+# destroys every recoverable copy.
+var _full_state_loaded: bool = false
+# F.7 settings bootstrap latch (see ensure_settings_loaded).
+var _settings_loaded: bool = false
+# True only when a "language" actually came from disk or from a user choice.
+# Without it the hardcoded "en" default is indistinguishable from a real
+# preference and the system-locale fallback can never run on a fresh install.
+var _language_explicit: bool = false
 # E.2 quit-after-save-confirmed: WM_CLOSE latch + gave-up marker (see
 # _final_save_and_quit for the retry/force-quit contract).
 var _quit_requested: bool = false
@@ -106,6 +134,92 @@ func get_setting(key: String, default: Variant = null) -> Variant:
 	return _settings.get(key, default)
 
 
+## True when the active "language" value came from disk or from an explicit
+## user choice, rather than from the hardcoded default.
+func has_explicit_language() -> bool:
+	return _language_explicit
+
+
+## F.7 settings bootstrap — reads ONLY the "settings" block from disk and
+## applies it, without touching room/character/inventory/music and without
+## emitting load_completed.
+##
+## The shipped main scene is main_menu.tscn and GameManager._deferred_load
+## returns early there, so load_game() never runs while the player sits in the
+## menu. Everything that reads a setting during that window (locale at boot,
+## BadgeManager lifetime counters, ambience toggle, volumes) would otherwise
+## see hardcoded defaults instead of the real profile.
+##
+## Deliberately side-effect free: unlike load_game() it never quarantines and
+## never emits an integrity signal. A tampered or unreadable file is simply
+## skipped here and judged later, once, by load_game().
+func ensure_settings_loaded() -> void:
+	if _settings_loaded:
+		return
+	_settings_loaded = true
+	# Must precede the scan: a crash between temp-write and rename leaves the
+	# newest settings in TEMP_PATH, and adoption promotes it to primary.
+	_adopt_orphan_temp()
+	var candidates: Array[String] = [SAVE_PATH]
+	candidates.append_array(BACKUP_RING)
+	for path in candidates:
+		var data := _peek_save_payload(path)
+		if data.is_empty():
+			continue
+		# Never read settings out of a save written by a newer app version:
+		# load_game() refuses to apply it, and so must the bootstrap.
+		if _compare_versions(str(data.get("version", "1.0.0")), SAVE_VERSION) > 0:
+			continue
+		if not (data.get("settings") is Dictionary):
+			continue
+		_apply_settings_block(data["settings"])
+		AppLogger.info("SaveManager", "settings_bootstrapped", {"path": path})
+		return
+
+
+## Non-destructive read of a save payload: verifies the HMAC but never
+## quarantines and never emits. Returns {} when the file is missing, unreadable
+## or fails verification.
+func _peek_save_payload(path: String) -> Dictionary:
+	var wrapper: Variant = _load_wrapper_from_disk(path)
+	if not (wrapper is Dictionary):
+		return {}
+	var wrapper_dict: Dictionary = wrapper
+	if not (wrapper_dict.has("hmac") and wrapper_dict.has("data")):
+		# Legacy unwrapped save: load_game() decides whether it is a genuine
+		# pre-HMAC migration or a stripped wrapper. Not the bootstrap's call.
+		return wrapper_dict if not FileAccess.file_exists(SECRET_PATH) else {}
+	if str(wrapper_dict.get("hmac", "")) != _compute_hmac(str(wrapper_dict.get("data", ""))):
+		return {}
+	var inner := JSON.new()
+	if inner.parse(str(wrapper_dict.get("data", ""))) != OK:
+		return {}
+	return inner.data if inner.data is Dictionary else {}
+
+
+## Applies one loaded settings dict over the defaults, with the same key
+## whitelist and type rules used by _apply_save_data.
+func _apply_settings_block(loaded_settings: Dictionary) -> void:
+	for key in loaded_settings:
+		if not (key in _settings):
+			continue
+		var loaded: Variant = loaded_settings[key]
+		if typeof(loaded) == typeof(_settings[key]):
+			_settings[key] = loaded
+		elif loaded is float and _settings[key] is int:
+			# JSON parses every number as float: coerce back to the default's
+			# int type (window_pos_x/y, stat_*) instead of dropping the value.
+			_settings[key] = int(loaded)
+		else:
+			AppLogger.warn("SaveManager", "Type mismatch in settings", {"key": key})
+			continue
+		if key == "language":
+			_language_explicit = true
+	_settings["master_volume"] = clampf(float(_settings.get("master_volume", 0.8)), 0.0, 1.0)
+	_settings["music_volume"] = clampf(float(_settings.get("music_volume", 0.6)), 0.0, 1.0)
+	_settings["ambience_volume"] = clampf(float(_settings.get("ambience_volume", 0.4)), 0.0, 1.0)
+
+
 func get_music_state() -> Dictionary:
 	return _music_state
 
@@ -123,7 +237,10 @@ func _ready() -> void:
 	SignalBus.save_requested.connect(_mark_dirty)
 	SignalBus.settings_updated.connect(_on_settings_updated)
 	SignalBus.music_state_updated.connect(_on_music_state_updated)
-	_adopt_orphan_temp()
+	# Also runs _adopt_orphan_temp(). GameManager._ready may already have
+	# triggered this (it needs the persisted locale before the UI is built);
+	# the call is idempotent.
+	ensure_settings_loaded()
 
 
 func _adopt_orphan_temp() -> void:
@@ -183,6 +300,8 @@ func _mark_dirty() -> void:
 
 func _on_settings_updated(key: String, value: Variant) -> void:
 	_settings[key] = value
+	if key == "language":
+		_language_explicit = true
 	_mark_dirty()
 
 
@@ -197,12 +316,31 @@ func _on_auto_save() -> void:
 		save_game()
 
 
-func save_game() -> void:
+## Precondizioni di save_game(): false = il salvataggio non deve partire ora.
+## Estratte qui per tenere save_game() sotto il limite di return statements.
+func _save_preconditions_ok() -> bool:
+	if not _full_state_loaded:
+		# F.7: refuse to persist state that was never loaded. In the main menu
+		# load_game() has not run, so _decorations/inventory/character_data are
+		# the autoload defaults — writing them out would replace the real
+		# profile with coins 0, zero decorations and an empty name, and the
+		# backup ring would rotate the last good copy out within minutes.
+		# The dirty flag survives, so the first save after a real load (or an
+		# explicit reset) still persists whatever changed meanwhile.
+		AppLogger.warn("SaveManager", "save_skipped_state_not_loaded")
+		_save_dirty = true
+		return false
 	if _is_saving:
 		# 4.1.2-L533-reentry: don't drop the request — queue a follow-up save
 		# so the state that triggered this call is persisted right after.
 		AppLogger.warn("SaveManager", "Salvataggio gia' in corso, follow-up accodato")
 		_flush_queued = true
+		return false
+	return true
+
+
+func save_game() -> void:
+	if not _save_preconditions_ok():
 		return
 
 	_is_saving = true
@@ -476,6 +614,9 @@ func load_game() -> void:
 		return
 
 	push_warning("SaveManager: no valid save file found, using defaults")
+	# Nothing to load is a legitimate loaded state (fresh profile): the
+	# defaults ARE the truth, so saving them is safe from here on.
+	_full_state_loaded = true
 	SignalBus.load_completed.emit()
 
 
@@ -607,23 +748,15 @@ func _extract_hmac_inner(wrapper: Dictionary, path: String) -> Variant:
 
 
 func _apply_save_data(data: Dictionary) -> void:
-	# Settings — validate types match defaults
+	# Settings — whitelisted on DEFAULT_SETTINGS keys, types validated, volumes
+	# clamped. Shared with the boot-time settings bootstrap so the two paths
+	# can never disagree about what a valid setting is.
 	if "settings" in data and data["settings"] is Dictionary:
-		for key in data["settings"]:
-			if key in _settings:
-				var loaded = data["settings"][key]
-				if typeof(loaded) == typeof(_settings[key]):
-					_settings[key] = loaded
-				elif loaded is float and _settings[key] is int:
-					# JSON parses every number as float: coerce back to the
-					# default's int type (window_pos_x/y) instead of dropping.
-					_settings[key] = int(loaded)
-				else:
-					AppLogger.warn("SaveManager", "Type mismatch in settings", {"key": key})
-	# Clamp volume ranges
-	_settings["master_volume"] = clampf(float(_settings.get("master_volume", 0.8)), 0.0, 1.0)
-	_settings["music_volume"] = clampf(float(_settings.get("music_volume", 0.6)), 0.0, 1.0)
-	_settings["ambience_volume"] = clampf(float(_settings.get("ambience_volume", 0.4)), 0.0, 1.0)
+		_apply_settings_block(data["settings"])
+	# A real save has been applied: from here on save_game() has genuine state
+	# to write (F.7 no-save-before-load latch).
+	_settings_loaded = true
+	_full_state_loaded = true
 
 	# Room state
 	if "room" in data and data["room"] is Dictionary:
@@ -816,6 +949,9 @@ func reset_character_data() -> void:
 	GameManager.current_outfit_id = ""
 	GameManager.current_room_id = "cozy_studio"
 	GameManager.current_theme = "modern"
+	# Explicit user-driven reset: these defaults are now the intended state, so
+	# the no-save-before-load latch must not block persisting them (F.7).
+	_full_state_loaded = true
 	_mark_dirty()
 
 
@@ -831,17 +967,14 @@ func reset_all() -> void:
 		"capacita": 50,
 		"items": [],
 	}
-	_settings = {
-		"language": "en",
-		"display_mode": "windowed",
-		"mini_mode_position": "bottom_right",
-		"master_volume": 0.8,
-		"music_volume": 0.6,
-		"ambience_volume": 0.4,
-		"pet_variant": "simple",
-		"window_pos_x": -1,
-		"window_pos_y": -1,
-	}
+	# Rebuilt from the single source of truth: a settings key added to the
+	# defaults can no longer survive a profile reset (F.7 — the lifetime stat_*
+	# counters used to, and the new profile inherited the old one's badges).
+	_settings = DEFAULT_SETTINGS.duplicate(true)
+	_language_explicit = false
+	# In-RAM counters (BadgeManager) must restart too, or the deleted profile's
+	# totals unlock its badges on the brand-new account.
+	SignalBus.profile_reset.emit()
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 	# Drop every ring slot: a stale backup surviving reset_all would resurrect
@@ -1028,6 +1161,11 @@ func _notification(what: int) -> void:
 
 
 func _final_save_and_quit() -> void:
+	# F.7: last call for volatile state. BadgeManager only flushes play time
+	# every 60 s, and its _exit_tree runs after the tree is already down — too
+	# late for any save. Emitting here lets it land in _settings while the
+	# closing save can still write it.
+	SignalBus.final_save_pending.emit()
 	# E.2 quit-after-save-confirmed: quit only once the final save succeeded
 	# (including any queued follow-up flush chained inside save_game).
 	if _run_final_save():

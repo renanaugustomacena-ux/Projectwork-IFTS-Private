@@ -3,6 +3,8 @@
 extends Control
 
 signal character_selected(character_id: String)
+## Uscita senza scegliere: il chiamante libera l'overlay e torna al menu.
+signal cancelled
 
 const CHARACTER_SCENE := "res://scenes/menu/character_select.tscn"
 
@@ -26,6 +28,7 @@ var _counter_label: Label = null
 var _left_btn: Button = null
 var _right_btn: Button = null
 var _start_btn: Button = null
+var _cancel_btn: Button = null
 var _title_label: Label = null
 var _tween: Tween = null
 
@@ -161,6 +164,18 @@ func _build_ui() -> void:
 	start_container.add_child(_start_btn)
 	vbox.add_child(start_container)
 
+	# Uscita esplicita. L'overlay e` full-rect con MOUSE_FILTER_STOP, quindi
+	# senza questo bottone (e senza il ramo ESC) i bottoni del menu sottostante
+	# sono irraggiungibili e la schermata non ha vie d'uscita.
+	_cancel_btn = Button.new()
+	_cancel_btn.focus_mode = Control.FOCUS_ALL
+	_cancel_btn.text = tr("UI_CHARSEL_CANCEL")
+	_cancel_btn.custom_minimum_size = Vector2(200, 36)
+	_cancel_btn.pressed.connect(_on_cancel)
+	var cancel_container := CenterContainer.new()
+	cancel_container.add_child(_cancel_btn)
+	vbox.add_child(cancel_container)
+
 
 func _on_prev() -> void:
 	_current_index = ((_current_index - 1 + _characters.size()) % _characters.size())
@@ -177,6 +192,10 @@ func _on_start() -> void:
 	var char_id: String = char_data["id"]
 	GameManager.current_character_id = char_id
 	character_selected.emit(char_id)
+
+
+func _on_cancel() -> void:
+	cancelled.emit()
 
 
 func _show_character(index: int) -> void:
@@ -222,6 +241,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ENTER:
 				_on_start()
 				get_viewport().set_input_as_handled()
+			KEY_ESCAPE:
+				_on_cancel()
+				get_viewport().set_input_as_handled()
 
 
 func _exit_tree() -> void:
@@ -233,3 +255,5 @@ func _exit_tree() -> void:
 		_right_btn.pressed.disconnect(_on_next)
 	if _start_btn and _start_btn.pressed.is_connected(_on_start):
 		_start_btn.pressed.disconnect(_on_start)
+	if _cancel_btn and _cancel_btn.pressed.is_connected(_on_cancel):
+		_cancel_btn.pressed.disconnect(_on_cancel)

@@ -224,8 +224,14 @@ func _find_character() -> void:
 	var parent := get_parent()
 	if parent == null:
 		return
-	var char_node := parent.get_node_or_null("Character")
-	if char_node is CharacterBody2D:
+	var char_node: Node = parent.get_node_or_null("Character")
+	if not (char_node is CharacterBody2D):
+		# Fallback sulla proprieta` della stanza: dipendere solo dal nome del
+		# nodo rendeva il gatto inerte per tutta la sessione ogni volta che il
+		# personaggio veniva ricreato con un nome diverso.
+		var from_room: Variant = parent.get("character_node")
+		char_node = from_room if from_room is CharacterBody2D else null
+	if char_node != null and is_instance_valid(char_node):
 		_character_ref = char_node
 
 

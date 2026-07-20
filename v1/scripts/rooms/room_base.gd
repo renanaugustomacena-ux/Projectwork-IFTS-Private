@@ -114,7 +114,15 @@ func _on_character_changed(character_id: String) -> void:
 	var old_pos := Vector2(640, 360)
 	if character_node != null and is_instance_valid(character_node):
 		old_pos = character_node.position
-		character_node.queue_free()
+		# remove_child PRIMA di add_child: queue_free() e` differito, quindi il
+		# vecchio nodo resterebbe figlio con nome "Character" per tutto il
+		# frame e Godot rinominerebbe il nuovo in "@CharacterBody2D@N".
+		# pet_controller cerca il personaggio per nome: dopo la rinomina si
+		# agganciava al nodo in via di distruzione e il gatto non seguiva piu`
+		# nessuno per tutta la sessione (regressione emersa col 2o personaggio).
+		var old_char := character_node
+		remove_child(old_char)
+		old_char.queue_free()
 	else:
 		AppLogger.warn("RoomBase", "character_swap_invalid_node", {"id": character_id})
 	var new_char := scene.instantiate()
@@ -125,6 +133,10 @@ func _on_character_changed(character_id: String) -> void:
 	# usa Vector2(4,4) perche` sprite 23x23. Override con old_scale rendeva
 	# la female molto piu` piccola del previsto (fix extra BUG-B-6).
 	add_child(new_char)
+	if new_char.name != "Character":
+		# Difesa esplicita: se il nome non e` libero il pet perde il bersaglio
+		# in silenzio. Meglio un errore diagnosticabile di un gatto apatico.
+		AppLogger.error("RoomBase", "character_name_collision", {"id": character_id, "name": str(new_char.name)})
 	character_node = new_char
 	_character_pos_ready = true
 	AppLogger.info("RoomBase", "character_changed", {"id": character_id, "pos": old_pos, "scale": new_char.scale})

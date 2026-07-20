@@ -115,6 +115,9 @@ msgstr "Choose your character"
 msgid "UI_CHARSEL_CONFIRM"
 msgstr "Start playing"
 
+msgid "UI_CHARSEL_CANCEL"
+msgstr "Back to menu"
+
 # Settings panel + credits
 msgid "UI_SETTINGS_VOLUME"
 msgstr "Volume"

@@ -126,22 +126,31 @@ func _on_nuova_partita() -> void:
 			AppLogger.error("MainMenu", "characters_catalog_entry_invalid", {"entry": str(entry)})
 			_disable_nuova_partita()
 			return
+	# Con 1 solo personaggio in catalog, saltiamo character_select e andiamo
+	# dritti in game. Con piu` personaggi si passa dalla selezione, e SOLO
+	# quando l'utente conferma il salvataggio esistente viene distrutto: prima
+	# il reset avveniva qui, quindi chi apriva la selezione per sbaglio aveva
+	# gia` perso la partita e non aveva nemmeno un modo per tornare indietro.
+	if char_id.is_empty():
+		_show_character_select()
+		return
+	_begin_new_game(char_id)
+
+
+## Punto unico in cui una nuova partita distrugge il salvataggio esistente:
+## viene raggiunto solo dopo che l'utente ha scelto il personaggio (o quando
+## il catalogo ne offre uno solo e la scelta e` implicita).
+func _begin_new_game(char_id: String) -> void:
 	SaveManager.reset_character_data()
 	# Ripristina il flag tutorial cosi` una nuova partita riavvia sempre
 	# la sessione di onboarding, indipendentemente da precedenti completamenti.
 	# Flush sincrono necessario prima della scene transition.
 	SignalBus.settings_updated.emit("tutorial_completed", false)
 	SaveManager.save_game()
-	# Con 1 solo personaggio in catalog, saltiamo character_select e andiamo
-	# dritti in game. Quando il catalog crescera`, il ramo
-	# _show_character_select() torna attivo.
-	if not char_id.is_empty():
-		GameManager.current_character_id = char_id
-		SignalBus.character_changed.emit(char_id)
-		_transitioning = true
-		_transition_to_scene(GAMEPLAY_SCENE)
-	else:
-		_show_character_select()
+	GameManager.current_character_id = char_id
+	SignalBus.character_changed.emit(char_id)
+	_transitioning = true
+	_transition_to_scene(GAMEPLAY_SCENE)
 
 
 func _disable_nuova_partita() -> void:
@@ -171,16 +180,22 @@ func _show_character_select() -> void:
 		_transition_to_scene(GAMEPLAY_SCENE)
 		return
 	select_screen.character_selected.connect(_on_character_chosen, CONNECT_ONE_SHOT)
+	select_screen.cancelled.connect(_on_character_select_cancelled, CONNECT_ONE_SHOT)
 	_select_screen = select_screen
 	$UILayer.add_child(select_screen)
 
 
 func _on_character_chosen(character_id: String) -> void:
 	_select_screen = null
-	GameManager.current_character_id = character_id
-	SignalBus.character_changed.emit(character_id)
-	_transitioning = true
-	_transition_to_scene(GAMEPLAY_SCENE)
+	_begin_new_game(character_id)
+
+
+## L'overlay copre tutto il menu e ne intercetta i click: senza questa uscita
+## l'unico modo di lasciare la selezione era confermare o chiudere il processo.
+func _on_character_select_cancelled() -> void:
+	if _select_screen != null and is_instance_valid(_select_screen):
+		_select_screen.queue_free()
+	_select_screen = null
 
 
 func _on_carica_partita() -> void:

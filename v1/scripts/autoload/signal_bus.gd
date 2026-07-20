@@ -36,6 +36,13 @@ signal toast_requested(message: String, toast_type: String)
 signal save_requested
 signal save_completed
 signal load_completed
+# Emitted right before the closing save runs (F.7): whoever holds volatile
+# state that is only flushed periodically (BadgeManager's play-time tail) gets
+# its last chance to push it into SaveManager while a save can still write it.
+signal final_save_pending
+# Emitted by SaveManager.reset_all() (F.7): in-RAM counters must restart from
+# zero or the deleted profile's totals leak into the brand-new one.
+signal profile_reset
 
 # Failure vocabulary (Phase C) — error propagation for save/db/sync/catalog.
 # Wired to user-visible toasts in main.gd.

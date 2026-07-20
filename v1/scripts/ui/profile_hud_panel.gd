@@ -13,7 +13,6 @@
 extends PanelContainer
 
 const MOOD_SETTING_KEY := "mood_level"
-const LANGUAGE_SETTING_KEY := "language"
 const PROFILE_IMAGE_PATH := "user://profile_image.png"
 # Write-then-rename staging path (Phase D): the previous good avatar must
 # survive any failed save, so writes never touch PROFILE_IMAGE_PATH directly.
@@ -28,7 +27,6 @@ var _name_label: Label = null
 var _profile_btn: Button = null
 var _profile_tex_rect: TextureRect = null
 var _settings_btn: Button = null
-var _lang_btn: Button = null
 var _close_btn: Button = null
 var _mood_slider: HSlider = null
 var _file_dialog: FileDialog = null
@@ -99,14 +97,10 @@ func _build_ui() -> void:
 	_badges_row = badges_row
 	SignalBus.badge_unlocked.connect(_on_badge_unlocked)
 	SignalBus.load_completed.connect(_refresh_badges)
-
-	# Language toggle — nascosto pre-demo, i18n completa in arrivo post-demo.
-	# Parented hidden (Phase D): an unparented Button leaked one orphan Object
-	# per panel open; in the tree it is owned and freed with the panel.
-	_lang_btn = Button.new()
-	_lang_btn.focus_mode = Control.FOCUS_NONE
-	_lang_btn.visible = false
-	row_top.add_child(_lang_btn)
+	# I tooltip sono costruiti con tr()/Helpers all'apertura del pannello:
+	# senza questo restano nella lingua attiva in quel momento anche dopo un
+	# cambio lingua a pannello aperto.
+	SignalBus.language_changed.connect(_on_language_changed)
 
 	# Settings button
 	_settings_btn = Button.new()
@@ -170,8 +164,6 @@ func _load_state() -> void:
 	if _mood_slider != null:
 		var saved_mood: float = SaveManager.get_setting(MOOD_SETTING_KEY, 1.0)
 		_mood_slider.set_value_no_signal(clampf(saved_mood, 0.0, 1.0))
-	# Language button label
-	_refresh_lang_button()
 	# Profile image (T-R-015c): carica da user:// se esiste
 	_refresh_profile_image()
 	# Badges last: account state is loaded now (V-088 / 4.1.7-L271).
@@ -303,27 +295,10 @@ func _remove_tmp_profile_image() -> void:
 		AppLogger.warn("ProfileHUD", "Failed to remove tmp profile image", {"err": err})
 
 
-func _refresh_lang_button() -> void:
-	if _lang_btn == null:
-		return
-	var current_lang: String = SaveManager.get_setting(LANGUAGE_SETTING_KEY, "it")
-	if current_lang == "it":
-		_lang_btn.text = "IT"
-		_lang_btn.add_theme_color_override("font_color", Color(0.2, 0.7, 0.3, 1.0))
-	else:
-		_lang_btn.text = "EN"
-		_lang_btn.add_theme_color_override("font_color", Color(0.2, 0.4, 0.8, 1.0))
-
-
-func _on_lang_toggled() -> void:
-	var current: String = SaveManager.get_setting(LANGUAGE_SETTING_KEY, "it")
-	var new_lang: String = "en" if current == "it" else "it"
-	SignalBus.settings_updated.emit(LANGUAGE_SETTING_KEY, new_lang)
-	SignalBus.language_changed.emit(new_lang)
-	# T-R-015g: applica locale runtime — TranslationServer swap + UI re-render
-	TranslationServer.set_locale(new_lang)
-	_refresh_lang_button()
-	SignalBus.toast_requested.emit(tr("TOAST_LANG_CHANGED") % new_lang.to_upper(), "info")
+## Il cambio lingua avviene nel pannello Impostazioni; qui basta ricostruire i
+## tooltip dei badge, che tr()/Helpers hanno gia` risolto all'apertura.
+func _on_language_changed(_lang_code: String) -> void:
+	_refresh_badges()
 
 
 func _on_settings_pressed() -> void:
@@ -364,7 +339,10 @@ func _refresh_badges() -> void:
 		var lbl := Label.new()
 		lbl.text = icon
 		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.tooltip_text = "%s — %s" % [badge.get("name", ""), badge.get("description", "")]
+		# Helpers.locale_* e non i campi grezzi: name/description nel catalogo
+		# sono le stringhe italiane, quindi leggerli direttamente rendeva i
+		# tooltip monolingua in qualunque locale.
+		lbl.tooltip_text = "%s — %s" % [Helpers.locale_label(badge), Helpers.locale_description(badge)]
 		if not is_unlocked:
 			lbl.modulate = Color(0.4, 0.4, 0.4, 0.5)  # locked grey
 		_badges_row.add_child(lbl)
@@ -377,8 +355,6 @@ func _on_badge_unlocked(_badge_id: String) -> void:
 func _exit_tree() -> void:
 	if _settings_btn != null and _settings_btn.pressed.is_connected(_on_settings_pressed):
 		_settings_btn.pressed.disconnect(_on_settings_pressed)
-	if _lang_btn != null and _lang_btn.pressed.is_connected(_on_lang_toggled):
-		_lang_btn.pressed.disconnect(_on_lang_toggled)
 	if _close_btn != null and _close_btn.pressed.is_connected(_on_close_pressed):
 		_close_btn.pressed.disconnect(_on_close_pressed)
 	if _mood_slider != null and _mood_slider.value_changed.is_connected(_on_mood_changed):

@@ -84,7 +84,15 @@ func start(ambience_id: String) -> void:
 	if amb_path.is_empty():
 		push_warning("AmbienceController: ambience file not found for '%s'" % ambience_id)
 		return
-	var stream: AudioStream = load(amb_path) as AudioStream
+	var cached: AudioStream = load(amb_path) as AudioStream
+	if cached == null:
+		return
+	# load() restituisce l'istanza condivisa della cache risorse: applicare il
+	# loop direttamente la muterebbe per chiunque altro carichi lo stesso file
+	# (un id presente sia in tracks[] sia in ambience[] si ritroverebbe
+	# LOOP_FORWARD sul player musica, e AudioStreamPlayer.finished non
+	# scatterebbe mai). La copia e` a buon mercato: i sample sono CoW.
+	var stream: AudioStream = cached.duplicate() as AudioStream
 	if stream == null:
 		return
 	_apply_loop(stream)
@@ -100,11 +108,15 @@ func start(ambience_id: String) -> void:
 
 
 func stop(ambience_id: String) -> void:
+	# _active viene ripulito PRIMA della guardia su _players: se le due
+	# collezioni divergono (un release_streams a meta` strada), uscire subito
+	# lascerebbe l'id in _active per sempre, e get_active_ambience()
+	# continuerebbe a dichiarare attiva un'ambience senza player.
+	_active.erase(ambience_id)
 	if ambience_id not in _players:
 		return
 	var player: AudioStreamPlayer = _players[ambience_id]
 	_players.erase(ambience_id)
-	_active.erase(ambience_id)
 	if is_instance_valid(player):
 		player.stop()
 		player.queue_free()
@@ -125,12 +137,18 @@ func apply_volume() -> void:
 
 ## Rilascia gli stream in fase di teardown (stessa ragione di G-054 lato
 ## musica: l'AudioServer deve mollare i playback prima del check di leak).
+## Libera i nodi e azzera ENTRAMBE le collezioni: lasciare _active popolato
+## faceva mentire get_active_ambience(), e quello stato finto veniva poi
+## persistito in music_state.active_ambience (e nella colonna SQLite
+## ambience_enabled) per ambience che non avevano piu` un solo player.
 func release_streams() -> void:
 	for player in _players.values():
 		if is_instance_valid(player):
 			player.stop()
 			player.stream = null
+			player.queue_free()
 	_players.clear()
+	_active.clear()
 
 
 func resolve_path(ambience_id: String) -> String:
@@ -148,12 +166,19 @@ func resolve_path(ambience_id: String) -> String:
 
 ## I WAV importati non hanno loop di default: il tappeto ambientale deve
 ## ripetersi senza buchi, e i file sono generati con crossfade di giunzione.
+##
+## loop_end si ricava dalla durata dichiarata dallo stream, mai da data.size():
+## quel calcolo dava per scontato PCM 16 bit stereo (4 byte per frame), ma i
+## due ambience sono importati QOA (compress/mode=2), dove `data` sono byte
+## compressi. Il risultato era un loop di 5.85 s su 29 s di file, con il taglio
+## a meta` contenuto invece che sulla giunzione con crossfade.
 func _apply_loop(stream: AudioStream) -> void:
 	if stream is AudioStreamWAV:
 		var wav := stream as AudioStreamWAV
 		if wav.loop_mode == AudioStreamWAV.LOOP_DISABLED:
+			var frames := int(wav.get_length() * float(wav.mix_rate))
 			wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
-			wav.loop_end = wav.data.size() / 4
+			wav.loop_end = frames
 	elif stream is AudioStreamOggVorbis:
 		(stream as AudioStreamOggVorbis).loop = true
 

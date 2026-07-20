@@ -37,13 +37,27 @@ func _ready() -> void:
 ## altrimenti il gioco parte sempre nel locale di fallback e la scelta
 ## dell'utente sembra ignorata fino al primo cambio manuale.
 ## Catena: impostazione salvata -> lingua di sistema se supportata -> "it".
+##
+## Unico punto che mappa lingua persistita -> TranslationServer: lo chiamano sia
+## il boot sia _on_load_completed (un profilo diverso puo` portare un'altra
+## lingua), cosi` le due strade non possono divergere.
 func _apply_saved_locale() -> void:
+	# Il main menu e` la scena principale e li` load_game() non gira mai: senza
+	# questo bootstrap i settings in memoria sono ancora i default e la lingua
+	# salvata non esiste dal punto di vista del boot.
+	SaveManager.ensure_settings_loaded()
 	var saved: String = str(SaveManager.get_setting("language", ""))
-	if saved.is_empty() or not Constants.LANGUAGES.has(saved):
+	# has_explicit_language() distingue "mai scelta" da "vale il default en":
+	# la chiave e` sempre presente nei default, quindi senza questo controllo
+	# il ramo lingua-di-sistema sarebbe codice morto.
+	if not SaveManager.has_explicit_language() or not Constants.LANGUAGES.has(saved):
 		var system_lang := OS.get_locale_language()
 		saved = system_lang if Constants.LANGUAGES.has(system_lang) else "it"
+	var changed := TranslationServer.get_locale() != saved
 	TranslationServer.set_locale(saved)
 	AppLogger.info("GameManager", "locale_applied", {"locale": saved})
+	if changed:
+		SignalBus.language_changed.emit(saved)
 
 
 func _deferred_load() -> void:
@@ -176,11 +190,7 @@ func _on_load_completed() -> void:
 		_pending_outfit = ""
 	# Il save appena caricato puo` portare una lingua diversa da quella
 	# applicata al boot (profilo diverso): riallinea e notifica chi ricostruisce.
-	var saved_lang: String = str(SaveManager.get_setting("language", ""))
-	if not saved_lang.is_empty() and Constants.LANGUAGES.has(saved_lang):
-		if TranslationServer.get_locale() != saved_lang:
-			TranslationServer.set_locale(saved_lang)
-			SignalBus.language_changed.emit(saved_lang)
+	_apply_saved_locale()
 	SignalBus.room_changed.emit(current_room_id, current_theme)
 	SignalBus.character_changed.emit(current_character_id)
 
