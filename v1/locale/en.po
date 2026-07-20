@@ -223,3 +223,28 @@ msgstr "Error saving image (%d)"
 
 msgid "UI_MENU_PROFILE"
 msgstr "Profile"
+
+# Tutorial
+msgid "TUTORIAL_STEP_1"
+msgstr "Welcome to your [b]Relax Room[/b]! 🏠\nThis is your personal space. Make it yours!"
+
+msgid "TUTORIAL_STEP_2"
+msgstr "Use [b]WASD[/b] or the [b]arrow keys[/b] to move.\nTry moving your character now!"
+
+msgid "TUTORIAL_STEP_3"
+msgstr "Open the [b]Decorations[/b] panel to furnish the room.\nClick the [b]Decorate[/b] button below! ⬇"
+
+msgid "TUTORIAL_STEP_4"
+msgstr "Browse the categories and [b]drag[/b] a decoration into the room!\nTry a plant or a desk."
+
+msgid "TUTORIAL_STEP_5"
+msgstr "Nice! Click any decoration to select it.\nPress [b]R[/b] to rotate, [b]F[/b] to flip, [b]S[/b] to resize, [b]X[/b] to delete."
+
+msgid "TUTORIAL_STEP_6"
+msgstr "Open your [b]Profile[/b] to see your account info.\nClick the Profile button! ⬇"
+
+msgid "TUTORIAL_STEP_7"
+msgstr "Press [b]Esc[/b] to close a panel.\nGive it a try!"
+
+msgid "TUTORIAL_STEP_8"
+msgstr "Your room saves [b]automatically[/b]! ✓\n\n[b]Mission complete![/b] 🎉\nEnjoy your Relax Room!"

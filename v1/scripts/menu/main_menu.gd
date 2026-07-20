@@ -182,6 +182,11 @@ func _show_character_select() -> void:
 	select_screen.character_selected.connect(_on_character_chosen, CONNECT_ONE_SHOT)
 	select_screen.cancelled.connect(_on_character_select_cancelled, CONNECT_ONE_SHOT)
 	_select_screen = select_screen
+	# L'overlay di selezione ha uno sfondo al 95%: senza nascondere il menu,
+	# titolo e bottoni traspaiono e disegnano bande scure dietro l'anteprima
+	# del personaggio. Difetto visibile solo da quando la schermata e'
+	# davvero raggiungibile (con un solo personaggio non si apriva mai).
+	_button_container.visible = false
 	$UILayer.add_child(select_screen)
 
 
@@ -193,6 +198,7 @@ func _on_character_chosen(character_id: String) -> void:
 ## L'overlay copre tutto il menu e ne intercetta i click: senza questa uscita
 ## l'unico modo di lasciare la selezione era confermare o chiudere il processo.
 func _on_character_select_cancelled() -> void:
+	_button_container.visible = true
 	if _select_screen != null and is_instance_valid(_select_screen):
 		_select_screen.queue_free()
 	_select_screen = null

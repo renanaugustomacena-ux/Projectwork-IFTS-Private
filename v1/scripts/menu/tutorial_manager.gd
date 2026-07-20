@@ -51,71 +51,41 @@ func start() -> void:
 func _define_steps() -> void:
 	_steps = [
 		{
-			"message":
-			"Benvenuto nella tua [b]Relax Room[/b]! 🏠\n" + "Questo è il tuo spazio personale. " + "Rendilo tuo!",
+			"message": "TUTORIAL_STEP_1",
 			"signal_name": "",
 			"auto_advance": 3.0,
 		},
 		{
-			"message":
-			(
-				"Usa [b]WASD[/b] o le [b]frecce direzionali[/b] "
-				+ "per muoverti.\n"
-				+ "Prova a muovere il personaggio ora!"
-			),
+			"message": "TUTORIAL_STEP_2",
 			"signal_name": "",
 			"wait_for_input": "movement",
 		},
 		{
-			"message":
-			(
-				"Apri il pannello [b]Decorazioni[/b] "
-				+ "per arredare la stanza.\n"
-				+ "Clicca il pulsante [b]Decora[/b] in basso! ⬇"
-			),
+			"message": "TUTORIAL_STEP_3",
 			"signal_name": "panel_opened",
 			"signal_filter": "deco",
 			"arrow_target": "DecoButton",
 		},
 		{
-			"message":
-			(
-				"Sfoglia le categorie e [b]trascina[/b] "
-				+ "una decorazione nella stanza!\n"
-				+ "Prova con una pianta o una scrivania."
-			),
+			"message": "TUTORIAL_STEP_4",
 			"signal_name": "decoration_placed",
 		},
 		{
-			"message":
-			(
-				"Ottimo! Clicca su qualsiasi decorazione "
-				+ "per selezionarla.\n"
-				+ "Premi [b]R[/b] per ruotare, "
-				+ "[b]F[/b] per specchiare, "
-				+ "[b]S[/b] per ridimensionare, "
-				+ "[b]X[/b] per eliminare."
-			),
+			"message": "TUTORIAL_STEP_5",
 			"signal_name": "decoration_selected",
 		},
 		{
-			"message":
-			"Apri il [b]Profilo[/b] per vedere " + "le info del tuo account.\n" + "Clicca il pulsante Profilo! ⬇",
+			"message": "TUTORIAL_STEP_6",
 			"signal_name": "panel_opened",
 			"signal_filter": "profile",
 			"arrow_target": "ProfileButton",
 		},
 		{
-			"message": "Premi [b]Esc[/b] per chiudere un pannello.\n" + "Provalo ora!",
+			"message": "TUTORIAL_STEP_7",
 			"signal_name": "panel_closed",
 		},
 		{
-			"message":
-			(
-				"La tua stanza si salva [b]automaticamente[/b]! ✓\n\n"
-				+ "[b]Missione completata![/b] 🎉\n"
-				+ "Buon relax nella tua Relax Room!"
-			),
+			"message": "TUTORIAL_STEP_8",
 			"signal_name": "",
 			"auto_advance": 4.0,
 			"is_final": true,
@@ -211,7 +181,7 @@ func _advance_step() -> void:
 		return
 
 	var step: Dictionary = _steps[_current_step]
-	_dialog_label.text = step.get("message", "")
+	_dialog_label.text = tr(str(step.get("message", "")))
 	_progress_label.text = tr("TUTORIAL_PROGRESS") % [_current_step + 1, _steps.size()]
 	_step_timer = 0.0
 	_arrow.visible = false
