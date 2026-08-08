@@ -195,6 +195,23 @@ func test_logs_tail_returns_lines() -> void:
 		assert_true(resp.json.get("lines", null) is Array, "lines non e' un array")
 
 
+func test_zz_stop_closes_server() -> void:
+	DevBridge.stop()
+	assert_false(DevBridge.is_active(), "is_active() vero dopo stop()")
+	var peer := StreamPeerTCP.new()
+	peer.connect_to_host("127.0.0.1", TEST_PORT)
+	var connected := false
+	for i in range(30):
+		peer.poll()
+		if peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+			connected = true
+			break
+		if peer.get_status() == StreamPeerTCP.STATUS_ERROR:
+			break
+		await get_tree().process_frame
+	assert_false(connected, "porta ancora aperta dopo stop()")
+
+
 func _http(method: String, path: String, body: String = "") -> Dictionary:
 	var payload := body.to_utf8_buffer()
 	var req := "%s %s HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: %d\r\n\r\n" % [

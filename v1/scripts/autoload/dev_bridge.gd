@@ -239,6 +239,24 @@ func _route(
 			if str(query.get("n", "")).is_valid_int():
 				n = clampi(str(query.get("n")).to_int(), 1, LOGS_TAIL_MAX)
 			_respond_json(peer, 200, {"lines": _tail_log(n)})
+		"/screenshot":
+			if method != "GET":
+				_respond_json(peer, 405, {"error": "method not allowed"})
+				return
+			var texture := get_viewport().get_texture()
+			var image := texture.get_image() if texture != null else null
+			if image == null:
+				_respond_json(peer, 500, {"error": "no viewport image (headless?)"})
+				return
+			_respond_bytes(peer, 200, "image/png", image.save_png_to_buffer())
+		"/quit":
+			if method != "POST":
+				_respond_json(peer, 405, {"error": "method not allowed"})
+				return
+			_respond_json(peer, 200, {"ok": true})
+			# Stesso percorso della X della finestra: SaveManager intercetta
+			# WM_CLOSE_REQUEST (auto_accept_quit off), salva e poi esce.
+			get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)
 		_:
 			_respond_json(peer, 404, {"error": "unknown path"})
 
