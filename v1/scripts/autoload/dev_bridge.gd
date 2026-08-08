@@ -21,6 +21,10 @@ const STATUS_TEXT := {
 	200: "OK", 400: "Bad Request", 404: "Not Found",
 	405: "Method Not Allowed", 413: "Payload Too Large", 500: "Internal Server Error",
 }
+const VALID_ACTIONS := [
+	"set_mood", "set_stress", "save", "set_language",
+	"toggle_track", "open_panel", "close_panel",
+]
 
 var _server: TCPServer = null
 var _active := false
@@ -235,12 +239,6 @@ func _respond_bytes(
 	peer.disconnect_from_host()
 
 
-const VALID_ACTIONS := [
-	"set_mood", "set_stress", "save", "set_language",
-	"toggle_track", "open_panel", "close_panel",
-]
-
-
 func _handle_command(peer: StreamPeerTCP, body: PackedByteArray) -> void:
 	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
 	if typeof(parsed) != TYPE_DICTIONARY:
@@ -266,6 +264,7 @@ func _handle_command(peer: StreamPeerTCP, body: PackedByteArray) -> void:
 			StressManager.apply_delta(float(value) - StressManager.get_stress_value())
 			_respond_json(peer, 200, {"ok": true, "action": action, "detail": float(value)})
 		"save":
+			# Segnale di input: stesso percorso del salvataggio richiesto dalla UI (SaveManager ascolta save_requested).
 			SignalBus.save_requested.emit()
 			_respond_json(peer, 200, {"ok": true, "action": action, "detail": "requested"})
 		"set_language":
