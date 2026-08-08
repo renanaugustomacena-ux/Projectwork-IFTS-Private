@@ -1,7 +1,7 @@
 # Relax Room — Test Harness
 
-Custom headless test harness senza GdUnit4. **112 test invasivi** in 8 moduli,
-~7 secondi di esecuzione, exit code 0 (all pass) / 1 (failures). Girano in
+Custom headless test harness senza GdUnit4. **162 test invasivi** in 13 moduli,
+~8 secondi di esecuzione, exit code 0 (all pass) / 1 (failures). Girano in
 preflight locale + CI GitHub Actions su container `barichello/godot-ci:4.6`.
 
 ## Esecuzione
@@ -28,9 +28,14 @@ Ogni run produce `user://test_results.jsonl` con log per-test.
 | `test_spawn.gd` | 11 | Minimal Room instance, spawn ogni 129 deco (no failure), nearest texture filter, non-centered anchor, scale/rotation/flip persist in deco_data, SCALE_STEPS cycling, clamp inside floor |
 | `test_panels.gd` | 9 | 4 panel open/close (deco, settings, profile, profile_hud), mutual exclusion, toggle-same chiude, Esc handler, SignalBus panel_opened/closed fire |
 | `test_input.gd` | 14 | WASD via `Input.action_press`, velocity direction corretta, diagonal normalizzata a SPEED=120, release azzera velocity, animazione walk/idle direzionale + flip_h |
-| `test_ui_events.gd` | 16 | `pressed.emit()` per HUD buttons apre panel corretto, DropZone stays PASS anche con panel aperto, DecoButton is TextureRect (NOT Button), `_get_drag_data` non-null con valid meta, ≥60 DecoButtons con drag_data meta dentro panel, no overlay blockers upper-right quadrant |
+| `test_ui_events.gd` | 15 | `pressed.emit()` per HUD buttons apre panel corretto, DropZone stays PASS anche con panel aperto, DecoButton is TextureRect (NOT Button), `_get_drag_data` non-null con valid meta, ≥60 DecoButtons con drag_data meta dentro panel, no overlay blockers upper-right quadrant |
+| `test_crypto.gd` | 5 | PBKDF2-HMAC-SHA256 vs vettori RFC 8018, password vuota fail-closed, roundtrip hash v4, hash v4 malformato rifiutato subito, salt unico per account |
+| `test_save_failures.gd` | 5 | Segnali di errore con arity attesa, save riuscito emette solo `success`, save manomesso messo in quarantena (non scartato in silenzio), ring backup conserva le generazioni precedenti, save da versione futura parcheggiato invece che applicato |
+| `test_i18n_assets.gd` | 9 | Entrambe le locale caricate + key set identico IT/EN che differiscono davvero, sprite reali per mess e badge, badge con icone e testo nelle due lingue, catalogo ambience punta a file reali, ogni mood band ha musica, texture del joystick presenti |
+| `test_phase_f.gd` | 12 | Default e reset di ogni chiave persistita, `ambience_enabled` roundtrip save/load, save rifiutato prima del load e riabilitato dopo, play_time non doppio-contato al reload, reset profilo azzera i contatori a vita, loop ambience copre l'intero file + gestione id/risorse, character swap mantiene il nodo `Character` |
+| `test_bridge.gd` | 20 | Lifecycle e triplo gate, parser HTTP (400/404/405/413), /status schema+valori, dispatch /command (mood/stress/save/panel), ring /events cap 200, /tree, /logs/tail, teardown stop() |
 
-**Totale**: 112 test, ~7s.
+**Totale**: 162 test, ~8s.
 
 ## Architettura
 

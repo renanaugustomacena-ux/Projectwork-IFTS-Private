@@ -46,7 +46,7 @@ giornate pesanti — cerca un passatempo che non chieda nulla in cambio.
 - **Offline-first**: JSON + SQLite sono source-of-truth. Supabase è opzionale, sync async.
 - **Desktop companion**: FPS cap dinamico (60 focused / 15 unfocused) per rispettare la batteria.
 
-### Autoload (12 singleton, ordine critico)
+### Autoload (13 singleton, ordine critico)
 
 Caricati in ordine da `project.godot`. Ognuno può dipendere solo dai precedenti:
 
@@ -64,6 +64,7 @@ Caricati in ordine da `project.godot`. Ognuno può dipendere solo dai precedenti
 | 10 | `StressManager` | `systems/stress_manager.gd` | Stress 0.0–1.0 con isteresi, 3 livelli, decay 2 %/min |
 | 11 | `MoodManager` | `autoload/mood_manager.gd` | Overlay gloomy, rain particles, pet WILD FSM state, audio crossfade |
 | 12 | `BadgeManager` | `autoload/badge_manager.gd` | Badge catalog + SQLite table `badges_unlocked` |
+| 13 | `DevBridge` | `autoload/dev_bridge.gd` | API HTTP locale debug-only per audit/test — attiva solo con `--bridge` in build debug, bind 127.0.0.1:8080 |
 
 > **Nota cripto**: dal formato hash v4 (v1.1.0) le password usano vero PBKDF2-HMAC-SHA256 RFC 8018 §5.2 (100k iterazioni, salt 16 B, chiave derivata 32 B) via `Crypto.hmac_digest`. Le build storiche (formati v1/v2/v3) usavano SHA-256 iterato con salt concatenato, etichettato impropriamente "PBKDF2" (vedi § 4.4.1 di `AUDIT_REPORT_2026-04-23.md`); gli hash legacy vengono verificati con la routine storica e ri-hashati a v4 al primo login riuscito.
 
@@ -149,15 +150,15 @@ v1/
 ├── locale/                         # .po IT + EN (2 file)
 ├── scenes/                         # 22 scene Godot (.tscn) + 1 TRES theme
 ├── scripts/                        # 49 script GDScript (~8,732 LOC)
-│   ├── autoload/                    #   10 singleton core + database/ 9 repo
+│   ├── autoload/                    #   11 singleton core + database/ 9 repo
 │   ├── rooms/                       #   Room base + decoration + character + pet + mess + grid + window_bg
 │   ├── menu/                        #   main_menu + auth_screen + character_select + tutorial_manager
 │   ├── systems/                     #   PerformanceManager + StressManager + MessSpawner
 │   ├── ui/                          #   Panel manager + 5 panel + drop_zone + deco_button + toast + HUD
 │   ├── utils/                       #   Constants + Helpers + supabase_{config,http,mapper}
 │   └── main.gd                      #   Controller scena principale
-└── tests/                          # 112 test invasivi + runner headless custom
-    ├── integration/                 #   8 moduli + test_base.gd
+└── tests/                          # 162 test invasivi + runner headless custom
+    ├── integration/                 #   13 moduli + test_base.gd
     ├── test_runner.gd               #   Harness reflection-based
     └── test_runner.tscn             #   Scene autostart runner
 ```
@@ -262,7 +263,7 @@ Dettaglio schema: **[data/README.md](data/README.md)**.
 9. **validate-signals** — SignalBus ≥ 40 signal, no duplicati
 10. **validate-pixelart** — palette + deliverable size/naming
 11. **smoke-headless** — boot Godot 4.6 headless, 0 parse error
-12. **deep-tests** — `test_runner.tscn`, 112 test, gated su smoke
+12. **deep-tests** — `test_runner.tscn`, 162 test, gated su smoke
 
 Container: `barichello/godot-ci:4.6`.
 
@@ -274,7 +275,7 @@ Container: `barichello/godot-ci:4.6`.
 ./scripts/smoke_test.sh          # boot headless ~2 s
 ./scripts/preflight.sh           # 7 step GO/NO-GO demo readiness
 ./scripts/godot-validate.sh      # ciclo completo re-import + runtime ~3 min
-./scripts/deep_test.sh           # 112 test invasivi ~7 s
+./scripts/deep_test.sh           # 162 test invasivi ~8 s
 ```
 
 Dettaglio: **[tests/README.md](tests/README.md)**.

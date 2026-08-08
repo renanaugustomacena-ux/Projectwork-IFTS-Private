@@ -19,7 +19,7 @@ Architettura **signal-driven**: tutta la comunicazione cross-modulo passa per
 
 ```
 scripts/
-├── autoload/                       # 10 core singleton caricati da project.godot
+├── autoload/                       # 11 core singleton caricati da project.godot
 │   ├── signal_bus.gd                #   48 segnali typed globali
 │   ├── logger.gd                    #   JSONL rotating 5MB×5, crypto session ID
 │   ├── local_database.gd            #   SQLite WAL facade, 9 tabelle, delega ai 9 repo
@@ -29,7 +29,8 @@ scripts/
 │   ├── supabase_client.gd           #   REST cloud sync HTTPS-only, session encrypt
 │   ├── audio_manager.gd             #   Dual-player crossfade 2s, mood-driven switch
 │   ├── mood_manager.gd              #   Overlay gloomy + rain + pet WILD FSM
-│   └── badge_manager.gd             #   Badge catalog + SQLite table badges_unlocked
+│   ├── badge_manager.gd             #   Badge catalog + SQLite table badges_unlocked
+│   └── dev_bridge.gd                #   API HTTP debug-only (127.0.0.1, --bridge, 8080)
 ├── autoload/database/              # 9 repo modulari (B-033 split)
 │   ├── schema.gd                    #   CREATE TABLE + migrations
 │   ├── db_helpers.gd                #   execute / execute_bound / select wrapper
@@ -77,7 +78,7 @@ scripts/
 └── main.gd                         # Controller scena gameplay, HUD wiring, tutorial launch
 ```
 
-## Autoload singleton (12 core, ordine critico)
+## Autoload singleton (13 core, ordine critico)
 
 Caricati in ordine da `project.godot` `[autoload]`:
 
@@ -95,6 +96,7 @@ Caricati in ordine da `project.godot` `[autoload]`:
 | 10 | `StressManager` | `systems/stress_manager.gd` | SignalBus, GameManager, SaveManager |
 | 11 | `MoodManager` | `autoload/mood_manager.gd` | SignalBus, StressManager |
 | 12 | `BadgeManager` | `autoload/badge_manager.gd` | SignalBus, LocalDatabase |
+| 13 | `DevBridge` | `autoload/dev_bridge.gd` | SignalBus, AppLogger, StressManager, SaveManager |
 
 **Nota crypto** (audit 4.4.1): AuthManager usa un costrutto SHA-256 iterato con salt+password concatenati. L'etichetta "PBKDF2" nei commenti **non** corrisponde a RFC 2898. Migrazione a PBKDF2-HMAC-SHA256 vero pianificata pre-v1.1.
 
@@ -195,5 +197,5 @@ CanvasLayer 90. `_container.mouse_filter = IGNORE` (critico: STOP blocca click i
 - [README v1](../README.md) — architettura + contenuti di gioco
 - [README data](../data/README.md) — schema SQLite + cataloghi JSON
 - [README scenes](../scenes/README.md) — scene Godot (.tscn)
-- [README tests](../tests/README.md) — 112 test harness
+- [README tests](../tests/README.md) — 162 test harness
 - [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità
