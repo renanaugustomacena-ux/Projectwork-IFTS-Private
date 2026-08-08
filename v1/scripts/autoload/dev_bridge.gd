@@ -18,19 +18,50 @@ const RING_CAP := 200
 const REQUEST_TIMEOUT_MS := 5000
 const MAX_ACCEPTS_PER_FRAME := 2
 const STATUS_TEXT := {
-	200: "OK", 400: "Bad Request", 404: "Not Found",
-	405: "Method Not Allowed", 413: "Payload Too Large", 500: "Internal Server Error",
+	200: "OK",
+	400: "Bad Request",
+	404: "Not Found",
+	405: "Method Not Allowed",
+	413: "Payload Too Large",
+	500: "Internal Server Error",
+}
+# Metodo HTTP atteso per ogni path servito: guard 404/405 in un punto solo.
+const ROUTE_METHODS := {
+	"/status": "GET",
+	"/tree": "GET",
+	"/events": "GET",
+	"/logs/tail": "GET",
+	"/screenshot": "GET",
+	"/command": "POST",
+	"/quit": "POST",
 }
 const VALID_ACTIONS := [
-	"set_mood", "set_stress", "save", "set_language",
-	"toggle_track", "open_panel", "close_panel",
+	"set_mood",
+	"set_stress",
+	"save",
+	"set_language",
+	"toggle_track",
+	"open_panel",
+	"close_panel",
 ]
 # Segnali SignalBus registrati nel ring /events — SOLO ascolto, mai emissione.
 const EVENT_TAPS := [
-	"mood_level_changed", "mood_changed", "stress_changed", "save_completed",
-	"save_failed", "mess_spawned", "mess_cleaned", "coins_changed",
-	"badge_unlocked", "db_error", "sync_error", "catalog_load_failed",
-	"language_changed", "track_play_pause_toggled", "panel_opened", "panel_closed",
+	"mood_level_changed",
+	"mood_changed",
+	"stress_changed",
+	"save_completed",
+	"save_failed",
+	"mess_spawned",
+	"mess_cleaned",
+	"coins_changed",
+	"badge_unlocked",
+	"db_error",
+	"sync_error",
+	"catalog_load_failed",
+	"language_changed",
+	"track_play_pause_toggled",
+	"panel_opened",
+	"panel_closed",
 ]
 const TREE_DEPTH_DEFAULT := 3
 const TREE_DEPTH_MAX := 8
@@ -117,11 +148,12 @@ func _process(_delta: float) -> void:
 		var peer := _server.take_connection()
 		if peer != null:
 			peer.set_no_delay(true)
-			_conns.append({
+			var conn := {
 				"peer": peer,
 				"buf": PackedByteArray(),
 				"deadline_ms": Time.get_ticks_msec() + REQUEST_TIMEOUT_MS,
-			})
+			}
+			_conns.append(conn)
 		accepts += 1
 	_pump_connections()
 
@@ -208,61 +240,46 @@ func _parse_query(full_path: String) -> Dictionary:
 	return out
 
 
-func _route(
-	peer: StreamPeerTCP, method: String, path: String, query: Dictionary, body: PackedByteArray
-) -> void:
+func _route(peer: StreamPeerTCP, method: String, path: String, query: Dictionary, body: PackedByteArray) -> void:
+	if not ROUTE_METHODS.has(path):
+		_respond_json(peer, 404, {"error": "unknown path"})
+		return
+	if method != ROUTE_METHODS[path]:
+		_respond_json(peer, 405, {"error": "method not allowed"})
+		return
 	match path:
 		"/status":
-			if method != "GET":
-				_respond_json(peer, 405, {"error": "method not allowed"})
-				return
 			_respond_json(peer, 200, _build_status())
 		"/command":
-			if method != "POST":
-				_respond_json(peer, 405, {"error": "method not allowed"})
-				return
 			_handle_command(peer, body)
 		"/events":
-			if method != "GET":
-				_respond_json(peer, 405, {"error": "method not allowed"})
-				return
 			_respond_json(peer, 200, {"events": _events, "dropped": _events_dropped})
 		"/tree":
-			if method != "GET":
-				_respond_json(peer, 405, {"error": "method not allowed"})
-				return
 			var depth := TREE_DEPTH_DEFAULT
 			if str(query.get("depth", "")).is_valid_int():
 				depth = clampi(str(query.get("depth")).to_int(), 1, TREE_DEPTH_MAX)
 			_respond_json(peer, 200, {"tree": _dump_tree(get_tree().root, depth)})
 		"/logs/tail":
-			if method != "GET":
-				_respond_json(peer, 405, {"error": "method not allowed"})
-				return
 			var n := LOGS_TAIL_DEFAULT
 			if str(query.get("n", "")).is_valid_int():
 				n = clampi(str(query.get("n")).to_int(), 1, LOGS_TAIL_MAX)
 			_respond_json(peer, 200, {"lines": _tail_log(n)})
 		"/screenshot":
-			if method != "GET":
-				_respond_json(peer, 405, {"error": "method not allowed"})
-				return
-			var texture := get_viewport().get_texture()
-			var image := texture.get_image() if texture != null else null
-			if image == null:
-				_respond_json(peer, 500, {"error": "no viewport image (headless?)"})
-				return
-			_respond_bytes(peer, 200, "image/png", image.save_png_to_buffer())
+			_serve_screenshot(peer)
 		"/quit":
-			if method != "POST":
-				_respond_json(peer, 405, {"error": "method not allowed"})
-				return
 			_respond_json(peer, 200, {"ok": true})
 			# Stesso percorso della X della finestra: SaveManager intercetta
 			# WM_CLOSE_REQUEST (auto_accept_quit off), salva e poi esce.
 			get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)
-		_:
-			_respond_json(peer, 404, {"error": "unknown path"})
+
+
+func _serve_screenshot(peer: StreamPeerTCP) -> void:
+	var texture := get_viewport().get_texture()
+	var image := texture.get_image() if texture != null else null
+	if image == null:
+		_respond_json(peer, 500, {"error": "no viewport image (headless?)"})
+		return
+	_respond_bytes(peer, 200, "image/png", image.save_png_to_buffer())
 
 
 func _build_status() -> Dictionary:
@@ -285,12 +302,16 @@ func _respond_json(peer: StreamPeerTCP, status: int, body: Dictionary) -> void:
 	_respond_bytes(peer, status, "application/json", JSON.stringify(body).to_utf8_buffer())
 
 
-func _respond_bytes(
-	peer: StreamPeerTCP, status: int, content_type: String, payload: PackedByteArray
-) -> void:
-	var head := "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n" % [
-		status, STATUS_TEXT.get(status, "Error"), content_type, payload.size(),
-	]
+func _respond_bytes(peer: StreamPeerTCP, status: int, content_type: String, payload: PackedByteArray) -> void:
+	var head := (
+		"HTTP/1.1 %d %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n"
+		% [
+			status,
+			STATUS_TEXT.get(status, "Error"),
+			content_type,
+			payload.size(),
+		]
+	)
 	peer.put_data(head.to_utf8_buffer())
 	peer.put_data(payload)
 	peer.disconnect_from_host()
@@ -327,9 +348,19 @@ func _handle_command(peer: StreamPeerTCP, body: PackedByteArray) -> void:
 		"set_language":
 			var lang := str(parsed.get("lang", ""))
 			if not Constants.LANGUAGES.has(lang):
-				_respond_json(peer, 400, {"error": "lang must be one of %s" % [
-					Constants.LANGUAGES.keys(),
-				]})
+				_respond_json(
+					peer,
+					400,
+					{
+						"error":
+						(
+							"lang must be one of %s"
+							% [
+								Constants.LANGUAGES.keys(),
+							]
+						)
+					}
+				)
 				return
 			# Specchia settings_panel.gd:224-226.
 			TranslationServer.set_locale(lang)

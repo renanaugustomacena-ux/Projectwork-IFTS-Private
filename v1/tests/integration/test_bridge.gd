@@ -1,3 +1,4 @@
+# gdlint: disable=max-public-methods
 extends TestBase
 ## Modulo test DevBridge — API HTTP locale debug-only.
 ##
@@ -43,8 +44,16 @@ func test_status_ok_schema() -> void:
 	assert_true(resp.json is Dictionary, "/status body non e' un oggetto JSON")
 	if resp.json is Dictionary:
 		for key in [
-			"app_version", "bridge_version", "fps", "current_scene",
-			"mood_level", "mood", "stress", "stress_level", "coins", "uptime_s",
+			"app_version",
+			"bridge_version",
+			"fps",
+			"current_scene",
+			"mood_level",
+			"mood",
+			"stress",
+			"stress_level",
+			"coins",
+			"uptime_s",
 		]:
 			assert_true(resp.json.has(key), "/status manca chiave '%s'" % key)
 
@@ -95,43 +104,34 @@ func test_oversized_body_413() -> void:
 func test_command_set_mood() -> void:
 	DevBridge.start(TEST_PORT)
 	var previous: float = float(SaveManager.get_setting("mood_level", 1.0))
-	var resp: Dictionary = await _http(
-		"POST", "/command", JSON.stringify({"action": "set_mood", "value": 0.25})
-	)
+	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": 0.25}))
 	assert_eq(resp.status, 200, "set_mood non 200")
 	# Percorso UI completo: settings_updated -> SaveManager persiste la chiave.
-	assert_approx(float(SaveManager.get_setting("mood_level", 1.0)), 0.25, 0.001,
-		"mood_level non persistito via settings_updated")
+	assert_approx(
+		float(SaveManager.get_setting("mood_level", 1.0)), 0.25, 0.001, "mood_level non persistito via settings_updated"
+	)
 	await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": previous}))
 
 
 func test_command_set_mood_out_of_range() -> void:
 	DevBridge.start(TEST_PORT)
 	var previous: float = float(SaveManager.get_setting("mood_level", 1.0))
-	var resp: Dictionary = await _http(
-		"POST", "/command", JSON.stringify({"action": "set_mood", "value": 1.7})
-	)
+	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": 1.7}))
 	assert_eq(resp.status, 400, "set_mood fuori range non 400")
-	assert_approx(float(SaveManager.get_setting("mood_level", 1.0)), previous, 0.001,
-		"mood cambiato nonostante il 400")
+	assert_approx(float(SaveManager.get_setting("mood_level", 1.0)), previous, 0.001, "mood cambiato nonostante il 400")
 
 
 func test_command_unknown_action() -> void:
 	DevBridge.start(TEST_PORT)
-	var resp: Dictionary = await _http(
-		"POST", "/command", JSON.stringify({"action": "fly_to_moon"})
-	)
+	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "fly_to_moon"}))
 	assert_eq(resp.status, 400, "azione ignota non 400")
 	if resp.json is Dictionary:
-		assert_true(str(resp.json.get("error", "")).contains("set_mood"),
-			"il 400 non elenca le azioni valide")
+		assert_true(str(resp.json.get("error", "")).contains("set_mood"), "il 400 non elenca le azioni valide")
 
 
 func test_command_set_stress() -> void:
 	DevBridge.start(TEST_PORT)
-	var resp: Dictionary = await _http(
-		"POST", "/command", JSON.stringify({"action": "set_stress", "value": 0.5})
-	)
+	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_stress", "value": 0.5}))
 	assert_eq(resp.status, 200, "set_stress non 200")
 	assert_approx(StressManager.get_stress_value(), 0.5, 0.001, "stress non applicato")
 	StressManager.reset()
@@ -140,9 +140,7 @@ func test_command_set_stress() -> void:
 func test_command_set_language() -> void:
 	DevBridge.start(TEST_PORT)
 	var original: String = TranslationServer.get_locale()
-	var resp: Dictionary = await _http(
-		"POST", "/command", JSON.stringify({"action": "set_language", "lang": "en"})
-	)
+	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_language", "lang": "en"}))
 	assert_eq(resp.status, 200, "set_language non 200")
 	assert_true(TranslationServer.get_locale().begins_with("en"), "locale non passato a 'en'")
 	# Il percorso UI completo emette language_changed: deve finire nel ring /events.
@@ -242,9 +240,14 @@ func test_zz_stop_closes_server() -> void:
 
 func _http(method: String, path: String, body: String = "") -> Dictionary:
 	var payload := body.to_utf8_buffer()
-	var req := "%s %s HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: %d\r\n\r\n" % [
-		method, path, payload.size(),
-	]
+	var req := (
+		"%s %s HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: %d\r\n\r\n"
+		% [
+			method,
+			path,
+			payload.size(),
+		]
+	)
 	var raw_req := req.to_utf8_buffer()
 	raw_req.append_array(payload)
 	return await _transport(raw_req)
