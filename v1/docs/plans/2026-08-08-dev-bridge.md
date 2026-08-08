@@ -893,7 +893,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Write the failing teardown test**
 
-Add as the LAST `test_*` method (declaration order = execution order; this must run after every other bridge test, but BEFORE the helper functions in the file):
+Add as the LAST `test_*` method (correzione post-review: il runner ordina i metodi alfabeticamente — test_runner.gd:89 — quindi è il prefisso `zz` a garantire l'esecuzione per ultima; deve comunque restare BEFORE the helper functions in the file):
 
 ```gdscript
 func test_zz_stop_closes_server() -> void:

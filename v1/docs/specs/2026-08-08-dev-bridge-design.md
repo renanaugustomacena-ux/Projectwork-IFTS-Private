@@ -87,7 +87,7 @@ Request body: `{"action": "<name>", ...params}`, max 64 KB.
 | `set_mood` | `value: float 0.0–1.0` | Mirror `profile_hud_panel.gd:_on_mood_changed`: `SignalBus.mood_level_changed.emit(value)` + `SignalBus.settings_updated.emit("mood_level", value)` |
 | `set_stress` | `value: float 0.0–1.0` | `StressManager.apply_delta(value - StressManager.get_stress_value())` — the public API game code and tests use |
 | `save` | — | `SignalBus.save_requested.emit()` |
-| `set_language` | `lang: "it"\|"en"` | Mirror `settings_panel.gd:224-225`: `TranslationServer.set_locale(lang)` + `SignalBus.settings_updated.emit("language", lang)` |
+| `set_language` | `lang: "it"\|"en"` | Mirror `settings_panel.gd:224-226`: `TranslationServer.set_locale(lang)` + `SignalBus.settings_updated.emit("language", lang)` + `SignalBus.language_changed.emit(lang)` |
 | `toggle_track` | — | `AudioManager.pause()` — the play/pause toggle the music HUD uses (emits `track_play_pause_toggled`) |
 | `open_panel` | `panel: String` | `PanelManager.open_panel(panel)` (`scripts/ui/panel_manager.gd:45`), instance located at runtime from the active Room UI |
 | `close_panel` | — | `PanelManager.close_current_panel()` (`scripts/ui/panel_manager.gd:85`) |

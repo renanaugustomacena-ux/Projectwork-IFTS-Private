@@ -5,14 +5,21 @@ extends TestBase
 ## terminazione processo) — vedi sezione "Verifica manuale" nel piano.
 ## I test chiamano DevBridge.start(TEST_PORT) direttamente: gli user args
 ## (--bridge) non sono simulabili in un run headless del runner.
+## Il runner ordina i metodi test alfabeticamente (test_runner.gd:89): i prefissi
+## `aa`/`zz` fissano il primo/ultimo test del modulo; ogni test HTTP auto-avvia il
+## bridge con DevBridge.start(TEST_PORT).
 
 const TEST_PORT := 8123
 
 
-func test_inert_without_flag() -> void:
-	# Il runner gira senza `-- --bridge`: l'autoload deve essere spento.
-	DevBridge.stop()
-	assert_false(DevBridge.is_active(), "bridge attivo senza flag --bridge")
+func test_aa_inert_without_flag() -> void:
+	# Prefisso `aa` per ordinare PRIMO nel modulo: il runner ordina i metodi
+	# alfabeticamente (test_runner.gd:89) e il modulo bridge e' l'ultimo, quindi
+	# qui si osserva lo stato di boot reale PRIMA che qualunque test avvii il
+	# bridge. Cattura is_active() diretto, senza stop()/start() che lo renderebbe
+	# tautologico. Il runner gira senza `-- --bridge`: l'autoload e' spento al boot.
+	var active_at_boot := DevBridge.is_active()
+	assert_false(active_at_boot, "bridge attivo senza flag --bridge")
 
 
 func test_start_rejects_invalid_port() -> void:
@@ -128,6 +135,27 @@ func test_command_set_stress() -> void:
 	assert_eq(resp.status, 200, "set_stress non 200")
 	assert_approx(StressManager.get_stress_value(), 0.5, 0.001, "stress non applicato")
 	StressManager.reset()
+
+
+func test_command_set_language() -> void:
+	DevBridge.start(TEST_PORT)
+	var original: String = TranslationServer.get_locale()
+	var resp: Dictionary = await _http(
+		"POST", "/command", JSON.stringify({"action": "set_language", "lang": "en"})
+	)
+	assert_eq(resp.status, 200, "set_language non 200")
+	assert_true(TranslationServer.get_locale().begins_with("en"), "locale non passato a 'en'")
+	# Il percorso UI completo emette language_changed: deve finire nel ring /events.
+	var events: Dictionary = await _http("GET", "/events")
+	var found := false
+	if events.json is Dictionary:
+		for event in events.json.get("events", []):
+			if event.get("signal", "") == "language_changed":
+				found = true
+	assert_true(found, "/events non contiene language_changed")
+	# Ripristina la locale originale via lo stesso percorso comando (chiavi it/en).
+	var restore := "it" if original.begins_with("it") else "en"
+	await _http("POST", "/command", JSON.stringify({"action": "set_language", "lang": restore}))
 
 
 func test_command_save_emits_request() -> void:

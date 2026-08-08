@@ -71,6 +71,10 @@ func is_active() -> bool:
 ## Avvia il server sulla porta data. Pubblico: i test lo chiamano direttamente
 ## perche' gli user args non sono simulabili in un run del test runner.
 func start(port: int) -> bool:
+	# Garanzia strutturale: una build release non puo' MAI mettersi in ascolto,
+	# indipendentemente dai punti di chiamata.
+	if not OS.is_debug_build():
+		return false
 	if _active:
 		return true
 	if port < PORT_MIN or port > PORT_MAX:
@@ -327,9 +331,10 @@ func _handle_command(peer: StreamPeerTCP, body: PackedByteArray) -> void:
 					Constants.LANGUAGES.keys(),
 				]})
 				return
-			# Specchia settings_panel.gd:224-225.
+			# Specchia settings_panel.gd:224-226.
 			TranslationServer.set_locale(lang)
 			SignalBus.settings_updated.emit("language", lang)
+			SignalBus.language_changed.emit(lang)
 			_respond_json(peer, 200, {"ok": true, "action": action, "detail": lang})
 		"toggle_track":
 			# Stesso toggle play/pause usato dal controllo musica del HUD.
