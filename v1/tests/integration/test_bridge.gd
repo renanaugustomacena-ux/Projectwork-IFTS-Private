@@ -150,6 +150,51 @@ func test_command_open_panel_without_game_scene() -> void:
 	assert_eq(resp.status, 400, "open_panel senza scena di gioco non 400")
 
 
+func test_events_contains_mood_traffic() -> void:
+	DevBridge.start(TEST_PORT)
+	await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": 0.42}))
+	var resp: Dictionary = await _http("GET", "/events")
+	assert_eq(resp.status, 200, "GET /events non 200")
+	var found := false
+	if resp.json is Dictionary:
+		for event in resp.json.get("events", []):
+			if event.get("signal", "") == "mood_level_changed":
+				found = true
+	assert_true(found, "/events non contiene mood_level_changed")
+	await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": 1.0}))
+
+
+func test_events_ring_capped_at_200() -> void:
+	DevBridge.start(TEST_PORT)
+	for i in range(250):
+		SignalBus.mood_level_changed.emit(0.5)
+	var resp: Dictionary = await _http("GET", "/events")
+	assert_eq(resp.status, 200)
+	if resp.json is Dictionary:
+		assert_true(resp.json.get("events", []).size() <= 200, "ring oltre 200 voci")
+		assert_true(int(resp.json.get("dropped", 0)) > 0, "dropped non conteggiato")
+	SignalBus.mood_level_changed.emit(1.0)
+
+
+func test_tree_returns_root_structure() -> void:
+	DevBridge.start(TEST_PORT)
+	var resp: Dictionary = await _http("GET", "/tree?depth=2")
+	assert_eq(resp.status, 200, "GET /tree non 200")
+	if resp.json is Dictionary:
+		var tree: Dictionary = resp.json.get("tree", {})
+		assert_eq(str(tree.get("name", "")), "root", "radice non 'root'")
+		assert_true(tree.get("children", []).size() > 0, "root senza figli (autoload attesi)")
+
+
+func test_logs_tail_returns_lines() -> void:
+	DevBridge.start(TEST_PORT)
+	AppLogger.info("dev_bridge_test", "riga_sentinella_test_bridge")
+	var resp: Dictionary = await _http("GET", "/logs/tail?n=50")
+	assert_eq(resp.status, 200, "GET /logs/tail non 200")
+	if resp.json is Dictionary:
+		assert_true(resp.json.get("lines", null) is Array, "lines non e' un array")
+
+
 func _http(method: String, path: String, body: String = "") -> Dictionary:
 	var payload := body.to_utf8_buffer()
 	var req := "%s %s HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: %d\r\n\r\n" % [

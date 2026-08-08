@@ -25,6 +25,17 @@ const VALID_ACTIONS := [
 	"set_mood", "set_stress", "save", "set_language",
 	"toggle_track", "open_panel", "close_panel",
 ]
+# Segnali SignalBus registrati nel ring /events — SOLO ascolto, mai emissione.
+const EVENT_TAPS := [
+	"mood_level_changed", "mood_changed", "stress_changed", "save_completed",
+	"save_failed", "mess_spawned", "mess_cleaned", "coins_changed",
+	"badge_unlocked", "db_error", "sync_error", "catalog_load_failed",
+	"language_changed", "track_play_pause_toggled", "panel_opened", "panel_closed",
+]
+const TREE_DEPTH_DEFAULT := 3
+const TREE_DEPTH_MAX := 8
+const LOGS_TAIL_DEFAULT := 100
+const LOGS_TAIL_MAX := 1000
 
 var _server: TCPServer = null
 var _active := false
@@ -73,6 +84,9 @@ func start(port: int) -> bool:
 	_server = server
 	_active = true
 	_start_ms = Time.get_ticks_msec()
+	_events.clear()
+	_events_dropped = 0
+	_connect_event_taps()
 	set_process(true)
 	AppLogger.info(SOURCE, "listening", {"port": port})
 	return true
@@ -204,6 +218,27 @@ func _route(
 				_respond_json(peer, 405, {"error": "method not allowed"})
 				return
 			_handle_command(peer, body)
+		"/events":
+			if method != "GET":
+				_respond_json(peer, 405, {"error": "method not allowed"})
+				return
+			_respond_json(peer, 200, {"events": _events, "dropped": _events_dropped})
+		"/tree":
+			if method != "GET":
+				_respond_json(peer, 405, {"error": "method not allowed"})
+				return
+			var depth := TREE_DEPTH_DEFAULT
+			if str(query.get("depth", "")).is_valid_int():
+				depth = clampi(str(query.get("depth")).to_int(), 1, TREE_DEPTH_MAX)
+			_respond_json(peer, 200, {"tree": _dump_tree(get_tree().root, depth)})
+		"/logs/tail":
+			if method != "GET":
+				_respond_json(peer, 405, {"error": "method not allowed"})
+				return
+			var n := LOGS_TAIL_DEFAULT
+			if str(query.get("n", "")).is_valid_int():
+				n = clampi(str(query.get("n")).to_int(), 1, LOGS_TAIL_MAX)
+			_respond_json(peer, 200, {"lines": _tail_log(n)})
 		_:
 			_respond_json(peer, 404, {"error": "unknown path"})
 
@@ -308,3 +343,77 @@ func _find_panel_manager() -> PanelManager:
 	if scene == null:
 		return null
 	return scene.get_node_or_null("PanelManager") as PanelManager
+
+
+func _connect_event_taps() -> void:
+	var arg_counts := {}
+	for info in SignalBus.get_signal_list():
+		arg_counts[str(info.name)] = info.args.size()
+	for sig_name in EVENT_TAPS:
+		if not arg_counts.has(sig_name):
+			AppLogger.warn(SOURCE, "tap_signal_missing", {"signal": sig_name})
+			continue
+		match int(arg_counts[sig_name]):
+			0:
+				SignalBus.disconnect(sig_name, _tap0.bind(sig_name))
+				SignalBus.connect(sig_name, _tap0.bind(sig_name))
+			1:
+				SignalBus.disconnect(sig_name, _tap1.bind(sig_name))
+				SignalBus.connect(sig_name, _tap1.bind(sig_name))
+			2:
+				SignalBus.disconnect(sig_name, _tap2.bind(sig_name))
+				SignalBus.connect(sig_name, _tap2.bind(sig_name))
+			_:
+				AppLogger.warn(SOURCE, "tap_arity_unsupported", {"signal": sig_name})
+
+
+func _tap0(sig_name: String) -> void:
+	_record(sig_name, [])
+
+
+func _tap1(a: Variant, sig_name: String) -> void:
+	_record(sig_name, [a])
+
+
+func _tap2(a: Variant, b: Variant, sig_name: String) -> void:
+	_record(sig_name, [a, b])
+
+
+func _record(sig_name: String, args: Array) -> void:
+	var safe_args: Array[String] = []
+	for arg in args:
+		safe_args.append(str(arg))  # stringify difensivo: nessun ref di oggetti
+	_events.append({"t_ms": Time.get_ticks_msec(), "signal": sig_name, "args": safe_args})
+	while _events.size() > RING_CAP:
+		_events.pop_front()
+		_events_dropped += 1
+
+
+func _dump_tree(node: Node, depth: int) -> Dictionary:
+	var entry := {"name": str(node.name), "class": node.get_class()}
+	if node is CanvasItem or node is Node3D or node is Window:
+		entry["visible"] = node.visible
+	if depth > 1:
+		var children: Array[Dictionary] = []
+		for child in node.get_children():
+			children.append(_dump_tree(child, depth - 1))
+		entry["children"] = children
+	return entry
+
+
+func _tail_log(n: int) -> Array:
+	var path := AppLogger.get_log_file_path()
+	if path == null or path == "":
+		return []
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return []
+	var text := file.get_as_text()
+	if text == null or text == "":
+		return []
+	var lines := text.split("\n", false)
+	var start := maxi(0, lines.size() - n)
+	var out: Array[String] = []
+	for i in range(start, lines.size()):
+		out.append(lines[i])
+	return out
