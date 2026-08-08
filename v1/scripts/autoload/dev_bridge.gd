@@ -195,6 +195,11 @@ func _route(
 				_respond_json(peer, 405, {"error": "method not allowed"})
 				return
 			_respond_json(peer, 200, _build_status())
+		"/command":
+			if method != "POST":
+				_respond_json(peer, 405, {"error": "method not allowed"})
+				return
+			_handle_command(peer, body)
 		_:
 			_respond_json(peer, 404, {"error": "unknown path"})
 
@@ -228,3 +233,79 @@ func _respond_bytes(
 	peer.put_data(head.to_utf8_buffer())
 	peer.put_data(payload)
 	peer.disconnect_from_host()
+
+
+const VALID_ACTIONS := [
+	"set_mood", "set_stress", "save", "set_language",
+	"toggle_track", "open_panel", "close_panel",
+]
+
+
+func _handle_command(peer: StreamPeerTCP, body: PackedByteArray) -> void:
+	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		_respond_json(peer, 400, {"error": "body must be a JSON object"})
+		return
+	var action := str(parsed.get("action", ""))
+	match action:
+		"set_mood":
+			var value: Variant = parsed.get("value")
+			if not _is_unit_float(value):
+				_respond_json(peer, 400, {"error": "value must be a number in 0.0-1.0"})
+				return
+			# Specchia profile_hud_panel._on_mood_changed (slider mood).
+			SignalBus.mood_level_changed.emit(float(value))
+			SignalBus.settings_updated.emit("mood_level", float(value))
+			_respond_json(peer, 200, {"ok": true, "action": action, "detail": float(value)})
+		"set_stress":
+			var value: Variant = parsed.get("value")
+			if not _is_unit_float(value):
+				_respond_json(peer, 400, {"error": "value must be a number in 0.0-1.0"})
+				return
+			# API pubblica usata da gioco e test (StressManager.apply_delta).
+			StressManager.apply_delta(float(value) - StressManager.get_stress_value())
+			_respond_json(peer, 200, {"ok": true, "action": action, "detail": float(value)})
+		"save":
+			SignalBus.save_requested.emit()
+			_respond_json(peer, 200, {"ok": true, "action": action, "detail": "requested"})
+		"set_language":
+			var lang := str(parsed.get("lang", ""))
+			if not Constants.LANGUAGES.has(lang):
+				_respond_json(peer, 400, {"error": "lang must be one of %s" % [
+					Constants.LANGUAGES.keys(),
+				]})
+				return
+			# Specchia settings_panel.gd:224-225.
+			TranslationServer.set_locale(lang)
+			SignalBus.settings_updated.emit("language", lang)
+			_respond_json(peer, 200, {"ok": true, "action": action, "detail": lang})
+		"toggle_track":
+			# Stesso toggle play/pause usato dal controllo musica del HUD.
+			AudioManager.pause()
+			_respond_json(peer, 200, {"ok": true, "action": action, "detail": "toggled"})
+		"open_panel", "close_panel":
+			var panel_manager := _find_panel_manager()
+			if panel_manager == null:
+				_respond_json(peer, 400, {"error": "no active game scene (PanelManager not found)"})
+				return
+			if action == "open_panel":
+				panel_manager.open_panel(str(parsed.get("panel", "")))
+			else:
+				panel_manager.close_current_panel()
+			_respond_json(peer, 200, {"ok": true, "action": action, "detail": "requested"})
+		_:
+			_respond_json(peer, 400, {"error": "unknown action; valid: %s" % [VALID_ACTIONS]})
+
+
+func _is_unit_float(value: Variant) -> bool:
+	if not (value is float or value is int):
+		return false
+	return float(value) >= 0.0 and float(value) <= 1.0
+
+
+func _find_panel_manager() -> PanelManager:
+	# main.gd crea PanelManager come figlio della scena di gioco (main.gd:19-22).
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	return scene.get_node_or_null("PanelManager") as PanelManager

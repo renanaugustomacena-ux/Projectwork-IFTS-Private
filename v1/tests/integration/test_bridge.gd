@@ -11,6 +11,7 @@ const TEST_PORT := 8123
 
 func test_inert_without_flag() -> void:
 	# Il runner gira senza `-- --bridge`: l'autoload deve essere spento.
+	DevBridge.stop()
 	assert_false(DevBridge.is_active(), "bridge attivo senza flag --bridge")
 
 
@@ -82,6 +83,71 @@ func test_oversized_body_413() -> void:
 	var raw := "POST /command HTTP/1.1\r\nHost: x\r\nContent-Length: 70000\r\n\r\n"
 	var resp: Dictionary = await _raw_send(raw)
 	assert_eq(resp.status, 413, "body oltre 64 KB non 413")
+
+
+func test_command_set_mood() -> void:
+	DevBridge.start(TEST_PORT)
+	var previous: float = float(SaveManager.get_setting("mood_level", 1.0))
+	var resp: Dictionary = await _http(
+		"POST", "/command", JSON.stringify({"action": "set_mood", "value": 0.25})
+	)
+	assert_eq(resp.status, 200, "set_mood non 200")
+	# Percorso UI completo: settings_updated -> SaveManager persiste la chiave.
+	assert_approx(float(SaveManager.get_setting("mood_level", 1.0)), 0.25, 0.001,
+		"mood_level non persistito via settings_updated")
+	await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": previous}))
+
+
+func test_command_set_mood_out_of_range() -> void:
+	DevBridge.start(TEST_PORT)
+	var previous: float = float(SaveManager.get_setting("mood_level", 1.0))
+	var resp: Dictionary = await _http(
+		"POST", "/command", JSON.stringify({"action": "set_mood", "value": 1.7})
+	)
+	assert_eq(resp.status, 400, "set_mood fuori range non 400")
+	assert_approx(float(SaveManager.get_setting("mood_level", 1.0)), previous, 0.001,
+		"mood cambiato nonostante il 400")
+
+
+func test_command_unknown_action() -> void:
+	DevBridge.start(TEST_PORT)
+	var resp: Dictionary = await _http(
+		"POST", "/command", JSON.stringify({"action": "fly_to_moon"})
+	)
+	assert_eq(resp.status, 400, "azione ignota non 400")
+	if resp.json is Dictionary:
+		assert_true(str(resp.json.get("error", "")).contains("set_mood"),
+			"il 400 non elenca le azioni valide")
+
+
+func test_command_set_stress() -> void:
+	DevBridge.start(TEST_PORT)
+	var resp: Dictionary = await _http(
+		"POST", "/command", JSON.stringify({"action": "set_stress", "value": 0.5})
+	)
+	assert_eq(resp.status, 200, "set_stress non 200")
+	assert_approx(StressManager.get_stress_value(), 0.5, 0.001, "stress non applicato")
+	StressManager.reset()
+
+
+func test_command_save_emits_request() -> void:
+	DevBridge.start(TEST_PORT)
+	var seen := [false]
+	var handler := func() -> void: seen[0] = true
+	SignalBus.save_requested.connect(handler)
+	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "save"}))
+	SignalBus.save_requested.disconnect(handler)
+	assert_eq(resp.status, 200, "save non 200")
+	assert_true(seen[0], "save_requested non emesso")
+
+
+func test_command_open_panel_without_game_scene() -> void:
+	DevBridge.start(TEST_PORT)
+	# In headless il current_scene e' il test runner: niente PanelManager.
+	var resp: Dictionary = await _http(
+		"POST", "/command", JSON.stringify({"action": "open_panel", "panel": "settings"})
+	)
+	assert_eq(resp.status, 400, "open_panel senza scena di gioco non 400")
 
 
 func _http(method: String, path: String, body: String = "") -> Dictionary:
