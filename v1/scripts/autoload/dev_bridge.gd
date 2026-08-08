@@ -355,14 +355,17 @@ func _connect_event_taps() -> void:
 			continue
 		match int(arg_counts[sig_name]):
 			0:
-				SignalBus.disconnect(sig_name, _tap0.bind(sig_name))
-				SignalBus.connect(sig_name, _tap0.bind(sig_name))
+				var callable := _tap0.bind(sig_name)
+				if not SignalBus.is_connected(sig_name, callable):
+					SignalBus.connect(sig_name, callable)
 			1:
-				SignalBus.disconnect(sig_name, _tap1.bind(sig_name))
-				SignalBus.connect(sig_name, _tap1.bind(sig_name))
+				var callable := _tap1.bind(sig_name)
+				if not SignalBus.is_connected(sig_name, callable):
+					SignalBus.connect(sig_name, callable)
 			2:
-				SignalBus.disconnect(sig_name, _tap2.bind(sig_name))
-				SignalBus.connect(sig_name, _tap2.bind(sig_name))
+				var callable := _tap2.bind(sig_name)
+				if not SignalBus.is_connected(sig_name, callable):
+					SignalBus.connect(sig_name, callable)
 			_:
 				AppLogger.warn(SOURCE, "tap_arity_unsupported", {"signal": sig_name})
 
