@@ -44,7 +44,7 @@ Supabase config in `user://config.cfg` per sync cloud (feature pronta, default-o
 │   ├── locale/            #   .po Italian + English
 │   ├── scenes/            #   22 scene Godot (.tscn) + 1 TRES theme
 │   ├── scripts/           #   49 script GDScript (~8.7k LOC)
-│   └── tests/             #   162 test invasivi + runner headless custom
+│   └── tests/             #   163 test invasivi + runner headless custom
 ├── AUDIT_REPORT_2026-04-23.md
 ├── CHANGELOG.md
 ├── Mini-Cozy-Room-Presentazione-Progetto.pptx
@@ -61,7 +61,7 @@ Supabase config in `user://config.cfg` per sync cloud (feature pronta, default-o
 | [v1/assets/README.md](v1/assets/README.md) | Origini asset, licenze, integrazione |
 | [v1/scenes/README.md](v1/scenes/README.md) | Scene, struttura nodi, flusso fra scene |
 | [v1/scripts/README.md](v1/scripts/README.md) | GDScript organizzato per dominio, 13 autoload |
-| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (162 test, 13 moduli) |
+| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (163 test, 13 moduli) |
 | [supabase/README.md](supabase/README.md) | Cloud sync push-only, stato schema |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes Keep-a-Changelog + SemVer |
 | [AUDIT_REPORT_2026-04-23.md](AUDIT_REPORT_2026-04-23.md) | Audit integrità + stabilità (13 skill) |
@@ -111,11 +111,11 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 ./scripts/smoke_test.sh       # Boot headless ~2 s
 ./scripts/preflight.sh        # 7 step: toolchain, integrità, JSON, asset, boot, runtime, deep tests. GO/NO-GO exit 0/1
 ./scripts/godot-validate.sh   # Full re-import + runtime ~3 min
-./scripts/deep_test.sh        # 162 test invasivi in 13 moduli ~8 s:
+./scripts/deep_test.sh        # 163 test invasivi in 13 moduli ~8 s:
                               #   helpers (16) + catalogs (21) + stress (12) + save (13)
                               #   + spawn (11) + panels (9) + input (14) + ui_events (15)
                               #   + crypto (5) + save_failures (5) + i18n_assets (9)
-                              #   + phase_f (12) + bridge (20)
+                              #   + phase_f (12) + bridge (21)
 ```
 
 Dev bridge (solo build debug, mai attivo senza flag):

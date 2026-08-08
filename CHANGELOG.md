@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (ring 200 segnali SignalBus), `/logs/tail`, `/screenshot`, `/command` (7
   azioni UI-equivalenti), `/quit` (percorso WM_CLOSE con salvataggio finale).
   Regola architetturale: solo segnali di input o metodi pubblici gia' usati
-  dalla UI — mai segnali di output dei sistemi. 20 test di integrazione.
+  dalla UI — mai segnali di output dei sistemi. 21 test di integrazione.
   Spec: `v1/docs/specs/2026-08-08-dev-bridge-design.md`.
 
 ## [1.1.0] - 2026-07-20

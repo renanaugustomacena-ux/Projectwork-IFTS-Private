@@ -157,7 +157,7 @@ v1/
 │   ├── ui/                          #   Panel manager + 5 panel + drop_zone + deco_button + toast + HUD
 │   ├── utils/                       #   Constants + Helpers + supabase_{config,http,mapper}
 │   └── main.gd                      #   Controller scena principale
-└── tests/                          # 162 test invasivi + runner headless custom
+└── tests/                          # 163 test invasivi + runner headless custom
     ├── integration/                 #   13 moduli + test_base.gd
     ├── test_runner.gd               #   Harness reflection-based
     └── test_runner.tscn             #   Scene autostart runner
@@ -263,7 +263,7 @@ Dettaglio schema: **[data/README.md](data/README.md)**.
 9. **validate-signals** — SignalBus ≥ 40 signal, no duplicati
 10. **validate-pixelart** — palette + deliverable size/naming
 11. **smoke-headless** — boot Godot 4.6 headless, 0 parse error
-12. **deep-tests** — `test_runner.tscn`, 162 test, gated su smoke
+12. **deep-tests** — `test_runner.tscn`, 163 test, gated su smoke
 
 Container: `barichello/godot-ci:4.6`.
 
@@ -275,7 +275,7 @@ Container: `barichello/godot-ci:4.6`.
 ./scripts/smoke_test.sh          # boot headless ~2 s
 ./scripts/preflight.sh           # 7 step GO/NO-GO demo readiness
 ./scripts/godot-validate.sh      # ciclo completo re-import + runtime ~3 min
-./scripts/deep_test.sh           # 162 test invasivi ~8 s
+./scripts/deep_test.sh           # 163 test invasivi ~8 s
 ```
 
 Dettaglio: **[tests/README.md](tests/README.md)**.

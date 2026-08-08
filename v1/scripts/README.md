@@ -197,5 +197,5 @@ CanvasLayer 90. `_container.mouse_filter = IGNORE` (critico: STOP blocca click i
 - [README v1](../README.md) — architettura + contenuti di gioco
 - [README data](../data/README.md) — schema SQLite + cataloghi JSON
 - [README scenes](../scenes/README.md) — scene Godot (.tscn)
-- [README tests](../tests/README.md) — 162 test harness
+- [README tests](../tests/README.md) — 163 test harness
 - [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità
