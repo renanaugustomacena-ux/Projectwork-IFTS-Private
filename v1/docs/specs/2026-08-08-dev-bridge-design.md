@@ -67,7 +67,7 @@ the autoload stays inert for the whole session (zero per-frame cost).
 | GET | `/logs/tail?n=N` | Last N lines (default 100, max 1000) of current AppLogger JSONL | `{lines: [...]}` |
 | GET | `/screenshot` | Current viewport as PNG | binary `image/png` |
 | POST | `/command` | Execute one UI-equivalent action | `{ok: true, action, detail}` |
-| POST | `/quit` | Clean shutdown through the existing final-save flow | `{ok: true}` then process exit |
+| POST | `/quit` | Clean shutdown: respond, then `propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)` — SaveManager intercepts (auto_accept_quit off), final-saves, quits | `{ok: true}` then process exit |
 
 ### 4.1 `/events` ring buffer
 
@@ -84,8 +84,8 @@ Request body: `{"action": "<name>", ...params}`, max 64 KB.
 
 | Action | Params | Route |
 |--------|--------|-------|
-| `set_mood` | `value: float 0.0–1.0` | `SignalBus.mood_level_changed.emit(value)` — same signal the profile-HUD mood slider emits |
-| `set_stress` | `value: float 0.0–1.0` | StressManager public setter (same entry the game/tests use) |
+| `set_mood` | `value: float 0.0–1.0` | Mirror `profile_hud_panel.gd:_on_mood_changed`: `SignalBus.mood_level_changed.emit(value)` + `SignalBus.settings_updated.emit("mood_level", value)` |
+| `set_stress` | `value: float 0.0–1.0` | `StressManager.apply_delta(value - StressManager.get_stress_value())` — the public API game code and tests use |
 | `save` | — | `SignalBus.save_requested.emit()` |
 | `set_language` | `lang: "it"\|"en"` | Mirror `settings_panel.gd:224-225`: `TranslationServer.set_locale(lang)` + `SignalBus.settings_updated.emit("language", lang)` |
 | `toggle_track` | — | `AudioManager.pause()` — the play/pause toggle the music HUD uses (emits `track_play_pause_toggled`) |
