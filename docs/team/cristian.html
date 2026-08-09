@@ -76,16 +76,16 @@
             <div class="contrib-card">
                 <h3><i data-lucide="git-branch"></i> CI/CD Pipeline</h3>
                 <ul>
-                    <li><code>.github/workflows/ci.yml</code> — <strong>9 job paralleli/sequenziali</strong> su ogni push/PR</li>
+                    <li><code>.github/workflows/ci.yml</code> — <strong>13 job paralleli/sequenziali</strong> su ogni push/PR</li>
                     <li><strong>lint</strong> (gdlint + gdformat) su scripts + tests</li>
-                    <li><strong>validate-json</strong> — struttura + vincoli 5 catalog JSON</li>
+                    <li><strong>validate-json</strong> — struttura + vincoli dei 6 catalog JSON</li>
                     <li><strong>validate-sprites</strong> — 100+ sprite_path esistenza filesystem</li>
                     <li><strong>validate-crossrefs</strong> — constants.gd ↔ catalog IDs</li>
                     <li><strong>validate-db</strong> — sintassi CREATE TABLE</li>
                     <li><strong>validate-signals</strong> — SignalBus floor 40 + no duplicates</li>
                     <li><strong>validate-pixelart</strong> — palette sync + deliverable sizes/naming</li>
                     <li><strong>smoke-headless</strong> — boot Godot 4.6 headless 0 error</li>
-                    <li><strong>deep-tests</strong> — 112 test gated su smoke-headless</li>
+                    <li><strong>deep-tests</strong> — 196 test in 15 moduli, gated su smoke-headless, sempre via <code>scripts/deep_test.sh</code> (user dir isolata)</li>
                     <li>Config <code>concurrency</code> group + <code>paths</code> filter per minimize Actions minutes</li>
                 </ul>
             </div>
@@ -190,9 +190,9 @@
     <section class="team-page-section" data-aos="fade-up">
         <h2>Numeri complessivi</h2>
         <ul class="stats-list">
-            <li><strong>9 job CI</strong> disegnati + configurati</li>
+            <li><strong>13 job CI</strong> disegnati + configurati</li>
             <li><strong>2 platform export supportati</strong>: Windows + HTML5 (Android configurato ma sperimentale)</li>
-            <li><strong>5 validator Python</strong> custom per type safety non-runtime</li>
+            <li><strong>9 validator Python</strong> custom per type safety non-runtime, piu' 3 tool asset</li>
             <li><strong>2 guide operative</strong> complete (CICD 1604 righe + Alex 1148 righe)</li>
             <li><strong>~400 righe Python</strong> CI scripting</li>
             <li><strong>100+ asset</strong> integrati (Kenney + Bongseng + SoppyCraft + Thurraya + Mixkit + Eder Muniz)</li>
