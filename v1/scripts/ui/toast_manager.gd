@@ -28,16 +28,19 @@ func _ready() -> void:
 	SignalBus.decoration_removed.connect(_on_decoration_removed_toast)
 
 
+## I toast sono effimeri e vengono tradotti al momento in cui nascono: un
+## cambio lingua non deve riscrivere quelli gia` a schermo (spariscono entro
+## TOAST_DURATION), ma il successivo esce gia` nella lingua nuova.
 func _on_save_completed() -> void:
-	show_toast("Partita salvata ✓", "success")
+	show_toast(tr("TOAST_SAVED"), "success")
 
 
 func _on_decoration_placed_toast(item_id: String, _pos: Vector2) -> void:
-	show_toast("Posizionato: %s" % item_id, "info")
+	show_toast(tr("TOAST_DECO_PLACED") % item_id, "info")
 
 
 func _on_decoration_removed_toast(item_id: String) -> void:
-	show_toast("Rimosso: %s" % item_id, "warning")
+	show_toast(tr("TOAST_DECO_REMOVED") % item_id, "warning")
 
 
 func _build_container() -> void:

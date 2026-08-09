@@ -24,6 +24,23 @@ var _serenity_bar: ProgressBar
 var _serenity_fill_style: StyleBoxFlat
 var _coin_label: Label
 var _mood_label: Label
+var _serenity_header: Label
+var _profile_btn: TextureButton
+var _current_level: String = "calm"
+
+
+## Mappa l'id interno del livello di stress sulla chiave di traduzione mostrata
+## in HUD. `calm`/`neutral`/`tense` sono dati di gioco, non testo per l'utente:
+## prima del fix finivano tali e quali nell'etichetta umore, identici in
+## italiano e in inglese (audit G-050). Il default segue `_color_for_level`.
+static func mood_key_for_level(level: String) -> String:
+	match level:
+		"tense":
+			return "MOOD_TENSE"
+		"neutral":
+			return "MOOD_NEUTRAL"
+		_:
+			return "MOOD_CALM"
 
 
 func _ready() -> void:
@@ -32,6 +49,7 @@ func _ready() -> void:
 	SignalBus.stress_changed.connect(_on_stress_changed)
 	SignalBus.coins_changed.connect(_on_coins_changed)
 	SignalBus.load_completed.connect(_on_load_completed)
+	SignalBus.language_changed.connect(_on_language_changed)
 	# Sync iniziale con stato corrente
 	_refresh_serenity(StressManager.get_stress_value(), StressManager.get_stress_level())
 	_refresh_coins(SaveManager.inventory_data.get("coins", 0))
@@ -64,12 +82,12 @@ func _build_ui() -> void:
 	serenity_block.add_theme_constant_override("separation", 2)
 	row.add_child(serenity_block)
 
-	var serenity_header := Label.new()
-	serenity_header.text = tr("UI_HUD_SERENITY")
-	serenity_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	serenity_header.add_theme_font_size_override("font_size", 12)
-	serenity_header.add_theme_color_override("font_color", Color(1, 1, 1, 0.92))
-	serenity_block.add_child(serenity_header)
+	_serenity_header = Label.new()
+	_serenity_header.text = tr("UI_HUD_SERENITY")
+	_serenity_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_serenity_header.add_theme_font_size_override("font_size", 12)
+	_serenity_header.add_theme_color_override("font_color", Color(1, 1, 1, 0.92))
+	serenity_block.add_child(_serenity_header)
 
 	_serenity_bar = ProgressBar.new()
 	# ProgressBar deriva da Range e in Godot 4.5 ha focus_mode di default
@@ -99,7 +117,7 @@ func _build_ui() -> void:
 	serenity_block.add_child(_serenity_bar)
 
 	_mood_label = Label.new()
-	_mood_label.text = "calm"
+	_mood_label.text = tr(mood_key_for_level(_current_level))
 	_mood_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mood_label.add_theme_font_size_override("font_size", 10)
 	_mood_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
@@ -134,22 +152,22 @@ func _build_ui() -> void:
 	# anziche emoji "👤" che in font di fallback rendeva come stella blu
 	# triste (user feedback 2026-04-17). Mostra letteralmente il character
 	# del gioco, coerente col resto della pixel art.
-	var profile_btn := TextureButton.new()
-	profile_btn.name = "ProfileHUDButton"
-	profile_btn.focus_mode = Control.FOCUS_NONE
-	profile_btn.custom_minimum_size = Vector2(40, 40)
-	profile_btn.tooltip_text = "Profilo + Mood"
+	_profile_btn = TextureButton.new()
+	_profile_btn.name = "ProfileHUDButton"
+	_profile_btn.focus_mode = Control.FOCUS_NONE
+	_profile_btn.custom_minimum_size = Vector2(40, 40)
+	_profile_btn.tooltip_text = tr("UI_HUD_PROFILE_TOOLTIP")
 	var portrait_strip: Texture2D = load("res://assets/charachters/male/old/male_idle/male_idle_down.png") as Texture2D
 	if portrait_strip != null:
 		var portrait := AtlasTexture.new()
 		portrait.atlas = portrait_strip
 		portrait.region = Rect2(0, 0, 32, 32)  # primo frame
-		profile_btn.texture_normal = portrait
-		profile_btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		profile_btn.ignore_texture_size = true
-		profile_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	profile_btn.pressed.connect(_on_profile_hud_pressed)
-	row.add_child(profile_btn)
+		_profile_btn.texture_normal = portrait
+		_profile_btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		_profile_btn.ignore_texture_size = true
+		_profile_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_profile_btn.pressed.connect(_on_profile_hud_pressed)
+	row.add_child(_profile_btn)
 
 
 func _on_profile_hud_pressed() -> void:
@@ -171,16 +189,34 @@ func _on_load_completed() -> void:
 func _refresh_serenity(stress_value: float, level: String) -> void:
 	if _serenity_bar == null:
 		return
+	_current_level = level
 	_serenity_bar.value = clampf(1.0 - stress_value, 0.0, 1.0)
 	_serenity_fill_style.bg_color = _color_for_level(level)
 	if _mood_label != null:
-		_mood_label.text = level
+		_mood_label.text = tr(mood_key_for_level(level))
 
 
 func _refresh_coins(total: int) -> void:
 	if _coin_label == null:
 		return
 	_coin_label.text = str(total)
+
+
+## La HUD non si ricostruisce mai (vive quanto la scena di gioco), quindi le
+## stringhe risolte da tr() al momento del build resterebbero nella lingua
+## vecchia dopo un cambio dal pannello Impostazioni: qui vengono riapplicate
+## nodo per nodo, che e` piu` economico di un rebuild dell'intero overlay.
+func _on_language_changed(_lang_code: String) -> void:
+	_apply_translations()
+
+
+func _apply_translations() -> void:
+	if _serenity_header != null:
+		_serenity_header.text = tr("UI_HUD_SERENITY")
+	if _mood_label != null:
+		_mood_label.text = tr(mood_key_for_level(_current_level))
+	if _profile_btn != null:
+		_profile_btn.tooltip_text = tr("UI_HUD_PROFILE_TOOLTIP")
 
 
 func _color_for_level(level: String) -> Color:
@@ -200,3 +236,5 @@ func _exit_tree() -> void:
 		SignalBus.coins_changed.disconnect(_on_coins_changed)
 	if SignalBus.load_completed.is_connected(_on_load_completed):
 		SignalBus.load_completed.disconnect(_on_load_completed)
+	if SignalBus.language_changed.is_connected(_on_language_changed):
+		SignalBus.language_changed.disconnect(_on_language_changed)

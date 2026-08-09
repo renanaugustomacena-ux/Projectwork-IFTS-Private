@@ -110,7 +110,7 @@ func _show_popup() -> void:
 	# Rotate button
 	var rotate_btn := Button.new()
 	rotate_btn.text = "R"
-	rotate_btn.tooltip_text = "Rotate"
+	rotate_btn.tooltip_text = tr("UI_DECO_ROTATE")
 	rotate_btn.custom_minimum_size = Vector2(28, 28)
 	rotate_btn.focus_mode = Control.FOCUS_NONE
 	rotate_btn.pressed.connect(_on_rotate)
@@ -119,7 +119,7 @@ func _show_popup() -> void:
 	# Flip button (perspective)
 	var flip_btn := Button.new()
 	flip_btn.text = "F"
-	flip_btn.tooltip_text = "Flip"
+	flip_btn.tooltip_text = tr("UI_DECO_FLIP")
 	flip_btn.custom_minimum_size = Vector2(28, 28)
 	flip_btn.focus_mode = Control.FOCUS_NONE
 	flip_btn.pressed.connect(_on_flip)
@@ -128,7 +128,7 @@ func _show_popup() -> void:
 	# Scale button
 	var scale_btn := Button.new()
 	scale_btn.text = "S"
-	scale_btn.tooltip_text = "Scale"
+	scale_btn.tooltip_text = tr("UI_DECO_SCALE")
 	scale_btn.custom_minimum_size = Vector2(28, 28)
 	scale_btn.focus_mode = Control.FOCUS_NONE
 	scale_btn.pressed.connect(_on_scale)
@@ -138,7 +138,7 @@ func _show_popup() -> void:
 	if GameManager.is_decoration_mode:
 		var delete_btn := Button.new()
 		delete_btn.text = "X"
-		delete_btn.tooltip_text = "Delete"
+		delete_btn.tooltip_text = tr("UI_DECO_DELETE")
 		delete_btn.custom_minimum_size = Vector2(28, 28)
 		delete_btn.focus_mode = Control.FOCUS_NONE
 		delete_btn.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
