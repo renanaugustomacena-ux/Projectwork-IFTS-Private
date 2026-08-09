@@ -44,7 +44,7 @@ Supabase config in `user://config.cfg` per sync cloud (feature pronta, default-o
 │   ├── locale/            #   .po Italian + English
 │   ├── scenes/            #   22 scene Godot (.tscn) + 1 TRES theme
 │   ├── scripts/           #   49 script GDScript (~8.7k LOC)
-│   └── tests/             #   112 test invasivi + runner headless custom
+│   └── tests/             #   163 test invasivi + runner headless custom
 ├── AUDIT_REPORT_2026-04-23.md
 ├── CHANGELOG.md
 ├── Mini-Cozy-Room-Presentazione-Progetto.pptx
@@ -60,13 +60,13 @@ Supabase config in `user://config.cfg` per sync cloud (feature pronta, default-o
 | [v1/addons/README.md](v1/addons/README.md) | godot-sqlite 4.7, virtual_joystick 1.0.0 |
 | [v1/assets/README.md](v1/assets/README.md) | Origini asset, licenze, integrazione |
 | [v1/scenes/README.md](v1/scenes/README.md) | Scene, struttura nodi, flusso fra scene |
-| [v1/scripts/README.md](v1/scripts/README.md) | GDScript organizzato per dominio, 12 autoload |
-| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (112 test, 8 moduli) |
+| [v1/scripts/README.md](v1/scripts/README.md) | GDScript organizzato per dominio, 13 autoload |
+| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (163 test, 13 moduli) |
 | [supabase/README.md](supabase/README.md) | Cloud sync push-only, stato schema |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes Keep-a-Changelog + SemVer |
 | [AUDIT_REPORT_2026-04-23.md](AUDIT_REPORT_2026-04-23.md) | Audit integrità + stabilità (13 skill) |
 
-## Stato dei sistemi (12 autoload singleton)
+## Stato dei sistemi (13 autoload singleton)
 
 Chain di inizializzazione in ordine da `v1/project.godot`:
 
@@ -84,6 +84,7 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 | 10 | **StressManager** | `systems/stress_manager.gd` | Stress 0.0–1.0, 3 livelli con isteresi, decay 2%/min |
 | 11 | **MoodManager** | `autoload/mood_manager.gd` | Overlay gloomy, rain particles, pet WILD FSM, audio crossfade |
 | 12 | **BadgeManager** | `autoload/badge_manager.gd` | Badge catalog + SQLite table `badges_unlocked` |
+| 13 | **DevBridge** | `autoload/dev_bridge.gd` | API HTTP locale debug-only (127.0.0.1, `--bridge`, porta 8080). Audit e test |
 
 ## Funzionalità demo-ready
 
@@ -110,9 +111,19 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 ./scripts/smoke_test.sh       # Boot headless ~2 s
 ./scripts/preflight.sh        # 7 step: toolchain, integrità, JSON, asset, boot, runtime, deep tests. GO/NO-GO exit 0/1
 ./scripts/godot-validate.sh   # Full re-import + runtime ~3 min
-./scripts/deep_test.sh        # 112 test invasivi in 8 moduli ~7 s:
+./scripts/deep_test.sh        # 163 test invasivi in 13 moduli ~8 s:
                               #   helpers (16) + catalogs (21) + stress (12) + save (13)
-                              #   + spawn (11) + panels (9) + input (14) + ui_events (16)
+                              #   + spawn (11) + panels (9) + input (14) + ui_events (15)
+                              #   + crypto (5) + save_failures (5) + i18n_assets (9)
+                              #   + phase_f (12) + bridge (21)
+```
+
+Dev bridge (solo build debug, mai attivo senza flag):
+
+```bash
+godot4 --path v1/ -- --bridge          # avvia il gioco con l'API su 127.0.0.1:8080
+curl http://127.0.0.1:8080/status      # stato: versione, fps, mood, stress, coins
+curl -X POST http://127.0.0.1:8080/command -d '{"action":"set_mood","value":0.5}'
 ```
 
 CI su GitHub Actions in `barichello/godot-ci:4.6`, gated: `smoke-headless` → `deep-tests` → `build-*`.

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **DevBridge (tooling di sviluppo)**: API HTTP locale debug-only per audit e
+  test. Autoload 13, attivo solo con build debug + flag `--bridge`, bind
+  esclusivo 127.0.0.1 (default 8080). Endpoint: `/status`, `/tree`, `/events`
+  (ring 200 segnali SignalBus), `/logs/tail`, `/screenshot`, `/command` (7
+  azioni UI-equivalenti), `/quit` (percorso WM_CLOSE con salvataggio finale).
+  Regola architetturale: solo segnali di input o metodi pubblici gia' usati
+  dalla UI — mai segnali di output dei sistemi. 21 test di integrazione.
+  Spec: `v1/docs/specs/2026-08-08-dev-bridge-design.md`.
+
 ## [1.1.0] - 2026-07-20
 
 Release di consolidamento: riverifica completa delle 127 rilevazioni

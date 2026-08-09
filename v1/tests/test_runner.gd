@@ -26,6 +26,7 @@ const TEST_MODULES := [
 	"res://tests/integration/test_save_failures.gd",
 	"res://tests/integration/test_i18n_assets.gd",
 	"res://tests/integration/test_phase_f.gd",
+	"res://tests/integration/test_bridge.gd",
 ]
 
 const RESULTS_PATH := "user://test_results.jsonl"

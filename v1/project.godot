@@ -37,6 +37,7 @@ PerformanceManager="*res://scripts/systems/performance_manager.gd"
 StressManager="*res://scripts/systems/stress_manager.gd"
 MoodManager="*res://scripts/autoload/mood_manager.gd"
 BadgeManager="*res://scripts/autoload/badge_manager.gd"
+DevBridge="*res://scripts/autoload/dev_bridge.gd"
 
 [display]
 
