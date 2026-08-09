@@ -61,11 +61,21 @@ func _ready() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		# Flush here, but do NOT close the file: propagate_notification visits
+		# autoloads in project.godot registration order, so this singleton (#2)
+		# sees WM_CLOSE long before SaveManager (#6) runs its quit-save. Closing
+		# now would leave every later shutdown log writing to a dead handle
+		# (`Parameter "f" is null` from _write_line) and silently lose the final
+		# lines. Same reasoning as LocalDatabase._exit_tree.
 		_flush_metrics()
 		info("Logger", "Session ended")
 		_flush_buffer()
-		if _log_file != null:
-			_log_file.close()
+
+
+func _exit_tree() -> void:
+	# The actual close happens at teardown, once every other autoload has had
+	# its chance to log (see _notification).
+	_close_log_file()
 
 
 ## Log a DEBUG-level message. Suppressed in production builds.
@@ -123,13 +133,27 @@ func _redact_context(context: Dictionary) -> Dictionary:
 				break
 		if is_sensitive:
 			out[k] = REDACTED
-		elif value is Dictionary:
-			out[k] = _redact_context(value)
-		elif value is String:
-			out[k] = _redact_device_path(value)
 		else:
-			out[k] = value
+			out[k] = _redact_value(value)
 	return out
+
+
+## Sanitizza un singolo valore di context. I Dictionary rientrano nel filtro
+## per chiave, gli Array vengono percorsi elemento per elemento (V-022: prima
+## un Array passava verbatim, quindi ogni segreto annidato dentro un array —
+## o dentro un dict dentro un array — finiva in chiaro nel file di log), le
+## String passano dallo scrub del path di device.
+func _redact_value(value: Variant) -> Variant:
+	if value is Dictionary:
+		return _redact_context(value)
+	if value is Array:
+		var redacted := []
+		for element: Variant in value:
+			redacted.append(_redact_value(element))
+		return redacted
+	if value is String:
+		return _redact_device_path(value)
+	return value
 
 
 ## Replaces the absolute user-data directory prefix inside String payload
@@ -226,6 +250,19 @@ func _flush_buffer() -> void:
 func _write_line(line: String) -> void:
 	_log_file.store_line(line)
 	_current_file_size += line.length() + 1  # +1 for newline
+
+
+## Flushes whatever is still buffered and releases the handle. Idempotent:
+## _log_file is nulled, so a second call (WM_CLOSE followed by teardown, or a
+## manual close followed by queue_free) is a no-op instead of a dead-handle
+## write.
+func _close_log_file() -> void:
+	if _log_file == null:
+		return
+	_flush_buffer()
+	if _log_file != null:
+		_log_file.close()
+		_log_file = null
 
 
 ## Log file unavailable: keep the newest entries (and the ERROR ring intact),
