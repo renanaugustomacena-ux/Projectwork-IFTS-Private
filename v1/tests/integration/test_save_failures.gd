@@ -55,6 +55,59 @@ func test_error_signals_exist_with_expected_arity() -> void:
 				break
 
 
+## Esito del salvataggio finale quando c'e` un errore di scrittura vero: il
+## quit deve restare bloccato (retry, poi stay-alive, poi force-quit).
+func test_final_save_blocks_quit_on_a_real_write_failure() -> void:
+	var was_loaded: bool = bool(SaveManager.get("_full_state_loaded"))
+	var was_open: bool = bool(LocalDatabase.get("_is_open"))
+	_save_failed_reasons.clear()
+	SaveManager.set("_full_state_loaded", true)
+	# Iniezione in memoria (nessun artefatto su disco che possa sopravvivere al
+	# processo): con il DB marcato chiuso apply_save rifiuta il mirror e
+	# save_game() imbocca _fail_save("db_mirror").
+	LocalDatabase.set("_is_open", false)
+
+	var can_quit: bool = SaveManager._run_final_save()
+	var outcome: int = int(SaveManager.get("_last_save_outcome"))
+	var reasons := _save_failed_reasons.duplicate()
+
+	# Ripristino PRIMA delle asserzioni: un'asserzione che aborta non deve
+	# lasciare il DB marcato chiuso per il resto della suite.
+	LocalDatabase.set("_is_open", was_open)
+	SaveManager.set("_full_state_loaded", was_loaded)
+	_save_failed_reasons.clear()
+
+	assert_false(can_quit, "un fallimento di scrittura reale non deve consentire il quit")
+	assert_true(reasons.has("db_mirror"), "il fallimento deve emettere save_failed(db_mirror)")
+	assert_eq(outcome, int(SaveManager.SaveOutcome.FAILED), "un errore di scrittura resta classificato FAILED")
+
+
+## Nel main menu load_game() non gira mai, quindi il salvataggio finale viene
+## rifiutato by-design (F.7). Il percorso di quit lo leggeva come fallimento,
+## ritentava, e restava vivo: chiudere l'app richiedeva due close.
+func test_final_save_skipped_for_unloaded_state_allows_quit() -> void:
+	var was_loaded: bool = bool(SaveManager.get("_full_state_loaded"))
+	_save_failed_reasons.clear()
+	SaveManager.set("_full_state_loaded", false)
+
+	var can_quit: bool = SaveManager._run_final_save()
+	var outcome: int = int(SaveManager.get("_last_save_outcome"))
+	var stayed_dirty: bool = bool(SaveManager.get("_save_dirty"))
+	var reasons := _save_failed_reasons.duplicate()
+
+	# Ripristino prima delle asserzioni: il latch lasciato a false spegnerebbe
+	# ogni salvataggio dei test successivi.
+	SaveManager.set("_full_state_loaded", was_loaded)
+	_save_failed_reasons.clear()
+
+	assert_true(can_quit, "niente da salvare deve permettere il quit al primo close")
+	assert_eq(reasons.size(), 0, "uno skip by-design non deve emettere save_failed")
+	assert_eq(
+		outcome, int(SaveManager.SaveOutcome.NOTHING_TO_SAVE), "lo skip va classificato NOTHING_TO_SAVE, mai FAILED"
+	)
+	assert_true(stayed_dirty, "il dirty flag deve sopravvivere allo skip")
+
+
 func test_successful_save_reports_success_only() -> void:
 	_save_failed_reasons.clear()
 	SaveManager.save_game()

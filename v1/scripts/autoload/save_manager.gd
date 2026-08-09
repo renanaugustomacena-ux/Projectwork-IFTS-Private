@@ -6,6 +6,15 @@
 ## HMAC utils) in save_manager/*.gd moduli per rientrare sotto 500 righe.
 extends Node
 
+# Esito dell'ultimo save_game(). Serve al percorso di quit per distinguere un
+# rifiuto by-design da un errore di scrittura vero:
+#   COMPLETED       — stato scritto su disco (e mirror DB) senza errori
+#   NOTHING_TO_SAVE — F.7: nessuno stato reale e` mai stato caricato, non c'e`
+#                     niente da persistere (il main menu vive sempre cosi`)
+#   DEFERRED        — un altro salvataggio era in corso, follow-up accodato
+#   FAILED          — errore reale (chiave HMAC, temp file, rename, mirror DB)
+enum SaveOutcome { COMPLETED, NOTHING_TO_SAVE, DEFERRED, FAILED }
+
 const SAVE_PATH := "user://save_data.json"
 const TEMP_PATH := "user://save_data.tmp.json"
 const BACKUP_PATH := "user://save_data.backup.json"
@@ -110,6 +119,9 @@ var _language_explicit: bool = false
 # _final_save_and_quit for the retry/force-quit contract).
 var _quit_requested: bool = false
 var _quit_save_failed_once: bool = false
+# Esito dell'ultimo save_game() (vedi enum SaveOutcome). Prima di qualsiasi
+# salvataggio non c'e` nulla su disco per questa sessione: NOTHING_TO_SAVE.
+var _last_save_outcome: SaveOutcome = SaveOutcome.NOTHING_TO_SAVE
 
 
 func get_decorations() -> Array:
@@ -329,17 +341,25 @@ func _save_preconditions_ok() -> bool:
 		# explicit reset) still persists whatever changed meanwhile.
 		AppLogger.warn("SaveManager", "save_skipped_state_not_loaded")
 		_save_dirty = true
+		# Skip by-design, non un fallimento: il percorso di quit esce subito.
+		_last_save_outcome = SaveOutcome.NOTHING_TO_SAVE
 		return false
 	if _is_saving:
 		# 4.1.2-L533-reentry: don't drop the request — queue a follow-up save
 		# so the state that triggered this call is persisted right after.
 		AppLogger.warn("SaveManager", "Salvataggio gia' in corso, follow-up accodato")
 		_flush_queued = true
+		# Lo stato NON e` ancora su disco: il quit non deve considerarlo fatto.
+		_last_save_outcome = SaveOutcome.DEFERRED
 		return false
 	return true
 
 
 func save_game() -> void:
+	# Fail-closed: ogni percorso terminale qui sotto riassegna _last_save_outcome,
+	# ma se un percorso nuovo dimenticasse di farlo il quit deve restare bloccato
+	# invece di uscire credendo di aver salvato.
+	_last_save_outcome = SaveOutcome.FAILED
 	if not _save_preconditions_ok():
 		return
 
@@ -378,6 +398,7 @@ func save_game() -> void:
 		return
 
 	_is_saving = false
+	_last_save_outcome = SaveOutcome.COMPLETED
 	SignalBus.save_completed.emit()
 	if _flush_queued:
 		# 4.8.2/4.1.2-L533-reentry: exactly one synchronous follow-up save.
@@ -398,6 +419,7 @@ func _fail_save(reason: String) -> void:
 	_is_saving = false
 	_save_dirty = true
 	_flush_queued = false
+	_last_save_outcome = SaveOutcome.FAILED
 	SignalBus.save_failed.emit(reason)
 
 
@@ -1188,12 +1210,15 @@ func _final_save_and_quit() -> void:
 	AppLogger.error("SaveManager", "Final save failed twice, staying alive; close again to force quit")
 
 
+## True quando il quit puo` procedere. save_game() e` interamente sincrono, e
+## ogni suo percorso terminale (follow-up flush accodato incluso) aggiorna
+## _last_save_outcome prima di tornare, quindi al ritorno l'esito e` gia` noto.
+##
+## NOTHING_TO_SAVE vale quanto COMPLETED: nel main menu load_game() non gira
+## mai, quindi il salvataggio finale viene rifiutato by-design e non c'e`
+## nulla da persistere — trattarlo come fallimento costringeva l'utente a
+## chiudere due volte. Solo FAILED (errore di scrittura reale) e DEFERRED
+## (stato non ancora su disco) trattengono il processo in vita.
 func _run_final_save() -> bool:
-	# save_game() is fully synchronous, so save_completed/save_failed fire
-	# before it returns; capture the outcome with a temporary listener.
-	var outcome := {"ok": false}
-	var on_completed := func() -> void: outcome["ok"] = true
-	SignalBus.save_completed.connect(on_completed)
 	save_game()
-	SignalBus.save_completed.disconnect(on_completed)
-	return outcome["ok"]
+	return _last_save_outcome == SaveOutcome.COMPLETED or _last_save_outcome == SaveOutcome.NOTHING_TO_SAVE
