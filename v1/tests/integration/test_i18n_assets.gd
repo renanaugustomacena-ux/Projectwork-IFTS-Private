@@ -27,6 +27,56 @@ const SAMPLE_KEYS := [
 	"TUTORIAL_SKIP",
 	"TOAST_SAVE_FAILED",
 	"TOAST_IMG_TOO_LARGE",
+	"CONFIRM_DELETE_ACCOUNT_TITLE",
+	"UI_AUTH_ERR_INVALID_CREDENTIALS",
+	"MOOD_CALM",
+	"TOAST_SAVED",
+	"UI_DECO_ROTATE",
+]
+
+## Chiavi nate chiudendo i buchi di localizzazione dell'audit: G-036 (conferme
+## di cancellazione irreversibile), G-011 (errori di autenticazione), G-050 (id
+## umore in HUD), G-035 (toast), G-034 (tooltip). Qui vanno verificate una per
+## una e non a campione: la parita` fra i due .po dice solo che la chiave
+## esiste in entrambi, non che qualcuno l'ha davvero tradotta.
+const AUDIT_I18N_KEYS := [
+	"CONFIRM_DELETE_CHARACTER_TITLE",
+	"CONFIRM_DELETE_CHARACTER_BODY",
+	"CONFIRM_DELETE_ACCOUNT_TITLE",
+	"CONFIRM_DELETE_ACCOUNT_BODY",
+	"CONFIRM_DELETE_OK",
+	"CONFIRM_CANCEL",
+	"UI_AUTH_ERR_EMPTY_LOGIN",
+	"UI_AUTH_ERR_EMPTY_FIELDS",
+	"UI_AUTH_ERR_PASSWORD_MISMATCH",
+	"UI_AUTH_ERR_FORM_NOT_READY",
+	"UI_AUTH_ERR_INVALID_CREDENTIALS",
+	"UI_AUTH_ERR_USERNAME_TAKEN",
+	"UI_AUTH_ERR_ACCOUNT_CREATE_FAILED",
+	"UI_AUTH_ERR_PASSWORD_TOO_SHORT",
+	"UI_AUTH_ERR_USERNAME_TOO_SHORT",
+	"UI_AUTH_ERR_USERNAME_TOO_LONG",
+	"UI_AUTH_ERR_USERNAME_CHARSET",
+	"UI_AUTH_ERR_TOO_MANY_ATTEMPTS",
+	"MOOD_CALM",
+	"MOOD_NEUTRAL",
+	"MOOD_TENSE",
+	"TOAST_SAVED",
+	"TOAST_DECO_PLACED",
+	"TOAST_DECO_REMOVED",
+	"UI_DECO_ROTATE",
+	"UI_DECO_FLIP",
+	"UI_DECO_SCALE",
+	"UI_DECO_DELETE",
+	"UI_HUD_PROFILE_TOOLTIP",
+]
+
+## Sorgenti che citano le chiavi di errore auth: se il codice ne inventa una
+## non dichiarata, il giocatore vede la chiave grezza proprio mentre sta
+## sbagliando la password.
+const AUTH_KEY_SOURCES := [
+	"res://scripts/autoload/auth_manager.gd",
+	"res://scripts/menu/auth_screen.gd",
 ]
 
 
@@ -126,6 +176,181 @@ func test_virtual_joystick_textures_exist() -> void:
 	assert_true(ResourceLoader.exists("res://assets/menu/ui/sprite_pad_base.png"), "joystick base texture missing")
 	assert_true(ResourceLoader.exists("res://assets/menu/ui/sprite_pad_lever.png"), "joystick lever texture missing")
 	assert_true(ResourceLoader.exists("res://scenes/ui/virtual_joystick.tscn"), "joystick scene missing")
+
+
+func test_audit_keys_resolve_in_both_locales() -> void:
+	var previous := TranslationServer.get_locale()
+	for locale: String in ["it", "en"]:
+		TranslationServer.set_locale(locale)
+		for key: String in AUDIT_I18N_KEYS:
+			var translated := String(TranslationServer.translate(key))
+			assert_ne(translated, key, "key '%s' has no %s translation" % [key, locale])
+			assert_false(translated.strip_edges().is_empty(), "key '%s' is empty in %s" % [key, locale])
+	TranslationServer.set_locale(previous)
+
+
+func test_audit_keys_differ_between_italian_and_english() -> void:
+	# Una chiave identica nei due locale e` quasi sempre un copia-incolla:
+	# nessuna di queste stringhe e` un nome proprio o un simbolo.
+	var previous := TranslationServer.get_locale()
+	for key: String in AUDIT_I18N_KEYS:
+		TranslationServer.set_locale("it")
+		var it_text := String(TranslationServer.translate(key))
+		TranslationServer.set_locale("en")
+		var en_text := String(TranslationServer.translate(key))
+		assert_ne(it_text, en_text, "key '%s' is identical in it and en" % key)
+	TranslationServer.set_locale(previous)
+
+
+func test_destructive_confirmations_are_readable_before_consent() -> void:
+	# G-036: titolo, corpo e bottoni del dialogo che cancella personaggio e
+	# account. Se uno di questi resta non tradotto, qualcuno acconsente a una
+	# cancellazione definitiva leggendo una lingua che non conosce.
+	var confirm_keys := [
+		"CONFIRM_DELETE_CHARACTER_TITLE",
+		"CONFIRM_DELETE_CHARACTER_BODY",
+		"CONFIRM_DELETE_ACCOUNT_TITLE",
+		"CONFIRM_DELETE_ACCOUNT_BODY",
+		"CONFIRM_DELETE_OK",
+		"CONFIRM_CANCEL",
+	]
+	var previous := TranslationServer.get_locale()
+	for locale: String in ["it", "en"]:
+		TranslationServer.set_locale(locale)
+		for key: String in confirm_keys:
+			var text := String(TranslationServer.translate(key))
+			assert_ne(text, key, "confirmation key '%s' untranslated in %s" % [key, locale])
+			assert_false(text.strip_edges().is_empty(), "confirmation key '%s' empty in %s" % [key, locale])
+	TranslationServer.set_locale(previous)
+
+
+func test_delete_dialog_shows_translated_text_not_keys() -> void:
+	# Il contratto vero di G-036 e` cosa finisce a schermo: un refuso nella
+	# chiave, o una proprieta` del bottone che non esiste, si vedrebbe solo
+	# aprendo il popup — cioe` mai, in una suite che confronta solo stringhe.
+	var scene: PackedScene = load("res://scenes/ui/profile_panel.tscn") as PackedScene
+	assert_non_null(scene, "profile_panel.tscn mancante")
+	var panel: Control = scene.instantiate() as Control
+	add_child(panel)
+	await wait_frames(1)
+	var previous := TranslationServer.get_locale()
+	for locale: String in ["it", "en"]:
+		TranslationServer.set_locale(locale)
+		(
+			panel
+			. call(
+				"_confirm_action",
+				"CONFIRM_DELETE_ACCOUNT_TITLE",
+				"CONFIRM_DELETE_ACCOUNT_BODY",
+				Callable(panel, "_on_delete_account_confirmed"),
+			)
+		)
+		var dialog := panel.get("_confirm_dialog") as ConfirmationDialog
+		assert_non_null(dialog, "il pannello deve esporre il ConfirmationDialog")
+		if dialog == null:
+			continue
+		assert_eq(
+			dialog.title,
+			String(TranslationServer.translate("CONFIRM_DELETE_ACCOUNT_TITLE")),
+			"titolo non tradotto in %s" % locale,
+		)
+		assert_eq(
+			dialog.dialog_text,
+			String(TranslationServer.translate("CONFIRM_DELETE_ACCOUNT_BODY")),
+			"corpo non tradotto in %s" % locale,
+		)
+		assert_eq(
+			dialog.get_ok_button().text,
+			String(TranslationServer.translate("CONFIRM_DELETE_OK")),
+			"bottone di conferma non tradotto in %s" % locale,
+		)
+		assert_eq(
+			dialog.get_cancel_button().text,
+			String(TranslationServer.translate("CONFIRM_CANCEL")),
+			"bottone di annullamento non tradotto in %s" % locale,
+		)
+		dialog.hide()
+	TranslationServer.set_locale(previous)
+	panel.queue_free()
+	await wait_frames(1)
+
+
+func test_mood_ids_never_reach_the_hud_raw() -> void:
+	# G-050: la HUD scriveva l'id interno (`calm`/`neutral`/`tense`) come se
+	# fosse testo per l'utente, uguale in entrambe le lingue.
+	var levels := [
+		StressManager.LEVEL_CALM,
+		StressManager.LEVEL_NEUTRAL,
+		StressManager.LEVEL_TENSE,
+	]
+	var previous := TranslationServer.get_locale()
+	for locale: String in ["it", "en"]:
+		TranslationServer.set_locale(locale)
+		for level: String in levels:
+			var key := GameHud.mood_key_for_level(level)
+			assert_ne(key, level, "level '%s' must map to a translation key" % level)
+			var label := String(TranslationServer.translate(key))
+			assert_ne(label, level, "level '%s' still shows its raw id in %s" % [level, locale])
+			assert_ne(label, key, "key '%s' has no %s translation" % [key, locale])
+			assert_false(label.strip_edges().is_empty(), "mood label for '%s' empty in %s" % [level, locale])
+	TranslationServer.set_locale(previous)
+	# Un livello sconosciuto ricade su una chiave, mai sull'id grezzo.
+	assert_eq(GameHud.mood_key_for_level("stormy"), "MOOD_CALM", "unknown level must fall back to a key")
+	assert_eq(GameHud.mood_key_for_level(""), "MOOD_CALM", "empty level must fall back to a key")
+
+
+func test_auth_manager_returns_keys_not_prose() -> void:
+	# G-011: l'autoload non conosce la lingua della UI, quindi torna la chiave
+	# (piu` gli argomenti di formato) e traduce chi disegna. Se qualcuno
+	# rimettesse la prosa inglese qui dentro, il test la becca.
+	var it_keys := _read_po_keys(LOCALE_PATHS["it"])
+	# Entrambe le validazioni escono prima di toccare il database.
+	var results := [
+		AuthManager.register("ab", "abbastanza-lunga"),
+		AuthManager.register("nome_valido", "x"),
+	]
+	var previous := TranslationServer.get_locale()
+	TranslationServer.set_locale("it")
+	for result: Dictionary in results:
+		assert_has(result, "error", "la validazione doveva fallire")
+		var key := str(result.get("error", ""))
+		assert_true(it_keys.has(key), "AuthManager ha tornato prosa invece di una chiave: '%s'" % key)
+		var text := String(TranslationServer.translate(key))
+		assert_ne(text, key, "chiave '%s' senza traduzione italiana" % key)
+		var args: Array = result.get("error_args", [])
+		assert_false(args.is_empty(), "il messaggio '%s' deve portare i suoi argomenti" % key)
+		assert_true(text.contains("%d"), "la traduzione di '%s' deve avere un segnaposto" % key)
+		assert_ne(text % args, text, "gli argomenti di '%s' non vengono sostituiti" % key)
+	TranslationServer.set_locale(previous)
+
+
+func test_auth_error_keys_used_in_code_are_declared() -> void:
+	var it_keys := _read_po_keys(LOCALE_PATHS["it"])
+	var en_keys := _read_po_keys(LOCALE_PATHS["en"])
+	var seen := 0
+	for path: String in AUTH_KEY_SOURCES:
+		for key: String in _scan_source_keys(path, "UI_AUTH_ERR_[A-Z0-9_]+"):
+			seen += 1
+			assert_true(it_keys.has(key), "chiave '%s' usata nel codice ma assente da it.po" % key)
+			assert_true(en_keys.has(key), "chiave '%s' usata nel codice ma assente da en.po" % key)
+	assert_true(seen >= 10, "il codice auth deve citare le chiavi di errore, trovate %d" % seen)
+
+
+func _scan_source_keys(path: String, pattern: String) -> Array[String]:
+	var found: Array[String] = []
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return found
+	var text := file.get_as_text()
+	file.close()
+	var regex := RegEx.create_from_string(pattern)
+	if regex == null:
+		return found
+	for match_result: RegExMatch in regex.search_all(text):
+		var key := match_result.get_string()
+		if not found.has(key):
+			found.append(key)
+	return found
 
 
 func _read_po_keys(path: String) -> Dictionary:
