@@ -125,11 +125,7 @@ func _on_load_completed() -> void:
 	_apply_music_volume()
 
 	if _ambience != null:
-		if saved_ambience.is_empty():
-			_ambience.refresh_for_mood(current_mood)
-		else:
-			for amb_id in saved_ambience:
-				_ambience.start(String(amb_id))
+		_ambience.restore_saved(saved_ambience, current_mood)
 
 
 func play() -> void:

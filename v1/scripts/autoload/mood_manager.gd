@@ -2,10 +2,14 @@
 ## risposta a mood_level_changed dal ProfileHUDPanel slider.
 ##
 ## Stati effetti in base al mood value (0.0 gloomy/stormy -> 1.0 cozy):
-## - mood >= 0.50: ambient cozy normale, nessun overlay
-## - 0.15 <= mood < 0.50: overlay blu con alpha progressivo (gloomy soft)
-## - mood < 0.15 (MOOD_GLOOMY_THRESHOLD): overlay piu` denso, spawn rain
+## - mood >= 0.50: ambient cozy normale, nessun overlay, nessuna pioggia
+## - mood < 0.50 (MOOD_GLOOMY_THRESHOLD): overlay blu con alpha progressivo E
+##   pioggia, con intensita` che cresce mentre la stanza si scurisce
 ## - mood < 0.10 (MOOD_STORMY_THRESHOLD): + pet WILD mode request
+##
+## Soglia pioggia e inizio della rampa di scurimento sono lo STESSO numero di
+## proposito (PLR-1): erano 0.15 contro 0.5, e in mezzo il giocatore vedeva la
+## stanza incupirsi senza una goccia — "abbasso e non vedo la pioggia".
 ##
 ## NO confondere con StressManager: StressManager = gameplay interno (stress
 ## calcolato da mess + decorations). MoodManager = utente sceglie atmosfera
@@ -13,6 +17,11 @@
 extends Node
 
 const RainScene := preload("res://scenes/effects/rain.tscn")
+
+## Frazione di particelle emesse ai due estremi della banda gloomy: appena
+## sotto la soglia e` una pioggerella, a mood 0 e` il diluvio pieno della scena.
+const RAIN_RATIO_MIN := 0.25
+const RAIN_RATIO_MAX := 1.0
 
 var _overlay: ColorRect = null
 var _overlay_layer: CanvasLayer = null
@@ -57,6 +66,8 @@ func _apply_effects(mood: float) -> void:
 		_spawn_rain()
 	elif not want_rain and _rain_instance != null:
 		_despawn_rain()
+	if want_rain:
+		_apply_rain_intensity(mood)
 
 	# Pet WILD mode: request attiva se sotto MOOD_STORMY_THRESHOLD
 	var want_wild: bool = mood < Constants.MOOD_STORMY_THRESHOLD
@@ -67,6 +78,44 @@ func _apply_effects(mood: float) -> void:
 	# Audio crossfade: quando mood sotto soglia, segnala ad AudioManager
 	if AudioManager.has_method("apply_mood_scalar"):
 		AudioManager.apply_mood_scalar(mood)
+
+
+## True quando la pioggia e` in scena. Pubblica perche` e` l'unico modo onesto
+## di verificare l'effetto dall'esterno (test di regressione PLR-1) senza
+## frugare nei campi privati.
+func is_rain_active() -> bool:
+	return _rain_instance != null and is_instance_valid(_rain_instance)
+
+
+## 0.0 = nessuna pioggia, 1.0 = intensita` massima. Fuori dalla banda gloomy
+## vale 0.0 anche prima che il despawn sia stato applicato.
+func get_rain_intensity() -> float:
+	if not is_rain_active():
+		return 0.0
+	return _gloom_ratio(_current_mood)
+
+
+## Quanto siamo dentro la banda gloomy: 0.0 sulla soglia, 1.0 a mood 0.
+func _gloom_ratio(mood: float) -> float:
+	var threshold: float = Constants.MOOD_GLOOMY_THRESHOLD
+	if threshold <= 0.0:
+		return 0.0
+	return clampf((threshold - mood) / threshold, 0.0, 1.0)
+
+
+## Scala la pioggia con il buio: la banda gloomy e` larga mezzo slider, e un
+## rate fisso darebbe il temporale pieno gia` al primo scatto sotto il sole.
+##
+## Si muove `amount_ratio`, non `amount`: riassegnare `amount` ricrea il buffer
+## delle particelle e riavvia l'emissione, quindi trascinare lo slider avrebbe
+## fatto lampeggiare la pioggia a ogni frame.
+func _apply_rain_intensity(mood: float) -> void:
+	if not is_rain_active():
+		return
+	var particles := _rain_instance.get_node_or_null("Particles") as GPUParticles2D
+	if particles == null:
+		return
+	particles.amount_ratio = lerpf(RAIN_RATIO_MIN, RAIN_RATIO_MAX, _gloom_ratio(mood))
 
 
 func _ensure_overlay() -> void:
@@ -96,6 +145,7 @@ func _spawn_rain() -> void:
 	if _rain_instance == null:
 		return
 	scene_tree.current_scene.add_child(_rain_instance)
+	_apply_rain_intensity(_current_mood)
 
 
 func _despawn_rain() -> void:

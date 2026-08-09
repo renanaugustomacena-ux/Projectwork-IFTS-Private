@@ -83,7 +83,20 @@ language switch logged cleanly in the player session.
 4. **Hygiene**: commit the 5 missing `.uid` files (closes G-004's tree check).
 5. Later pass: re-verify the ~132 MEDIUM/LOW register items.
 
-## 7. Raw verdict data
+## 7. Asset gaps
+
+Content holes that no amount of code can close — they need a file that does not
+exist in the repo. Listed here so a fix attempt does not get re-litigated as a
+bug.
+
+| ID | Area | Gap | Consequence today |
+|---|---|---|---|
+| AG-1 | Music | **No calm, non-rain music track exists.** `v1/assets/audio/music/` holds exactly two files and BOTH are rain recordings: `mixkit-light-rain-loop-1253.wav` (catalogued as `rain_loop`, "Light Rain", covering `calm`+`neutral`) and `mixkit-light-rain-with-thunderstorm-1290.wav` (`rain_thunder`, `tense`+`stormy`) | The PLR-1 fix removed rain from the calm **ambience** bed (now fireplace) and aligned rain **visuals** with the darkening ramp, but the calm band's **music** is still a rain recording. Un-tagging `rain_loop` from `calm`/`neutral` would leave the sunny half of the mood slider with no music at all (`_pick_mood_track_index` returns -1 → no crossfade), which is worse. Needs a real acquisition: one loopable, royalty-clear, non-rain ambient/lo-fi track (~1–3 min) re-tagged as `calm`+`neutral`, demoting `rain_loop` to `tense` |
+
+Not fabricated, synthesised or downloaded as part of the fix: acquiring audio is
+a licensing decision, not a code change.
+
+## 8. Raw verdict data
 
 Agent outputs (verbatim verdict lines) retained in session transcript
 2026-08-09; per-finding one-liners available on request. Verifiers: 5×

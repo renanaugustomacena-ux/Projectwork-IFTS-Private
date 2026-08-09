@@ -69,7 +69,10 @@ const VIEWPORT_HEIGHT := 720
 const DEBUG_RNG_SEED := 0xC02E
 
 # Mood thresholds (T-R-015i)
-const MOOD_GLOOMY_THRESHOLD := 0.15
+# GLOOMY coincide con l'inizio della rampa di scurimento in MoodManager
+# (`(0.5 - mood) / 0.5`): a 0.15 la stanza si incupiva per meta` slider senza
+# una goccia di pioggia, e il giocatore vedeva buio senza causa (PLR-1).
+const MOOD_GLOOMY_THRESHOLD := 0.50
 const MOOD_STORMY_THRESHOLD := 0.10
 
 # Application version — synced da scripts/bump_version.sh

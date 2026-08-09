@@ -30,8 +30,6 @@
 			"artist": "Team IFTS (synth)",
 			"path": "res://assets/audio/ambience/ambience_rain_soft.wav",
 			"moods": [
-				"calm",
-				"neutral",
 				"tense",
 				"stormy"
 			]

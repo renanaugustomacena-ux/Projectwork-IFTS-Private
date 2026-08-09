@@ -64,6 +64,34 @@ func refresh_for_mood(mood: String) -> void:
 		start(wanted)
 
 
+## Ripristina le ambience salvate scartando quelle che il catalogo non ritiene
+## piu` adatte al mood corrente. Senza questo filtro un ritag resta senza
+## effetto per chi ha gia` un salvataggio: la pioggia non copre piu` il mood
+## calm (PLR-1), ma essendo scritta in music_state.active_ambience tornerebbe
+## a suonare in una stanza soleggiata per sempre. Se non sopravvive nessuna
+## voce si ricade sulla normale selezione per mood.
+func restore_saved(saved_ids: Array, mood: String) -> void:
+	var restorable: Array[String] = []
+	for amb_id in saved_ids:
+		if covers_mood(String(amb_id), mood):
+			restorable.append(String(amb_id))
+	if restorable.is_empty():
+		refresh_for_mood(mood)
+		return
+	for amb_id in restorable:
+		start(amb_id)
+
+
+## True se il catalogo dichiara l'ambience adatta al mood (moods vuoto = sempre).
+func covers_mood(ambience_id: String, mood: String) -> bool:
+	for amb in GameManager.tracks_catalog.get("ambience", []):
+		if not (amb is Dictionary) or String(amb.get("id", "")) != ambience_id:
+			continue
+		var moods: Array = amb.get("moods", [])
+		return moods.is_empty() or mood in moods
+	return false
+
+
 func pick_for_mood(mood: String) -> String:
 	for amb in GameManager.tracks_catalog.get("ambience", []):
 		if not (amb is Dictionary):
