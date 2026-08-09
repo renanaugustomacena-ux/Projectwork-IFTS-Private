@@ -1,6 +1,8 @@
 # Relax Room — Scene Godot
 
-**22 scene** `.tscn` + **1 theme resource** `.tres` (`assets/ui/cozy_theme.tres`).
+**17 scene** `.tscn` + **1 theme resource** `.tres` (`assets/ui/cozy_theme.tres`).
+Conteggio verificato: `find v1/scenes -name "*.tscn" | wc -l` (il
+`tests/test_runner.tscn` vive fuori da questa cartella e non e` contato).
 Le scene definiscono le gerarchie di nodi, composizione componenti e layout UI.
 Vivono accanto ai loro script in `v1/scripts/*/`.
 
@@ -25,13 +27,20 @@ scenes/
 │       ├── window1.tscn          # 32×64 finestra piccola
 │       ├── window2.tscn          # 48×64 finestra media
 │       └── window3.tscn          # 64×64 finestra grande
-├── male-old-character.tscn       # Personaggio attivo (directional 8 dir)
+├── effects/
+│   └── rain.tscn                 # Particelle pioggia (istanziate da MoodManager)
+├── male-old-character.tscn       # Personaggio male_old (directional 8 dir)
+├── male-rose-character.tscn      # Personaggio male_rose (directional 8 dir)
 ├── cat_void.tscn                 # Pet variant 'simple' (16×16)
 └── cat_void_iso.tscn             # Pet variant 'iso' (32×32)
 ```
 
 **Note**:
-- `female-character.tscn` rimossa 2026-04-17 (asset female moved outside repo).
+- `female-character.tscn` rimossa 2026-04-17: gli asset del set femminile non
+  sono nel repository, e la lacuna resta aperta (G-042).
+- Le scene `room/windows/window*.tscn` **non** sono istanziate da
+  `main.tscn`: le finestre entrano in stanza come decorazioni dal catalogo
+  (`room_window_1..3` in `data/decorations.json`).
 - `loading_screen.tscn` referenziata da `main_menu.gd` ma **non esiste** —
   fallback a Label procedurale (vedi `main_menu._setup_graphical_loading_screen`).
 
