@@ -73,8 +73,8 @@ func _build_ui() -> void:
 			(
 				_confirm_action
 				. bind(
-					"Eliminare il personaggio?",
-					"Il personaggio e la stanza verranno rimossi. Account e monete restano.",
+					"CONFIRM_DELETE_CHARACTER_TITLE",
+					"CONFIRM_DELETE_CHARACTER_BODY",
 					_on_delete_character_confirmed,
 				)
 			)
@@ -94,8 +94,8 @@ func _build_ui() -> void:
 			(
 				_confirm_action
 				. bind(
-					"Eliminare l'account?",
-					"Tutti i dati verranno eliminati permanentemente.",
+					"CONFIRM_DELETE_ACCOUNT_TITLE",
+					"CONFIRM_DELETE_ACCOUNT_BODY",
 					_on_delete_account_confirmed,
 				)
 			)
@@ -159,9 +159,16 @@ func _update_info() -> void:
 	_delete_char_btn.disabled = not AuthManager.has_character
 
 
-func _confirm_action(title: String, message: String, callback: Callable) -> void:
-	_confirm_dialog.title = title
-	_confirm_dialog.dialog_text = message
+## I dialoghi di conferma ricevono CHIAVI di traduzione, non testo gia` risolto:
+## la traduzione avviene qui, all'apertura del popup. Un consenso a una
+## cancellazione irreversibile deve essere leggibile nella lingua corrente del
+## giocatore, e legandolo all'apertura il cambio lingua a pannello gia`
+## costruito non lascia indietro un dialogo in un'altra lingua (audit G-036).
+func _confirm_action(title_key: String, body_key: String, callback: Callable) -> void:
+	_confirm_dialog.title = tr(title_key)
+	_confirm_dialog.dialog_text = tr(body_key)
+	_confirm_dialog.ok_button_text = tr("CONFIRM_DELETE_OK")
+	_confirm_dialog.cancel_button_text = tr("CONFIRM_CANCEL")
 	# Disconnect previous confirmations
 	if _confirm_dialog.confirmed.is_connected(_on_delete_character_confirmed):
 		_confirm_dialog.confirmed.disconnect(_on_delete_character_confirmed)
