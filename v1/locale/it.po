@@ -248,3 +248,96 @@ msgstr "Premi [b]Esc[/b] per chiudere un pannello.\nProvalo ora!"
 
 msgid "TUTORIAL_STEP_8"
 msgstr "La tua stanza si salva [b]automaticamente[/b]! ✓\n\n[b]Missione completata![/b] 🎉\nBuon relax nella tua Relax Room!"
+
+# Conferme distruttive — cancellazioni irreversibili, devono essere leggibili
+# nella lingua del giocatore prima che dia il consenso (audit G-036).
+msgid "CONFIRM_DELETE_CHARACTER_TITLE"
+msgstr "Eliminare il personaggio?"
+
+msgid "CONFIRM_DELETE_CHARACTER_BODY"
+msgstr "Il personaggio e la stanza verranno rimossi. Account e monete restano."
+
+msgid "CONFIRM_DELETE_ACCOUNT_TITLE"
+msgstr "Eliminare l'account?"
+
+msgid "CONFIRM_DELETE_ACCOUNT_BODY"
+msgstr "Tutti i dati verranno eliminati permanentemente."
+
+msgid "CONFIRM_DELETE_OK"
+msgstr "Elimina"
+
+msgid "CONFIRM_CANCEL"
+msgstr "Annulla"
+
+# Errori della schermata di accesso (validazione locale + esiti AuthManager)
+msgid "UI_AUTH_ERR_EMPTY_LOGIN"
+msgstr "Inserisci nome utente e password"
+
+msgid "UI_AUTH_ERR_EMPTY_FIELDS"
+msgstr "Compila tutti i campi"
+
+msgid "UI_AUTH_ERR_PASSWORD_MISMATCH"
+msgstr "Le password non coincidono"
+
+msgid "UI_AUTH_ERR_FORM_NOT_READY"
+msgstr "Errore interno: modulo non pronto"
+
+msgid "UI_AUTH_ERR_INVALID_CREDENTIALS"
+msgstr "Nome utente o password non validi"
+
+msgid "UI_AUTH_ERR_USERNAME_TAKEN"
+msgstr "Nome utente già in uso"
+
+msgid "UI_AUTH_ERR_ACCOUNT_CREATE_FAILED"
+msgstr "Creazione dell'account non riuscita"
+
+msgid "UI_AUTH_ERR_PASSWORD_TOO_SHORT"
+msgstr "La password deve avere almeno %d caratteri"
+
+msgid "UI_AUTH_ERR_USERNAME_TOO_SHORT"
+msgstr "Il nome utente deve avere almeno %d caratteri"
+
+msgid "UI_AUTH_ERR_USERNAME_TOO_LONG"
+msgstr "Nome utente troppo lungo (massimo %d)"
+
+msgid "UI_AUTH_ERR_USERNAME_CHARSET"
+msgstr "Il nome utente contiene caratteri non validi (ammessi: lettere, cifre, _ . -)"
+
+msgid "UI_AUTH_ERR_TOO_MANY_ATTEMPTS"
+msgstr "Troppi tentativi. Attendi %d s"
+
+# Etichette umore della HUD (id interni calm/neutral/tense)
+msgid "MOOD_CALM"
+msgstr "Calmo"
+
+msgid "MOOD_NEUTRAL"
+msgstr "Neutro"
+
+msgid "MOOD_TENSE"
+msgstr "Teso"
+
+# Toast di gioco
+msgid "TOAST_SAVED"
+msgstr "Partita salvata ✓"
+
+msgid "TOAST_DECO_PLACED"
+msgstr "Posizionato: %s"
+
+msgid "TOAST_DECO_REMOVED"
+msgstr "Rimosso: %s"
+
+# Maniglie di modifica delle decorazioni + tooltip HUD
+msgid "UI_DECO_ROTATE"
+msgstr "Ruota"
+
+msgid "UI_DECO_FLIP"
+msgstr "Specchia"
+
+msgid "UI_DECO_SCALE"
+msgstr "Ridimensiona"
+
+msgid "UI_DECO_DELETE"
+msgstr "Elimina"
+
+msgid "UI_HUD_PROFILE_TOOLTIP"
+msgstr "Profilo + Umore"

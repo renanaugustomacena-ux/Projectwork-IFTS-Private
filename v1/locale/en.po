@@ -248,3 +248,96 @@ msgstr "Press [b]Esc[/b] to close a panel.\nGive it a try!"
 
 msgid "TUTORIAL_STEP_8"
 msgstr "Your room saves [b]automatically[/b]! ✓\n\n[b]Mission complete![/b] 🎉\nEnjoy your Relax Room!"
+
+# Destructive confirmations — irreversible deletions, they must be readable in
+# the player's own language before consent is given (audit G-036).
+msgid "CONFIRM_DELETE_CHARACTER_TITLE"
+msgstr "Delete character?"
+
+msgid "CONFIRM_DELETE_CHARACTER_BODY"
+msgstr "Your character and room will be removed. Your account and coins are kept."
+
+msgid "CONFIRM_DELETE_ACCOUNT_TITLE"
+msgstr "Delete account?"
+
+msgid "CONFIRM_DELETE_ACCOUNT_BODY"
+msgstr "All of your data will be permanently deleted."
+
+msgid "CONFIRM_DELETE_OK"
+msgstr "Delete"
+
+msgid "CONFIRM_CANCEL"
+msgstr "Cancel"
+
+# Auth screen errors (local validation + AuthManager outcomes)
+msgid "UI_AUTH_ERR_EMPTY_LOGIN"
+msgstr "Please enter username and password"
+
+msgid "UI_AUTH_ERR_EMPTY_FIELDS"
+msgstr "Please fill in all fields"
+
+msgid "UI_AUTH_ERR_PASSWORD_MISMATCH"
+msgstr "Passwords don't match"
+
+msgid "UI_AUTH_ERR_FORM_NOT_READY"
+msgstr "Internal error: form not ready"
+
+msgid "UI_AUTH_ERR_INVALID_CREDENTIALS"
+msgstr "Invalid username or password"
+
+msgid "UI_AUTH_ERR_USERNAME_TAKEN"
+msgstr "Username already taken"
+
+msgid "UI_AUTH_ERR_ACCOUNT_CREATE_FAILED"
+msgstr "Could not create the account"
+
+msgid "UI_AUTH_ERR_PASSWORD_TOO_SHORT"
+msgstr "Password must be at least %d characters"
+
+msgid "UI_AUTH_ERR_USERNAME_TOO_SHORT"
+msgstr "Username must be at least %d characters"
+
+msgid "UI_AUTH_ERR_USERNAME_TOO_LONG"
+msgstr "Username too long (max %d)"
+
+msgid "UI_AUTH_ERR_USERNAME_CHARSET"
+msgstr "Username contains invalid characters (allowed: letters, digits, _ . -)"
+
+msgid "UI_AUTH_ERR_TOO_MANY_ATTEMPTS"
+msgstr "Too many attempts. Wait %d s"
+
+# HUD mood labels (internal ids calm/neutral/tense)
+msgid "MOOD_CALM"
+msgstr "Calm"
+
+msgid "MOOD_NEUTRAL"
+msgstr "Neutral"
+
+msgid "MOOD_TENSE"
+msgstr "Tense"
+
+# Gameplay toasts
+msgid "TOAST_SAVED"
+msgstr "Game saved ✓"
+
+msgid "TOAST_DECO_PLACED"
+msgstr "Placed: %s"
+
+msgid "TOAST_DECO_REMOVED"
+msgstr "Removed: %s"
+
+# Decoration edit handles + HUD tooltip
+msgid "UI_DECO_ROTATE"
+msgstr "Rotate"
+
+msgid "UI_DECO_FLIP"
+msgstr "Flip"
+
+msgid "UI_DECO_SCALE"
+msgstr "Scale"
+
+msgid "UI_DECO_DELETE"
+msgstr "Delete"
+
+msgid "UI_HUD_PROFILE_TOOLTIP"
+msgstr "Profile + Mood"
