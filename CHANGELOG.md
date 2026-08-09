@@ -17,6 +17,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Regola architetturale: solo segnali di input o metodi pubblici gia' usati
   dalla UI — mai segnali di output dei sistemi. 21 test di integrazione.
   Spec: `v1/docs/specs/2026-08-08-dev-bridge-design.md`.
+- **32 chiavi di traduzione nuove** (IT ed EN, 109 per lingua in totale).
+  Parlano finalmente la lingua dell'interfaccia: i dialoghi di conferma che
+  cancellano personaggio e account, gli errori di autenticazione (sia le
+  validazioni del modulo sia quelli che arrivano da `AuthManager`), le
+  etichette del mood, i toast di salvataggio e piazzamento, i tooltip delle
+  maniglie di modifica delle decorazioni e le righe del pannello profilo.
+  Prima erano stringhe fisse in inglese, o peggio identificativi interni
+  mostrati all'utente.
+- **Suite di test: 3 moduli nuovi** — `test_logger` (4), `test_mood` (16) e
+  l'ampliamento di `test_i18n_assets` (16) e `test_save_failures` (10).
+  Totale **196 test su 15 moduli**, da 168 su 14.
+
+### Fixed
+
+- **La pioggia segue il cursore dell'umore invece di contraddirlo.** Le gocce
+  comparivano solo sotto 0.15 mentre la stanza cominciava a scurirsi gia' a
+  0.50: in mezzo c'era una fascia larga meta' cursore in cui il giocatore
+  vedeva buio senza pioggia, e sentiva pioggia con il sole. Ora visivo e
+  ambience condividono la soglia 0.50 — dove si vede piovere si sente
+  piovere — la musica da temporale entra sotto 0.25 e il gatto passa in WILD
+  sotto 0.10 (PLR-1).
+- **Chiudere il gioco dal menu non richiede piu' due tentativi.** Il
+  salvataggio finale al menu viene saltato di proposito (non c'e' stato da
+  scrivere), ma veniva contato come fallimento: il gioco ritentava e restava
+  aperto chiedendo di chiudere di nuovo. "Niente da salvare" ora e' un esito
+  di successo (DYN-1).
+- **Il logger chiude il proprio file a fine sessione** invece di lasciarlo
+  aperto, e la riga stampata a console viene redatta esattamente come quella
+  scritta su file: erano due percorsi separati e la console partiva dal
+  contesto grezzo, quindi ogni segreto ripulito nel `.jsonl` usciva comunque
+  su stdout. La redazione ora scende anche dentro gli Array (V-022, DYN-2).
+- **Un catalogo che non si carica arriva all'utente.** Il fallimento viene
+  emesso durante l'autoload, quando nessun toast esiste ancora: ora resta in
+  coda e la prima UI che si presenta lo ritira (V-019).
+- **Bit eseguibile ripristinato** su `preflight.sh`, `build_apk_local.sh`,
+  `deep_test.sh`, `godot-validate.sh` e `smoke_test.sh`: erano committati
+  senza, quindi il comando `./scripts/preflight.sh` scritto in ogni guida
+  usciva 126 (G-026).
+
+### Changed
+
+- **La suite di test gira in una directory utente usa-e-getta.** Scriveva
+  `save_data.json`, `cozy_room.db` e `integrity.key` dentro `user://`, che con
+  `use_custom_user_dir` e' la **stessa** cartella del giocatore: ogni run
+  distruggeva il profilo reale. `deep_test.sh` crea ora una sandbox per run e
+  ci pianta un sentinella che `test_runner.gd` pretende di trovare prima di
+  eseguire un solo test. Lanciare Godot a mano sul `test_runner.tscn` **non e'
+  piu' supportato**: senza sentinella il runner aborta. Il job CI verifica ad
+  ogni build che la user dir vera non esista nemmeno a fine suite (G-053).
+- **Android de-classificato a esperimento non supportato.** L'iniezione del
+  keystore di release in `build.yml` era un no-op — cercava chiavi
+  `keystore/release*` che in `export_presets.cfg` non esistono — e
+  `release.yml` gate-ava la pubblicazione su un job che riporta successo anche
+  producendo zero APK. Una release poteva quindi presentarsi come completa di
+  un APK firmato inesistente. Rimossa l'iniezione, rimosso il gate, tolto
+  `*.apk` dagli asset di rilascio; il job resta ma si chiama "sperimentale,
+  non firmato" ed esporta solo in debug (G-003).
+- **Il cloud e' un backup, non una sincronizzazione.** La documentazione
+  prometteva "sync cross-device": il richiamo dei dati dal cloud non e' mai
+  stato innescato e i mapper cloud→locale sono stati rimossi tempo fa.
+  Riformulato ovunque come "backup cloud in sola scrittura", codice invariato
+  (G-007 / V-091).
+- **Documentazione riallineata al codice misurando i numeri**: 51 script
+  GDScript (~12.325 righe), 56 segnali, 17 scene, 6 cataloghi JSON, 11 tabelle
+  SQLite, 13 job CI, tutorial di 8 step. I README degli asset elencavano file
+  che sul disco non esistono — la cartella `bed/`, `floor_mess1-3.png`,
+  `door.png` e l'intero set `female/` — e omettevano `male_rose`, in catalogo
+  da tempo (G-017, G-048, G-063).
+
+### Security
+
+- **Un uid autenticato senza riga nel database non conia piu' un account
+  ospite.** Il fallback creava la riga con la mail segnaposto `offline@local`
+  per qualunque uid, non solo per quello ospite: un lookup a vuoto riscriveva
+  cosi' l'identita' di un utente registrato. Ora logga un errore, aborta il
+  salvataggio ed emette `db_error` (V-021).
 
 ## [1.1.0] - 2026-07-20
 
