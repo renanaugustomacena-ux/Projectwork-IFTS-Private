@@ -212,6 +212,15 @@ msgstr "Registered"
 msgid "UI_PROFILE_LOGGED_OUT"
 msgstr "Not signed in"
 
+msgid "UI_PROFILE_ROW_TYPE"
+msgstr "Type"
+
+msgid "UI_PROFILE_ROW_USER"
+msgstr "User"
+
+msgid "UI_PROFILE_ROW_COINS"
+msgstr "Coins"
+
 msgid "TOAST_UNKNOWN_DECORATION"
 msgstr "Unknown decoration: %s"
 

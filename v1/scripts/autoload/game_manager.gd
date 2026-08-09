@@ -24,6 +24,11 @@ var _pending_outfit: String = ""
 # Distinct failure reason set by _load_json when it returns null (V-019).
 var _last_catalog_error: String = ""
 
+# Cataloghi falliti durante l'autoload, quando nessuna UI esiste ancora e
+# quindi catalog_load_failed non ha ascoltatori. Li tiene qui finche` una scena
+# con i toast collegati non li ritira (drain_pending_catalog_failures, V-019).
+var _pending_catalog_failures: Array[Dictionary] = []
+
 
 func _ready() -> void:
 	_load_catalogs()
@@ -81,18 +86,34 @@ func _load_catalogs() -> void:
 	badges_catalog = _load_catalog_or_empty("res://data/badges.json")
 
 
-## Load one catalog; on failure log ERROR, emit SignalBus.catalog_load_failed
-## and fall back to {} so boot continues (V-019 / 4.2-gamemanager-catalog).
-## main.gd's _wire_error_toasts (Phase C) subscribes to catalog_load_failed and
-## surfaces it as a toast once the gameplay scene is up; during autoload boot,
-## before any listener exists, the AppLogger ERROR is the surviving record.
+## Load one catalog; on failure log ERROR, emit SignalBus.catalog_load_failed,
+## record the failure for the UI and fall back to {} so boot continues
+## (V-019 / 4.2-gamemanager-catalog).
+##
+## L'emissione da sola non basta: _load_catalogs() gira dentro il _ready di
+## questo autoload, cioe` prima che la scena di gioco esista, quindi
+## _wire_error_toasts di main.gd non e` ancora collegato e il segnale cade nel
+## vuoto. Un giocatore con i cataloghi rotti si ritrovava una stanza vuota
+## senza una parola. La coda qui sotto tiene il fallimento finche` una UI non
+## se lo prende (main.gd, subito dopo aver collegato i toast).
 func _load_catalog_or_empty(path: String) -> Dictionary:
 	var data: Variant = _load_json(path)
 	if data is Dictionary:
 		return data
 	AppLogger.error("GameManager", "catalog_load_failed", {"path": path, "reason": _last_catalog_error})
+	_pending_catalog_failures.append({"path": path, "reason": _last_catalog_error})
 	SignalBus.catalog_load_failed.emit(path, _last_catalog_error)
 	return {}
+
+
+## Ritira (e svuota) i fallimenti di catalogo accumulati prima che esistesse una
+## UI. Chiamato da main.gd appena i toast sono collegati: e` una coda a consumo
+## singolo, cosi` un ritorno al menu e un rientro in gioco non ripropongono lo
+## stesso errore all'infinito. Ogni voce: {"path": String, "reason": String}.
+func drain_pending_catalog_failures() -> Array[Dictionary]:
+	var pending := _pending_catalog_failures.duplicate()
+	_pending_catalog_failures.clear()
+	return pending
 
 
 func _validate_catalogs() -> void:

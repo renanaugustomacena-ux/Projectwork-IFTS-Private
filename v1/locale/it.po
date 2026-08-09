@@ -212,6 +212,15 @@ msgstr "Registrato"
 msgid "UI_PROFILE_LOGGED_OUT"
 msgstr "Non connesso"
 
+msgid "UI_PROFILE_ROW_TYPE"
+msgstr "Tipo"
+
+msgid "UI_PROFILE_ROW_USER"
+msgstr "Utente"
+
+msgid "UI_PROFILE_ROW_COINS"
+msgstr "Monete"
+
 msgid "TOAST_UNKNOWN_DECORATION"
 msgstr "Decorazione sconosciuta: %s"
 

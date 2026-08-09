@@ -69,6 +69,9 @@ const AUDIT_I18N_KEYS := [
 	"UI_DECO_SCALE",
 	"UI_DECO_DELETE",
 	"UI_HUD_PROFILE_TOOLTIP",
+	"UI_PROFILE_ROW_TYPE",
+	"UI_PROFILE_ROW_USER",
+	"UI_PROFILE_ROW_COINS",
 ]
 
 ## Sorgenti che citano le chiavi di errore auth: se il codice ne inventa una

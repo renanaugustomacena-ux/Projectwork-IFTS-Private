@@ -4,7 +4,10 @@
 ## Stati effetti in base al mood value (0.0 gloomy/stormy -> 1.0 cozy):
 ## - mood >= 0.50: ambient cozy normale, nessun overlay, nessuna pioggia
 ## - mood < 0.50 (MOOD_GLOOMY_THRESHOLD): overlay blu con alpha progressivo E
-##   pioggia, con intensita` che cresce mentre la stanza si scurisce
+##   pioggia, con intensita` che cresce mentre la stanza si scurisce; l'ambience
+##   passa alla pioggia soft insieme al visivo
+## - mood < 0.25 (MOOD_TENSE_THRESHOLD): + musica da temporale (banda audio,
+##   vedi AudioManager.apply_mood_scalar — soglia separata di proposito)
 ## - mood < 0.10 (MOOD_STORMY_THRESHOLD): + pet WILD mode request
 ##
 ## Soglia pioggia e inizio della rampa di scurimento sono lo STESSO numero di

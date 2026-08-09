@@ -398,13 +398,35 @@ func apply_mood_scalar(mood: float) -> void:
 	# Volume scale: mood 1.0 -> normal volume, mood 0.0 -> 50% volume
 	_mood_volume_scale = 0.5 + 0.5 * clamped
 	_apply_music_volume()
-	var target_mood := "calm"
-	if clamped < Constants.MOOD_STORMY_THRESHOLD:
-		target_mood = "stormy"
-	elif clamped < Constants.MOOD_GLOOMY_THRESHOLD:
-		target_mood = "tense"
+	var target_mood := _music_band_for(clamped)
 	if target_mood != current_mood:
 		SignalBus.mood_changed.emit(target_mood)
+	# DOPO l'emit, e non prima: _on_mood_changed riallinea l'ambience sulla
+	# banda MUSICALE, ma per il cursore l'autorita` e` la banda VISIVA, piu`
+	# larga. Invertire l'ordine lascerebbe muta la pioggia fra 0.25 e 0.50 —
+	# cioe` mezza stanza buia e piovosa in silenzio, meta` esatta di PLR-1.
+	if _ambience != null:
+		_ambience.refresh_for_mood(_ambience_band_for(clamped))
+
+
+## Banda che pilota la MUSICA. Soglia propria (MOOD_TENSE_THRESHOLD): il
+## temporale deve arrivare quando il buio e` evidente, non a meta` cursore.
+func _music_band_for(mood: float) -> String:
+	if mood < Constants.MOOD_STORMY_THRESHOLD:
+		return "stormy"
+	if mood < Constants.MOOD_TENSE_THRESHOLD:
+		return "tense"
+	return "calm"
+
+
+## Banda che pilota il TAPPETO AMBIENTALE. Segue la soglia visiva
+## (MOOD_GLOOMY_THRESHOLD): dove si vede piovere si deve sentire piovere.
+func _ambience_band_for(mood: float) -> String:
+	if mood < Constants.MOOD_STORMY_THRESHOLD:
+		return "stormy"
+	if mood < Constants.MOOD_GLOOMY_THRESHOLD:
+		return "tense"
+	return "calm"
 
 
 func _apply_ambience_volume() -> void:

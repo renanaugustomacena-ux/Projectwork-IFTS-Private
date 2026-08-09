@@ -60,6 +60,7 @@ func _ready() -> void:
 
 	# C.1 failure vocabulary → user-visible toasts via ToastManager
 	_wire_error_toasts()
+	_flush_boot_catalog_failures()
 
 	# In-game HUD (serenity bar + point counter)
 	var hud_layer := CanvasLayer.new()
@@ -186,6 +187,22 @@ func _wire_error_toasts() -> void:
 	SignalBus.sync_payload_corrupted.connect(_on_sync_payload_corrupted_toast)
 	SignalBus.catalog_load_failed.connect(_on_catalog_load_failed_toast)
 	SignalBus.db_error.connect(_on_db_error_toast)
+
+
+## V-019: i cataloghi si caricano nel _ready di GameManager, cioe` prima che
+## questa scena esista, quindi la catalog_load_failed emessa allora non trova
+## nessun ascoltatore e il giocatore entra in una stanza vuota senza sapere
+## perche`. GameManager tiene i fallimenti in coda: qui, appena i toast sono
+## collegati, li ritiriamo e li mostriamo. Un solo toast anche per piu`
+## cataloghi rotti — il testo e` generico e sei popup identici sono rumore; il
+## dettaglio per path resta nelle righe ERROR del log.
+func _flush_boot_catalog_failures() -> void:
+	var pending: Array[Dictionary] = GameManager.drain_pending_catalog_failures()
+	if pending.is_empty():
+		return
+	var first: Dictionary = pending[0]
+	AppLogger.warn("Main", "boot_catalog_failures_surfaced", {"count": pending.size(), "first": first.get("path", "")})
+	_on_catalog_load_failed_toast(str(first.get("path", "")), str(first.get("reason", "")))
 
 
 func _on_save_failed_toast(_reason: String) -> void:

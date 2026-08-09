@@ -74,6 +74,36 @@ func test_secret_inside_array_never_reaches_the_log_file() -> void:
 	assert_false(content.contains("disk-secret-42"), "il segreto annidato nell'array non deve raggiungere il disco")
 
 
+func test_console_output_is_redacted_like_the_log_file() -> void:
+	# La riga scritta nel .jsonl era redatta, quella STAMPATA no: era costruita
+	# sul context grezzo. Il segreto usciva comunque su stdout, e da li` nel
+	# `godot.log` — cioe` proprio il file che si allega a una segnalazione.
+	var marker := "console-redaction-probe-%d" % Time.get_ticks_usec()
+	(
+		AppLogger
+		. info(
+			"TestLogger",
+			marker,
+			{
+				"password": "console-secret-99",
+				"session": {"access_token": "console-token-77"},
+				"note": "keep me",
+			}
+		)
+	)
+
+	# Godot ricopia stdout in user://logs/godot.log: e` l'unico modo onesto di
+	# guardare cosa e` stato davvero stampato.
+	var console_log := str(ProjectSettings.get_setting("debug/file_logging/log_path", "user://logs/godot.log"))
+	var printed := FileAccess.get_file_as_string(console_log)
+
+	assert_true(printed.contains(marker), "stdout non catturato in %s: file logging disattivato?" % console_log)
+	assert_false(printed.contains("console-secret-99"), "il segreto non deve raggiungere la console")
+	assert_false(printed.contains("console-token-77"), "nemmeno quello annidato in un dict")
+	assert_true(printed.contains(AppLogger.REDACTED), "la console deve mostrare il segnaposto al posto del segreto")
+	assert_true(printed.contains("keep me"), "i campi non sensibili devono restare leggibili a console")
+
+
 # ---- DYN-2: il file resta aperto fino al teardown ----
 
 

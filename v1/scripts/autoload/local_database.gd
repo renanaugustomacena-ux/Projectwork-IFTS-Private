@@ -31,6 +31,10 @@ const DB_PATH := "user://cozy_room"
 
 var _db: SQLite = null
 var _is_open: bool = false
+## Motivo distinto impostato da _resolve_save_account_id quando torna il
+## sentinella -1; apply_save lo rilancia come db_error, cosi` il toast non dice
+## sempre la stessa cosa (stessa convenzione di GameManager._last_catalog_error).
+var _last_account_error: String = ""
 
 
 func _ready() -> void:
@@ -104,7 +108,7 @@ func apply_save(data: Dictionary) -> bool:
 		return false
 	var account_id := _resolve_save_account_id()
 	if account_id < 0:
-		SignalBus.db_error.emit("apply_save", "account_resolve_failed")
+		SignalBus.db_error.emit("apply_save", _last_account_error)
 		return false
 	# C.3 transaction honesty: BEGIN/COMMIT returns checked, failure surfaced.
 	if not DBHelpers.execute(_db, "BEGIN TRANSACTION;"):
@@ -136,14 +140,37 @@ func apply_save(data: Dictionary) -> bool:
 	return true
 
 
+## Account che riceve il salvataggio, o -1 se non e` possibile stabilirlo.
+##
+## V-021: la riga con mail segnaposto da ospite puo` nascere SOLO per l'uid
+## ospite. Prima il fallback era incondizionato, quindi un lookup a vuoto su un
+## uid autenticato vero (riga cancellata altrove, migrazione a meta`, DB
+## riaperto dopo un crash) coniava un account `offline@local` sotto l'identita`
+## reale del giocatore: da li` in poi il salvataggio viveva su un account
+## fantasma e quello vero restava indietro. Meglio abortire rumorosamente — il
+## sentinella fa fallire apply_save, che emette `db_error` e quindi un toast —
+## che riscrivere di nascosto l'identita` di chi un account ce l'ha davvero.
 func _resolve_save_account_id() -> int:
+	_last_account_error = "account_resolve_failed"
 	var auth_uid: String = Constants.AUTH_GUEST_UID
 	if AuthManager.current_auth_uid != "":
 		auth_uid = AuthManager.current_auth_uid
 	var account := AccountsRepo.get_account_by_auth_uid(_db, auth_uid)
-	if account.is_empty():
+	if not account.is_empty():
+		return int(account.get("account_id", -1))
+	if auth_uid == Constants.AUTH_GUEST_UID:
 		return AccountsRepo.upsert_account(_db, auth_uid, Constants.AUTH_GUEST_EMAIL, "")
-	return int(account.get("account_id", -1))
+	_last_account_error = "account_row_missing"
+	# L'uid non finisce nel log: e` l'identificatore di sessione dell'utente.
+	(
+		AppLogger
+		. error(
+			"LocalDatabase",
+			"No account row for an authenticated uid, refusing to mint a guest account",
+			{"auth_uid_len": auth_uid.length()},
+		)
+	)
+	return -1
 
 
 func _apply_save_writes(account_id: int, data: Dictionary) -> bool:

@@ -69,10 +69,21 @@ const VIEWPORT_HEIGHT := 720
 const DEBUG_RNG_SEED := 0xC02E
 
 # Mood thresholds (T-R-015i)
-# GLOOMY coincide con l'inizio della rampa di scurimento in MoodManager
-# (`(0.5 - mood) / 0.5`): a 0.15 la stanza si incupiva per meta` slider senza
-# una goccia di pioggia, e il giocatore vedeva buio senza causa (PLR-1).
+#
+# GLOOMY governa cio` che si VEDE e il tappeto ambientale che lo accompagna:
+# coincide con l'inizio della rampa di scurimento in MoodManager
+# (`(0.5 - mood) / 0.5`), perche` a 0.15 la stanza si incupiva per meta` slider
+# senza una goccia di pioggia e senza rumore di pioggia (PLR-1).
+#
+# TENSE governa solo la banda MUSICALE (AudioManager.apply_mood_scalar). E`
+# separata di proposito: agganciata a GLOOMY, il temporale (`rain_thunder`)
+# partiva di colpo a meta` cursore, uno stacco netto proprio dove il giocatore
+# si aspetta ancora una pioggerella. Cosi` la fascia 0.25-0.50 e` "piove ma la
+# musica resta calma", e il tuono arriva quando il buio e` gia` evidente.
+#
+# Invariante: STORMY < TENSE < GLOOMY (test_mood lo verifica).
 const MOOD_GLOOMY_THRESHOLD := 0.50
+const MOOD_TENSE_THRESHOLD := 0.25
 const MOOD_STORMY_THRESHOLD := 0.10
 
 # Application version — synced da scripts/bump_version.sh

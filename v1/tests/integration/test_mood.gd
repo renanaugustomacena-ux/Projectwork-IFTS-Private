@@ -35,6 +35,37 @@ func test_gloomy_threshold_starts_where_the_room_darkens() -> void:
 	)
 
 
+func test_audio_band_threshold_sits_between_stormy_and_gloomy() -> void:
+	# Alzando GLOOMY a 0.5 il temporale (`rain_thunder`) partiva a meta` cursore
+	# insieme alla prima goccia: uno stacco netto dove ci si aspetta ancora una
+	# pioggerella. La banda musicale ha quindi una soglia sua, piu` bassa.
+	assert_approx(Constants.MOOD_TENSE_THRESHOLD, 0.25, 0.0001, "il temporale deve partire a 0.25")
+	assert_true(
+		Constants.MOOD_STORMY_THRESHOLD < Constants.MOOD_TENSE_THRESHOLD, "la banda stormy deve restare il fondo scala"
+	)
+	assert_true(
+		Constants.MOOD_TENSE_THRESHOLD < Constants.MOOD_GLOOMY_THRESHOLD,
+		"la musica da temporale deve entrare dopo la pioggia, non insieme"
+	)
+
+
+func test_music_band_changes_only_below_its_own_threshold() -> void:
+	assert_eq(AudioManager._music_band_for(0.80), "calm", "col sole la musica e` calma")
+	assert_eq(AudioManager._music_band_for(0.26), "calm", "appena sopra 0.25 niente tuoni")
+	assert_eq(AudioManager._music_band_for(0.25), "calm", "la soglia stessa appartiene ancora al calmo")
+	assert_eq(AudioManager._music_band_for(0.24), "tense", "appena sotto 0.25 arriva il temporale")
+	assert_eq(AudioManager._music_band_for(0.05), "stormy", "sotto 0.10 resta la banda stormy")
+
+
+func test_ambience_band_still_follows_the_visual_threshold() -> void:
+	# Il tappeto sonoro NON segue la soglia musicale: dove si vede piovere si
+	# deve sentire piovere, altrimenti la fascia 0.25-0.50 tornerebbe a essere
+	# "buio e gocce senza rumore di pioggia", cioe` meta` di PLR-1.
+	assert_eq(AudioManager._ambience_band_for(0.80), "calm", "col sole il camino")
+	assert_eq(AudioManager._ambience_band_for(0.49), "tense", "appena sotto 0.50 la pioggia si sente")
+	assert_eq(AudioManager._ambience_band_for(0.05), "stormy", "in tempesta resta la banda stormy")
+
+
 func test_rain_spawns_inside_the_gloomy_band() -> void:
 	await _set_mood(0.3)
 	assert_true(MoodManager.is_rain_active(), "a mood 0.3 la stanza e` gia` scura: deve piovere")
@@ -69,6 +100,19 @@ func test_rain_despawns_when_the_slider_goes_back_to_sun() -> void:
 	assert_true(MoodManager.is_rain_active(), "precondizione: pioggia attiva")
 	await _set_mood(1.0)
 	assert_false(MoodManager.is_rain_active(), "tornando al sole la pioggia deve sparire")
+
+
+func test_rainy_window_has_rain_sound_but_no_thunder_yet() -> void:
+	# Il contratto delle due bande visto dal cursore, non dalle costanti.
+	await _set_mood(0.35)
+	assert_true(MoodManager.is_rain_active(), "a 0.35 la stanza e` scura: deve piovere")
+	assert_eq(AudioManager.current_mood, "calm", "a 0.35 la musica deve restare calma")
+	assert_true("ambience_rain_soft" in AudioManager.get_active_ambience(), "a 0.35 la pioggia si deve anche sentire")
+	await _set_mood(0.20)
+	assert_eq(AudioManager.current_mood, "tense", "sotto 0.25 entra la musica da temporale")
+	await _set_mood(0.80)
+	assert_eq(AudioManager.current_mood, "calm", "tornando al sole la musica torna calma")
+	assert_true("ambience_fireplace" in AudioManager.get_active_ambience(), "col sole il tappeto torna il camino")
 
 
 # ---- Ambience: il tappeto sonoro segue il mood ----

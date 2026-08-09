@@ -47,9 +47,9 @@ func _build_ui() -> void:
 	info_label.modulate.a = 0.7
 	vbox.add_child(info_label)
 
-	_account_type_label = _create_info_row(vbox, "Tipo")
-	_email_label = _create_info_row(vbox, "Utente")
-	_coins_label = _create_info_row(vbox, "Monete")
+	_account_type_label = _create_info_row(vbox, tr("UI_PROFILE_ROW_TYPE"))
+	_email_label = _create_info_row(vbox, tr("UI_PROFILE_ROW_USER"))
+	_coins_label = _create_info_row(vbox, tr("UI_PROFILE_ROW_COINS"))
 
 	# Separator
 	vbox.add_child(HSeparator.new())

@@ -55,6 +55,63 @@ func test_error_signals_exist_with_expected_arity() -> void:
 				break
 
 
+# ---- V-021: l'identita` ospite non deve sovrascrivere un account vero ----
+
+
+## Il fallback con mail segnaposto era incondizionato: bastava che il lookup per
+## auth_uid non trovasse la riga (cancellata altrove, migrazione a meta`, DB
+## riaperto dopo un crash) perche` il salvataggio di un utente REGISTRATO
+## coniasse un account `offline@local` sotto il suo uid. Da quel momento giocava
+## su un account fantasma.
+func test_authenticated_uid_without_a_row_never_mints_a_guest_account() -> void:
+	var was_uid: String = AuthManager.current_auth_uid
+	var ghost_uid := "uid_registrato_senza_riga_%d" % Time.get_ticks_usec()
+	AuthManager.current_auth_uid = ghost_uid
+
+	var resolved: int = LocalDatabase._resolve_save_account_id()
+	var reason := str(LocalDatabase.get("_last_account_error"))
+	var minted: Dictionary = LocalDatabase.get_account_by_auth_uid(ghost_uid)
+
+	AuthManager.current_auth_uid = was_uid
+
+	assert_true(resolved < 0, "un uid autenticato senza riga deve fallire, non inventare un account")
+	assert_eq(reason, "account_row_missing", "il motivo distinto deve arrivare fino al toast")
+	assert_true(minted.is_empty(), "nessuna riga deve nascere sotto l'uid reale del giocatore")
+
+
+## La guardia non deve rompere il caso per cui il fallback esisteva: chi gioca
+## senza registrarsi deve continuare a ottenere il suo account offline.
+func test_guest_uid_without_a_row_still_gets_its_offline_account() -> void:
+	var was_uid: String = AuthManager.current_auth_uid
+	AuthManager.current_auth_uid = ""  # -> Constants.AUTH_GUEST_UID
+
+	var resolved: int = LocalDatabase._resolve_save_account_id()
+	var row: Dictionary = LocalDatabase.get_account_by_auth_uid(Constants.AUTH_GUEST_UID)
+
+	AuthManager.current_auth_uid = was_uid
+
+	assert_true(resolved > 0, "l'ospite deve poter salvare senza registrarsi")
+	assert_eq(str(row.get("mail", "")), Constants.AUTH_GUEST_EMAIL, "la mail segnaposto vale solo per l'ospite")
+
+
+## Il fallimento deve essere rumoroso: apply_save aborta e il motivo esce su
+## db_error, che main.gd trasforma in un toast rosso.
+func test_apply_save_aborts_loudly_when_the_account_row_is_missing() -> void:
+	var seen: Array[String] = []
+	var probe := func(context: String, reason: String) -> void: seen.append("%s/%s" % [context, reason])
+	SignalBus.db_error.connect(probe)
+	var was_uid: String = AuthManager.current_auth_uid
+	AuthManager.current_auth_uid = "uid_fantasma_%d" % Time.get_ticks_usec()
+
+	var committed: bool = LocalDatabase.apply_save({"settings": {"master_volume": 0.5}})
+
+	AuthManager.current_auth_uid = was_uid
+	SignalBus.db_error.disconnect(probe)
+
+	assert_false(committed, "senza un account risolto il salvataggio non deve committare")
+	assert_true(seen.has("apply_save/account_row_missing"), "db_error deve dire cosa e` mancato, visto: %s" % str(seen))
+
+
 ## Esito del salvataggio finale quando c'e` un errore di scrittura vero: il
 ## quit deve restare bloccato (retry, poi stay-alive, poi force-quit).
 func test_final_save_blocks_quit_on_a_real_write_failure() -> void:

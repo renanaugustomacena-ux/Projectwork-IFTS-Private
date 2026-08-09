@@ -190,8 +190,14 @@ func _log(level: Level, source: String, message: String, context: Dictionary) ->
 		"source": source,
 		"message": message,
 	}
+	# Una sola redazione per riga, condivisa da file e console: erano due
+	# percorsi separati e la console prendeva il context GREZZO, quindi ogni
+	# segreto ripulito nel .jsonl usciva comunque intatto su stdout (e da li`
+	# nel godot.log, negli screenshot dei terminali, nei CI log).
+	var redacted: Dictionary = {}
 	if not context.is_empty():
-		entry["context"] = _redact_context(context)
+		redacted = _redact_context(context)
+		entry["context"] = redacted
 
 	var json_line := JSON.stringify(entry)
 
@@ -204,8 +210,8 @@ func _log(level: Level, source: String, message: String, context: Dictionary) ->
 
 	# Console output with severity-appropriate method
 	var console_msg := "[%s][%s] %s: %s" % [level_name, short_id, source, message]
-	if not context.is_empty():
-		console_msg += " " + str(context)
+	if not redacted.is_empty():
+		console_msg += " " + str(redacted)
 
 	match level:
 		Level.DEBUG:

@@ -114,9 +114,19 @@ Caricati in ordine da `project.godot` `[autoload]`:
 
 Dichiarazioni signal solo, no logic. Commenti raggruppano per dominio.
 
-### `autoload/local_database.gd` (323 L)
+### `autoload/logger.gd` (~485 L)
+
+JSONL bufferato + rotazione, ring dedicato per gli ERROR, scrub dei path di device. La redazione del context è **una sola** per riga e vale sia per il file sia per la riga stampata a console: erano due percorsi separati e la console partiva dal context grezzo, quindi ogni segreto ripulito nel `.jsonl` usciva comunque su stdout (V-022, ramo console).
+
+### `autoload/game_manager.gd` (~240 L)
+
+Stato di gioco + caricamento dei 6 cataloghi JSON. `_load_catalogs()` gira nel `_ready` dell'autoload, cioè prima che esista una scena: la `catalog_load_failed` emessa lì non ha ascoltatori. I fallimenti restano quindi in coda in `_pending_catalog_failures` e `main.gd` li ritira con `drain_pending_catalog_failures()` subito dopo aver collegato i toast — coda a consumo singolo, nessun timer di polling (V-019).
+
+### `autoload/local_database.gd` (385 L)
 
 Facade SQLite. Delega ai 9 repo in `autoload/database/`. `PRAGMA journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`. Transaction wrapper sincrono in `apply_save` (BEGIN/COMMIT/ROLLBACK con return-check, remediation audit 4.1.4).
+
+`_resolve_save_account_id()` crea l'account con la mail segnaposto `offline@local` **solo** quando l'uid è quello ospite. Con un uid autenticato senza riga corrispondente non inventa nulla: logga ERROR, imposta `_last_account_error = "account_row_missing"` e torna `-1`, così `apply_save` aborta ed emette `db_error` (→ toast). Prima il fallback era incondizionato e un lookup a vuoto riscriveva l'identità di un utente registrato (V-021).
 
 ### `autoload/save_manager.gd` (535 L)
 
@@ -130,13 +140,20 @@ State machine (LOGGED_OUT / GUEST / AUTHENTICATED). Format hash `v3:iter:salt_he
 
 REST client via `supabase_http.gd`. Token JWT+refresh cifrati `ConfigFile.save_encrypted_pass`. HTTPS-only validation. Backoff exp su 429, cap 300 s. Schema-changes-tolerant (ignora 404 + "relation does not exist"). Vedi audit 4.1.1 per 3 HIGH + 5 MEDIUM.
 
-### `autoload/audio_manager.gd` (473 L)
+### `autoload/audio_manager.gd` (489 L)
 
 Dual-player crossfade: `_music_player_a/_b`, `_active_player`, tween. Ascolta `mood_changed` per track switch. Max 50 MB import OGG/WAV.
 
-### `autoload/mood_manager.gd` (~150 L)
+`apply_mood_scalar()` deriva **due** bande discrete dal cursore, non una:
 
-Overlay gloomy (alpha + CanvasModulate) + rain particles scene + pet WILD FSM trigger + audio crossfade coordination.
+- `_music_band_for()` usa `MOOD_TENSE_THRESHOLD` (0.25) → pilota `mood_changed`, quindi la scelta traccia;
+- `_ambience_band_for()` usa `MOOD_GLOOMY_THRESHOLD` (0.50) → pilota il tappeto ambientale, che deve restare allineato al visivo.
+
+Il refresh dell'ambience va **dopo** l'emit: `_on_mood_changed` riallinea l'ambience sulla banda musicale, e per il cursore l'autorità è quella visiva. Invertire l'ordine lascerebbe muta la pioggia fra 0.25 e 0.50 (metà di PLR-1).
+
+### `autoload/mood_manager.gd` (~155 L)
+
+Overlay gloomy (alpha + CanvasModulate) + rain particles scene + pet WILD FSM trigger + audio crossfade coordination. Soglie: pioggia e scurimento da 0.50 (`MOOD_GLOOMY_THRESHOLD`, stesso numero di proposito — PLR-1), pet WILD sotto 0.10. La musica da temporale ha una soglia sua, vedi `audio_manager.gd`.
 
 ### `autoload/badge_manager.gd` (~90 L)
 
@@ -187,7 +204,7 @@ CanvasLayer 90. `_container.mouse_filter = IGNORE` (critico: STOP blocca click i
 6. **Focus management**: script-created Button senza `focus_mode = FOCUS_NONE` → blocca movement character.
 7. **CanvasLayer Control input routing**: VBox/HBox/MarginContainer full-rect DEVE avere `mouse_filter = IGNORE` se non deve intercettare click.
 8. **`user://integrity.key` immutabile**: cambiare path invalida tutti i save esistenti.
-9. **Catalog loading order**: `GameManager._load_catalogs()` prima di ogni accesso.
+9. **Catalog loading order**: `GameManager._load_catalogs()` prima di ogni accesso. Un fallimento emesso durante l'autoload non ha ascoltatori: va **anche** messo in coda per la prima UI che si presenta (V-019).
 10. **Async test pattern**: `await callable.call()` funziona per sync + async methods in Godot 4.
 
 ---
@@ -197,5 +214,5 @@ CanvasLayer 90. `_container.mouse_filter = IGNORE` (critico: STOP blocca click i
 - [README v1](../README.md) — architettura + contenuti di gioco
 - [README data](../data/README.md) — schema SQLite + cataloghi JSON
 - [README scenes](../scenes/README.md) — scene Godot (.tscn)
-- [README tests](../tests/README.md) — 163 test harness
+- [README tests](../tests/README.md) — 196 test harness
 - [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità

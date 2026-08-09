@@ -53,16 +53,16 @@ Caricati in ordine da `project.godot`. Ognuno può dipendere solo dai precedenti
 | # | Nome | Script | Responsabilità |
 |---|------|--------|----------------|
 | 1 | `SignalBus` | `autoload/signal_bus.gd` | 48 segnali typed (48 grep-confirmed) |
-| 2 | `AppLogger` | `autoload/logger.gd` | JSONL rotating 5 MB × 5, session id, redact su chiavi sensibili |
-| 3 | `LocalDatabase` | `autoload/local_database.gd` | SQLite WAL, 9 tabelle; splittato in 9 repo modulari (B-033) |
+| 2 | `AppLogger` | `autoload/logger.gd` | JSONL rotating 5 MB × 5, session id, redact su chiavi sensibili — **stessa redazione su file e console** (V-022, ramo console) |
+| 3 | `LocalDatabase` | `autoload/local_database.gd` | SQLite WAL, 9 tabelle; splittato in 9 repo modulari (B-033). L'account ospite si crea al volo **solo** per l'uid ospite (V-021) |
 | 4 | `AuthManager` | `autoload/auth_manager.gd` | Guest + username/password iterated-SHA-256 v3 (100 k iter, salt 128 bit) |
-| 5 | `GameManager` | `autoload/game_manager.gd` | Stato di gioco + 6 cataloghi JSON |
+| 5 | `GameManager` | `autoload/game_manager.gd` | Stato di gioco + 6 cataloghi JSON; i cataloghi falliti al boot restano in coda per la UI (V-019) |
 | 6 | `SaveManager` | `autoload/save_manager.gd` | Save JSON v5.0.0 + HMAC-SHA256 + backup atomic + migrazioni v1→v5 |
 | 7 | `SupabaseClient` | `autoload/supabase_client.gd` | REST cloud sync, HTTPS-only, session token cifrato device-local |
-| 8 | `AudioManager` | `autoload/audio_manager.gd` | Dual-player crossfade 2 s, mood-driven track switch |
+| 8 | `AudioManager` | `autoload/audio_manager.gd` | Dual-player crossfade 2 s, mood-driven track switch; bande separate per musica (< 0.25) e ambience (< 0.50) |
 | 9 | `PerformanceManager` | `systems/performance_manager.gd` | FPS cap + window pos persistence |
 | 10 | `StressManager` | `systems/stress_manager.gd` | Stress 0.0–1.0 con isteresi, 3 livelli, decay 2 %/min |
-| 11 | `MoodManager` | `autoload/mood_manager.gd` | Overlay gloomy, rain particles, pet WILD FSM state, audio crossfade |
+| 11 | `MoodManager` | `autoload/mood_manager.gd` | Overlay gloomy + rain particles da 0.50, pet WILD FSM state sotto 0.10, audio crossfade |
 | 12 | `BadgeManager` | `autoload/badge_manager.gd` | Badge catalog + SQLite table `badges_unlocked` |
 | 13 | `DevBridge` | `autoload/dev_bridge.gd` | API HTTP locale debug-only per audit/test — attiva solo con `--bridge` in build debug, bind 127.0.0.1:8080 |
 
@@ -157,7 +157,7 @@ v1/
 │   ├── ui/                          #   Panel manager + 5 panel + drop_zone + deco_button + toast + HUD
 │   ├── utils/                       #   Constants + Helpers + supabase_{config,http,mapper}
 │   └── main.gd                      #   Controller scena principale
-└── tests/                          # 163 test invasivi + runner headless custom
+└── tests/                          # 196 test invasivi + runner headless custom
     ├── integration/                 #   13 moduli + test_base.gd
     ├── test_runner.gd               #   Harness reflection-based
     └── test_runner.tscn             #   Scene autostart runner
@@ -207,9 +207,25 @@ Pixel art 32×32, controlli WASD/frecce, `move_and_slide()` + `FLOATING`, SPEED 
 | Traccia | Autore | Moods |
 |---------|--------|-------|
 | `rain_loop` | Mixkit | calm, neutral |
-| `rain_thunder` | Mixkit | tense |
+| `rain_thunder` | Mixkit | tense, stormy |
+
+| Ambience | Autore | Moods |
+|----------|--------|-------|
+| `ambience_fireplace` | Team IFTS (synth) | calm, neutral |
+| `ambience_rain_soft` | Team IFTS (synth) | tense, stormy |
 
 Dual-player crossfade 2 s. Mood-driven via `StressManager.mood_changed`.
+
+Il cursore umore (`AudioManager.apply_mood_scalar`) usa **due bande distinte**, di proposito:
+
+| Cursore | Visivo | Ambience | Musica | Pet |
+|---------|--------|----------|--------|-----|
+| ≥ 0.50 | stanza normale | `ambience_fireplace` | `rain_loop` (calm) | normale |
+| < 0.50 (`MOOD_GLOOMY_THRESHOLD`) | overlay blu + pioggia crescente | `ambience_rain_soft` | `rain_loop` (calm) | normale |
+| < 0.25 (`MOOD_TENSE_THRESHOLD`) | ↑ | ↑ | `rain_thunder` (tense) | normale |
+| < 0.10 (`MOOD_STORMY_THRESHOLD`) | ↑ | ↑ | `rain_thunder` (stormy) | WILD |
+
+Ambience e visivo condividono la soglia (dove si vede piovere si sente piovere, PLR-1); il temporale ha una soglia sua più bassa, perché partire a metà cursore era uno stacco netto.
 
 ### Mess system
 

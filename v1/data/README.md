@@ -79,11 +79,32 @@ Attualmente solo `male_old` è configurato come `directional` completo.
     "id": "rain_loop", "title": "Light Rain", "artist": "Mixkit",
     "path": "res://assets/audio/music/mixkit-light-rain-loop-1253.wav",
     "genre": "ambient",
-    "moods": ["calm", "neutral"]  // StressManager filtra su questo
+    "moods": ["calm", "neutral"]  // banda MUSICA (vedi soglie sotto)
   }],
-  "ambience": []  // struttura pronta per futuro, AudioManager supporta multi-stream
+  "ambience": [{
+    "id": "ambience_rain_soft", "title": "Soft Rain", "artist": "Team IFTS (synth)",
+    "path": "res://assets/audio/ambience/ambience_rain_soft.wav",
+    "moods": ["tense", "stormy"]  // banda AMBIENCE (soglia diversa dalla musica)
+  }]
 }
 ```
+
+#### Da dove arrivano i mood
+
+Le stringhe in `moods` non sono libere: sono le bande discrete che i filtri
+confrontano (`calm`, `neutral`, `tense`, `stormy`). Due sorgenti le producono, e
+`tracks[]` e `ambience[]` **non** vengono filtrati sulla stessa soglia:
+
+| Sorgente | Chi emette | Soglie |
+|----------|-----------|--------|
+| Stress di gioco | `StressManager` | isteresi 0.35/0.60 su e 0.25/0.50 giù |
+| Cursore umore | `AudioManager.apply_mood_scalar` | musica: `MOOD_TENSE_THRESHOLD` 0.25 · ambience: `MOOD_GLOOMY_THRESHOLD` 0.50 · `MOOD_STORMY_THRESHOLD` 0.10 per entrambe |
+
+Le due soglie del cursore sono separate di proposito (`scripts/utils/constants.gd`):
+l'ambience segue il visivo, perché dove si vede piovere si deve sentire piovere
+(PLR-1), mentre la musica da temporale entra più in basso — a metà cursore era
+uno stacco netto. Ritaggare una traccia da `calm` a `tense` (o viceversa) sposta
+quindi il punto in cui il giocatore la sente: va fatto guardando questa tabella.
 
 ### Struttura mess_catalog.json
 
@@ -151,6 +172,13 @@ placed_decorations (PK placement_id, FK room_id) ───────┘
 
 Vincoli anti-brute-force gestiti da `AuthManager` (non in schema): 5 tentativi
 falliti → lockout 300s in-memory.
+
+**Riga ospite**: `auth_uid = 'local'` con `mail = 'offline@local'` (costanti
+`AUTH_GUEST_UID` / `AUTH_GUEST_EMAIL`). È l'unica riga che il salvataggio può
+creare da solo: `LocalDatabase._resolve_save_account_id()` la genera al volo
+quando manca. Con un `auth_uid` autenticato che non trova la sua riga il
+salvataggio **aborta** invece di crearne una — inventarla significherebbe
+appiccicare l'identità ospite sopra un account reale (V-021).
 
 ### Tabella: `characters`
 

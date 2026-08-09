@@ -256,6 +256,35 @@ func test_mess_placeholder_colors_parse() -> void:
 		assert_true(c.a > 0.0)
 
 
+# ---- V-019: un catalogo rotto deve arrivare al giocatore ----
+
+
+## I cataloghi si caricano nel `_ready` di GameManager, cioe` prima che esista
+## una scena: la `catalog_load_failed` emessa li` non ha ascoltatori e finiva
+## solo in una riga ERROR del log. Il giocatore si ritrovava una stanza vuota
+## senza spiegazioni. Ora il fallimento resta in coda finche` una UI non se lo
+## prende (main.gd, subito dopo aver collegato i toast).
+func test_catalog_failures_wait_for_a_ui_instead_of_vanishing() -> void:
+	assert_array_size(
+		GameManager.drain_pending_catalog_failures(), 0, "precondizione: i cataloghi veri si caricano tutti"
+	)
+
+	var loaded: Dictionary = GameManager._load_catalog_or_empty("res://data/catalogo_inesistente.json")
+	assert_true(loaded.is_empty(), "un catalogo mancante ricade su {} senza fermare il boot")
+
+	var pending: Array[Dictionary] = GameManager.drain_pending_catalog_failures()
+	assert_array_size(pending, 1, "il fallimento deve sopravvivere fino alla UI")
+	if pending.is_empty():
+		return
+	var failure: Dictionary = pending[0]
+	assert_eq(str(failure.get("reason", "")), "file_not_found", "il motivo distinto deve viaggiare con il path")
+	assert_true(str(failure.get("path", "")).ends_with("catalogo_inesistente.json"), "il path deve identificare quale")
+
+	assert_array_size(
+		GameManager.drain_pending_catalog_failures(), 0, "la coda si consuma una volta sola, niente toast ricorrenti"
+	)
+
+
 # ---- Helpers ----
 
 
