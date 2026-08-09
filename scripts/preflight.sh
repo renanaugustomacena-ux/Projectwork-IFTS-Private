@@ -130,7 +130,9 @@ echo ""
 
 echo "[7] Deep integration tests (~7s)"
 rm -f /tmp/preflight_deep.log
-timeout 90 godot4 --headless --path v1/ res://tests/test_runner.tscn \
+# Via wrapper e non godot diretto: deep_test.sh isola `user://` in una dir
+# usa-e-getta, altrimenti la suite riscriverebbe il profilo reale (G-053).
+bash "$PROJECT_ROOT/scripts/deep_test.sh" --timeout 90 \
     >/tmp/preflight_deep.log 2>&1
 DEEP_RC=$?
 DEEP_FAILS=$(grep -E "^  Totals: " /tmp/preflight_deep.log | sed -E 's/.* ([0-9]+) fail.*/\1/')

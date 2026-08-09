@@ -1,21 +1,54 @@
 # Relax Room — Test Harness
 
-Custom headless test harness senza GdUnit4. **163 test invasivi** in 13 moduli,
+Custom headless test harness senza GdUnit4. **168 test invasivi** in 14 moduli,
 ~8 secondi di esecuzione, exit code 0 (all pass) / 1 (failures). Girano in
 preflight locale + CI GitHub Actions su container `barichello/godot-ci:4.6`.
 
 ## Esecuzione
 
 ```bash
-# Shell wrapper con output formattato
-./scripts/deep_test.sh
-
-# Diretto via Godot
-godot4 --headless --path v1/ res://tests/test_runner.tscn
+./scripts/deep_test.sh                 # unico modo supportato
+./scripts/deep_test.sh --keep          # conserva la sandbox per ispezionarla
+GODOT_BIN=/percorso/godot ./scripts/deep_test.sh
 ```
 
-Exit code **0** = ALL PASS, **1** = ≥ 1 failure, **124** = timeout (90s default).
-Ogni run produce `user://test_results.jsonl` con log per-test.
+Exit code **0** = ALL PASS, **1** = ≥ 1 failure, **124** = timeout (120s default),
+**2** = errore d'harness (Godot assente, isolamento non attivo).
+
+### Isolamento dal profilo giocatore (G-053)
+
+**Non lanciare `godot4 --headless --path v1/ res://tests/test_runner.tscn` a
+mano.** La suite scrive `save_data.json`, `save_data.backup*.json`,
+`cozy_room.db` e `integrity.key` dentro `user://`; con
+`use_custom_user_dir=true` + `custom_user_dir_name="RelaxRoom"` quella e` la
+**stessa** directory che usa il gioco, quindi ogni run distruggeva i dati reali
+del giocatore.
+
+Godot 4.7 non ha un flag `--user-data-dir` e ignora i feature-override su
+`config/custom_user_dir_name`, quindi l'aggancio e` la variabile d'ambiente da
+cui l'engine deriva il data path all'avvio. `deep_test.sh` la imposta su una
+directory temporanea creata al momento:
+
+| Piattaforma | Variabile | `user://` diventa |
+|-------------|-----------|-------------------|
+| Windows | `APPDATA` | `<sandbox>/RelaxRoom` |
+| Linux | `XDG_DATA_HOME` | `<sandbox>/RelaxRoom` |
+| macOS | `HOME` | `<sandbox>/Library/Application Support/RelaxRoom` |
+
+Conseguenze:
+
+- **Concorrenza**: la sandbox nasce da `mktemp -d`, unica per run. Due suite
+  lanciate insieme non si toccano (verificato: 168/168 su entrambe).
+- **Test non indeboliti**: `user://` esiste ancora e trasloca in blocco, quindi
+  SaveManager e LocalDatabase girano sul codice vero, solo su dati usa-e-getta.
+- **Fail-safe**: il wrapper pianta un sentinella `.test_sandbox` nella sandbox e
+  `test_runner.gd` rifiuta di eseguire test se non lo trova. Un ambiente mal
+  configurato (o un lancio diretto di Godot) **aborta** invece di scrivere nel
+  profilo reale.
+
+Ogni run produce `test_results.jsonl` **dentro la sandbox** — il runner ne
+stampa il percorso assoluto nella riga `Results:`. Senza `--keep` la sandbox
+viene rimossa a fine run se tutto e` verde, e conservata se qualcosa fallisce.
 
 ## Moduli
 
@@ -30,12 +63,17 @@ Ogni run produce `user://test_results.jsonl` con log per-test.
 | `test_input.gd` | 14 | WASD via `Input.action_press`, velocity direction corretta, diagonal normalizzata a SPEED=120, release azzera velocity, animazione walk/idle direzionale + flip_h |
 | `test_ui_events.gd` | 15 | `pressed.emit()` per HUD buttons apre panel corretto, DropZone stays PASS anche con panel aperto, DecoButton is TextureRect (NOT Button), `_get_drag_data` non-null con valid meta, ≥60 DecoButtons con drag_data meta dentro panel, no overlay blockers upper-right quadrant |
 | `test_crypto.gd` | 5 | PBKDF2-HMAC-SHA256 vs vettori RFC 8018, password vuota fail-closed, roundtrip hash v4, hash v4 malformato rifiutato subito, salt unico per account |
-| `test_save_failures.gd` | 5 | Segnali di errore con arity attesa, save riuscito emette solo `success`, save manomesso messo in quarantena (non scartato in silenzio), ring backup conserva le generazioni precedenti, save da versione futura parcheggiato invece che applicato |
+| `test_save_failures.gd` | 7 | Segnali di errore con arity attesa, save riuscito emette solo `success`, save manomesso messo in quarantena (non scartato in silenzio), ring backup conserva le generazioni precedenti, save da versione futura parcheggiato invece che applicato |
 | `test_i18n_assets.gd` | 9 | Entrambe le locale caricate + key set identico IT/EN che differiscono davvero, sprite reali per mess e badge, badge con icone e testo nelle due lingue, catalogo ambience punta a file reali, ogni mood band ha musica, texture del joystick presenti |
 | `test_phase_f.gd` | 12 | Default e reset di ogni chiave persistita, `ambience_enabled` roundtrip save/load, save rifiutato prima del load e riabilitato dopo, play_time non doppio-contato al reload, reset profilo azzera i contatori a vita, loop ambience copre l'intero file + gestione id/risorse, character swap mantiene il nodo `Character` |
 | `test_bridge.gd` | 21 | Lifecycle e triplo gate, parser HTTP (400/404/405/413), /status schema+valori, dispatch /command (mood/stress/save/language/panel), ring /events cap 200, /tree, /logs/tail, teardown stop() |
+| `test_logger.gd` | 3 | Chiusura del file a teardown, redazione dei segreti anche dentro gli Array, normalizzazione dei path assoluti a `user://` |
 
-**Totale**: 163 test, ~8s.
+**Totale**: 168 test, ~8s.
+
+`test_bridge.gd` non usa una porta fissa: la risolve a runtime partendo dal PID
+e sondando finche' non ne trova una libera, cosi` due run in parallelo non si
+contendono lo stesso socket.
 
 ## Architettura
 

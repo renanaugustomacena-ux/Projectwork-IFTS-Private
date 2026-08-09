@@ -4,13 +4,41 @@ extends TestBase
 ##
 ## NOTA: /screenshot e /quit sono verificati manualmente (viewport reale /
 ## terminazione processo) — vedi sezione "Verifica manuale" nel piano.
-## I test chiamano DevBridge.start(TEST_PORT) direttamente: gli user args
+## I test chiamano DevBridge.start(_port()) direttamente: gli user args
 ## (--bridge) non sono simulabili in un run headless del runner.
 ## Il runner ordina i metodi test alfabeticamente (test_runner.gd:89): i prefissi
 ## `aa`/`zz` fissano il primo/ultimo test del modulo; ogni test HTTP auto-avvia il
-## bridge con DevBridge.start(TEST_PORT).
+## bridge con DevBridge.start(_port()) sulla porta risolta a runtime.
 
-const TEST_PORT := 8123
+## Porta di prova risolta a runtime, mai fissa: due run della suite lanciati in
+## parallelo (vedi scripts/deep_test.sh, isolamento G-053) si contendevano
+## 127.0.0.1:8123 e il secondo falliva 6 test. La base deriva dal PID e viene
+## sondata finche' non ne troviamo una libera davvero.
+const PORT_BASE_MIN := 20000
+const PORT_BASE_SPAN := 20000
+const PORT_PROBE_ATTEMPTS := 64
+const PORT_FALLBACK := 8123
+
+var _test_port: int = 0
+
+
+## Lazy: la risolviamo al primo uso e la teniamo per tutto il modulo, cosi` ogni
+## start()/stop() dei test parla sempre della stessa porta.
+func _port() -> int:
+	if _test_port != 0:
+		return _test_port
+	var base: int = PORT_BASE_MIN + (OS.get_process_id() % PORT_BASE_SPAN)
+	var probe := TCPServer.new()
+	for offset in PORT_PROBE_ATTEMPTS:
+		var candidate: int = base + offset
+		if candidate > 65535:
+			break
+		if probe.listen(candidate, "127.0.0.1") == OK:
+			probe.stop()
+			_test_port = candidate
+			return _test_port
+	_test_port = PORT_FALLBACK
+	return _test_port
 
 
 func test_aa_inert_without_flag() -> void:
@@ -31,14 +59,14 @@ func test_start_rejects_invalid_port() -> void:
 
 
 func test_start_binds_localhost() -> void:
-	assert_true(DevBridge.start(TEST_PORT), "start(%d) fallito" % TEST_PORT)
+	assert_true(DevBridge.start(_port()), "start(%d) fallito" % _port())
 	assert_true(DevBridge.is_active(), "is_active() falso dopo start riuscito")
 	# Idempotente: secondo start non deve fallire ne' ribindare.
-	assert_true(DevBridge.start(TEST_PORT), "start idempotente fallito")
+	assert_true(DevBridge.start(_port()), "start idempotente fallito")
 
 
 func test_status_ok_schema() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _http("GET", "/status")
 	assert_eq(resp.status, 200, "GET /status non 200")
 	assert_true(resp.json is Dictionary, "/status body non e' un oggetto JSON")
@@ -59,7 +87,7 @@ func test_status_ok_schema() -> void:
 
 
 func test_status_values_sane() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _http("GET", "/status")
 	assert_eq(resp.status, 200)
 	var version_file := FileAccess.open("res://VERSION", FileAccess.READ)
@@ -72,20 +100,20 @@ func test_status_values_sane() -> void:
 
 
 func test_unknown_path_404() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _http("GET", "/nope")
 	assert_eq(resp.status, 404, "path ignoto non 404")
 	assert_true(resp.json is Dictionary and resp.json.has("error"), "404 senza campo error")
 
 
 func test_wrong_method_405() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _http("POST", "/status")
 	assert_eq(resp.status, 405, "POST /status non 405")
 
 
 func test_malformed_request_400() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _raw_send("GARBAGE-SENZA-SPAZI\r\n\r\n")
 	assert_eq(resp.status, 400, "request line malformata non 400")
 	# Il gioco deve essere ancora vivo: una seconda richiesta valida risponde.
@@ -94,7 +122,7 @@ func test_malformed_request_400() -> void:
 
 
 func test_oversized_body_413() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	# Content-Length oltre il tetto: 413 immediato, senza inviare il body.
 	var raw := "POST /command HTTP/1.1\r\nHost: x\r\nContent-Length: 70000\r\n\r\n"
 	var resp: Dictionary = await _raw_send(raw)
@@ -102,7 +130,7 @@ func test_oversized_body_413() -> void:
 
 
 func test_command_set_mood() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var previous: float = float(SaveManager.get_setting("mood_level", 1.0))
 	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": 0.25}))
 	assert_eq(resp.status, 200, "set_mood non 200")
@@ -114,7 +142,7 @@ func test_command_set_mood() -> void:
 
 
 func test_command_set_mood_out_of_range() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var previous: float = float(SaveManager.get_setting("mood_level", 1.0))
 	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": 1.7}))
 	assert_eq(resp.status, 400, "set_mood fuori range non 400")
@@ -122,7 +150,7 @@ func test_command_set_mood_out_of_range() -> void:
 
 
 func test_command_unknown_action() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "fly_to_moon"}))
 	assert_eq(resp.status, 400, "azione ignota non 400")
 	if resp.json is Dictionary:
@@ -130,7 +158,7 @@ func test_command_unknown_action() -> void:
 
 
 func test_command_set_stress() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_stress", "value": 0.5}))
 	assert_eq(resp.status, 200, "set_stress non 200")
 	assert_approx(StressManager.get_stress_value(), 0.5, 0.001, "stress non applicato")
@@ -138,7 +166,7 @@ func test_command_set_stress() -> void:
 
 
 func test_command_set_language() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var original: String = TranslationServer.get_locale()
 	var resp: Dictionary = await _http("POST", "/command", JSON.stringify({"action": "set_language", "lang": "en"}))
 	assert_eq(resp.status, 200, "set_language non 200")
@@ -157,7 +185,7 @@ func test_command_set_language() -> void:
 
 
 func test_command_save_emits_request() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var seen := [false]
 	var handler := func() -> void: seen[0] = true
 	SignalBus.save_requested.connect(handler)
@@ -168,7 +196,7 @@ func test_command_save_emits_request() -> void:
 
 
 func test_command_open_panel_without_game_scene() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	# In headless il current_scene e' il test runner: niente PanelManager.
 	var resp: Dictionary = await _http(
 		"POST", "/command", JSON.stringify({"action": "open_panel", "panel": "settings"})
@@ -177,7 +205,7 @@ func test_command_open_panel_without_game_scene() -> void:
 
 
 func test_events_contains_mood_traffic() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	await _http("POST", "/command", JSON.stringify({"action": "set_mood", "value": 0.42}))
 	var resp: Dictionary = await _http("GET", "/events")
 	assert_eq(resp.status, 200, "GET /events non 200")
@@ -191,7 +219,7 @@ func test_events_contains_mood_traffic() -> void:
 
 
 func test_events_ring_capped_at_200() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	for i in range(250):
 		SignalBus.mood_level_changed.emit(0.5)
 	var resp: Dictionary = await _http("GET", "/events")
@@ -203,7 +231,7 @@ func test_events_ring_capped_at_200() -> void:
 
 
 func test_tree_returns_root_structure() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	var resp: Dictionary = await _http("GET", "/tree?depth=2")
 	assert_eq(resp.status, 200, "GET /tree non 200")
 	if resp.json is Dictionary:
@@ -213,7 +241,7 @@ func test_tree_returns_root_structure() -> void:
 
 
 func test_logs_tail_returns_lines() -> void:
-	DevBridge.start(TEST_PORT)
+	DevBridge.start(_port())
 	AppLogger.info("dev_bridge_test", "riga_sentinella_test_bridge")
 	var resp: Dictionary = await _http("GET", "/logs/tail?n=50")
 	assert_eq(resp.status, 200, "GET /logs/tail non 200")
@@ -225,7 +253,7 @@ func test_zz_stop_closes_server() -> void:
 	DevBridge.stop()
 	assert_false(DevBridge.is_active(), "is_active() vero dopo stop()")
 	var peer := StreamPeerTCP.new()
-	peer.connect_to_host("127.0.0.1", TEST_PORT)
+	peer.connect_to_host("127.0.0.1", _port())
 	var connected := false
 	for i in range(30):
 		peer.poll()
@@ -259,7 +287,7 @@ func _raw_send(raw: String) -> Dictionary:
 
 func _transport(raw_req: PackedByteArray) -> Dictionary:
 	var peer := StreamPeerTCP.new()
-	if peer.connect_to_host("127.0.0.1", TEST_PORT) != OK:
+	if peer.connect_to_host("127.0.0.1", _port()) != OK:
 		return {"status": -1, "body": "", "json": null}
 	for i in range(120):
 		peer.poll()

@@ -111,12 +111,19 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 ./scripts/smoke_test.sh       # Boot headless ~2 s
 ./scripts/preflight.sh        # 7 step: toolchain, integrità, JSON, asset, boot, runtime, deep tests. GO/NO-GO exit 0/1
 ./scripts/godot-validate.sh   # Full re-import + runtime ~3 min
-./scripts/deep_test.sh        # 163 test invasivi in 13 moduli ~8 s:
+./scripts/deep_test.sh        # 168 test invasivi in 14 moduli ~8 s (user:// isolato):
                               #   helpers (16) + catalogs (21) + stress (12) + save (13)
                               #   + spawn (11) + panels (9) + input (14) + ui_events (15)
-                              #   + crypto (5) + save_failures (5) + i18n_assets (9)
-                              #   + phase_f (12) + bridge (21)
+                              #   + crypto (5) + save_failures (7) + i18n_assets (9)
+                              #   + phase_f (12) + bridge (21) + logger (3)
 ```
+
+> La suite gira **solo** tramite `./scripts/deep_test.sh`. Il wrapper redirige
+> `user://` su una directory temporanea unica per run, altrimenti i test
+> riscriverebbero il profilo reale del giocatore (`save_data.json`,
+> `cozy_room.db`, `integrity.key`). Lanciare Godot a mano sul `test_runner.tscn`
+> non e` supportato: il runner se ne accorge e aborta. Vedi
+> [v1/tests/README.md](v1/tests/README.md#isolamento-dal-profilo-giocatore-g-053).
 
 Dev bridge (solo build debug, mai attivo senza flag):
 

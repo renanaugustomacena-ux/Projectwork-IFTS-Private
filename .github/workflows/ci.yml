@@ -266,8 +266,16 @@ jobs:
       - name: Run deep integration test suite
         run: |
           cd "$GITHUB_WORKSPACE"
-          # Invasive suite: 111+ test su 8 moduli (helpers, catalog, stress,
-          # save, spawn, panels, input, ui_events).
+          # Invasive suite: 168 test su 14 moduli (helpers, catalogs, stress,
+          # save, spawn, panels, input, ui_events, crypto, save_failures,
+          # i18n_assets, phase_f, bridge, logger).
+          #
+          # SEMPRE via il wrapper, mai `godot ... test_runner.tscn` diretto: la
+          # suite scrive save_data.json / cozy_room.db / integrity.key dentro
+          # `user://`, che e` il profilo reale del giocatore. deep_test.sh crea
+          # una user dir usa-e-getta per ogni run e ci pianta il sentinella che
+          # test_runner.gd pretende di trovare prima di eseguire un solo test
+          # (audit G-053).
           #
           # Pass criterion: il test_runner stampa "ALL PASS" + "Totals: X pass,
           # 0 fail" dopo aver eseguito TUTTE le assertion. Questo e` il ground
@@ -278,8 +286,17 @@ jobs:
           # Le leak sono debito tecnico del runner (scene instantiation in
           # loop), non regressione dei test. Se usassimo exit code come
           # gate, avremmo falsi rossi ad ogni run.
-          timeout 90 godot --headless --path v1/ res://tests/test_runner.tscn \
+          GODOT_BIN=godot bash scripts/deep_test.sh --timeout 90 \
             | tee /tmp/deep_ci.log || true
+          # Prova d'isolamento eseguita ad ogni run: la user dir "vera" di
+          # questo runner non deve nemmeno esistere a fine suite.
+          REAL_PROFILE="${XDG_DATA_HOME:-$HOME/.local/share}/RelaxRoom"
+          if [ -e "$REAL_PROFILE" ]; then
+            echo "FAIL: la suite ha scritto nel profilo reale ($REAL_PROFILE)"
+            ls -la "$REAL_PROFILE"
+            exit 1
+          fi
+          echo "PASS: isolamento user:// confermato ($REAL_PROFILE assente)"
           if grep -q "✅ ALL PASS" /tmp/deep_ci.log && grep -qE "Totals: [0-9]+ pass, 0 fail" /tmp/deep_ci.log; then
             echo "PASS: deep tests all green (assertion-level)"
           else

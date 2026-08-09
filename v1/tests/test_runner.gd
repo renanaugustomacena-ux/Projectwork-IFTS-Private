@@ -8,9 +8,14 @@
 ## `assert_true`, `assert_eq`, `assert_approx`, `assert_non_null`.
 ##
 ## Invocazione CLI:
-##   godot --headless --path v1/ res://tests/test_runner.tscn
+##   ./scripts/deep_test.sh
 ##
-## Exit code: 0 = ALL PASS, 1 = >= 1 FAIL, 2 = harness error.
+## SOLO tramite il wrapper: la suite scrive save, DB e log dentro `user://`, che
+## per il gioco e` il profilo reale del giocatore. Il wrapper redirige `user://`
+## su una directory usa-e-getta e ci pianta SANDBOX_MARKER; senza quel marker il
+## runner abortisce invece di distruggere i dati veri (audit G-053).
+##
+## Exit code: 0 = ALL PASS, 1 = >= 1 FAIL, 2 = harness error / user:// non isolata.
 extends Node
 
 const TEST_MODULES := [
@@ -32,6 +37,11 @@ const TEST_MODULES := [
 
 const RESULTS_PATH := "user://test_results.jsonl"
 
+## Sentinella creata da `scripts/deep_test.sh` dentro la user dir usa-e-getta.
+## E` la prova empirica che `user://` NON e` il profilo del giocatore: la sua
+## assenza blocca la suite prima di aprire un solo file (audit G-053).
+const SANDBOX_MARKER := "user://.test_sandbox"
+
 var _total_pass: int = 0
 var _total_fail: int = 0
 var _module_stats: Array[Dictionary] = []
@@ -40,6 +50,12 @@ var _results_file: FileAccess = null
 
 
 func _ready() -> void:
+	# Gate d'isolamento PRIMA di qualunque scrittura: se user:// e` il profilo
+	# reale non tocchiamo niente e usciamo con harness error.
+	if not FileAccess.file_exists(SANDBOX_MARKER):
+		_print_sandbox_error()
+		get_tree().quit(2)
+		return
 	# Give autoloads 1 frame to settle before running any test
 	await get_tree().process_frame
 	_results_file = FileAccess.open(RESULTS_PATH, FileAccess.WRITE)
@@ -53,6 +69,28 @@ func _ready() -> void:
 	if _results_file:
 		_results_file.close()
 	get_tree().quit(0 if _total_fail == 0 else 1)
+
+
+## Spiega perche` la suite si e` fermata e come lanciarla davvero. Stampiamo su
+## stdout (il gate di CI legge lo stdout) e su stderr per non passare inosservati.
+func _print_sandbox_error() -> void:
+	printerr("test_runner: user:// non e` una sandbox di test, esecuzione annullata (G-053)")
+	print("")
+	print("============================================")
+	print("  ❌ SUITE ANNULLATA — user:// non isolata")
+	print("============================================")
+	print("")
+	print("  user:// risolve in: %s" % OS.get_user_data_dir())
+	print("  Marker mancante:    %s" % SANDBOX_MARKER)
+	print("")
+	print("  Questa e` la directory del profilo reale: eseguire la suite qui")
+	print("  sovrascriverebbe save_data.json, cozy_room.db e integrity.key del")
+	print("  giocatore. Lancia la suite dal wrapper, che crea una user dir")
+	print("  usa-e-getta (unica per run) e ci pianta il marker:")
+	print("")
+	print("      ./scripts/deep_test.sh")
+	print("")
+	print("============================================")
 
 
 func _run_all_modules() -> void:
@@ -191,7 +229,7 @@ func _print_report() -> void:
 	else:
 		print("  ❌ %d FAILURES" % _total_fail)
 	print("")
-	print("  Results: %s" % RESULTS_PATH)
+	print("  Results: %s" % ProjectSettings.globalize_path(RESULTS_PATH))
 	print("============================================")
 
 
