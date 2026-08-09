@@ -1,8 +1,17 @@
-# Supabase Cloud Schema
+# Supabase Cloud Backup Schema (push-only)
 
 **Status**: [`schema.sql`](schema.sql) is the versioned, reproducible DDL for
 every table the game client pushes. It replaces the earlier stub that waited
 for a `pg_dump` from the dashboard (audit ref 4.7.3 / V-008).
+
+> **This is a one-way backup, not cross-device sync.** The client only ever
+> writes upward. `SupabaseClient.fetch_table()` exists and is wired into the
+> request dispatcher, but nothing anywhere enqueues a `fetch` operation, and the
+> cloud-to-local mappers were deleted (B-022) — `supabase_mapper.gd` has
+> `*_to_cloud()` functions and nothing in the other direction. Signing in on a
+> second machine does **not** download the room; the next push overwrites the
+> cloud copy with whatever that machine has locally. Documented as a deliberate
+> de-claim (G-007 / V-091), not as a bug to be fixed by this schema.
 
 ## Connection info
 
@@ -39,12 +48,19 @@ Tables that appeared in older docs but that the client does not write
 (friends, leaderboards, telemetry, ...) are intentionally **not** in
 `schema.sql`. Add them here the day the client code actually uses them.
 
+Known residual on `room_decorations`: the client's DELETE filter matches on id
+only, so cross-tenant isolation rests entirely on the RLS policy — there is no
+second `user_id` predicate on the wire (V-079, open).
+
 ## Keep in sync with the client mapper
 
 `schema.sql` is **derived by hand from
 [`v1/scripts/utils/supabase_mapper.gd`](../v1/scripts/utils/supabase_mapper.gd)** —
 the single point of truth for local-to-cloud field mapping. Every key a
 `*_to_cloud()` function emits must exist as a column with a compatible type.
+The mapper currently exposes exactly five: `profile_to_cloud`,
+`decorations_to_cloud`, `currency_to_cloud`, `settings_to_cloud`,
+`music_to_cloud` — one per table above, no more and no fewer.
 
 Whenever you touch the mapper (add/rename/remove a payload key, add a new
 `*_to_cloud()` function that the sync engine dispatches), you MUST update

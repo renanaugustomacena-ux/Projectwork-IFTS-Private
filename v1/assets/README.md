@@ -18,8 +18,8 @@ Lo stile grafico e' **pixel art**, importato con texture filter Nearest (no smoo
 | `menu/` | **Creato** nel progetto | Ex-membro del team | Progetto IFTS |
 | `pets/` | **Creato** nel progetto | Ex-membro del team | Progetto IFTS |
 | `room/` | **Creato** nel progetto | Ex-membro del team | Progetto IFTS |
-| `sprites/decorations/` | Scaricato | SoppyCraft (itch.io) | Commerciale OK, no redistribuzione |
-| `sprites/rooms/` | Scaricato | Thurraya (itch.io) | Commerciale OK, no redistribuzione |
+| `sprites/decorations/` | Scaricato | SoppyCraft (itch.io) + Kenney | Commerciale OK, no redistribuzione / CC0 |
+| `sprites/rooms/` | Scaricato | Thurraya (itch.io) + Bongseng | Commerciale OK, no redistribuzione |
 | `ui/` | Scaricato | Kenney (kenney.nl) | CC0 1.0 (pubblico dominio) |
 
 **Regola pratica**: le cartelle con file `.aseprite` sorgente (charachters, menu, pets, room)
@@ -28,54 +28,61 @@ Le cartelle scaricate da internet hanno file di licenza inclusi — rispettare i
 
 ## Riepilogo Contenuti
 
+Conteggi verificati sul disco il 2026-08-09 (`find <dir> -type f` escludendo
+i `.import` generati da Godot e i README).
+
 | Cartella | Contenuto | File | Formato | README |
 |----------|-----------|------|---------|--------|
-| `audio/music/` | 2 tracce ambient lo-fi | 4 | WAV + .import | [README](audio/README.md) |
-| `backgrounds/` | Sfondi foresta parallasse (12 layer) | 38 | PNG + PSD | [README](backgrounds/README.md) |
-| `charachters/` | 3 set sprite personaggi (solo **old** attivo) | ~90 | PNG + Aseprite | [README](charachters/README.md) |
-| `menu/` | Bottoni, loading screen, joystick, UI | ~58 | PNG + Aseprite | [README](menu/README.md) |
-| `pets/` | Animale domestico (Void Cat) | 3 | PNG + Aseprite | [README](pets/README.md) |
-| `room/` | Stanza base, porte, finestre, letti | ~24 | PNG + Aseprite | [README](room/README.md) |
-| `sprites/decorations/` | Indoor Plants Pack (14 piante) | ~80 | PNG + JSON | [README](sprites/README.md) |
-| `sprites/rooms/` | Mobili isometrici (20 pezzi + scene) | ~76 | PNG + Tiled | [README](sprites/README.md) |
-| `ui/` | Kenney Pixel UI Pack + tema cozy | ~85 | PNG + .tres | [README](ui/README.md) |
+| `audio/` | 2 tracce Mixkit + 2 ambience sintetizzate | 4 | WAV | [README](audio/README.md) |
+| `backgrounds/` | Sfondi foresta parallasse | 22 | PNG + PSD | [README](backgrounds/README.md) |
+| `charachters/` | 2 set completi in catalogo + 2 parziali | 66 | PNG + Aseprite | [README](charachters/README.md) |
+| `menu/` | Bottoni, loading screen, joystick, UI | 25 | PNG + Aseprite | [README](menu/README.md) |
+| `pets/` | Animale domestico (Void Cat) | 7 | PNG + Aseprite | [README](pets/README.md) |
+| `room/` | Stanza base, 3 finestre, 6 sprite mess | 14 | PNG + Aseprite | [README](room/README.md) |
+| `sprites/decorations/` | SoppyCraft Indoor Plants + Kenney Furniture CC0 | 167 | PNG + JSON | [README](sprites/README.md) |
+| `sprites/rooms/` | Mobili isometrici Thurraya + Bongseng | 73 | PNG + Tiled | [README](sprites/README.md) |
+| `ui/` | Kenney Pixel UI Pack + tema cozy | 41 | PNG + .tres | [README](ui/README.md) |
+| `palette/` | `palette_projectwork.gpl` | 1 | GPL | — |
 
 ## Struttura
 
 ```
 assets/
 ├── audio/
-│   └── music/                  # 2 tracce WAV (Light Rain, Rain & Thunder)
+│   ├── music/                  # 2 tracce WAV Mixkit (Light Rain, Rain & Thunder)
+│   └── ambience/               # 2 loop sintetizzati (fireplace, rain_soft)
 ├── backgrounds/
-│   └── Free Pixel Art Forest/  # 12 layer parallasse + PSD sorgente
+│   └── Free Pixel Art Forest/  # Layer parallasse + PSD sorgente
 ├── charachters/                # TYPO STORICO — non rinominare!
-│   ├── female/
-│   │   └── female_red_shirt/   #   NON ATTIVO nel gioco
-│   └── male/
-│       ├── male_yellow_shirt/  #   NON ATTIVO nel gioco
-│       └── old/                #   ATTIVO — 8 direzioni, 4 animazioni
+│   └── male/                   # NON esiste una cartella female/ (G-042)
+│       ├── male_rose/          #   IN CATALOGO — derivato da old/ (ricolorazione)
+│       ├── male_yellow_shirt/  #   INCOMPLETO — mancano idle e interact
+│       └── old/                #   IN CATALOGO — 8 direzioni, 4 animazioni
 │           ├── male_idle/      #     8 strip 128x32 (4 frame da 32x32)
 │           ├── male_walk/      #     8 strip 128x32
 │           ├── male_interact/  #     8 strip 128x32
 │           ├── male_rotate/    #     1 strip 256x32 (8 frame)
-│           └── male_black_shirt/ #   LEGACY — rimosso dal catalogo
+│           └── male_black_shirt/ #   LEGACY — mai nel catalogo
 ├── menu/
 │   ├── aseprite_menu/          # 3 sorgenti Aseprite
-│   ├── buttons_pressed/        # 14 bottoni stato premuto
-│   ├── buttons_static/         # 14 bottoni stato normale
+│   ├── buttons_pressed/        # Bottoni stato premuto
+│   ├── buttons_static/         # Bottoni stato normale
 │   ├── loading/                # Schermata di caricamento
 │   └── ui/                     # Joystick, ritratti, stress bar
+├── palette/
+│   └── palette_projectwork.gpl # Palette di progetto (ci/recolor_character.py)
 ├── pets/
 │   └── aseprite_pets/          # 1 sorgente Aseprite (Void Cat)
 ├── room/
 │   ├── aseprite_room/          # 3 sorgenti Aseprite
-│   ├── bed/                    # 8 varianti letto (4 colori x 2)
-│   └── mess/                   # 3 sprite disordine pavimento
+│   └── mess/                   # 6 sprite disordine pavimento
 ├── sprites/
 │   ├── decorations/
-│   │   └── sc_indoor_plants_free/  # SoppyCraft: piante, vasi, accessori
+│   │   ├── sc_indoor_plants_free/  # SoppyCraft: piante, vasi, accessori
+│   │   └── kenney_furniture_cc0/   # Kenney Furniture Kit CC0
 │   └── rooms/
-│       └── Individuals/        # 20 sprite singoli (letti, scrivanie, sedie, armadi)
+│       ├── Individuals/        # Thurraya: sprite singoli
+│       └── bongseng/           # Bongseng: letti, porte
 └── ui/
     └── kenney_pixel-ui-pack/   # 9-Slice, Spritesheet, License
 ```
@@ -86,7 +93,7 @@ assets/
 
 Il file `data/characters.json` definisce quali personaggi sono disponibili nel gioco.
 Ogni personaggio ha un `id`, un `sprite_path` e le sue animazioni per 8 direzioni.
-Attualmente solo `male_old` e' configurato.
+Attualmente ne sono configurati **due**: `male_old` e `male_rose`.
 
 **Per aggiungere un nuovo personaggio**: aggiungere un nuovo oggetto nell'array `characters`
 con tutti i percorsi sprite, poi creare la scena `.tscn` corrispondente.
@@ -99,8 +106,10 @@ Il campo `item_scale` controlla la dimensione in gioco (3.0 per mobili, 6.0 per 
 
 ### Audio → `data/tracks.json`
 
-Il file `data/tracks.json` definisce le tracce musicali. `AudioManager` le riproduce
-con crossfade automatico.
+Il file `data/tracks.json` definisce le tracce musicali e le ambience.
+`AudioManager` le riproduce con crossfade automatico, scegliendole su **due
+bande di mood distinte**: la musica cambia sotto 0.25, l'ambience sotto 0.50
+(la stessa soglia a cui la stanza si scurisce e comincia a piovere).
 
 ### Sfondi → `window_background.gd`
 
@@ -126,6 +135,7 @@ Usa gli asset del pack Kenney (sottocartella `9-Slice/Ancient/`).
 | Free Pixel Art Forest | Eder Muniz | Custom | Si, con credito | No redistribuzione/rivendita |
 | Indoor Plants Pack | SoppyCraft | Custom | Si | No redistribuzione, no AI training |
 | Isometric Room Builder | Thurraya | Custom | Si | No redistribuzione, no AI/NFT |
+| Kenney Furniture Kit | Kenney | CC0 1.0 | Si | Nessuna (pubblico dominio) |
 | Mixkit Rain Sounds | Mixkit | Free license | Si | Nessuna |
 | Pixel UI Pack | Kenney | CC0 1.0 | Si | Nessuna (pubblico dominio) |
 | Personaggi/Menu/Room/Pet | Ex-membro team | Progetto IFTS | Uso interno | Progetto accademico |

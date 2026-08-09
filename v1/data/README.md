@@ -6,12 +6,12 @@ Persistenza **offline-first** con doppio layer locale:
 |-------|------------|------|-------|
 | Primario | JSON | `user://save_data.json` (v5.0.0) | Runtime state (decorazioni, char, musica, settings) |
 | Mirror | SQLite | `user://cozy_room.db` (WAL mode) | Query strutturate, account, sync_queue |
-| Cloud opzionale | Supabase PostgreSQL | — | Cross-device sync (off di default) |
+| Backup cloud opzionale | Supabase PostgreSQL | — | Solo push, nessuna lettura (off di default) |
 
 `SaveManager` scrive il JSON come source-of-truth primario + emette segnale
 `save_to_database_requested` per persistenza SQLite mirror. Auto-save ogni 60s.
 
-## Cataloghi JSON (5 file)
+## Cataloghi JSON (6 file)
 
 I contenuti del gioco sono **catalog-driven**. Editare i JSON cambia il contenuto
 senza toccare il codice. `GameManager._load_catalogs()` legge tutti al boot.
@@ -21,8 +21,9 @@ senza toccare il codice. `GameManager._load_catalogs()` legge tutti al boot.
 | `decorations.json` | 129 deco in 13 categorie (1 hidden: pets) | `ci/validate_json_catalogs.py` |
 | `characters.json` | 1 personaggio: `male_old` (directional full) | idem |
 | `rooms.json` | 1 stanza `cozy_studio` × 3 temi | idem |
-| `tracks.json` | 2 tracks (Mixkit rain loop + rain thunder) + ambience vuoto | idem |
-| `mess_catalog.json` | 6 mess types con stress_weight + spawn_weight | idem |
+| `tracks.json` | 2 tracks (Mixkit rain loop + rain thunder) + 2 ambience sintetizzate | idem |
+| `mess_catalog.json` | 6 mess types con stress_weight + spawn_weight + sprite reale | idem |
+| `badges.json` | 6 badge sbloccabili con condizione + testi IT/EN | idem |
 
 ### Struttura decorations.json
 
@@ -116,7 +117,7 @@ quindi il punto in cui il giocatore la sente: va fatto guardando questa tabella.
     "label_en": "Crumbs",
     "stress_weight": 0.06,       // stress applicato on spawn, rimosso on clean
     "spawn_weight": 1.6,         // weighted random (MessSpawner)
-    "sprite_path": "",           // "" → placeholder colorato runtime
+    "sprite_path": "res://assets/room/mess/crumbs_spot.png",  // sprite reale; "" → placeholder colorato runtime
     "placeholder_color": "#c2a677",
     "size_px": 32
   }]
@@ -125,9 +126,10 @@ quindi il punto in cui il giocatore la sente: va fatto guardando questa tabella.
 
 ---
 
-## SQLite schema (9 tabelle)
+## SQLite schema (11 tabelle)
 
-`LocalDatabase` autoload (`scripts/autoload/local_database.gd` 831 righe).
+`LocalDatabase` autoload (`scripts/autoload/local_database.gd`, 388 righe di
+facade + 1317 righe nei 9 repo modulari di `autoload/database/`).
 Engine: **godot-sqlite GDExtension v4.7**, journal_mode=WAL, foreign_keys=ON,
 busy_timeout=5000ms.
 
@@ -164,14 +166,18 @@ placed_decorations (PK placement_id, FK room_id) ───────┘
 | `data_di_nascita` | TEXT | NOT NULL | `''` |
 | `mail` | TEXT | NOT NULL | `''` |
 | `display_name` | TEXT | | `''` |
-| `password_hash` | TEXT | | `''` (formato `v2:salt:hash` PBKDF2) |
+| `password_hash` | TEXT | | `''` (formato `v4$pbkdf2$<iter>$<salt_hex>$<dk_hex>`) |
 | `coins` | INTEGER | | `0` |
 | `inventario_capacita` | INTEGER | | `50` |
 | `updated_at` | TEXT | | `datetime('now')` |
-| `deleted_at` | TEXT | | `NULL` (soft delete) |
+| `deleted_at` | TEXT | | `NULL` (soft delete, aggiunta da Migration 2) |
+| `failed_attempts` | INTEGER | | `0` (aggiunta da Migration 3) |
+| `lockout_until_unix` | INTEGER | | `0` (aggiunta da Migration 3) |
 
-Vincoli anti-brute-force gestiti da `AuthManager` (non in schema): 5 tentativi
-falliti → lockout 300s in-memory.
+Anti-brute-force: 5 tentativi falliti → lockout 300 s, **persistito** in
+`failed_attempts` + `lockout_until_unix`. Riavviare il processo non azzera piu`
+il conteggio. Limite residuo noto: la scadenza e` un timestamp di orologio, e
+spostare indietro l'ora di sistema allunga o cancella il lockout (V-055).
 
 **Riga ospite**: `auth_uid = 'local'` con `mail = 'offline@local'` (costanti
 `AUTH_GUEST_UID` / `AUTH_GUEST_EMAIL`). È l'unica riga che il salvataggio può
@@ -212,9 +218,7 @@ appiccicare l'identità ospite sopra un account reale (V-021).
 | `account_id` | INTEGER | NOT NULL FK → accounts ON DELETE CASCADE |
 | `item_id` | INTEGER | NOT NULL |
 | `quantita` | INTEGER | DEFAULT `1` |
-| `item_type` | TEXT | DEFAULT `''` (post-migration) |
-| `is_unlocked` | INTEGER | DEFAULT `1` (post-migration) |
-| `acquired_at` | TEXT | DEFAULT `''` (post-migration, datetime corrente on insert) |
+
 
 ### Tabella: `sync_queue`
 
@@ -289,7 +293,7 @@ tracciata come B-016 (dual-write incompleto).
 | `placement_zone` | TEXT | `'floor'` |
 | `placed_at` | TEXT | `datetime('now')` |
 
-### Indici (7, tutti su FK)
+### Indici (8, tutti su FK)
 
 ```sql
 idx_characters_account        ON characters(account_id)
@@ -299,7 +303,11 @@ idx_settings_account          ON settings(account_id)
 idx_save_metadata_account     ON save_metadata(account_id)
 idx_music_state_account       ON music_state(account_id)
 idx_placed_decorations_room   ON placed_decorations(room_id)
+idx_badges_account            ON badges_unlocked(account_id)
 ```
+
+Nessun indice su `accounts.display_name`, che pero` viene interrogato al login
+(V-093, aperto: irrilevante alle dimensioni attuali).
 
 ### Migrazioni (3)
 
@@ -316,8 +324,11 @@ Tutte **idempotenti** (safe to re-run):
    non-costanti in ADD COLUMN → uso `DEFAULT ''` + `UPDATE` per popolare
    valori esistenti.
 
-3. **Migration 3** (inventario extras): ADD COLUMN per `item_type`,
-   `is_unlocked`, `acquired_at`.
+3. **Migration 3** (sync DLQ + rate limit): `CREATE TABLE IF NOT EXISTS
+   sync_dead_letter` per i payload di sync corrotti o esauriti — prima
+   venivano cancellati senza traccia (audit 4.1.1-L422) — piu` ADD COLUMN per
+   `accounts.failed_attempts` e `accounts.lockout_until_unix`, che rendono il
+   lockout anti-brute-force persistente (audit 4.4.2).
 
 ---
 
@@ -381,27 +392,42 @@ Forward-compat: save da versione futura → warn, NO downgrade, apply as-is.
 
 ---
 
-## Supabase schema (cloud opzionale)
+## Supabase schema (backup cloud opzionale, solo push)
 
 Attivo solo se `user://config.cfg` contiene url HTTPS + anon_key validi.
 Schema PostgreSQL con **Row Level Security** su ogni policy (`auth.uid() = user_id`).
 
-15 tabelle progettate da Elia, 5 attivamente push-live da `SupabaseClient._push_local_state()`:
+`supabase/schema.sql` versiona esattamente le **5 tabelle** che
+`SupabaseClient._push_local_state()` scrive. Le tabelle che comparivano nei
+documenti vecchi ma che il client non tocca sono state tolte dallo schema: si
+riaggiungono il giorno in cui il codice le usa.
 
-| Tabella cloud | Push-live? | Notes |
-|---------------|------------|-------|
-| `profiles` | ✅ | display_name, avatar_character_id, current_room_id, locale |
-| `user_currency` | ✅ | coins, total_earned |
-| `user_settings` | ✅ | display_mode, volumes (master/music/ambience) |
-| `music_preferences` | ✅ | current_track_index, playlist_mode, active_ambience |
-| `room_decorations` | ✅ | delete+upsert batch per room |
-| `user_inventory` | ⏸ | mapper esiste, non chiamato (dual-write incompleto B-016) |
-| `characters_cloud`, `outfits_cloud`, `friends`, `room_visits`, `chat_messages`, `pomodoro_sessions`, `journal_entries`, `mood_entries`, `memos`, `audit_log`, `notifications` | ⏸ | Predisposte per feature future |
+| Tabella cloud | Contenuto |
+|---------------|-----------|
+| `profiles` | display_name, avatar_character_id, current_room_id, locale |
+| `user_currency` | coins, total_earned |
+| `user_settings` | display_mode, volumes (master/music/ambience) |
+| `music_preferences` | current_track_index, playlist_mode, active_ambience |
+| `room_decorations` | delete+upsert batch per room |
+
+> **Solo scrittura.** Non esiste un percorso cloud → locale. `fetch_table()`
+> e` definita e cablata nel dispatcher, ma niente accoda mai un'operazione
+> `fetch`, e i mapper cloud-to-local sono stati rimossi (B-022). Accedere da un
+> secondo computer non scarica la stanza: la sovrascrive con quella locale. E`
+> un backup del dispositivo, non una sincronizzazione cross-device
+> (G-007 / V-091, de-claim consapevole).
+>
+> Limite noto della DELETE su `room_decorations`: il filtro e` solo per id e
+> l'isolamento fra utenti dipende interamente da RLS (V-079).
+
+`inventory_to_cloud` e` stato rimosso (Phase E): non aveva call site ne` tabella
+corrispondente in `schema.sql`, e violava la parita` mapper↔schema.
 
 Token JWT+refresh cifrati in `user://supabase_session.cfg` con chiave derivata
 da `OS.get_user_data_dir() + salt` (fix B-019 — grep banale non-trivial).
 
-Dettaglio DDL cloud: da estrarre (ticket T-X-001 post-demo).
+DDL completo: [supabase/schema.sql](../../supabase/schema.sql), documentato in
+[supabase/README.md](../../supabase/README.md).
 
 ---
 
@@ -434,5 +460,5 @@ injection risk). Transazioni con ROLLBACK esplicito su error batch.
 - `scripts/autoload/local_database.gd` — facade SQLite
 - `scripts/autoload/database/*` — 9 repo modulari (B-033)
 - `scripts/autoload/save_manager.gd` — JSON + HMAC + migrazioni
-- `scripts/autoload/supabase_client.gd` — cloud sync
+- `scripts/autoload/supabase_client.gd` — backup cloud push-only
 - [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — § 4.7 db-review

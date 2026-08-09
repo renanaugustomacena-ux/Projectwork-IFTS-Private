@@ -1,12 +1,16 @@
 ## ProfileHUDPanel — Mini pannello orizzontale del profilo (feature T-R-015).
 ##
-## Scope SCHELETRO (pre-demo 2026-04-17):
+## Contenuto, tutto implementato (la docstring elencava questi punti come
+## segnaposto "post-demo" molto dopo che erano stati completati — G-063):
 ## - Label nome utente
-## - Label placeholder "Immagine profilo (click per scegliere)" (T-R-015c post-demo)
-## - Label placeholder "Badge" (T-R-015d post-demo)
+## - Immagine profilo: click per scegliere un PNG, validata (tetto 10 MB +
+##   magic byte) e scritta con staging write-then-rename (T-R-015c)
+## - Badge sbloccati, letti da BadgeManager (T-R-015d)
 ## - Bottone "Impostazioni" (apre settings_panel via PanelManager)
-## - Bottone language toggle EN/IT (solo visuale, T-R-015g .po files post-demo)
-## - Mood slider HSlider 0..1 emette mood_level_changed (T-R-015i effects post-demo)
+## - Toggle lingua IT/EN: cambia davvero locale a runtime via
+##   TranslationServer, l'intera UI si ri-etichetta (T-R-015g)
+## - Mood slider HSlider 0..1: emette mood_level_changed, che pilota overlay,
+##   pioggia, ambience, musica e comportamento del pet (T-R-015i)
 ##
 ## Layout: PanelContainer top-right anchored, dimensione compatta 420x140.
 ## Stile: coerente con cozy_theme.tres, testo crema su sfondo scuro.

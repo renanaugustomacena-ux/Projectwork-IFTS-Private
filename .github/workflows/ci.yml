@@ -266,9 +266,9 @@ jobs:
       - name: Run deep integration test suite
         run: |
           cd "$GITHUB_WORKSPACE"
-          # Invasive suite: 168 test su 14 moduli (helpers, catalogs, stress,
+          # Invasive suite: 196 test su 15 moduli (helpers, catalogs, stress,
           # save, spawn, panels, input, ui_events, crypto, save_failures,
-          # i18n_assets, phase_f, bridge, logger).
+          # i18n_assets, phase_f, bridge, logger, mood).
           #
           # SEMPRE via il wrapper, mai `godot ... test_runner.tscn` diretto: la
           # suite scrive save_data.json / cozy_room.db / integrity.key dentro

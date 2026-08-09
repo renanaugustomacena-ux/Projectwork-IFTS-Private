@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elia Zoccatelli — Contributi · Relax Room</title>
-    <meta name="description" content="Contributi di Elia Zoccatelli al progetto Relax Room: database SQLite, migrazioni, schema Supabase, cloud sync.">
+    <meta name="description" content="Contributi di Elia Zoccatelli al progetto Relax Room: database SQLite, migrazioni, schema Supabase, backup cloud in sola scrittura.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,10 +60,11 @@
         <h2>Panoramica</h2>
         <p>
             Ha progettato e implementato tutta la persistenza del progetto. Dal
-            layer locale SQLite (9 tabelle, WAL mode, migrazioni idempotenti con
+            layer locale SQLite (11 tabelle, WAL mode, migrazioni idempotenti con
             backup pre-DROP) al layer cloud Supabase (schema PostgreSQL, Row
             Level Security, REST API client). È la base su cui poggia l'offline-first
-            del gioco: il sistema funziona senza connessione, il cloud è un bonus.
+            del gioco: il sistema funziona senza connessione, il cloud è un backup
+            in sola scrittura.
         </p>
     </section>
 
@@ -74,9 +75,9 @@
             <div class="contrib-card">
                 <h3><i data-lucide="database"></i> SQLite Locale</h3>
                 <ul>
-                    <li><code>local_database.gd</code> (831 righe) — autoload SQLite via godot-sqlite GDExtension v4.7</li>
-                    <li><strong>9 tabelle</strong> progettate: <code>accounts</code>, <code>characters</code>, <code>rooms</code>, <code>inventario</code>, <code>sync_queue</code>, <code>settings</code>, <code>save_metadata</code>, <code>music_state</code>, <code>placed_decorations</code></li>
-                    <li>7 indici su foreign keys per performance query</li>
+                    <li><code>local_database.gd</code> (388 righe) — facade SQLite via godot-sqlite GDExtension v4.7, delega a 9 repo modulari in <code>autoload/database/</code></li>
+                    <li><strong>9 tabelle di base</strong>: <code>accounts</code>, <code>characters</code>, <code>rooms</code>, <code>inventario</code>, <code>sync_queue</code>, <code>settings</code>, <code>save_metadata</code>, <code>music_state</code>, <code>placed_decorations</code> (piu' <code>badges_unlocked</code> e <code>sync_dead_letter</code> aggiunte dopo)</li>
+                    <li>Indici su foreign keys per performance query</li>
                     <li><code>PRAGMA journal_mode=WAL</code> + <code>foreign_keys=ON</code> + <code>busy_timeout=5000</code></li>
                     <li>BEGIN/COMMIT/ROLLBACK transaction pattern in <code>_on_save_requested</code></li>
                     <li>CRUD completo per ogni tabella: upsert, get, update, delete, soft_delete</li>
@@ -97,10 +98,10 @@
             <div class="contrib-card">
                 <h3><i data-lucide="shield-check"></i> Auth + Security</h3>
                 <ul>
-                    <li><code>auth_manager.gd</code> (193 righe) — guest + username/password</li>
-                    <li><strong>PBKDF2-v2</strong> hashing con salt per-account (16 bytes random), 10.000 iterazioni SHA-256</li>
-                    <li>Legacy hash migration: al primo login con hash vecchio, si migra automaticamente al formato v2</li>
-                    <li>Rate limiting: <strong>5 tentativi</strong> falliti → lockout 300s</li>
+                    <li><code>auth_manager.gd</code> (414 righe) — guest + username/password</li>
+                    <li><strong>PBKDF2-HMAC-SHA256 v4</strong> (RFC 8018 §5.2) con salt per-account 16 byte, 100.000 iterazioni, chiave derivata 32 byte</li>
+                    <li>Legacy hash migration: al primo login riuscito con un hash v1/v2/v3 si ri-hasha automaticamente a v4</li>
+                    <li>Rate limiting persistito su <code>accounts</code>: <strong>5 tentativi</strong> falliti → lockout 300s</li>
                     <li>Soft delete account (flag <code>deleted_at</code>) per audit trail</li>
                     <li>Integrazione <code>is_open()</code> check prima di ogni operazione DB (fix A26)</li>
                 </ul>
@@ -109,9 +110,10 @@
             <div class="contrib-card">
                 <h3><i data-lucide="cloud"></i> Supabase Cloud</h3>
                 <ul>
-                    <li><code>supabase_client.gd</code> (499 righe) — REST API client asincrono</li>
-                    <li>Schema cloud: 15 tabelle PostgreSQL con RLS <code>auth.uid() = user_id</code> su ogni policy</li>
+                    <li><code>supabase_client.gd</code> (878 righe) — REST API client asincrono</li>
+                    <li>Schema cloud versionato (<code>supabase/schema.sql</code>): 5 tabelle PostgreSQL con RLS <code>auth.uid() = user_id</code> su ogni policy</li>
                     <li>5 tabelle push live: <code>profiles</code>, <code>user_currency</code>, <code>user_settings</code>, <code>music_preferences</code>, <code>room_decorations</code></li>
+                    <li><strong>Solo push</strong>: il cloud e' un backup del dispositivo, non una sincronizzazione fra dispositivi — il percorso di lettura non e' mai innescato</li>
                     <li>Session token <strong>cifrato</strong> con chiave derivata da device (<code>ConfigFile.save_encrypted_pass</code>) — fix B-019</li>
                     <li><strong>HTTPS obbligatorio</strong> nella config validation (fix B-020)</li>
                     <li>Queue cap 500 per prevenire OOM (<code>supabase_http.gd</code>)</li>
@@ -123,8 +125,8 @@
             <div class="contrib-card">
                 <h3><i data-lucide="map"></i> Data Mapping</h3>
                 <ul>
-                    <li><code>supabase_mapper.gd</code> — Single Point of Truth per local-to-cloud field mapping</li>
-                    <li>Bidirectional: <code>profile_to_cloud</code>, <code>cloud_profile_to_local</code>, <code>decorations_to_cloud</code>, ecc.</li>
+                    <li><code>supabase_mapper.gd</code> — Single Point of Truth per il mapping dei campi local-to-cloud</li>
+                    <li>Una sola direzione: <code>profile_to_cloud</code>, <code>decorations_to_cloud</code>, <code>currency_to_cloud</code>, <code>settings_to_cloud</code>, <code>music_to_cloud</code>. I mapper cloud-to-local sono stati rimossi (B-022) insieme alla pull sync mai implementata</li>
                     <li><code>.get(key, default)</code> ovunque — missing field mai crash</li>
                     <li><code>supabase_config.gd</code> — load config da <code>user://config.cfg</code>, validate url + anon_key</li>
                 </ul>
@@ -172,12 +174,12 @@
     <section class="team-page-section" data-aos="fade-up">
         <h2>Numeri complessivi</h2>
         <ul class="stats-list">
-            <li><strong>9 tabelle SQLite</strong> locali con 7 indici FK</li>
-            <li><strong>15 tabelle Supabase</strong> PostgreSQL progettate</li>
-            <li><strong>5 tabelle cloud</strong> attive in sync + 10 predisposte per feature future</li>
+            <li><strong>11 tabelle SQLite</strong> locali (9 di base + <code>badges_unlocked</code> + <code>sync_dead_letter</code>)</li>
+            <li><strong>5 tabelle Supabase</strong> in <code>supabase/schema.sql</code>, esattamente quelle che il client scrive</li>
+            <li><strong>Cloud in sola scrittura</strong>: backup del dispositivo, nessun richiamo dei dati dal cloud</li>
             <li><strong>3 migrazioni</strong> idempotenti con backup pre-DROP</li>
-            <li><strong>~1400 righe GDScript</strong> (local_database + supabase_* + auth_manager)</li>
-            <li><strong>PBKDF2 10k iter</strong> + rate limiting + soft delete</li>
+            <li><strong>~2000 righe GDScript</strong> (local_database + supabase_* + auth_manager), piu' 1317 nei 9 repo modulari</li>
+            <li><strong>PBKDF2-HMAC-SHA256 100k iter</strong> (RFC 8018) + rate limiting persistito + soft delete</li>
             <li><strong>HMAC-SHA256 save integrity</strong> con chiave device-local</li>
         </ul>
     </section>

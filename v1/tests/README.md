@@ -38,7 +38,7 @@ directory temporanea creata al momento:
 Conseguenze:
 
 - **Concorrenza**: la sandbox nasce da `mktemp -d`, unica per run. Due suite
-  lanciate insieme non si toccano (verificato: 168/168 su entrambe).
+  lanciate insieme non si toccano (verificato: 196/196 su entrambe).
 - **Test non indeboliti**: `user://` esiste ancora e trasloca in blocco, quindi
   SaveManager e LocalDatabase girano sul codice vero, solo su dati usa-e-getta.
 - **Fail-safe**: il wrapper pianta un sentinella `.test_sandbox` nella sandbox e
@@ -132,7 +132,11 @@ CanvasLayer stack).
 `.github/workflows/ci.yml` jobs:
 
 - **smoke-headless** — boot Godot 4.6 headless, 0 parse/script error
-- **deep-tests** — `test_runner.tscn`, 90s timeout, gated su smoke-headless
+- **deep-tests** — `bash scripts/deep_test.sh --timeout 90`, gated su
+  smoke-headless. Il job **non** invoca mai Godot direttamente sul
+  `test_runner.tscn`, e a fine run verifica che la user dir reale del runner
+  (`$XDG_DATA_HOME/RelaxRoom`) non esista nemmeno: e` una prova d'isolamento
+  eseguita ad ogni build, non una promessa
 
 Artifact `/tmp/deep_ci.log` uploaded 14d retention per audit.
 

@@ -2,7 +2,7 @@
 
 > Progetto Godot 4.6 · IFTS academic project · Demo 22 Aprile 2026
 > Codice sorgente, architettura, contenuti di gioco, flussi di sviluppo.
-> Ultimo aggiornamento: **2026-04-23** (post audit).
+> Ultimo aggiornamento: **2026-08-09** (post re-verifica audit).
 
 ---
 
@@ -30,10 +30,10 @@ giornate pesanti — cerca un passatempo che non chieda nulla in cambio.
 | Renderer | GL Compatibility |
 | Scripting | GDScript (stile `gdtoolkit` v4) |
 | Database locale | **SQLite** via godot-sqlite GDExtension 4.7 |
-| Cloud sync (opzionale) | **Supabase** REST (off di default) |
+| Backup cloud (opzionale) | **Supabase** REST, solo push (off di default) |
 | Viewport | 1280 × 720, `stretch_mode = canvas_items` |
 | Texture filter | **Nearest** (pixel art crisp) |
-| Target export | Windows x64, HTML5, Android arm64-v8a + armeabi-v7a |
+| Target export | Windows x64 + HTML5 (supportati). Android arm64-v8a + armeabi-v7a: preset presente ma **sperimentale e non firmato**, vedi `.github/workflows/build.yml` |
 
 ---
 
@@ -41,7 +41,7 @@ giornate pesanti — cerca un passatempo che non chieda nulla in cambio.
 
 ### Principi
 
-- **Signal-driven**: tutta la comunicazione fra moduli passa per `SignalBus` (**48 signal typed**). Nessun sistema conosce gli altri.
+- **Signal-driven**: tutta la comunicazione fra moduli passa per `SignalBus` (**56 signal typed**). Nessun sistema conosce gli altri.
 - **Catalog-driven**: contenuti caricati da JSON in `data/`. Aggiungere contenuto = editare JSON, niente codice.
 - **Offline-first**: JSON + SQLite sono source-of-truth. Supabase è opzionale, sync async.
 - **Desktop companion**: FPS cap dinamico (60 focused / 15 unfocused) per rispettare la batteria.
@@ -52,17 +52,17 @@ Caricati in ordine da `project.godot`. Ognuno può dipendere solo dai precedenti
 
 | # | Nome | Script | Responsabilità |
 |---|------|--------|----------------|
-| 1 | `SignalBus` | `autoload/signal_bus.gd` | 48 segnali typed (48 grep-confirmed) |
+| 1 | `SignalBus` | `autoload/signal_bus.gd` | 56 segnali typed (`rg -c "^signal " signal_bus.gd`) |
 | 2 | `AppLogger` | `autoload/logger.gd` | JSONL rotating 5 MB × 5, session id, redact su chiavi sensibili — **stessa redazione su file e console** (V-022, ramo console) |
-| 3 | `LocalDatabase` | `autoload/local_database.gd` | SQLite WAL, 9 tabelle; splittato in 9 repo modulari (B-033). L'account ospite si crea al volo **solo** per l'uid ospite (V-021) |
-| 4 | `AuthManager` | `autoload/auth_manager.gd` | Guest + username/password iterated-SHA-256 v3 (100 k iter, salt 128 bit) |
+| 3 | `LocalDatabase` | `autoload/local_database.gd` | SQLite WAL, 11 tabelle; splittato in 9 repo modulari (B-033). L'account ospite si crea al volo **solo** per l'uid ospite: con un uid autenticato senza riga fallisce a voce alta invece di coniare un ospite (V-021) |
+| 4 | `AuthManager` | `autoload/auth_manager.gd` | Guest + username/password PBKDF2-HMAC-SHA256 v4 (RFC 8018, 100 k iter, salt 128 bit) |
 | 5 | `GameManager` | `autoload/game_manager.gd` | Stato di gioco + 6 cataloghi JSON; i cataloghi falliti al boot restano in coda per la UI (V-019) |
 | 6 | `SaveManager` | `autoload/save_manager.gd` | Save JSON v5.0.0 + HMAC-SHA256 + backup atomic + migrazioni v1→v5 |
-| 7 | `SupabaseClient` | `autoload/supabase_client.gd` | REST cloud sync, HTTPS-only, session token cifrato device-local |
+| 7 | `SupabaseClient` | `autoload/supabase_client.gd` | Backup cloud REST **solo in push**, HTTPS-only, session token cifrato device-local |
 | 8 | `AudioManager` | `autoload/audio_manager.gd` | Dual-player crossfade 2 s, mood-driven track switch; bande separate per musica (< 0.25) e ambience (< 0.50) |
 | 9 | `PerformanceManager` | `systems/performance_manager.gd` | FPS cap + window pos persistence |
 | 10 | `StressManager` | `systems/stress_manager.gd` | Stress 0.0–1.0 con isteresi, 3 livelli, decay 2 %/min |
-| 11 | `MoodManager` | `autoload/mood_manager.gd` | Overlay gloomy + rain particles da 0.50, pet WILD FSM state sotto 0.10, audio crossfade |
+| 11 | `MoodManager` | `autoload/mood_manager.gd` | Overlay gloomy + rain particles sotto 0.50, pet WILD FSM state sotto 0.10, audio crossfade |
 | 12 | `BadgeManager` | `autoload/badge_manager.gd` | Badge catalog + SQLite table `badges_unlocked` |
 | 13 | `DevBridge` | `autoload/dev_bridge.gd` | API HTTP locale debug-only per audit/test — attiva solo con `--bridge` in build debug, bind 127.0.0.1:8080 |
 
@@ -128,14 +128,13 @@ v1/
 │   ├── godot-sqlite/                #   GDExtension 4.7 (compatibility_minimum 4.5)
 │   └── virtual_joystick/            #   CF Studios 1.0.0 (touch, mobile-gated)
 ├── assets/                         # Asset grafici + audio
-│   ├── _placeholder_temp/           #   CC0 scaffolding (Puny Characters)
-│   ├── audio/music/                 #   2 tracce Mixkit (WAV)
+│   ├── audio/                       #   music/ 2 tracce Mixkit + ambience/ 2 loop sintetizzati
 │   ├── backgrounds/                 #   Free Pixel Art Forest (Eder Muniz)
-│   ├── charachters/male/old/        #   male_old directional (attivo)
+│   ├── charachters/male/            #   old (attivo) + male_rose + male_yellow_shirt
 │   ├── menu/                        #   Loading, bottoni, joystick UI
 │   ├── palette/                     #   palette_projectwork.gpl
 │   ├── pets/                        #   Void Cat (simple + iso)
-│   ├── room/                        #   Stanza base, letti, finestre, mess
+│   ├── room/                        #   Stanza base, 3 finestre, 6 sprite mess
 │   ├── sprites/
 │   │   ├── decorations/              #     SoppyCraft Indoor Plants + Kenney Furniture CC0
 │   │   └── rooms/                    #     Thurraya Isometric + Bongseng
@@ -144,12 +143,12 @@ v1/
 │   ├── characters.json              #   1 personaggio: male_old
 │   ├── decorations.json             #   129 decorazioni in 13 categorie
 │   ├── rooms.json                   #   1 stanza: cozy_studio × 3 temi
-│   ├── tracks.json                  #   2 tracce + ambience vuoto
+│   ├── tracks.json                  #   2 tracce musicali + 2 ambience
 │   ├── badges.json                  #   6 badge unlockable
 │   └── mess_catalog.json            #   6 mess con stress weights
-├── locale/                         # .po IT + EN (2 file)
-├── scenes/                         # 22 scene Godot (.tscn) + 1 TRES theme
-├── scripts/                        # 49 script GDScript (~8,732 LOC)
+├── locale/                         # .po IT + EN (2 file, 109 chiavi per lingua)
+├── scenes/                         # 17 scene Godot (.tscn) + 1 TRES theme
+├── scripts/                        # 51 script GDScript (~12.325 LOC)
 │   ├── autoload/                    #   11 singleton core + database/ 9 repo
 │   ├── rooms/                       #   Room base + decoration + character + pet + mess + grid + window_bg
 │   ├── menu/                        #   main_menu + auth_screen + character_select + tutorial_manager
@@ -158,7 +157,7 @@ v1/
 │   ├── utils/                       #   Constants + Helpers + supabase_{config,http,mapper}
 │   └── main.gd                      #   Controller scena principale
 └── tests/                          # 196 test invasivi + runner headless custom
-    ├── integration/                 #   13 moduli + test_base.gd
+    ├── integration/                 #   15 moduli + test_base.gd
     ├── test_runner.gd               #   Harness reflection-based
     └── test_runner.tscn             #   Scene autostart runner
 ```
@@ -183,9 +182,9 @@ Il pavimento è un **rombo isometrico** (4 vertici) gestito come
 
 ### Decorazioni — 129 in 13 categorie
 
-Sintesi: beds 11 · desks 7 · chairs 14 · wardrobes 9 · windows 4 · wall_decor 3 ·
-potted_plants 19 · plants 14 · accessories 16 · room_elements 3 · tables 13 ·
-doors 5 · pets (hidden) 1.
+Sintesi: beds 11 · desks 7 · chairs 14 · wardrobes 11 · windows 6 · wall_decor 3 ·
+potted_plants 19 · plants 14 · accessories 17 · room_elements 9 · tables 12 ·
+doors 5 · pets (hidden) 1. Totale 129.
 
 Interazione click su oggetto piazzato: **R** rotate 90° · **F** flip h · **S** scale (7 livelli) · **X** delete (edit mode).
 Shift durante drag → snap off (placement pixel-fine).
@@ -200,7 +199,7 @@ Pixel art 32×32, controlli WASD/frecce, `move_and_slide()` + `FLOATING`, SPEED 
 
 ### Pet
 
-`pet_variant` = `simple` (16×16) o `iso` (32×32). FSM 5 stati: IDLE → WANDER → FOLLOW → SLEEP → PLAY, più WILD su mood stormy.
+`pet_variant` = `simple` (16×16) o `iso` (32×32). FSM 6 stati: IDLE → WANDER → FOLLOW → SLEEP → PLAY, più WILD sotto mood 0.10.
 
 ### Musica + Ambience
 
@@ -248,7 +247,7 @@ Migrazione automatica v1 → v2 → v3 → v4 → v5 in `save_manager._migrate_s
 
 ### SQLite mirror (`user://cozy_room.db`)
 
-9 tabelle: `accounts`, `characters`, `rooms`, `inventario`, `sync_queue`, `settings`, `save_metadata`, `music_state`, `placed_decorations`.
+11 tabelle: `accounts`, `characters`, `rooms`, `inventario`, `sync_queue`, `settings`, `save_metadata`, `music_state`, `placed_decorations`, `badges_unlocked`, `sync_dead_letter` (le ultime due aggiunte dopo lo schema di base).
 
 `PRAGMA journal_mode = WAL`, `foreign_keys = ON`, `busy_timeout = 5000`.
 Dettaglio schema: **[data/README.md](data/README.md)**.
@@ -261,12 +260,12 @@ Dettaglio schema: **[data/README.md](data/README.md)**.
 
 | Workflow | Trigger | Scopo |
 |----------|---------|-------|
-| `ci.yml` | push / PR su `main` paths `v1/**` o `ci/**` | Lint + 10 validator + smoke + deep tests |
-| `build.yml` | `workflow_run` da ci success, push tag `v*.*.*` | Export Windows + Android + HTML5 |
-| `release.yml` | push tag `v*.*.*` | GitHub Release con asset + SHA256SUMS |
+| `ci.yml` | push / PR su `main` paths `v1/**` o `ci/**` | Lint + 9 validator + smoke + deep tests |
+| `build.yml` | `workflow_run` da ci success, push tag `v*.*.*` | Export Windows + HTML5 (+ Android sperimentale, non firmato) |
+| `release.yml` | push tag `v*.*.*` | GitHub Release con asset Windows + HTML5 + SHA256SUMS |
 | `pages.yml` | push paths `docs/**` | Deploy GitHub Pages (backup Netlify) |
 
-### CI jobs (`ci.yml`, 12 job paralleli/sequenziali)
+### CI jobs (`ci.yml`, 13 job paralleli/sequenziali)
 
 1. **lint** — `gdlint` + `gdformat --check`
 2. **validate-json** — struttura + vincoli cataloghi
@@ -275,11 +274,15 @@ Dettaglio schema: **[data/README.md](data/README.md)**.
 5. **validate-db** — sintassi `CREATE TABLE`
 6. **validate-button-focus** — regression guard focus_mode
 7. **validate-version** — v1/VERSION ↔ export_presets ↔ project.godot sync
-8. **validate-no-keystore** — blocca commit accidentali di keystore
-9. **validate-signals** — SignalBus ≥ 40 signal, no duplicati
-10. **validate-pixelart** — palette + deliverable size/naming
-11. **smoke-headless** — boot Godot 4.6 headless, 0 parse error
-12. **deep-tests** — `test_runner.tscn`, 168 test, gated su smoke
+8. **validate-addon-binaries** — SHA256SUMS dei binari godot-sqlite
+9. **validate-no-keystore** — blocca commit accidentali di keystore
+10. **validate-signals** — SignalBus ≥ 40 signal, no duplicati
+11. **validate-pixelart** — palette + deliverable size/naming
+12. **smoke-headless** — boot Godot 4.6 headless, 0 parse error
+13. **deep-tests** — 196 test via `scripts/deep_test.sh`, gated su smoke.
+    Il job invoca **sempre il wrapper**, mai Godot direttamente sul
+    `test_runner.tscn`, e verifica a fine run che la user dir reale del runner
+    non esista nemmeno (prova d'isolamento, G-053)
 
 Container: `barichello/godot-ci:4.6`.
 
@@ -289,12 +292,16 @@ Container: `barichello/godot-ci:4.6`.
 
 ```bash
 ./scripts/smoke_test.sh          # boot headless ~2 s
-./scripts/preflight.sh           # 7 step GO/NO-GO demo readiness
+./scripts/preflight.sh           # 8 step GO/NO-GO demo readiness
 ./scripts/godot-validate.sh      # ciclo completo re-import + runtime ~3 min
-./scripts/deep_test.sh           # 168 test invasivi ~8 s (user:// isolato, vedi tests/README)
+./scripts/deep_test.sh           # 196 test invasivi ~8 s (user:// isolato, vedi tests/README)
 ```
 
-Dettaglio: **[tests/README.md](tests/README.md)**.
+`deep_test.sh` e` l'**unico** modo supportato di lanciare la suite: crea una
+user dir usa-e-getta per ogni run e ci pianta un sentinella `.test_sandbox`.
+Lanciare Godot a mano su `res://tests/test_runner.tscn` non funziona — il
+runner non trova il sentinella e **aborta** invece di riscrivere il profilo
+reale del giocatore. Dettaglio: **[tests/README.md](tests/README.md)**.
 
 ---
 
@@ -331,14 +338,28 @@ Dettaglio: **[tests/README.md](tests/README.md)**.
 | Modalità | Descrizione |
 |----------|-------------|
 | **Guest** | `auth_uid="local"`, dati solo locali |
-| **Registrato** | Username + password hash v3 (100 k iter salted-SHA-256), dati locali + cloud opzionale |
+| **Registrato** | Username + password hash v4 (PBKDF2-HMAC-SHA256, 100 k iter), dati locali + backup cloud opzionale |
 
-Anti-brute-force: **5 tentativi** falliti → lockout **300 s** (in-memory — vedi audit 4.4.2 per limite noto).
+Anti-brute-force: **5 tentativi** falliti → lockout **300 s**, persistito sulle
+colonne `accounts.failed_attempts` e `lockout_until_unix` (non piu` solo in
+memoria). Limite noto residuo: la scadenza usa l'orologio di sistema, quindi
+riportarlo indietro allunga o azzera il lockout (V-055, aperto).
 Flusso: Auth Screen → Login / Register / Guest → Menu → Gameplay.
+
+Un uid autenticato senza riga corrispondente in `accounts` **non** genera piu`
+un account ospite: `_resolve_save_account_id()` logga ERROR, torna `-1` e
+`apply_save` aborta emettendo `db_error` (V-021). Il fallback ospite resta solo
+per l'uid ospite vero.
 
 ### Supabase integration (off di default)
 
-- `user://config.cfg` con `url` HTTPS + `anon_key` → abilita cloud sync
+- `user://config.cfg` con `url` HTTPS + `anon_key` → abilita il backup cloud
+- **Solo push.** Il client scrive verso il cloud e non legge mai: `fetch_table()`
+  esiste ed e` cablata nel dispatcher, ma nessun percorso accoda un'operazione
+  `fetch`, e i mapper cloud→locale sono stati rimossi (B-022). Accedere su un
+  secondo computer **non** scarica la stanza. Non e` una sincronizzazione
+  cross-device, e` un backup del dispositivo (G-007 / V-091, de-claim
+  consapevole).
 - Session JWT + refresh_token cifrati `ConfigFile.save_encrypted_pass` (chiave device-local)
 - Push 5 tabelle: `profiles`, `user_currency`, `user_settings`, `music_preferences`, `room_decorations`
 - Backoff exp su HTTP 429 (cap 5 min), queue in-memory 500 + SQLite sync_queue persistente
@@ -355,6 +376,10 @@ observability-audit, api-contract-review, dependency-audit, change-impact, data-
 
 Risultato: 5 CRITICAL + 34 HIGH + 44 MEDIUM + 22 LOW. Top priorità pre-v1.1 in § 5.2 del report.
 
+Re-verifica **2026-08-09** → [../AUDIT_REVERIFICATION_2026-08-09.md](../AUDIT_REVERIFICATION_2026-08-09.md):
+ogni rilevazione ri-giudicata contro il codice attuale, piu` una sessione
+dinamica via DevBridge e i riscontri di un giocatore reale.
+
 ---
 
 ## Asset + licenze
@@ -369,5 +394,5 @@ Riassunto. Dettagli per pack: `assets/*/README.md`.
 | Kenney Furniture Kit CC0 | Kenney | CC0 1.0 | ✅ | Nessuna |
 | Kenney Pixel UI Pack | Kenney | CC0 1.0 | ✅ | Nessuna |
 | Mixkit Rain Sounds | Mixkit | Free License | ✅ | Nessuna |
-| Puny Characters (scaffolding) | CC0 | CC0 | ✅ | Nessuna |
+| Ambience sintetizzati (`ambience_fireplace`, `ambience_rain_soft`) | Team IFTS | Progetto accademico | Uso interno | Accademico |
 | Personaggi / Menu / Room / Pet | Team IFTS | Progetto accademico | Uso interno | Accademico |
