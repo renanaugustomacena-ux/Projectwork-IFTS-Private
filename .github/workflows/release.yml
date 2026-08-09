@@ -4,10 +4,12 @@
 #
 # Flow:
 #   1. wait-for-builds: aspetta che build.yml completi green sullo
-#      stesso commit del tag (Windows + Android + HTML5).
-#   2. create-release: scarica 3 artifact da build.yml, consolida
+#      stesso commit del tag (Windows + HTML5 + smoke sui binari).
+#      Android NON e` atteso: e` un target sperimentale non supportato
+#      e il suo job resta verde anche senza produrre alcun APK (G-003).
+#   2. create-release: scarica 2 artifact da build.yml, consolida
 #      SHA256SUMS.txt, estrae changelog della versione, crea la
-#      Release con 4 asset via softprops/action-gh-release.
+#      Release con 3 gruppi di asset via softprops/action-gh-release.
 #
 # Note: softprops/action-gh-release@v2 e` preferito vs `gh release
 # create` per robustness in CI (gestisce existing tag, permissions,
@@ -41,14 +43,11 @@ jobs:
           wait-interval: 30
           allowed-conclusions: success
 
-      - name: Wait for Android build
-        uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.sha }}
-          check-name: "Build Android APK"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-          allowed-conclusions: success
+      # NESSUNA attesa sul job Android (rimossa, audit G-003). Il job e`
+      # `continue-on-error` e riportava "success" anche quando produceva zero
+      # APK: era un gate che non gate-ava, e faceva sembrare la release
+      # completa di un artefatto Android firmato che non e` mai esistito.
+      # Android e` un target sperimentale non supportato: non entra in release.
 
       - name: Wait for HTML5 build
         uses: lewagon/wait-on-check-action@v1.3.4
@@ -90,12 +89,8 @@ jobs:
           name: relaxroom-windows-${{ github.sha }}
           path: release-assets/windows/
 
-      - name: Download Android artifact
-        uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe  # v3
-        with:
-          workflow: build.yml
-          name: relaxroom-android-${{ github.sha }}
-          path: release-assets/android/
+      # L'artefatto Android non viene scaricato: e` un APK di debug
+      # sperimentale (o niente affatto), non un asset di rilascio (G-003).
 
       - name: Download HTML5 artifact
         uses: dawidd6/action-download-artifact@09f2f74827fd3a8607589e5ad7f9398816f540fe  # v3
@@ -107,8 +102,9 @@ jobs:
       - name: Flatten assets + consolidate SHA256SUMS
         run: |
           mkdir -p release-flat
-          # Move all files from each subdir (flatten)
-          find release-assets -type f \( -name "*.exe" -o -name "*.apk" -o -name "*.zip" \) \
+          # Move all files from each subdir (flatten). Solo .exe e .zip:
+          # Android non e` un target di rilascio (G-003).
+          find release-assets -type f \( -name "*.exe" -o -name "*.zip" \) \
             -exec mv {} release-flat/ \;
           cd release-flat
           # Merge individual SHA256SUMS into one
@@ -117,7 +113,7 @@ jobs:
           # If cat produced empty, regenerate on the fly
           if [ ! -s SHA256SUMS.txt ]; then
             rm -f SHA256SUMS.txt
-            sha256sum *.exe *.apk *.zip > SHA256SUMS.txt 2>/dev/null || \
+            sha256sum *.exe *.zip > SHA256SUMS.txt 2>/dev/null || \
               sha256sum * > SHA256SUMS.txt
           fi
           echo "=== Final release assets ==="
@@ -144,8 +140,10 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
           files: |
             release-flat/*.exe
-            release-flat/*.apk
             release-flat/*.zip
             release-flat/SHA256SUMS.txt
           generate_release_notes: false  # we use CHANGELOG.md body
-          fail_on_unmatched_files: true  # ensure all 4 asset groups present
+          # Windows + HTML5 + checksum: i 3 gruppi che il progetto supporta
+          # davvero. Con `*.apk` nell'elenco questo gate falliva a fine job
+          # dopo aver gia` fatto credere che l'APK ci fosse (G-003).
+          fail_on_unmatched_files: true

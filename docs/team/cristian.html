@@ -62,7 +62,8 @@
             Garante della qualità del codice e della riproducibilità della build.
             Ha definito la pipeline CI che fa da guardia ad ogni merge, integrato
             gli asset pixel art del gioco (personaggio, stanza, pet, menu UI),
-            configurato gli export Windows + HTML5 + Android, e scritto la guida
+            configurato gli export Windows + HTML5 (piu' un preset Android
+            sperimentale), e scritto la guida
             operativa per il nuovo pixel-art artist Alex. Senza i suoi job CI,
             ogni bug oggi rilevato sarebbe arrivato in demo.
         </p>
@@ -96,9 +97,9 @@
                     <li>Container <code>barichello/godot-ci:4.6</code> per build deterministiche</li>
                     <li><strong>Export Windows .exe</strong> preset con icona, versione 1.0.0</li>
                     <li><strong>Export HTML5</strong> browser-playable</li>
-                    <li><strong>Export Android APK</strong> (aggiunto 2026-04-17) con architetture arm64-v8a, internet permission only</li>
+                    <li><strong>Export Android APK</strong> (aggiunto 2026-04-17) con architetture arm64-v8a, internet permission only — resta un <strong>esperimento non supportato</strong>: l'export fallisce nel container e il progetto non ha configurazione di firma, quindi non entra in nessuna release</li>
                     <li>Setup export templates pre-installed in container</li>
-                    <li>Debug keystore setup per CI Android</li>
+                    <li>Debug keystore setup per CI Android (l'unico keystore che il progetto usa)</li>
                     <li>Artifact upload 30d retention per ogni platform</li>
                     <li><strong>Migrazione critica Godot 4.5 → 4.6</strong> in build.yml (N-BD1)</li>
                 </ul>
@@ -156,7 +157,7 @@
                         </ul>
                     </li>
                     <li>Asset README files in ogni sottocartella di <code>assets/</code></li>
-                    <li>Build guide Windows + Inno Setup installer + Android APK signing</li>
+                    <li>Build guide Windows + Inno Setup installer + procedura Android (mai portata a termine: la firma di release non e' configurata)</li>
                 </ul>
             </div>
 
@@ -190,7 +191,7 @@
         <h2>Numeri complessivi</h2>
         <ul class="stats-list">
             <li><strong>9 job CI</strong> disegnati + configurati</li>
-            <li><strong>3 platform export</strong>: Windows + HTML5 + Android APK</li>
+            <li><strong>2 platform export supportati</strong>: Windows + HTML5 (Android configurato ma sperimentale)</li>
             <li><strong>5 validator Python</strong> custom per type safety non-runtime</li>
             <li><strong>2 guide operative</strong> complete (CICD 1604 righe + Alex 1148 righe)</li>
             <li><strong>~400 righe Python</strong> CI scripting</li>

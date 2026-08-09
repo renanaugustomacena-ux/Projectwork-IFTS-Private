@@ -1,8 +1,13 @@
 # Pipeline Build — Export Windows / Android / HTML5 builds (Fase D).
 #
 # Strategy post Fase D (plan BUILD_RELEASE_PLAN §5):
-# - Non-tag push main -> debug builds (keystore debug container)
-# - Tag push v*.*.* -> release builds (keystore release from GitHub Secrets)
+# - Target SUPPORTATI: Windows x64 + HTML5. Sono gli unici che entrano in una
+#   release e gli unici su cui si fanno promesse.
+# - Android e` un ESPERIMENTO non supportato: l'export fallisce nel container e
+#   il progetto non ha una configurazione di firma (nessuna chiave `keystore/*`
+#   in export_presets.cfg). L'APK, quando esce, e` firmato col keystore di
+#   debug e NON e` distribuibile. Il job resta per non buttare il lavoro del
+#   team, ma non gate-a nulla e non entra in release.yml (audit G-003).
 # - Ogni job e` atomico: SHA256SUMS per artifact, size check in smoke-binaries
 # - Fase F (successivo): build dipende da CI green via workflow_run trigger
 #
@@ -144,7 +149,9 @@ jobs:
           retention-days: 30
 
   build-android:
-    name: "Build Android APK"
+    # Nome esplicito: nessun altro workflow deve poterlo scambiare per un gate
+    # di rilascio. release.yml NON aspetta piu` questo check (audit G-003).
+    name: "Build Android APK (sperimentale, non firmato)"
     needs: [ci-gate]
     runs-on: ubuntu-22.04
     timeout-minutes: 20
@@ -165,40 +172,24 @@ jobs:
               ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
           fi
 
-      - name: Prepare output + keystore dirs
-        run: mkdir -p builds/android certs
+      - name: Prepare output dir
+        run: mkdir -p builds/android
 
-      - name: Decode release keystore (tag build only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
-          KEYSTORE_PASS: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASS }}
-          KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
-          KEY_PASS: ${{ secrets.ANDROID_RELEASE_KEY_PASS }}
-        run: |
-          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASS" ] || \
-             [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASS" ]; then
-            echo "ERROR: Release keystore secrets missing. Cannot sign release APK."
-            echo "See docs/ANDROID_SIGNING.md Fase B."
-            exit 1
-          fi
-          # Keystore dentro v1/ per poter usare res://certs/... path.
-          mkdir -p "${{ env.PROJECT_PATH }}/certs"
-          printf '%s' "$KEYSTORE_B64" | base64 -d > "${{ env.PROJECT_PATH }}/certs/release.keystore"
-          test -s "${{ env.PROJECT_PATH }}/certs/release.keystore"
-          cd "${{ env.PROJECT_PATH }}"
-          # Tag release: patch preset package/signed=true + inject release
-          # keystore path. Sed usa | come delimitatore per evitare collision
-          # con / nei path res://. ALIAS/PASS via env var escape-safe.
-          sed -i 's|package/signed=false|package/signed=true|' export_presets.cfg
-          sed -i 's|keystore/release=""|keystore/release="res://certs/release.keystore"|' export_presets.cfg
-          sed -i "s|keystore/release_user=\"\"|keystore/release_user=\"${KEY_ALIAS}\"|" export_presets.cfg
-          sed -i "s|keystore/release_password=\"\"|keystore/release_password=\"${KEY_PASS}\"|" export_presets.cfg
-          echo "Injected release keystore config:"
-          grep -E "package/signed|keystore/release=" export_presets.cfg || echo "(grep: no match)"
+      # NIENTE iniezione di keystore di release (rimossa, audit G-003).
+      # Lo step precedente decodificava i secret ANDROID_RELEASE_* e li
+      # scriveva in export_presets.cfg con quattro `sed`. Tre di quei sed
+      # cercavano chiavi `keystore/release*` che nel preset NON esistono e
+      # non sono mai esistite: sostituivano zero occorrenze e uscivano 0.
+      # Il risultato era una pipeline che *sembrava* firmare release Android
+      # senza firmare niente. Finche` il progetto non decide di supportare
+      # davvero Android, questo job produce solo APK di debug e non deve
+      # dare l'impressione contraria.
 
-      - name: Setup debug keystore (non-tag build)
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+      - name: Setup debug keystore
+        # Sempre, anche sui tag: il keystore di debug e` l'unico che questo
+        # progetto ha. Prima era gated sui non-tag perche` si presumeva che
+        # sui tag arrivasse quello di release, che pero` non veniva mai
+        # applicato al preset (G-003).
         run: |
           # barichello/godot-ci ships with debug.keystore at /root/.android/
           # Godot editor_settings-4.6.tres punta a ~/.android/debug.keystore
@@ -238,13 +229,15 @@ jobs:
       - name: Compute artifact filename
         id: name
         run: |
+          # Il suffisso `-unsigned-debug` e` parte del contratto: qualunque APK
+          # esca da qui e` firmato col keystore di debug e non e`
+          # distribuibile. Il nome lo dice, cosi` un file scaricato a mano non
+          # puo` essere scambiato per un artefatto di rilascio.
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "fname=RelaxRoom-${GITHUB_REF_NAME}.apk" >> "$GITHUB_OUTPUT"
-            echo "mode=release" >> "$GITHUB_OUTPUT"
+            echo "fname=RelaxRoom-${GITHUB_REF_NAME}-unsigned-debug.apk" >> "$GITHUB_OUTPUT"
           else
             SHORT_SHA="${GITHUB_SHA:0:7}"
-            echo "fname=RelaxRoom-dev-${SHORT_SHA}.apk" >> "$GITHUB_OUTPUT"
-            echo "mode=debug" >> "$GITHUB_OUTPUT"
+            echo "fname=RelaxRoom-dev-${SHORT_SHA}-unsigned-debug.apk" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Pre-import resources
@@ -253,7 +246,7 @@ jobs:
           godot --headless --import --path . || true
           godot --headless --import --path .
 
-      - name: Export Android APK
+      - name: Export Android APK (debug, non firmato per la distribuzione)
         # L'export Android nel container barichello/godot-ci emette "Cannot
         # export project with preset 'Android' due to configuration errors"
         # senza dire quale. Il job resta non bloccante (Windows e HTML5 sono
@@ -261,30 +254,29 @@ jobs:
         # invece di essere inghiottito: lo step successivo lo riporta nel
         # summary, cosi' "Android non prodotto" e' un fatto visibile e non
         # un silenzio che somiglia al successo.
+        #
+        # Sempre --export-debug: senza configurazione di firma nel preset, un
+        # --export-release produrrebbe un APK non firmato e non installabile
+        # che si spaccia per "release" (G-003).
         id: android_export
         continue-on-error: true
         run: |
           cd "${{ env.PROJECT_PATH }}"
-          if [ "${{ steps.name.outputs.mode }}" = "release" ]; then
-            godot --headless --export-release "Android" \
-              "../builds/android/${{ steps.name.outputs.fname }}" || \
-              echo "Android release export failed — see known-issue comment"
-          else
-            godot --headless --export-debug "Android" \
-              "../builds/android/${{ steps.name.outputs.fname }}" || \
-              echo "Android debug export failed — see known-issue comment"
-          fi
+          godot --headless --export-debug "Android" \
+            "../builds/android/${{ steps.name.outputs.fname }}" || \
+            echo "Android debug export failed — see known-issue comment"
 
       - name: Report Android export outcome
         if: always()
         run: |
           OUTCOME="${{ steps.android_export.outcome }}"
           if [ -f builds/android/*.apk ] 2>/dev/null || ls builds/android/*.apk >/dev/null 2>&1; then
-            echo "### Android: APK prodotto (step $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Android (sperimentale): APK di debug prodotto (step $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Firmato col keystore di debug: NON distribuibile, non entra in nessuna release." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### Android: NESSUN APK prodotto (step $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Android (sperimentale): NESSUN APK prodotto (step $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
             echo "Problema noto del container: preset Android con errori di configurazione." >> "$GITHUB_STEP_SUMMARY"
-            echo "Windows e HTML5 non sono interessati." >> "$GITHUB_STEP_SUMMARY"
+            echo "Windows e HTML5 non sono interessati: Android non e' un target supportato." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Verify APK (if present)
@@ -315,7 +307,7 @@ jobs:
             cat SHA256SUMS.android.txt
           else
             # Create placeholder so upload-artifact doesn't fail on empty dir
-            echo "# No APK generated — Android CI export broken pre-demo" > SHA256SUMS.android.txt
+            echo "# No APK generated — Android export is experimental and unsupported" > SHA256SUMS.android.txt
           fi
 
       - name: Upload Android artifact (if any)
@@ -328,10 +320,6 @@ jobs:
             builds/android/SHA256SUMS.android.txt
           retention-days: 30
           if-no-files-found: warn
-
-      - name: Cleanup keystore (always)
-        if: always()
-        run: rm -f "${{ env.PROJECT_PATH }}/certs/release.keystore"
 
   build-html5:
     name: "Build HTML5 Web"
