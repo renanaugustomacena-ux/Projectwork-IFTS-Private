@@ -70,6 +70,16 @@ func play_as_guest() -> void:
 	SignalBus.account_created.emit(account_id)
 
 
+## Esito di errore come CHIAVE di traduzione + argomenti di formato, mai come
+## testo gia` tradotto (audit G-011). L'autoload gira per tutta la sessione e
+## non sa in che lingua sara` mostrato il messaggio: se traducesse qui,
+## congelerebbe la lingua al momento della chiamata e ogni altro front-end
+## (test, dev bridge, un futuro schermo mobile) erediterebbe quella scelta.
+## Traduce chi disegna: auth_screen.gd (_show_error_result).
+static func _error(key: String, args: Array = []) -> Dictionary:
+	return {"error": key, "error_args": args}
+
+
 func register(username: String, password: String) -> Dictionary:
 	var clean_name := username.strip_edges()
 	var name_error := _validate_username(clean_name)
@@ -77,14 +87,14 @@ func register(username: String, password: String) -> Dictionary:
 		return name_error
 	var min_pw := Constants.AUTH_MIN_PASSWORD_LENGTH
 	if password.length() < min_pw:
-		return {"error": "Password must be at least %d characters" % min_pw}
+		return _error("UI_AUTH_ERR_PASSWORD_TOO_SHORT", [min_pw])
 	var existing := LocalDatabase.get_account_by_username(clean_name)
 	if not existing.is_empty():
-		return {"error": "Username already taken"}
+		return _error("UI_AUTH_ERR_USERNAME_TAKEN")
 	var pw_hash := _hash_password(password)
 	var account_id := LocalDatabase.create_account(clean_name, pw_hash)
 	if account_id < 0:
-		return {"error": "Failed to create account"}
+		return _error("UI_AUTH_ERR_ACCOUNT_CREATE_FAILED")
 	var account := LocalDatabase.get_account(account_id)
 	# Phase D (audit 4.4.2): failed login attempts against a not-yet-existing
 	# username live ONLY in _rate_limit_cache (the DB UPDATE matched zero
@@ -111,14 +121,14 @@ func login(username: String, password: String) -> Dictionary:
 	if limit.get("failed_attempts", 0) >= Constants.AUTH_MAX_FAILED_ATTEMPTS:
 		var remaining: int = limit.get("lockout_until_unix", 0) - _now_unix()
 		if remaining > 0:
-			return {"error": "Too many attempts. Wait %ds" % remaining}
+			return _error("UI_AUTH_ERR_TOO_MANY_ATTEMPTS", [remaining])
 		# Lockout expired
 		_reset_rate_limit(clean_name)
 
 	var account := LocalDatabase.get_account_by_username(clean_name)
 	if account.is_empty():
 		_record_failed_attempt(clean_name)
-		return {"error": "Invalid credentials"}
+		return _error("UI_AUTH_ERR_INVALID_CREDENTIALS")
 
 	var stored_hash: String = account.get("password_hash", "")
 	var pw_ok := false
@@ -164,7 +174,7 @@ func login(username: String, password: String) -> Dictionary:
 
 	if not pw_ok:
 		_record_failed_attempt(clean_name)
-		return {"error": "Invalid credentials"}
+		return _error("UI_AUTH_ERR_INVALID_CREDENTIALS")
 
 	# C.7: transparent hash migration v1/v2/v3 -> v4 (real PBKDF2). Happens
 	# once at the first successful login: password verified with the legacy
@@ -191,15 +201,15 @@ func _validate_username(clean_name: String) -> Dictionary:
 	if not length_error.is_empty():
 		return length_error
 	if _username_regex.search(clean_name) == null:
-		return {"error": "Username contains invalid characters (allowed: letters, digits, _ . -)"}
+		return _error("UI_AUTH_ERR_USERNAME_CHARSET")
 	return {}
 
 
 func _validate_username_length(clean_name: String) -> Dictionary:
 	if clean_name.length() < _USERNAME_MIN_LENGTH:
-		return {"error": "Username must be at least %d characters" % _USERNAME_MIN_LENGTH}
+		return _error("UI_AUTH_ERR_USERNAME_TOO_SHORT", [_USERNAME_MIN_LENGTH])
 	if clean_name.length() > Constants.AUTH_MAX_USERNAME_LENGTH:
-		return {"error": "Username too long (max %d)" % Constants.AUTH_MAX_USERNAME_LENGTH}
+		return _error("UI_AUTH_ERR_USERNAME_TOO_LONG", [Constants.AUTH_MAX_USERNAME_LENGTH])
 	return {}
 
 

@@ -175,11 +175,11 @@ func _on_login_pressed() -> void:
 	var username := _username_input.text.strip_edges()
 	var password := _password_input.text
 	if username.is_empty() or password.is_empty():
-		_show_error("Please enter username and password")
+		_show_error(tr("UI_AUTH_ERR_EMPTY_LOGIN"))
 		return
 	var result := AuthManager.login(username, password)
 	if result.has("error"):
-		_show_error(result["error"])
+		_show_error_result(result)
 		return
 	_finish()
 
@@ -188,20 +188,20 @@ func _on_register_pressed() -> void:
 	var reg_user := _register_form.get_node_or_null("RegUsername") as LineEdit
 	var reg_pass := _register_form.get_node_or_null("RegPassword") as LineEdit
 	if reg_user == null or reg_pass == null:
-		_show_error("Internal error: form not ready")
+		_show_error(tr("UI_AUTH_ERR_FORM_NOT_READY"))
 		return
 	var username := reg_user.text.strip_edges()
 	var password := reg_pass.text
 	var confirm := _confirm_input.text
 	if username.is_empty() or password.is_empty():
-		_show_error("Please fill in all fields")
+		_show_error(tr("UI_AUTH_ERR_EMPTY_FIELDS"))
 		return
 	if password != confirm:
-		_show_error("Passwords don't match")
+		_show_error(tr("UI_AUTH_ERR_PASSWORD_MISMATCH"))
 		return
 	var result := AuthManager.register(username, password)
 	if result.has("error"):
-		_show_error(result["error"])
+		_show_error_result(result)
 		return
 	_finish()
 
@@ -209,6 +209,20 @@ func _on_register_pressed() -> void:
 func _on_guest_pressed() -> void:
 	AuthManager.play_as_guest()
 	_finish()
+
+
+## AuthManager torna {"error": <chiave>, "error_args": [...]}: la traduzione
+## avviene qui, dove la lingua dell'interfaccia e` nota (audit G-011). Il `%`
+## si applica solo se il testo tradotto contiene davvero un segnaposto, cosi`
+## una chiave mancante degrada nella chiave grezza invece di far esplodere il
+## formatter e lasciare il giocatore senza alcun messaggio.
+func _show_error_result(result: Dictionary) -> void:
+	var key := str(result.get("error", ""))
+	var args: Array = result.get("error_args", [])
+	var text := tr(key)
+	if not args.is_empty() and text.contains("%"):
+		text = text % args
+	_show_error(text)
 
 
 func _show_error(msg: String) -> void:
