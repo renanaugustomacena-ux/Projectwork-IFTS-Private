@@ -25,6 +25,7 @@ const TEST_MODULES := [
 	"res://tests/integration/test_stress.gd",
 	"res://tests/integration/test_shop.gd",
 	"res://tests/integration/test_cleaning.gd",
+	"res://tests/integration/test_trust.gd",
 	"res://tests/integration/test_save.gd",
 	"res://tests/integration/test_spawn.gd",
 	"res://tests/integration/test_panels.gd",

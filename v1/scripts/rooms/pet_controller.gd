@@ -2,7 +2,7 @@
 ## Manages idle, wander, follow, sleep, and play states.
 extends CharacterBody2D
 
-enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD, EAT }
+enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD, EAT, AVOID }
 
 const WANDER_SPEED := 30.0
 const FOLLOW_SPEED := 80.0
@@ -19,6 +19,22 @@ const EAT_SPEED := 70.0  # corre verso la ciotola (spec 2026-08-14)
 const EAT_REACH := 18.0
 const EAT_DURATION := 10.0
 
+# --- Confidenza (fase 2, spec 2026-08-14). Valore persistito 0..100 in
+# SaveManager.pet_data.trust; le soglie modulano la FSM esistente. ---
+const TRUST_AVOID_BELOW := 20.0  # sotto: ti evita, mai FOLLOW spontaneo
+const TRUST_CLOSE_AT := 70.0  # da qui: follow frequente e stretto
+const TRUST_BONDED_AT := 90.0  # da qui: dorme solo vicino a te
+const TRUST_MEAL_GAIN := 8.0
+const TRUST_STORM_GAIN := 1.0
+const TRUST_STORM_TICK_SEC := 10.0
+const TRUST_STORM_RADIUS := 150.0
+## Il pasto conta per la confidenza solo se il gatto ha fame (anti-spam).
+const HUNGER_COOLDOWN_SEC := 4.0 * 3600.0
+const AVOID_TRIGGER_DIST := 100.0
+const AVOID_RELEASE_DIST := 160.0
+const FOLLOW_DISTANCE_CLOSE := 90.0
+const FOLLOW_STOP_CLOSE := 28.0
+
 var _state: State = State.IDLE
 var _state_timer: float = 0.0
 var _idle_timer: float = 0.0
@@ -30,6 +46,8 @@ var _wild_mode_active: bool = false
 var _wild_redirect_timer: float = 0.0
 var _wild_direction: Vector2 = Vector2.RIGHT
 var _last_anim: String = ""
+# Accumulatore vicinanza-durante-tempesta (fase 2): +1 trust ogni 10s.
+var _storm_bond_timer: float = 0.0
 # Ground-contact point relative to the body origin, read from the collision
 # shape (the collider IS the paws — same convention as character_controller).
 var _foot_offset := Vector2.ZERO
@@ -94,9 +112,89 @@ func _physics_process(delta: float) -> void:
 			_process_wild(delta)
 		State.EAT:
 			_process_eat(delta)
+		State.AVOID:
+			_process_avoid(delta)
 
+	_accrue_storm_bond(delta)
 	# Depth: sort by paw contact y, same band as character and furniture.
 	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
+
+
+# ---- Confidenza -------------------------------------------------------------
+
+
+## Livello di confidenza corrente (0..100, persistito).
+func _trust() -> float:
+	return clampf(float(SaveManager.pet_data.get("trust", 0.0)), 0.0, 100.0)
+
+
+## Fascia comportamentale per un valore di trust. Statica e pura: testabile.
+static func trust_tier(value: float) -> String:
+	if value < TRUST_AVOID_BELOW:
+		return "avoid"
+	if value >= TRUST_BONDED_AT:
+		return "bonded"
+	if value >= TRUST_CLOSE_AT:
+		return "close"
+	return "neutral"
+
+
+## Guadagno di confidenza per un pasto: pieno se il gatto aveva fame
+## (>= 4h dall'ultimo pasto), zero altrimenti. Statica e pura: testabile.
+static func meal_trust_gain(last_meal_at: float, now: float) -> float:
+	return TRUST_MEAL_GAIN if now - last_meal_at >= HUNGER_COOLDOWN_SEC else 0.0
+
+
+func _gain_trust(amount: float, reason: String) -> void:
+	if amount <= 0.0:
+		return
+	var new_value := clampf(_trust() + amount, 0.0, 100.0)
+	SaveManager.pet_data["trust"] = new_value
+	SignalBus.pet_trust_changed.emit(new_value)
+	SignalBus.save_requested.emit()
+	AppLogger.info("PetController", "trust_gained", {"amount": amount, "reason": reason, "trust": new_value})
+
+
+## Vicinanza durante la tempesta: il gatto impara che con te e` al sicuro.
+func _accrue_storm_bond(delta: float) -> void:
+	if not _wild_mode_active or _character_ref == null or not is_instance_valid(_character_ref):
+		return
+	if position.distance_to(_character_ref.global_position) > TRUST_STORM_RADIUS:
+		return
+	_storm_bond_timer += delta
+	if _storm_bond_timer >= TRUST_STORM_TICK_SEC:
+		_storm_bond_timer -= TRUST_STORM_TICK_SEC
+		_gain_trust(TRUST_STORM_GAIN, "storm_proximity")
+
+
+## Sotto la soglia di fiducia il gatto scappa quando ti avvicini troppo.
+func _process_avoid(_delta: float) -> void:
+	if _character_ref == null or not is_instance_valid(_character_ref):
+		_set_state(State.IDLE)
+		return
+	var away := position - _character_ref.global_position
+	if away.length() > AVOID_RELEASE_DIST:
+		_set_state(State.IDLE)
+		return
+	var dir := away.normalized() if away.length() > 0.01 else Vector2.RIGHT
+	velocity = dir * WANDER_SPEED * 1.3
+	move_and_slide()
+	var paw := position + _foot_offset
+	var clamped := Helpers.clamp_inside_floor(paw)
+	if clamped != paw:
+		position = clamped - _foot_offset
+	if _anim:
+		_anim.flip_h = dir.x < 0
+	_play_anim("walk")
+
+
+## True se il gatto diffida e il player e` troppo vicino.
+func _should_flee() -> bool:
+	if _trust() >= TRUST_AVOID_BELOW:
+		return false
+	if _character_ref == null or not is_instance_valid(_character_ref):
+		return false
+	return position.distance_to(_character_ref.global_position) < AVOID_TRIGGER_DIST
 
 
 func _process_eat(_delta: float) -> void:
@@ -124,7 +222,15 @@ func _process_eat(_delta: float) -> void:
 		if is_instance_valid(bowl):
 			bowl.queue_free()
 		SignalBus.pet_fed.emit()
-		# fase 2 (confidenza): qui il pasto consumato fara` crescere il trust.
+		# Fase 2: il pasto nutre la confidenza solo se il gatto aveva fame
+		# (>= 4h dall'ultimo pasto) — anti spam di croccantini.
+		var now := Time.get_unix_time_from_system()
+		var gain := meal_trust_gain(float(SaveManager.pet_data.get("last_meal_at", 0.0)), now)
+		SaveManager.pet_data["last_meal_at"] = now
+		if gain > 0.0:
+			_gain_trust(gain, "meal")
+		else:
+			SignalBus.save_requested.emit()
 		_set_state(State.WILD if _wild_mode_active else State.IDLE)
 
 
@@ -133,9 +239,28 @@ func _process_wild(delta: float) -> void:
 	_wild_redirect_timer += delta
 	if _wild_redirect_timer >= WILD_REDIRECT_INTERVAL:
 		_wild_redirect_timer = 0.0
-		var angle := _rng.randf_range(0.0, TAU)
-		_wild_direction = Vector2(cos(angle), sin(angle))
-	velocity = _wild_direction * WILD_SPEED
+		# Fase 2: da "close" in su, meta` delle corse puntano verso il player —
+		# il gatto cerca conforto da chi si e` guadagnato la sua fiducia.
+		var seek_player := (
+			_trust() >= TRUST_CLOSE_AT
+			and _character_ref != null
+			and is_instance_valid(_character_ref)
+			and _rng.randf() < 0.5
+		)
+		if seek_player:
+			_wild_direction = (_character_ref.global_position - position).normalized()
+		else:
+			var angle := _rng.randf_range(0.0, TAU)
+			_wild_direction = Vector2(cos(angle), sin(angle))
+	var speed := WILD_SPEED
+	if (
+		_trust() >= TRUST_CLOSE_AT
+		and _character_ref != null
+		and is_instance_valid(_character_ref)
+		and position.distance_to(_character_ref.global_position) < 70.0
+	):
+		speed = WILD_SPEED * 0.25  # vicino a te trema ma si calma
+	velocity = _wild_direction * speed
 	move_and_slide()
 	# Clamp inside the floor polygon (V-043 / 4.1.10-L77) — same helper WANDER
 	# uses for its target. The clamp runs on the PAW point, not the origin, so
@@ -156,16 +281,29 @@ func _process_idle(_delta: float) -> void:
 	velocity = Vector2.ZERO
 	_play_anim("idle")
 
+	# Confidenza bassa: scappa se il player si avvicina troppo (fase 2).
+	if _should_flee():
+		_set_state(State.AVOID)
+		return
+
 	if _state_timer > _random_duration():
 		var roll := _rng.randf()
-		# Priorita` 1: dopo cooldown lungo, chance di dormire
+		var tier := trust_tier(_trust())
+		# Priorita` 1: dopo cooldown lungo, chance di dormire. Da "bonded" il
+		# gatto dorme SOLO vicino al player: se e` lontano prima lo raggiunge.
 		if _idle_timer > SLEEP_COOLDOWN and roll < 0.3:
+			if tier == "bonded" and _character_ref and _is_far_from_character():
+				_set_state(State.FOLLOW)
+				return
 			_set_state(State.SLEEP)
 			return
-		# Priorita` 2: se il personaggio si e` allontanato, vai a seguirlo
-		if _character_ref and _is_far_from_character():
-			_set_state(State.FOLLOW)
-			return
+		# Priorita` 2: se il personaggio si e` allontanato, vai a seguirlo —
+		# ma mai sotto la soglia di fiducia, e piu` spesso da "close" in su.
+		if _character_ref and _is_far_from_character() and _trust() >= TRUST_AVOID_BELOW:
+			var follow_chance := 0.9 if tier == "close" or tier == "bonded" else 0.5
+			if roll < follow_chance:
+				_set_state(State.FOLLOW)
+				return
 		# Priorita` 3: altrimenti ~55% di probabilita` di iniziare a vagare
 		# nella stanza (fix del gap pre-esistente: senza questa transizione
 		# il gatto restava bloccato in idle fino al cooldown di 2 minuti).
@@ -177,6 +315,9 @@ func _process_idle(_delta: float) -> void:
 
 
 func _process_wander(_delta: float) -> void:
+	if _should_flee():
+		_set_state(State.AVOID)
+		return
 	if _wander_target == Vector2.ZERO:
 		_pick_wander_target()
 
@@ -204,7 +345,8 @@ func _process_follow(_delta: float) -> void:
 	var char_pos := _character_ref.global_position
 	var dist := position.distance_to(char_pos)
 
-	if dist < FOLLOW_STOP_DISTANCE:
+	var stop_dist := FOLLOW_STOP_CLOSE if _trust() >= TRUST_CLOSE_AT else FOLLOW_STOP_DISTANCE
+	if dist < stop_dist:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		_set_state(State.IDLE)
@@ -295,7 +437,8 @@ func _find_character() -> void:
 func _is_far_from_character() -> bool:
 	if _character_ref == null:
 		return false
-	return position.distance_to(_character_ref.global_position) > FOLLOW_DISTANCE
+	var trigger := FOLLOW_DISTANCE_CLOSE if _trust() >= TRUST_CLOSE_AT else FOLLOW_DISTANCE
+	return position.distance_to(_character_ref.global_position) > trigger
 
 
 func _is_close_to_character() -> bool:
