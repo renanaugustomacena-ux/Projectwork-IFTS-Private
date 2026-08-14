@@ -4,7 +4,7 @@ Persistenza **offline-first** con doppio layer locale:
 
 | Layer | Tecnologia | File | Scopo |
 |-------|------------|------|-------|
-| Primario | JSON | `user://save_data.json` (v5.0.0) | Runtime state (decorazioni, char, musica, settings) |
+| Primario | JSON | `user://save_data.json` (v5.1.0) | Runtime state (decorazioni, char, musica, settings) |
 | Mirror | SQLite | `user://cozy_room.db` (WAL mode) | Query strutturate, account, sync_queue |
 | Backup cloud opzionale | Supabase PostgreSQL | — | Solo push, nessuna lettura (off di default) |
 
@@ -332,7 +332,7 @@ Tutte **idempotenti** (safe to re-run):
 
 ---
 
-## Salvataggio JSON v5.0.0
+## Salvataggio JSON v5.1.0
 
 File: `user://save_data.json`. Secondary backup: `user://save_data.backup.json`.
 Temp file durante scrittura: `user://save_data.tmp.json`.
@@ -386,7 +386,7 @@ Corrompere `"hmac"` nel save → load rifiuta primary → fallback a backup.
 | v1.0.0 | v2.0.0 | No-op (bump version) |
 | v2.0.0 | v3.0.0 | No-op (bump version) |
 | v3.0.0 | v4.0.0 | Strip obsolete: `tools`, `therapeutic`, `xp`, `streak`, `currency`, `unlocks`, `last_active_timestamp`, `updated_at`. Preserve `currency.coins` → `inventory.coins`. Validate existing inventory struct |
-| v4.0.0 | v5.0.0 | Add `account` section with default auth_uid + account_id |
+| v4.0.0 | v5.1.0 | Add `account` section with default auth_uid + account_id |
 
 Forward-compat: save da versione futura → warn, NO downgrade, apply as-is.
 

@@ -5,7 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-08-14
+
+Sessione "fondamenta + gameplay": stabilizzazione guidata dai principi del
+corso Q3 (data-driven, FSM, valida-ai-confini, accumulatore temporale) e
+cinque fasi di gameplay nuove. Suite: **234 test in 23 moduli**, tutti verdi.
+
+### Fixed
+
+- **Geometria della stanza**: il poligono di collisione era 67–128 px piu`
+  grande del pavimento visibile e i personaggi usavano capsule a corpo
+  intero — ora il poligono e` misurato dall'arte e i collider sono ancorati
+  ai piedi. Il personaggio raggiunge la parete di fondo e non esce piu` dai
+  bordi bassi (test runtime con input simulato).
+- **Regole di piazzamento** applicate su TUTTI i confini (drop, drag, heal
+  al load): le finestre non finiscono piu` sul pavimento ne` le piante sui
+  muri; fascia muro derivata dal poligono; `placement_type "any"` ritirato;
+  rotazione opt-in (solo tappeti) e scala limitata ×0.5–×2.
+- **Profondita`**: z_index a bande (muri < tappeti < tutto cio` che sta in
+  piedi ordinato per i piedi) su personaggio, gatto, arredi, sporco.
+- **Save**: i campi int (coins, stress, traccia musicale) non vengono piu`
+  azzerati a ogni load (coercizione float→int mancante in 3 blocchi).
+- Ledger stress per-tipo con conteggio: due sporchi uguali pesano due volte.
+- Gli oggetti a muro e i tappeti non hanno piu` collisioni invisibili.
+
+### Added
+
+- **Economia** — pulizia a tempo "avvia e lascia" (7 s → 1 h da catalogo,
+  barra di progresso, coins al completamento anche a gioco chiuso, sporco
+  persistito nel save v5.1.0) + **Negozio** (`data/shop.json`): cibo player
+  anti-stress, croccantini con ciotola e stato EAT del gatto, attrezzi
+  permanenti ×1.5/×2/×4. Tasto E + prompt HUD (prima non esisteva alcun
+  gestore di interazione). 2 tipi di sporco nuovi (macchia ostinata 1 h,
+  bisognino del gatto 30 min).
+- **Confidenza del gatto** 0–100 persistita: +8 a pasto (se ha fame, ≥4 h),
+  +1/10 s vicino al player in tempesta; sotto 20 il gatto scappa (AVOID),
+  da 70 follow stretto e conforto nel WILD, da 90 dorme accanto al player.
+- **Giardino + bisogni**: zone giardino data-only, uscita 4 volte/giorno
+  (6 h ±1 h su orologio reale), in tempesta i bisogni avvengono in stanza,
+  accumulo offline con cap (torni e trovi i "disastri").
+- **10 slot di partita** con schermata di selezione (anteprima nome/coins/
+  data, elimina con conferma), bottone **Salva** in gioco; slot 1 =
+  percorsi storici (zero migrazione), pipeline HMAC/backup invariata.
+- **Sedie usabili**: E per sedersi/alzarsi; le sedie da ufficio si guidano
+  per la stanza (posizione persistita). Polish animazioni procedurale.
+- **APK Android** funzionante in locale: ETC2/ASTC abilitato, export
+  arm64-only (godot-sqlite non ha librerie arm32), firma debug verificata.
+- 28 chiavi i18n nuove (137 per lingua), validatore CI esteso (shop.json,
+  campi pulizia, flag sedie), 38 test nuovi.
+
+### Changed
+
+- Progetto su **Godot 4.7** (l'immagine CI resta 4.6: mismatch noto, da
+  riallineare al primo run).
+
+## [Unreleased-pre-1.2]
 
 ### Added
 

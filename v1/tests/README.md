@@ -1,6 +1,6 @@
 # Relax Room — Test Harness
 
-Custom headless test harness senza GdUnit4. **196 test invasivi** in 15 moduli,
+Custom headless test harness senza GdUnit4. **234 test invasivi** in 23 moduli,
 ~8 secondi di esecuzione, exit code 0 (all pass) / 1 (failures). Girano in
 preflight locale + CI GitHub Actions su container `barichello/godot-ci:4.6`.
 
@@ -70,7 +70,7 @@ viene rimossa a fine run se tutto e` verde, e conservata se qualcosa fallisce.
 | `test_logger.gd` | 4 | Chiusura del file a teardown, redazione dei segreti anche dentro gli Array, normalizzazione dei path assoluti a `user://`, riga di console redatta come quella su file (V-022, ramo console) |
 | `test_mood.gd` | 16 | Soglie dello slider umore: pioggia e scurimento sullo stesso numero (PLR-1), intensita` della pioggia che cresce col buio, banda musicale a 0.25 separata dalla banda ambience a 0.50, ambience per mood dal catalogo, ripristino delle ambience salvate |
 
-**Totale**: 196 test, ~8s.
+**Totale**: 234 test, ~8s.
 
 `test_bridge.gd` non usa una porta fissa: la risolve a runtime partendo dal PID
 e sondando finche' non ne trova una libera, cosi` due run in parallelo non si
@@ -131,7 +131,7 @@ CanvasLayer stack).
 
 `.github/workflows/ci.yml` jobs:
 
-- **smoke-headless** — boot Godot 4.6 headless, 0 parse/script error
+- **smoke-headless** — boot Godot 4.7 headless, 0 parse/script error
 - **deep-tests** — `bash scripts/deep_test.sh --timeout 90`, gated su
   smoke-headless. Il job **non** invoca mai Godot direttamente sul
   `test_runner.tscn`, e a fine run verifica che la user dir reale del runner

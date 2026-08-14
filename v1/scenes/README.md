@@ -1,6 +1,6 @@
 # Relax Room — Scene Godot
 
-**17 scene** `.tscn` + **1 theme resource** `.tres` (`assets/ui/cozy_theme.tres`).
+**18 scene** `.tscn` + **1 theme resource** `.tres` (`assets/ui/cozy_theme.tres`).
 Conteggio verificato: `find v1/scenes -name "*.tscn" | wc -l` (il
 `tests/test_runner.tscn` vive fuori da questa cartella e non e` contato).
 Le scene definiscono le gerarchie di nodi, composizione componenti e layout UI.

@@ -5,7 +5,7 @@
 > Offline-first desktop companion 2D. Account Supabase opzionale per backup cloud
 > (solo in scrittura: i dati salgono, non tornano giu`).
 
-Scritto in **Godot 4.6** (GDScript, GL Compatibility). Stanza pixel art personalizzabile,
+Scritto in **Godot 4.7** (GDScript, GL Compatibility). Stanza pixel art personalizzabile,
 musica lo-fi, pet autonomo, pensata per restare in background durante studio/lavoro.
 
 Pubblico: studenti, lavoratori da remoto, chiunque voglia un ambiente digitale calmo
@@ -17,7 +17,7 @@ senza notifiche, achievement artificiali o monetizzazione.
 git clone https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private.git
 cd Projectwork-IFTS-Private
 
-# Apri in Godot 4.6 Stable (NON 4.5 — project.godot dichiara 4.6)
+# Apri in Godot 4.7 Stable (project.godot dichiara 4.7)
 #   Import -> v1/project.godot -> Play (F5)
 # OPPURE da CLI:
 godot4 --path v1/
@@ -45,11 +45,11 @@ non scarica la stanza, la riscrive dal locale. Vedi
 ├── v1/                    # Progetto Godot
 │   ├── addons/            #   godot-sqlite 4.7 (GDExtension), virtual_joystick 1.0.0
 │   ├── assets/            #   Sprite, audio, backgrounds, UI, palette
-│   ├── data/              #   6 cataloghi JSON (129 deco, char, room, track, badge, mess)
-│   ├── locale/            #   .po Italian + English (109 chiavi per lingua)
-│   ├── scenes/            #   17 scene Godot (.tscn) + 1 TRES theme
-│   ├── scripts/           #   51 script GDScript (~12.3k LOC)
-│   └── tests/             #   196 test invasivi + runner headless custom
+│   ├── data/              #   7 cataloghi JSON (129 deco, char, room, track, badge, mess, shop)
+│   ├── locale/            #   .po Italian + English (137 chiavi per lingua)
+│   ├── scenes/            #   18 scene Godot (.tscn) + 1 TRES theme
+│   ├── scripts/           #   55 script GDScript (~14.4k LOC)
+│   └── tests/             #   234 test invasivi + runner headless custom
 ├── AUDIT_REPORT_2026-04-23.md
 ├── CHANGELOG.md
 ├── Mini-Cozy-Room-Presentazione-Progetto.pptx
@@ -66,7 +66,7 @@ non scarica la stanza, la riscrive dal locale. Vedi
 | [v1/assets/README.md](v1/assets/README.md) | Origini asset, licenze, integrazione |
 | [v1/scenes/README.md](v1/scenes/README.md) | Scene, struttura nodi, flusso fra scene |
 | [v1/scripts/README.md](v1/scripts/README.md) | GDScript organizzato per dominio, 13 autoload |
-| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (196 test, 15 moduli) |
+| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (234 test, 23 moduli) |
 | [supabase/README.md](supabase/README.md) | Backup cloud push-only, stato schema |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes Keep-a-Changelog + SemVer |
 | [AUDIT_REPORT_2026-04-23.md](AUDIT_REPORT_2026-04-23.md) | Audit integrità + stabilità (13 skill) |
@@ -78,12 +78,12 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 
 | # | Autoload | File | Ruolo |
 |---|----------|------|-------|
-| 1 | **SignalBus** | `autoload/signal_bus.gd` | 56 signal typed. Tutti i sistemi passano per il bus |
+| 1 | **SignalBus** | `autoload/signal_bus.gd` | 65 signal typed. Tutti i sistemi passano per il bus |
 | 2 | **AppLogger** | `autoload/logger.gd` | JSONL rotating 5 MB × 5. Session id, redact su chiavi sensibili |
 | 3 | **LocalDatabase** | `autoload/local_database.gd` | SQLite WAL, 11 tabelle, 9 repo modulari (B-033) |
 | 4 | **AuthManager** | `autoload/auth_manager.gd` | Guest + user/password PBKDF2-HMAC-SHA256 RFC 8018 (v4, 100 k iter, salt 128 bit; build storiche: SHA-256 iterato con salt, re-hash a v4 al login) |
-| 5 | **GameManager** | `autoload/game_manager.gd` | Carica 6 cataloghi JSON, orchestra stato |
-| 6 | **SaveManager** | `autoload/save_manager.gd` | Save v5.0.0, atomic write + backup, HMAC-SHA256 |
+| 5 | **GameManager** | `autoload/game_manager.gd` | Carica 7 cataloghi JSON, orchestra stato |
+| 6 | **SaveManager** | `autoload/save_manager.gd` | Save v5.1.0, atomic write + backup, HMAC-SHA256 |
 | 7 | **SupabaseClient** | `autoload/supabase_client.gd` | Token cifrato device-local, HTTPS, push di 5 tabelle cloud (nessuna lettura) |
 | 8 | **AudioManager** | `autoload/audio_manager.gd` | Dual-player crossfade 2 s, mood-driven track switch |
 | 9 | **PerformanceManager** | `systems/performance_manager.gd` | FPS cap 60 focused / 15 background |
@@ -96,11 +96,11 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 
 - Stanza pixel-art cozy_studio con 3 temi colore (modern / natural / pink)
 - **129 decorazioni** drag-and-drop in 13 categorie
-- Interazione: click → popup con R (rotate 90°) / F (flip) / S (scale 0.25×–3×) / X (delete)
+- Interazione: click → popup con R (solo tappeti) / F (flip) / S (scale 0.5×–2× della misura d'autore) / X (delete); regole di piazzamento data-driven (muro/pavimento) su drop, drag e load
 - Shift durante drag → disabilita snap-to-grid 64 px per placement fine
 - Personaggio pixel-art `male_old` con 8 direzioni + idle/walk/interact/rotate
-- Pet gatto void con FSM 6 stati (idle/wander/follow/sleep/play + WILD sotto mood 0.10)
-- Mess system: 6 tipi di sporco si accumulano, pulisci → +coins, riduce stress
+- Pet gatto void con FSM 12 stati (idle/wander/follow/sleep/play, WILD in tempesta, EAT alla ciotola, AVOID a confidenza bassa, giro in giardino con bisogni)
+- Mess system: 8 tipi di sporco persistiti nel save; pulizia A TEMPO (7 s → 1 h, attrezzi del negozio la accelerano), coins al completamento — anche a gioco chiuso
 - Mood slider profile HUD: cambia audio track + overlay + pet behavior real-time.
   Sotto **0.50** la stanza si scurisce **e** inizia a piovere (visivo e ambience
   sulla stessa soglia); sotto **0.25** entra la musica da temporale; sotto
@@ -111,9 +111,20 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 - Profile HUD mini panel (nome, immagine profilo, badge, mood slider, lang toggle IT/EN, settings)
 - HMAC save integrity: save tampering rilevato, fallback backup
 - 6 badge sbloccabili via eventi di gioco
-- i18n IT/EN via `.po` + `TranslationServer.set_locale()` — 109 chiavi per lingua,
+- i18n IT/EN via `.po` + `TranslationServer.set_locale()` — 137 chiavi per lingua,
   incluse conferme distruttive, errori di autenticazione, etichette del mood,
   toast e tooltip delle maniglie di modifica
+- **Negozio** (v1.2): cibo per il player (riduce lo stress), croccantini per il
+  gatto (ciotola + pasto animato), attrezzi permanenti che accelerano le pulizie
+  (straccio ×1.5, scopa ×2, aspirapolvere ×4) — catalogo `data/shop.json`
+- **Confidenza del gatto** (v1.2): 0→100 persistita; cresce coi pasti (se ha fame)
+  e standogli vicino in tempesta; da "ti evita" a "dorme accanto a te"
+- **Giardino + bisogni** (v1.2): il gatto esce nel piazzale 4 volte al giorno;
+  in tempesta la fa in casa (sporco pesante); accumulo offline via `last_saved`
+- **10 slot di partita** (v1.2): schermata slot con anteprima, Nuova/Carica/Elimina,
+  bottone Salva in gioco; slot 1 = profili storici, zero migrazione
+- **Sedie usabili** (v1.2): E per sedersi; le 5 sedie da ufficio (rotelle) si
+  guidano per la stanza e la posizione si salva allo smontaggio
 - Mobile-ready: virtual joystick gated `OS.has_feature("mobile")`
 
 ## Testing
@@ -123,11 +134,10 @@ Chain di inizializzazione in ordine da `v1/project.godot`:
 ./scripts/preflight.sh        # 8 step: toolchain, integrità, JSON, asset, boot, runtime,
                               #   deep tests, artefatti di presentazione. GO/NO-GO exit 0/1
 ./scripts/godot-validate.sh   # Full re-import + runtime ~3 min
-./scripts/deep_test.sh        # 196 test invasivi in 15 moduli ~8 s (user:// isolato):
-                              #   helpers (16) + catalogs (22) + stress (12) + save (13)
-                              #   + spawn (11) + panels (9) + input (14) + ui_events (15)
-                              #   + crypto (5) + save_failures (10) + i18n_assets (16)
-                              #   + phase_f (12) + bridge (21) + logger (4) + mood (16)
+./scripts/deep_test.sh        # 234 test invasivi in 23 moduli ~30 s (user:// isolato):
+                              #   i 15 moduli storici + placement (6) + movement_bounds (4)
+                              #   + shop (5) + cleaning (5) + trust (5) + needs (5)
+                              #   + slots (4) + seats (3)
 ```
 
 > La suite gira **solo** tramite `./scripts/deep_test.sh`. Il wrapper redirige

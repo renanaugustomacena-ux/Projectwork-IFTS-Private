@@ -1,6 +1,6 @@
 # Relax Room — Documentazione Tecnica v1
 
-> Progetto Godot 4.6 · IFTS academic project · Demo 22 Aprile 2026
+> Progetto Godot 4.7 · IFTS academic project · Demo 22 Aprile 2026
 > Codice sorgente, architettura, contenuti di gioco, flussi di sviluppo.
 > Ultimo aggiornamento: **2026-08-09** (post re-verifica audit).
 
@@ -41,7 +41,7 @@ giornate pesanti — cerca un passatempo che non chieda nulla in cambio.
 
 ### Principi
 
-- **Signal-driven**: tutta la comunicazione fra moduli passa per `SignalBus` (**56 signal typed**). Nessun sistema conosce gli altri.
+- **Signal-driven**: tutta la comunicazione fra moduli passa per `SignalBus` (**65 signal typed**). Nessun sistema conosce gli altri.
 - **Catalog-driven**: contenuti caricati da JSON in `data/`. Aggiungere contenuto = editare JSON, niente codice.
 - **Offline-first**: JSON + SQLite sono source-of-truth. Supabase è opzionale, sync async.
 - **Desktop companion**: FPS cap dinamico (60 focused / 15 unfocused) per rispettare la batteria.
@@ -56,8 +56,8 @@ Caricati in ordine da `project.godot`. Ognuno può dipendere solo dai precedenti
 | 2 | `AppLogger` | `autoload/logger.gd` | JSONL rotating 5 MB × 5, session id, redact su chiavi sensibili — **stessa redazione su file e console** (V-022, ramo console) |
 | 3 | `LocalDatabase` | `autoload/local_database.gd` | SQLite WAL, 11 tabelle; splittato in 9 repo modulari (B-033). L'account ospite si crea al volo **solo** per l'uid ospite: con un uid autenticato senza riga fallisce a voce alta invece di coniare un ospite (V-021) |
 | 4 | `AuthManager` | `autoload/auth_manager.gd` | Guest + username/password PBKDF2-HMAC-SHA256 v4 (RFC 8018, 100 k iter, salt 128 bit) |
-| 5 | `GameManager` | `autoload/game_manager.gd` | Stato di gioco + 6 cataloghi JSON; i cataloghi falliti al boot restano in coda per la UI (V-019) |
-| 6 | `SaveManager` | `autoload/save_manager.gd` | Save JSON v5.0.0 + HMAC-SHA256 + backup atomic + migrazioni v1→v5 |
+| 5 | `GameManager` | `autoload/game_manager.gd` | Stato di gioco + 7 cataloghi JSON; i cataloghi falliti al boot restano in coda per la UI (V-019) |
+| 6 | `SaveManager` | `autoload/save_manager.gd` | Save JSON v5.1.0 + HMAC-SHA256 + backup atomic + migrazioni v1→v5.1 |
 | 7 | `SupabaseClient` | `autoload/supabase_client.gd` | Backup cloud REST **solo in push**, HTTPS-only, session token cifrato device-local |
 | 8 | `AudioManager` | `autoload/audio_manager.gd` | Dual-player crossfade 2 s, mood-driven track switch; bande separate per musica (< 0.25) e ambience (< 0.50) |
 | 9 | `PerformanceManager` | `systems/performance_manager.gd` | FPS cap + window pos persistence |
@@ -139,16 +139,16 @@ v1/
 │   │   ├── decorations/              #     SoppyCraft Indoor Plants + Kenney Furniture CC0
 │   │   └── rooms/                    #     Thurraya Isometric + Bongseng
 │   └── ui/                          #   Kenney Pixel UI Pack + cozy_theme.tres
-├── data/                           # 6 cataloghi JSON + SQLite schema doc
+├── data/                           # 7 cataloghi JSON + SQLite schema doc
 │   ├── characters.json              #   1 personaggio: male_old
 │   ├── decorations.json             #   129 decorazioni in 13 categorie
 │   ├── rooms.json                   #   1 stanza: cozy_studio × 3 temi
 │   ├── tracks.json                  #   2 tracce musicali + 2 ambience
 │   ├── badges.json                  #   6 badge unlockable
 │   └── mess_catalog.json            #   6 mess con stress weights
-├── locale/                         # .po IT + EN (2 file, 109 chiavi per lingua)
-├── scenes/                         # 17 scene Godot (.tscn) + 1 TRES theme
-├── scripts/                        # 51 script GDScript (~12.325 LOC)
+├── locale/                         # .po IT + EN (2 file, 137 chiavi per lingua)
+├── scenes/                         # 18 scene Godot (.tscn) + 1 TRES theme
+├── scripts/                        # 55 script GDScript (~14.4k LOC)
 │   ├── autoload/                    #   11 singleton core + database/ 9 repo
 │   ├── rooms/                       #   Room base + decoration + character + pet + mess + grid + window_bg
 │   ├── menu/                        #   main_menu + auth_screen + character_select + tutorial_manager
@@ -156,8 +156,8 @@ v1/
 │   ├── ui/                          #   Panel manager + 5 panel + drop_zone + deco_button + toast + HUD
 │   ├── utils/                       #   Constants + Helpers + supabase_{config,http,mapper}
 │   └── main.gd                      #   Controller scena principale
-└── tests/                          # 196 test invasivi + runner headless custom
-    ├── integration/                 #   15 moduli + test_base.gd
+└── tests/                          # 234 test invasivi + runner headless custom
+    ├── integration/                 #   23 moduli + test_base.gd
     ├── test_runner.gd               #   Harness reflection-based
     └── test_runner.tscn             #   Scene autostart runner
 ```
@@ -199,7 +199,7 @@ Pixel art 32×32, controlli WASD/frecce, `move_and_slide()` + `FLOATING`, SPEED 
 
 ### Pet
 
-`pet_variant` = `simple` (16×16) o `iso` (32×32). FSM 6 stati: IDLE → WANDER → FOLLOW → SLEEP → PLAY, più WILD sotto mood 0.10.
+`pet_variant` = `simple` (16×16) o `iso` (32×32). FSM 12 stati: IDLE → WANDER → FOLLOW → SLEEP → PLAY, più WILD (tempesta), EAT (ciotola), AVOID (confidenza < 20) e il giro bisogni GO_POTTY → POTTY → ROAM_GARDEN → RETURN_HOME.
 
 ### Musica + Ambience
 
@@ -234,7 +234,7 @@ Ambience e visivo condividono la soglia (dove si vede piovere si sente piovere, 
 
 ## Salvataggio
 
-### JSON locale (`user://save_data.json`, v5.0.0)
+### JSON locale (`user://save_data.json`, v5.1.0)
 
 Atomic write: temp → rename. Backup singolo in `save_data.backup.json`.
 HMAC-SHA256 con chiave device-local in `user://integrity.key` (32 byte random al primo avvio).
@@ -278,8 +278,8 @@ Dettaglio schema: **[data/README.md](data/README.md)**.
 9. **validate-no-keystore** — blocca commit accidentali di keystore
 10. **validate-signals** — SignalBus ≥ 40 signal, no duplicati
 11. **validate-pixelart** — palette + deliverable size/naming
-12. **smoke-headless** — boot Godot 4.6 headless, 0 parse error
-13. **deep-tests** — 196 test via `scripts/deep_test.sh`, gated su smoke.
+12. **smoke-headless** — boot Godot 4.7 headless, 0 parse error
+13. **deep-tests** — 234 test via `scripts/deep_test.sh`, gated su smoke.
     Il job invoca **sempre il wrapper**, mai Godot direttamente sul
     `test_runner.tscn`, e verifica a fine run che la user dir reale del runner
     non esista nemmeno (prova d'isolamento, G-053)
@@ -294,7 +294,7 @@ Container: `barichello/godot-ci:4.6`.
 ./scripts/smoke_test.sh          # boot headless ~2 s
 ./scripts/preflight.sh           # 8 step GO/NO-GO demo readiness
 ./scripts/godot-validate.sh      # ciclo completo re-import + runtime ~3 min
-./scripts/deep_test.sh           # 196 test invasivi ~8 s (user:// isolato, vedi tests/README)
+./scripts/deep_test.sh           # 234 test invasivi ~8 s (user:// isolato, vedi tests/README)
 ```
 
 `deep_test.sh` e` l'**unico** modo supportato di lanciare la suite: crea una
@@ -323,7 +323,7 @@ reale del giocatore. Dettaglio: **[tests/README.md](tests/README.md)**.
 
 ### Pattern codificati (non violare)
 
-1. **Godot 4.6 obbligatorio** — `project.godot` dichiara features "4.6"
+1. **Godot 4.7 obbligatorio** — `project.godot` dichiara features "4.7" (l'immagine CI e' ancora 4.6: da riallineare)
 2. **Floor polygon = source of truth** per clamping (viewport rect deprecato)
 3. **Focus chain**: Button creati via script → `focus_mode = FOCUS_NONE` se non serve keyboard nav
 4. **Drag sorgenti non-Button** — `DecoButton extends TextureRect` (Button.`_pressing_inside` rompe drag)

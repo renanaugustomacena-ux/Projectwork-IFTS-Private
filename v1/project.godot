@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Relax Room"
 config/description="A cozy desktop companion combining pixel art rooms, lo-fi music, and organizational tools for mindful productivity"
-config/version="1.1.0"
+config/version="1.2.0"
 run/main_scene="res://scenes/menu/main_menu.tscn"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="RelaxRoom"
