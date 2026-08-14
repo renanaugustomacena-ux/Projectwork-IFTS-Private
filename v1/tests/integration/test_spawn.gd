@@ -22,14 +22,15 @@ func _build_minimal_room() -> void:
 	_decorations_container.name = "Decorations"
 	_room.add_child(_decorations_container)
 
-	# Initialize floor polygon (same rhombus as main.tscn)
+	# Initialize floor polygon (same rhombus as main.tscn, aligned to the
+	# visual floor of room.png at display scale — see fix session 2026-08-14)
 	var poly_node := CollisionPolygon2D.new()
 	poly_node.polygon = PackedVector2Array(
 		[
-			Vector2(640, 265),
-			Vector2(1100, 480),
-			Vector2(640, 685),
-			Vector2(180, 480),
+			Vector2(646, 263),
+			Vector2(974, 434),
+			Vector2(646, 606),
+			Vector2(319, 434),
 		]
 	)
 	_room.add_child(poly_node)

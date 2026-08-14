@@ -798,31 +798,39 @@ func _apply_save_data(data: Dictionary) -> void:
 		if "outfit_id" in char_data and char_data["outfit_id"] is String:
 			GameManager.current_outfit_id = char_data["outfit_id"]
 		if "data" in char_data and char_data["data"] is Dictionary:
-			for key in char_data["data"]:
-				if key in character_data:
-					var loaded = char_data["data"][key]
-					if typeof(loaded) == typeof(character_data[key]):
-						character_data[key] = loaded
+			_merge_typed_block(character_data, char_data["data"], "character")
 	# Clamp stress level
 	character_data["livello_stress"] = clampi(int(character_data.get("livello_stress", 0)), 0, 100)
 
 	# Music state
 	if "music" in data and data["music"] is Dictionary:
-		for key in data["music"]:
-			if key in _music_state:
-				var loaded = data["music"][key]
-				if typeof(loaded) == typeof(_music_state[key]):
-					_music_state[key] = loaded
+		_merge_typed_block(_music_state, data["music"], "music")
 
 	# Inventory data — validate types and clamp values
 	if "inventory" in data and data["inventory"] is Dictionary:
-		for key in data["inventory"]:
-			if key in inventory_data:
-				var loaded = data["inventory"][key]
-				if typeof(loaded) == typeof(inventory_data[key]):
-					inventory_data[key] = loaded
+		_merge_typed_block(inventory_data, data["inventory"], "inventory")
 	inventory_data["coins"] = maxi(int(inventory_data.get("coins", 0)), 0)
 	inventory_data["capacita"] = clampi(int(inventory_data.get("capacita", 50)), 1, 999)
+
+
+## Merge a loaded save block over its defaults with the same type rules the
+## settings block uses: exact type match passes, and JSON floats coerce back
+## onto int defaults. JSON.parse returns EVERY number as float, so without the
+## coercion every int field — coins, livello_stress, current_track_index —
+## was silently dropped on load and reset to its default at each boot
+## (verified live 2026-08-14: seeded coins 10, game loaded 0). Same lesson as
+## _apply_settings_block's comment; these blocks never received the fix.
+func _merge_typed_block(target: Dictionary, loaded_block: Dictionary, context: String) -> void:
+	for key in loaded_block:
+		if not (key in target):
+			continue
+		var loaded: Variant = loaded_block[key]
+		if typeof(loaded) == typeof(target[key]):
+			target[key] = loaded
+		elif loaded is float and target[key] is int:
+			target[key] = int(loaded)
+		else:
+			AppLogger.warn("SaveManager", "Type mismatch in %s block" % context, {"key": key})
 
 
 func _migrate_save_data(data: Dictionary) -> Dictionary:

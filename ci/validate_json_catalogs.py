@@ -11,7 +11,10 @@ import sys
 REQUIRED_DIRECTIONS = [
     "down", "down_side", "down_side_sx", "side", "side_sx", "up", "up_side", "up_side_sx"
 ]
-VALID_PLACEMENT_TYPES = {"floor", "wall", "any"}
+# "any" is retired: every item is either grounded (floor) or wall-mounted.
+# The runtime treats unknown values as floor with a warning (Helpers.placement_type_of).
+VALID_PLACEMENT_TYPES = {"floor", "wall"}
+VALID_ART_SETS = {"individuals", "bongseng", "kenney", "sc", "room", "pets"}
 HEX_COLOR_RE = re.compile(r"^[0-9a-fA-F]{6}$")
 
 
@@ -106,12 +109,31 @@ def validate_decorations(data, errors):
 
         pt = deco.get("placement_type", "")
         if pt and pt not in VALID_PLACEMENT_TYPES:
-            errors.append(("decorations.json", f"{prefix}.placement_type", f"invalid value '{pt}' (expected: floor, wall, any)"))
+            errors.append(("decorations.json", f"{prefix}.placement_type", f"invalid value '{pt}' (expected: floor, wall)"))
 
         scale = deco.get("item_scale")
         if "item_scale" in deco:
             if not isinstance(scale, (int, float)) or scale <= 0:
                 errors.append(("decorations.json", f"{prefix}.item_scale", f"must be a positive number, got {scale}"))
+
+        art = deco.get("art_set", "")
+        if not art:
+            errors.append(("decorations.json", f"{prefix}.art_set", "missing required field 'art_set' (visual coherence tag)"))
+        elif art not in VALID_ART_SETS:
+            errors.append(("decorations.json", f"{prefix}.art_set", f"invalid value '{art}' (expected: {', '.join(sorted(VALID_ART_SETS))})"))
+
+        for flag in ("flat", "rotatable"):
+            if flag in deco and not isinstance(deco[flag], bool):
+                errors.append(("decorations.json", f"{prefix}.{flag}", f"must be a boolean, got {deco[flag]!r}"))
+        if deco.get("flat") and pt != "floor":
+            errors.append(("decorations.json", f"{prefix}.flat", "flat items must have placement_type 'floor'"))
+
+        lo, hi = deco.get("scale_min"), deco.get("scale_max")
+        for name, val in (("scale_min", lo), ("scale_max", hi)):
+            if val is not None and (not isinstance(val, (int, float)) or val <= 0):
+                errors.append(("decorations.json", f"{prefix}.{name}", f"must be a positive number, got {val!r}"))
+        if isinstance(lo, (int, float)) and isinstance(hi, (int, float)) and lo > hi:
+            errors.append(("decorations.json", f"{prefix}.scale_min", f"scale_min {lo} > scale_max {hi}"))
 
 
 def validate_rooms(data, errors):

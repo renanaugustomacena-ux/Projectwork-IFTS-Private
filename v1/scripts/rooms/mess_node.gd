@@ -32,6 +32,11 @@ func setup(entry: Dictionary, world_position: Vector2) -> void:
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_sprite.texture = _resolve_texture(entry)
 	add_child(_sprite)
+	# Depth: a mess lies on the floor — sort by its bottom edge like every
+	# other grounded entity (see Helpers z bands).
+	var mess_tex := _sprite.texture
+	var half_h: float = mess_tex.get_size().y * 0.5 if mess_tex else 16.0
+	z_index = Helpers.z_for_foot_y(world_position.y + half_h)
 
 	collision_layer = 0
 	collision_mask = 1  # Detects character on layer 1

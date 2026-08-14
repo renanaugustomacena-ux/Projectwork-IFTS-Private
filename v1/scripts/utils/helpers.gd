@@ -17,9 +17,35 @@ class_name Helpers
 # `Helpers.clamp_inside_floor(world_pos)`.
 #
 # All coordinates are world (== viewport, since the project has no Camera2D).
+#
+# The two polygon edges adjacent to the topmost vertex are also the BASE of the
+# two visible wall faces (the room art is a parallelepiped: walls rise straight
+# up from those edges for WALL_BAND_HEIGHT px, measured on room.png at display
+# scale). Wall-item placement clamps against this band, so wall geometry has
+# the same single source of truth as the floor.
+
+## Height of the visible wall faces above their base edge, in world px.
+## Measured on room.png (259 px at the 1280/2528 display scale) minus a small
+## margin so items never poke over the top edge of the wall.
+const WALL_BAND_HEIGHT := 250.0
+
+## Draw-order bands (z_index). Wall items sit behind everything; flat items
+## (rugs) lie just above the walls; every standing entity — furniture,
+## character, pet, mess — sorts by the y of its ground contact point.
+const Z_WALL := 0
+const Z_FLAT := 1
+const Z_FOOT_MIN := 2
 
 static var _floor_polygon_world: PackedVector2Array = PackedVector2Array()
 static var _floor_centroid_world: Vector2 = Vector2.ZERO
+# Wall base edges: left edge runs _wall_left..._wall_top, right edge
+# _wall_top..._wall_right (world coords, derived from the floor polygon).
+static var _wall_top: Vector2 = Vector2.ZERO
+static var _wall_left: Vector2 = Vector2.ZERO
+static var _wall_right: Vector2 = Vector2.ZERO
+static var _wall_ready: bool = false
+# placement_type values already warned about (warn once per unknown value).
+static var _warned_placements: Dictionary = {}
 
 
 ## Convert a Vector2 to an Array for JSON serialization.
@@ -99,9 +125,31 @@ static func set_floor_polygon_from_node(node: CollisionPolygon2D) -> void:
 		transformed[i] = xform * local_poly[i]
 	_floor_polygon_world = transformed
 	_floor_centroid_world = _polygon_centroid(transformed)
+	_derive_wall_edges(transformed)
 	AppLogger.info(
 		"Helpers", "floor_polygon_initialized", {"vertices": transformed.size(), "centroid": _floor_centroid_world}
 	)
+
+
+## The wall base edges are the two polygon edges adjacent to the topmost
+## vertex. Works for any convex room polygon whose "back" is its top corner.
+static func _derive_wall_edges(poly: PackedVector2Array) -> void:
+	_wall_ready = false
+	var n := poly.size()
+	if n < 3:
+		return
+	var top_idx := 0
+	for i in n:
+		if poly[i].y < poly[top_idx].y:
+			top_idx = i
+	_wall_top = poly[top_idx]
+	var prev := poly[(top_idx - 1 + n) % n]
+	var next := poly[(top_idx + 1) % n]
+	_wall_left = prev if prev.x < next.x else next
+	_wall_right = next if prev.x < next.x else prev
+	_wall_ready = _wall_left.x < _wall_top.x and _wall_top.x < _wall_right.x
+	if not _wall_ready:
+		push_warning("Helpers: cannot derive wall edges from floor polygon")
 
 
 ## True if the floor polygon has been initialized.
@@ -168,6 +216,101 @@ static func _polygon_centroid(poly: PackedVector2Array) -> Vector2:
 	for p in poly:
 		sum += p
 	return sum / float(poly.size())
+
+
+# ----------------------------------------------------------------------------
+# Wall band API (derived from the floor polygon — see header comment)
+# ----------------------------------------------------------------------------
+
+
+static func has_wall_band() -> bool:
+	return _wall_ready
+
+
+## Y of the wall base at horizontal position `x` (piecewise over the two base
+## edges). INF when x is outside the wall span or the band is uninitialized.
+static func wall_base_y_at(x: float) -> float:
+	if not _wall_ready:
+		return INF
+	if x < _wall_left.x or x > _wall_right.x:
+		return INF
+	var a := _wall_left
+	var b := _wall_top
+	if x > _wall_top.x:
+		a = _wall_top
+		b = _wall_right
+	var t := (x - a.x) / (b.x - a.x) if b.x != a.x else 0.0
+	return lerpf(a.y, b.y, t)
+
+
+## Clamp the CENTER of a wall-mounted item (half_size = half its scaled rect)
+## so the whole rect stays on a wall face. Permissive when the band is not
+## initialized (same philosophy as is_inside_floor). Items taller than the
+## band are pinned to the band's middle instead of oscillating.
+static func clamp_wall_anchor(center: Vector2, half_size: Vector2, margin: float = 4.0) -> Vector2:
+	if not _wall_ready:
+		return center
+	var x := clampf(center.x, _wall_left.x + half_size.x + margin, _wall_right.x - half_size.x - margin)
+	var base := wall_base_y_at(x)
+	if base == INF:
+		return center
+	var y_max := base - half_size.y - margin
+	var y_min := base - WALL_BAND_HEIGHT + half_size.y + margin
+	var y := clampf(center.y, y_min, y_max) if y_min <= y_max else (y_min + y_max) * 0.5
+	return Vector2(x, y)
+
+
+## True when a wall-item rect centered at `center` already lies on a wall face
+## (within `tolerance` px of where the clamp would put it).
+static func is_on_wall(center: Vector2, half_size: Vector2, tolerance: float = 1.0) -> bool:
+	if not _wall_ready:
+		return true
+	return center.distance_to(clamp_wall_anchor(center, half_size)) <= tolerance
+
+
+# ----------------------------------------------------------------------------
+# Placement rules (data-driven — the catalog entry is the contract)
+# ----------------------------------------------------------------------------
+
+
+## Normalized placement type of a catalog/save entry. Unknown values (e.g. the
+## retired "any") fall back to "floor" with a once-per-value warning — the
+## NameTo* pattern: warn, fallback, keep running (never crash on bad data).
+static func placement_type_of(entry: Dictionary) -> String:
+	var raw := str(entry.get("placement_type", "floor"))
+	if raw == "floor" or raw == "wall":
+		return raw
+	if not _warned_placements.has(raw):
+		_warned_placements[raw] = true
+		push_warning("Helpers: unknown placement_type '%s', treated as 'floor'" % raw)
+	return "floor"
+
+
+## Whether the item may be rotated by the player. Default false: 90° rotations
+## of perspective-drawn furniture produce nonsense; flat items (rugs) opt in
+## via "rotatable": true in the catalog.
+static func is_rotatable(entry: Dictionary) -> bool:
+	return bool(entry.get("rotatable", false))
+
+
+## Whether the item lies flat on the floor (rugs): drawn under everything that
+## stands, never blocks movement.
+static func is_flat(entry: Dictionary) -> bool:
+	return bool(entry.get("flat", false))
+
+
+## Allowed scale range as MULTIPLIERS of the catalog item_scale, so every item
+## stays near its authored proportion. Overridable per entry via "scale_min" /
+## "scale_max"; defaults keep furniture between half and double size.
+static func scale_bounds_of(entry: Dictionary) -> Vector2:
+	var lo := clampf(float(entry.get("scale_min", 0.5)), 0.05, 10.0)
+	var hi := clampf(float(entry.get("scale_max", 2.0)), lo, 10.0)
+	return Vector2(lo, hi)
+
+
+## Draw order for an entity standing on the floor: its ground-contact y.
+static func z_for_foot_y(foot_y: float) -> int:
+	return clampi(int(foot_y), Z_FOOT_MIN, RenderingServer.CANVAS_ITEM_Z_MAX - 1)
 
 
 ## Etichetta localizzata di una entry di catalogo. Cerca prima i campi

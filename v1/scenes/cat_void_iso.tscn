@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" path="res://assets/pets/cat_void_iso.png" id="1_isotex"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_iso0"]
-radius = 10.0
+radius = 7.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_iso0"]
 atlas = ExtResource("1_isotex")
@@ -56,7 +56,7 @@ motion_mode = 1
 script = ExtResource("1_ctrl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, 4)
+position = Vector2(0, 17)
 shape = SubResource("CircleShape2D_iso0")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]

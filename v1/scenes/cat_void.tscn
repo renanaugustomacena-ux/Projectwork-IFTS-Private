@@ -7,7 +7,7 @@
 [ext_resource type="Script" uid="uid://ohr66b73163j" path="res://scripts/rooms/pet_controller.gd" id="1_ctrl"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jtm4s"]
-radius = 15.0
+radius = 7.0
 
 [sub_resource type="AtlasTexture" id="at_default_0"]
 atlas = ExtResource("1_7xtjs")
@@ -178,7 +178,7 @@ motion_mode = 1
 script = ExtResource("1_ctrl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=695670153]
-position = Vector2(1, 2)
+position = Vector2(1, 16)
 shape = SubResource("CircleShape2D_jtm4s")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1079891382]

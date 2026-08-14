@@ -112,7 +112,7 @@ func _populate_catalog() -> void:
 			var item_name: String = item_data.get("name", item_id)
 			var sprite_path: String = item_data.get("sprite_path", "")
 			var item_scale: float = item_data.get("item_scale", 1.0)
-			var placement_type: String = item_data.get("placement_type", "any")
+			var placement_type: String = Helpers.placement_type_of(item_data)
 
 			var drag_btn := _create_drag_button(item_id, item_name, sprite_path, item_scale, placement_type)
 			if drag_btn:

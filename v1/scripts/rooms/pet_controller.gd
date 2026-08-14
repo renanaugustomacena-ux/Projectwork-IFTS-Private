@@ -27,6 +27,9 @@ var _wild_mode_active: bool = false
 var _wild_redirect_timer: float = 0.0
 var _wild_direction: Vector2 = Vector2.RIGHT
 var _last_anim: String = ""
+# Ground-contact point relative to the body origin, read from the collision
+# shape (the collider IS the paws — same convention as character_controller).
+var _foot_offset := Vector2.ZERO
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -34,6 +37,9 @@ var _last_anim: String = ""
 func _ready() -> void:
 	_home_position = position
 	collision_mask = 1  # Walls only, don't collide with decorations
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node != null:
+		_foot_offset = shape_node.position
 	collision_layer = 0  # Don't block anything
 	# B-030: seed deterministico in debug per riproducibilita` FSM pet
 	if OS.is_debug_build():
@@ -74,6 +80,9 @@ func _physics_process(delta: float) -> void:
 		State.WILD:
 			_process_wild(delta)
 
+	# Depth: sort by paw contact y, same band as character and furniture.
+	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
+
 
 func _process_wild(delta: float) -> void:
 	# T-R-015i: movimento erratico veloce finche` mood < stormy threshold.
@@ -85,11 +94,14 @@ func _process_wild(delta: float) -> void:
 	velocity = _wild_direction * WILD_SPEED
 	move_and_slide()
 	# Clamp inside the floor polygon (V-043 / 4.1.10-L77) — same helper WANDER
-	# uses for its target. Reflect the direction only when the clamp actually
-	# moved the pet, so it bounces off the boundary instead of grinding on it.
-	var clamped := Helpers.clamp_inside_floor(position)
-	if clamped != position:
-		position = clamped
+	# uses for its target. The clamp runs on the PAW point, not the origin, so
+	# the visible cat stays on the wood. Reflect the direction only when the
+	# clamp actually moved the pet, so it bounces off the boundary instead of
+	# grinding on it.
+	var paw := position + _foot_offset
+	var clamped := Helpers.clamp_inside_floor(paw)
+	if clamped != paw:
+		position = clamped - _foot_offset
 		_wild_direction = -_wild_direction
 	if _anim != null:
 		_anim.flip_h = _wild_direction.x < 0
@@ -216,8 +228,9 @@ func _pick_wander_target() -> void:
 		_rng.randf_range(-WANDER_RANGE * 0.3, WANDER_RANGE * 0.3),
 	)
 	_wander_target = _home_position + offset
-	# Clamp to floor polygon instead of hardcoded rect
-	_wander_target = Helpers.clamp_inside_floor(_wander_target)
+	# Clamp to floor polygon instead of hardcoded rect (on the paw point, so
+	# the sprite never overhangs the floor edge when it arrives).
+	_wander_target = Helpers.clamp_inside_floor(_wander_target + _foot_offset) - _foot_offset
 
 
 func _find_character() -> void:

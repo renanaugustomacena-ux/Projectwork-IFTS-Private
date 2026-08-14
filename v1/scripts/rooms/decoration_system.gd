@@ -10,6 +10,9 @@ static var _active_popup_owner: Sprite2D = null
 var item_id: String = ""
 var base_item_scale: float = 1.0
 var deco_data: Dictionary = {}
+## Catalog entry for this item (placement rules, rotatable, flat, scale
+## bounds). Assigned by the spawner; empty dict falls back to safe defaults.
+var catalog_data: Dictionary = {}
 
 var _is_dragging: bool = false
 var _drag_offset: Vector2 = Vector2.ZERO
@@ -61,16 +64,23 @@ func _unhandled_input(event: InputEvent) -> void:
 			var snap_pos := raw_pos
 			if Input.is_key_pressed(KEY_SHIFT):
 				snap_pos = Helpers.snap_to_grid(raw_pos)
-			# Clamp al pavimento SOLO per oggetti floor. I wall (finestre, quadri)
-			# vivono sopra il pavimento e non devono essere agganciati al poligono
-			# (fix "invisible wall" — impossibile trascinare finestra in alto).
-			var placement_type: String = deco_data.get("placement_type", "floor")
+			# Every placement type has its own legal zone and its own clamp —
+			# the rule comes from the data, the geometry from Helpers (single
+			# source of truth). Floor items clamp their foot anchor into the
+			# floor polygon; wall items clamp their rect onto the wall band
+			# (before this, a window could be parked in the middle of the
+			# floor because "wall" simply skipped validation).
+			var placement_type := Helpers.placement_type_of(deco_data)
 			if placement_type == "wall":
-				global_position = snap_pos
+				var half := _half_size()
+				var clamped_center: Vector2 = Helpers.clamp_wall_anchor(snap_pos + half, half)
+				global_position = clamped_center - half
 			else:
 				var anchor_offset := _floor_anchor_offset()
 				var clamped_anchor: Vector2 = Helpers.clamp_inside_floor(snap_pos + anchor_offset)
 				global_position = clamped_anchor - anchor_offset
+				if not Helpers.is_flat(catalog_data):
+					z_index = Helpers.z_for_foot_y(global_position.y + anchor_offset.y)
 
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE and _popup != null:
@@ -82,6 +92,12 @@ func _floor_anchor_offset() -> Vector2:
 		return Vector2.ZERO
 	var tex_size := texture.get_size() * scale
 	return Vector2(tex_size.x * 0.5, tex_size.y)
+
+
+func _half_size() -> Vector2:
+	if texture == null:
+		return Vector2.ZERO
+	return texture.get_size() * scale * 0.5
 
 
 func _toggle_popup() -> void:
@@ -107,14 +123,17 @@ func _show_popup() -> void:
 	hbox.add_theme_constant_override("separation", 2)
 	_popup.add_child(hbox)
 
-	# Rotate button
-	var rotate_btn := Button.new()
-	rotate_btn.text = "R"
-	rotate_btn.tooltip_text = tr("UI_DECO_ROTATE")
-	rotate_btn.custom_minimum_size = Vector2(28, 28)
-	rotate_btn.focus_mode = Control.FOCUS_NONE
-	rotate_btn.pressed.connect(_on_rotate)
-	hbox.add_child(rotate_btn)
+	# Rotate button — only for items the catalog marks rotatable. Perspective
+	# furniture rotated 90° lies "on its side" and looks broken; flat items
+	# (rugs) opt in via "rotatable": true. The rule lives in the data.
+	if Helpers.is_rotatable(catalog_data):
+		var rotate_btn := Button.new()
+		rotate_btn.text = "R"
+		rotate_btn.tooltip_text = tr("UI_DECO_ROTATE")
+		rotate_btn.custom_minimum_size = Vector2(28, 28)
+		rotate_btn.focus_mode = Control.FOCUS_NONE
+		rotate_btn.pressed.connect(_on_rotate)
+		hbox.add_child(rotate_btn)
 
 	# Flip button (perspective)
 	var flip_btn := Button.new()
@@ -177,11 +196,21 @@ func _on_flip() -> void:
 
 
 func _on_scale() -> void:
+	# Ladder restricted to the catalog's allowed multiplier range, so no item
+	# can drift far from its authored proportion (0.25x plants and 3x beds
+	# were a large part of "this furniture does not belong here").
+	var bounds := Helpers.scale_bounds_of(catalog_data)
+	var steps: Array[float] = []
+	for s: float in SCALE_STEPS:
+		if s >= bounds.x - 0.001 and s <= bounds.y + 0.001:
+			steps.append(s)
+	if steps.is_empty():
+		steps.append(1.0)
 	var current_mult := scale.x / base_item_scale
-	var next_mult := SCALE_STEPS[0]
-	for i in range(SCALE_STEPS.size()):
-		if absf(current_mult - SCALE_STEPS[i]) < 0.05:
-			next_mult = SCALE_STEPS[(i + 1) % SCALE_STEPS.size()]
+	var next_mult: float = steps[0]
+	for i in range(steps.size()):
+		if absf(current_mult - steps[i]) < 0.05:
+			next_mult = steps[(i + 1) % steps.size()]
 			break
 	var new_scale := base_item_scale * next_mult
 	scale = Vector2(new_scale, new_scale)

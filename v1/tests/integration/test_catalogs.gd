@@ -95,7 +95,9 @@ func test_decoration_category_references_valid() -> void:
 
 
 func test_decoration_placement_types_valid() -> void:
-	var valid := {"floor": true, "wall": true, "any": true}
+	# "any" is retired (2026-08-14): items are grounded or wall-mounted, and
+	# the runtime maps anything else to floor with a warning.
+	var valid := {"floor": true, "wall": true}
 	for deco in GameManager.decorations_catalog.get("decorations", []):
 		var pt: String = deco.get("placement_type", "")
 		assert_true(valid.has(pt), "deco %s has invalid placement_type '%s'" % [deco.get("id"), pt])

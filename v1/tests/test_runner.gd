@@ -20,12 +20,14 @@ extends Node
 
 const TEST_MODULES := [
 	"res://tests/integration/test_helpers.gd",
+	"res://tests/integration/test_placement.gd",
 	"res://tests/integration/test_catalogs.gd",
 	"res://tests/integration/test_stress.gd",
 	"res://tests/integration/test_save.gd",
 	"res://tests/integration/test_spawn.gd",
 	"res://tests/integration/test_panels.gd",
 	"res://tests/integration/test_input.gd",
+	"res://tests/integration/test_movement_bounds.gd",
 	"res://tests/integration/test_ui_events.gd",
 	"res://tests/integration/test_crypto.gd",
 	"res://tests/integration/test_save_failures.gd",

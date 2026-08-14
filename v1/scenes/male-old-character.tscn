@@ -19,8 +19,8 @@
 [ext_resource type="Texture2D" uid="uid://c4tr8o1bbt8he" path="res://assets/charachters/male/old/male_walk/male_walk_up_side.png" id="walk_uside"]
 
 [sub_resource type="CapsuleShape2D" id="capsule"]
-radius = 16.0
-height = 66.0
+radius = 8.0
+height = 34.0
 
 [sub_resource type="AtlasTexture" id="at_0"]
 atlas = ExtResource("idle_down")
@@ -586,7 +586,8 @@ motion_mode = 1
 script = ExtResource("1_ctrl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1811670376]
-position = Vector2(0, 4)
+position = Vector2(6, 51)
+rotation = 1.5707964
 shape = SubResource("capsule")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=453117300]

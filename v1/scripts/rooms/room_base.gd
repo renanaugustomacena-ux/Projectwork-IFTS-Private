@@ -161,10 +161,12 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 		# wall decoration into the floor polygon on the first drag.
 		"placement_type": item_data.get("placement_type", "floor"),
 	}
-	# Check if placement would overlap with character and nudge if needed
+	# Check if placement would overlap with character and nudge if needed.
+	# Only blocking furniture nudges: rugs and wall items never trap anyone.
 	var char_pos := character_node.position
 	var tex_data := _get_texture_for_id(item_id)
-	if tex_data != null:
+	var blocks := Helpers.placement_type_of(item_data) == "floor" and not Helpers.is_flat(item_data)
+	if tex_data != null and blocks:
 		var deco_rect := Rect2(pos, tex_data.get_size() * item_scale)
 		if deco_rect.has_point(char_pos):
 			# Nudge character out of overlap. Each edge candidate is clamped
@@ -197,8 +199,63 @@ func _reload_decorations() -> void:
 		var rot: float = deco_data.get("rotation", 0.0)
 		var flipped: bool = deco_data.get("flip_h", false)
 		var pos_vec := Helpers.array_to_vec2(pos)
-		# Trust saved positions — don't re-clamp on reload (causes position shift)
+		# One-time heal: saves written while the collision polygon was larger
+		# than the visual floor (or while wall items had no constraint at all)
+		# carry positions outside the legal zones. Validate at the boundary —
+		# a save file is input, not gospel — and write the correction back into
+		# the entry (in place, same mechanism as the placement_type backfill)
+		# so the next save persists the healed value. Entries already valid
+		# pass through unchanged, so healthy saves never drift.
+		var healed := _heal_saved_entry(deco_data, item_data, pos_vec, item_scale, rot)
+		pos_vec = healed["pos"]
+		item_scale = healed["scale"]
+		rot = healed["rot"]
 		_spawn_decoration(item_id, pos_vec, item_scale, rot, flipped, deco_data)
+
+
+## Clamp a saved entry back into its legal placement zone, rotation and scale
+## range. Mutates deco_data in place when something was actually corrected.
+func _heal_saved_entry(
+	deco_data: Dictionary, item_data: Dictionary, pos_vec: Vector2, item_scale: float, rot: float
+) -> Dictionary:
+	var item_id: String = deco_data.get("item_id", "")
+	var placement := Helpers.placement_type_of(deco_data)
+	if str(deco_data.get("placement_type", "")) != placement:
+		# Persist the normalization too (retired "any" values in old saves).
+		deco_data["placement_type"] = placement
+	var tex := _get_texture_for_id(item_id)
+	var size := tex.get_size() * item_scale if tex != null else Vector2.ZERO
+
+	var fixed_pos := pos_vec
+	if placement == "wall":
+		var center := pos_vec + size * 0.5
+		var clamped_center := Helpers.clamp_wall_anchor(center, size * 0.5)
+		fixed_pos = clamped_center - size * 0.5
+	else:
+		var anchor := pos_vec + Vector2(size.x * 0.5, size.y)
+		fixed_pos = Helpers.clamp_inside_floor(anchor) - Vector2(size.x * 0.5, size.y)
+
+	var fixed_rot := rot if Helpers.is_rotatable(item_data) else 0.0
+	var bounds := Helpers.scale_bounds_of(item_data)
+	var base_scale: float = item_data.get("item_scale", 1.0)
+	var fixed_scale := clampf(item_scale, base_scale * bounds.x, base_scale * bounds.y)
+
+	if fixed_pos.distance_to(pos_vec) > 1.0 or fixed_rot != rot or not is_equal_approx(fixed_scale, item_scale):
+		AppLogger.warn(
+			"RoomBase",
+			"saved_decoration_healed",
+			{
+				"item_id": item_id,
+				"from": pos_vec,
+				"to": fixed_pos,
+				"rot": [rot, fixed_rot],
+				"scale": [item_scale, fixed_scale]
+			}
+		)
+		deco_data["position"] = Helpers.vec2_to_array(fixed_pos)
+		deco_data["rotation"] = fixed_rot
+		deco_data["item_scale"] = fixed_scale
+	return {"pos": fixed_pos, "scale": fixed_scale, "rot": fixed_rot}
 
 
 func _spawn_decoration(
@@ -241,27 +298,41 @@ func _spawn_decoration(
 		# ladder compound across sessions (3.0 -> 4.5 -> ... unbounded).
 		sprite.base_item_scale = item_data.get("item_scale", 1.0)
 		sprite.deco_data = deco_data
+		sprite.catalog_data = item_data
+
+	# --- Draw order: wall band < flat (rugs) < everything standing by foot-y.
+	var placement := Helpers.placement_type_of(item_data)
+	var tex_size := texture.get_size()
+	if placement == "wall":
+		sprite.z_index = Helpers.Z_WALL
+	elif Helpers.is_flat(item_data):
+		sprite.z_index = Helpers.Z_FLAT
+	else:
+		sprite.z_index = Helpers.z_for_foot_y(pos.y + tex_size.y * item_scale)
 
 	# --- Collision: footprint-based (bottom portion only) ---
-	# Only the base of the decoration blocks movement, not the full sprite.
-	var body := StaticBody2D.new()
-	body.collision_layer = 2
-	body.collision_mask = 0
-	var shape := CollisionShape2D.new()
-	var rect := RectangleShape2D.new()
-	var tex_size := texture.get_size()
+	# Only STANDING floor furniture blocks movement. Wall items hang above the
+	# floor (their old footprint body was an invisible wall in the middle of
+	# the room) and flat items (rugs) are walked over by definition.
 	var foot_w := tex_size.x * COLLISION_WIDTH_RATIO
 	var foot_h := tex_size.y * COLLISION_HEIGHT_RATIO
-	rect.size = Vector2(foot_w, foot_h)
-	# Position at bottom-center of the texture (sprites are non-centered)
-	shape.shape = rect
-	shape.position = Vector2(tex_size.x * 0.5, tex_size.y - foot_h * 0.5)
-	body.add_child(shape)
-	sprite.add_child(body)
+	var blocks_movement := placement == "floor" and not Helpers.is_flat(item_data)
+	if blocks_movement:
+		var body := StaticBody2D.new()
+		body.collision_layer = 2
+		body.collision_mask = 0
+		var shape := CollisionShape2D.new()
+		var rect := RectangleShape2D.new()
+		rect.size = Vector2(foot_w, foot_h)
+		# Position at bottom-center of the texture (sprites are non-centered)
+		shape.shape = rect
+		shape.position = Vector2(tex_size.x * 0.5, tex_size.y - foot_h * 0.5)
+		body.add_child(shape)
+		sprite.add_child(body)
 
 	# --- Interaction Area2D for interactable furniture ---
 	var interaction_type: String = item_data.get("interaction_type", "")
-	if not interaction_type.is_empty():
+	if not interaction_type.is_empty() and blocks_movement:
 		var area := Area2D.new()
 		area.collision_layer = 0
 		area.collision_mask = 1  # Detect character (layer 1)
@@ -366,7 +437,9 @@ func _spawn_pet() -> void:
 	var char_pos: Vector2 = Vector2(640, 360)  # viewport centre 1280x720
 	if _character_pos_ready and character_node != null and is_instance_valid(character_node):
 		char_pos = character_node.position
-	pet.position = Vector2(char_pos.x + 60.0, char_pos.y + 20.0)
+	# The fixed offset can land outside the floor polygon when the character
+	# sits near an edge: clamp the spawn like every other placement.
+	pet.position = Helpers.clamp_inside_floor(Vector2(char_pos.x + 60.0, char_pos.y + 20.0), 24.0)
 	add_child(pet)
 	AppLogger.info("RoomBase", "pet_spawned", {"variant": variant, "pos": pet.position})
 

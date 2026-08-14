@@ -6,6 +6,10 @@ const DIRECTION_THRESHOLD := 1.2
 
 var _last_direction := Vector2.DOWN
 var _last_anim: String = ""
+# Ground-contact point relative to the body origin. Read from the collision
+# shape so the shape stays the single source of truth (the collider IS the
+# feet — Q3 pattern: collision geometry is authoritative, visuals follow it).
+var _foot_offset := Vector2.ZERO
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -13,6 +17,9 @@ var _last_anim: String = ""
 func _ready() -> void:
 	# Collide with room walls (layer 1) and decorations (layer 2)
 	collision_mask = 3
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node != null:
+		_foot_offset = shape_node.position
 	SignalBus.decoration_mode_changed.connect(_on_decoration_mode_changed)
 
 
@@ -63,7 +70,12 @@ func _nudge_out_of_decorations() -> void:
 		if away.length() > 0.01:
 			push += away.normalized()
 	if push.length() > 0.01:
-		global_position += push.normalized() * 56.0
+		# Clamp the teleport target through the floor polygon: the raw 56px
+		# step near a room edge could land OUTSIDE the boundary segments, and
+		# from there the character could never walk back in (validate at the
+		# boundary — every teleport is a boundary, not just player input).
+		var target := global_position + push.normalized() * 56.0
+		global_position = Helpers.clamp_inside_floor(target + _foot_offset) - _foot_offset
 
 
 func _physics_process(_delta: float) -> void:
@@ -76,6 +88,15 @@ func _physics_process(_delta: float) -> void:
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = direction.normalized() * SPEED
 	move_and_slide()
+	# Belt-and-braces: the wall segments are thin lines, so any residual
+	# tunneling (or a stale out-of-bounds save position) self-heals here.
+	# No-op whenever the foot point is already inside the polygon.
+	var foot := global_position + _foot_offset
+	var clamped := Helpers.clamp_inside_floor(foot)
+	if clamped != foot:
+		global_position = clamped - _foot_offset
+	# Depth: entities sort by ground contact — feet lower on screen = in front.
+	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
 	_update_animation(direction)
 
 

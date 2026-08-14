@@ -103,6 +103,31 @@ func test_tampered_save_rejected_falls_back() -> void:
 	SaveManager.save_game()
 
 
+func test_load_preserves_int_fields_from_json() -> void:
+	# JSON.parse returns EVERY number as float; the load path must coerce
+	# floats back onto int defaults instead of silently dropping them.
+	# Pre-fix (2026-08-14): coins, livello_stress and current_track_index
+	# reset to their defaults on every boot. Round-trip through real JSON so
+	# the numbers arrive exactly as they do from disk.
+	var payload := (
+		JSON
+		. stringify(
+			{
+				"version": "5.0.0",
+				"character": {"character_id": "male_old", "data": {"livello_stress": 42}},
+				"music": {"current_track_index": 1},
+				"inventory": {"coins": 10, "capacita": 60},
+			}
+		)
+	)
+	var parsed: Dictionary = JSON.parse_string(payload)
+	SaveManager._apply_save_data(parsed)
+	assert_eq(int(SaveManager.inventory_data.get("coins", -1)), 10, "coins must survive the JSON round trip")
+	assert_true(SaveManager.inventory_data["coins"] is int, "coins must be stored as int")
+	assert_eq(int(SaveManager.character_data.get("livello_stress", -1)), 42, "stress must survive")
+	assert_eq(int(SaveManager.get_music_state().get("current_track_index", -1)), 1, "track index must survive")
+
+
 # ---- Migration ----
 
 
