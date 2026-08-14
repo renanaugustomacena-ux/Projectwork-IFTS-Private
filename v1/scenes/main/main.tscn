@@ -47,6 +47,20 @@ wall_min_slide_angle = 0.08726646
 build_mode = 1
 polygon = PackedVector2Array(646, 263, 974, 434, 646, 606, 319, 434)
 
+[node name="GardenZones" type="Node2D" parent="Room" unique_id=1758203344]
+
+[node name="GardenLeft" type="CollisionPolygon2D" parent="Room/GardenZones" unique_id=1758203345]
+disabled = true
+polygon = PackedVector2Array(60, 300, 295, 300, 295, 690, 80, 700)
+
+[node name="GardenRight" type="CollisionPolygon2D" parent="Room/GardenZones" unique_id=1758203346]
+disabled = true
+polygon = PackedVector2Array(990, 300, 1220, 300, 1205, 700, 985, 690)
+
+[node name="GardenFront" type="CollisionPolygon2D" parent="Room/GardenZones" unique_id=1758203347]
+disabled = true
+polygon = PackedVector2Array(290, 625, 990, 625, 970, 708, 320, 708)
+
 [node name="RoomGrid" type="Node2D" parent="." unique_id=1832241696]
 script = ExtResource("7_grid")
 

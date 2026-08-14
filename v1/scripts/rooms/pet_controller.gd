@@ -1,8 +1,12 @@
+# gdlint: disable=max-file-lines
 ## PetController — Autonomous pet behavior with state machine.
-## Manages idle, wander, follow, sleep, and play states.
+## Stati: idle/wander/follow/sleep/play + WILD (tempesta), EAT (ciotola),
+## AVOID (confidenza bassa), GO_POTTY/POTTY/ROAM_GARDEN/RETURN_HOME
+## (giardino e bisogni). TODO post-demo: estrarre bisogni/giardino in un
+## modulo per rientrare sotto 500 righe.
 extends CharacterBody2D
 
-enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD, EAT, AVOID }
+enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD, EAT, AVOID, GO_POTTY, POTTY, ROAM_GARDEN, RETURN_HOME }
 
 const WANDER_SPEED := 30.0
 const FOLLOW_SPEED := 80.0
@@ -35,6 +39,19 @@ const AVOID_RELEASE_DIST := 160.0
 const FOLLOW_DISTANCE_CLOSE := 90.0
 const FOLLOW_STOP_CLOSE := 28.0
 
+# --- Giardino e bisogni (fase 3, spec 2026-08-14). 4 volte al giorno il
+# gatto va in giardino; con la tempesta li fa in stanza (sporco pesante).
+# Orologio su timestamp Unix persistiti (pet_data.next_potty_at). ---
+const GARDEN_ZONE := "garden"
+const POTTY_INTERVAL_SEC := 6.0 * 3600.0  # 4 volte al giorno
+const POTTY_JITTER_SEC := 3600.0
+const POTTY_SQUAT_SEC := 3.0
+const MAX_OFFLINE_POTTIES := 8
+const GARDEN_SPEED := 55.0
+const GARDEN_LINGER_MIN := 8.0
+const GARDEN_LINGER_MAX := 16.0
+const TARGET_REACH := 12.0
+
 var _state: State = State.IDLE
 var _state_timer: float = 0.0
 var _idle_timer: float = 0.0
@@ -48,6 +65,10 @@ var _wild_direction: Vector2 = Vector2.RIGHT
 var _last_anim: String = ""
 # Accumulatore vicinanza-durante-tempesta (fase 2): +1 trust ogni 10s.
 var _storm_bond_timer: float = 0.0
+# Fase 3: meta corrente del giro (bisogno o passeggiata) e flag indoor.
+var _outing_target := Vector2.ZERO
+var _potty_indoor: bool = false
+var _garden_linger_left: float = 0.0
 # Ground-contact point relative to the body origin, read from the collision
 # shape (the collider IS the paws — same convention as character_controller).
 var _foot_offset := Vector2.ZERO
@@ -85,6 +106,11 @@ func _on_feed_requested(_world_position: Vector2) -> void:
 func _on_wild_mode_requested(active: bool) -> void:
 	_wild_mode_active = active
 	if active:
+		# In giardino niente scatto WILD immediato (il clamp lo teletraspor-
+		# terebbe dentro): accorcia la passeggiata, il WILD parte al rientro.
+		if _state in [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME]:
+			_garden_linger_left = 0.0
+			return
 		_set_state(State.WILD)
 	elif _state == State.WILD:
 		# Tempesta finita: se una ciotola era rimasta abbandonata (il WILD
@@ -114,8 +140,23 @@ func _physics_process(delta: float) -> void:
 			_process_eat(delta)
 		State.AVOID:
 			_process_avoid(delta)
+		State.GO_POTTY:
+			_process_go_potty(delta)
+		State.POTTY:
+			_process_potty(delta)
+		State.ROAM_GARDEN:
+			_process_roam_garden(delta)
+		State.RETURN_HOME:
+			_process_return_home(delta)
 
+	_check_potty_due()
 	_accrue_storm_bond(delta)
+	# Maschera collisioni autoritativa per-frame: fuori dalla stanza (o in
+	# uscita) i muri del bordo non valgono, altrimenti bloccherebbero il
+	# rientro; dentro tornano solidi. Nessuno stato deve ricordarsi di
+	# ripristinarla a mano (fase 3).
+	var outing := _state in [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME]
+	collision_mask = 0 if outing or not Helpers.is_inside_floor(position + _foot_offset) else 1
 	# Depth: sort by paw contact y, same band as character and furniture.
 	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
 
@@ -186,6 +227,117 @@ func _process_avoid(_delta: float) -> void:
 	if _anim:
 		_anim.flip_h = dir.x < 0
 	_play_anim("walk")
+
+
+# ---- Giardino e bisogni (fase 3) -------------------------------------------
+
+
+## Quanti bisogni sono maturati tra next_at e now, e il nuovo next. Pura e
+## statica: e` l'accumulatore temporale del modulo 12, con cap difensivo.
+static func accrue_offline_potties(next_at: float, now: float, cap: int = MAX_OFFLINE_POTTIES) -> Dictionary:
+	if next_at <= 0.0 or now < next_at:
+		return {"count": 0, "next": next_at}
+	var count := 0
+	var next := next_at
+	while next <= now:
+		if count < cap:
+			count += 1
+		next += POTTY_INTERVAL_SEC
+	return {"count": count, "next": next}
+
+
+func _schedule_next_potty() -> void:
+	var now := Time.get_unix_time_from_system()
+	var jitter := _rng.randf_range(-POTTY_JITTER_SEC, POTTY_JITTER_SEC)
+	SaveManager.pet_data["next_potty_at"] = now + POTTY_INTERVAL_SEC + jitter
+	SignalBus.save_requested.emit()
+
+
+## Alla scadenza dell'orologio: con la tempesta il bisogno avviene IN STANZA
+## (diventa uno sporco pesante via room_base), altrimenti si esce in giardino.
+func _check_potty_due() -> void:
+	if _state in [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME, State.EAT]:
+		return
+	var next := float(SaveManager.pet_data.get("next_potty_at", 0.0))
+	if next <= 0.0:
+		_schedule_next_potty()
+		return
+	if Time.get_unix_time_from_system() < next:
+		return
+	_potty_indoor = _wild_mode_active  # tempesta = stessa soglia del WILD
+	if _potty_indoor or not Helpers.has_zone(GARDEN_ZONE):
+		_potty_indoor = true
+		_outing_target = Helpers.clamp_inside_floor(_home_position + _random_offset(120.0))
+	else:
+		_outing_target = Helpers.random_point_in_zone(GARDEN_ZONE, _rng)
+	_set_state(State.GO_POTTY)
+
+
+func _random_offset(radius: float) -> Vector2:
+	return Vector2(_rng.randf_range(-radius, radius), _rng.randf_range(-radius, radius))
+
+
+## Cammina verso `target` clampato all'unione pavimento+giardino.
+## Ritorna true quando la meta e` raggiunta.
+func _walk_outing(target: Vector2, speed: float) -> bool:
+	var dir := target - position
+	if dir.length() <= TARGET_REACH:
+		velocity = Vector2.ZERO
+		return true
+	velocity = dir.normalized() * speed
+	move_and_slide()
+	var paw := position + _foot_offset
+	var clamped := Helpers.clamp_inside_floor_or_zone(GARDEN_ZONE, paw)
+	if clamped != paw:
+		position = clamped - _foot_offset
+	if _anim:
+		_anim.flip_h = dir.x < 0
+	_play_anim("walk")
+	return false
+
+
+func _process_go_potty(_delta: float) -> void:
+	if _walk_outing(_outing_target, GARDEN_SPEED if not _potty_indoor else WANDER_SPEED):
+		_set_state(State.POTTY)
+
+
+func _process_potty(_delta: float) -> void:
+	velocity = Vector2.ZERO
+	_play_anim("sleep")  # accucciato: il frame piu` vicino senza arte dedicata
+	if _anim:
+		_anim.scale = Vector2(absf(_anim.scale.x), absf(_anim.scale.x) * 0.85)
+	if _state_timer < POTTY_SQUAT_SEC:
+		return
+	_reset_anim_scale()
+	SignalBus.pet_pottied.emit(_potty_indoor)
+	_schedule_next_potty()
+	AppLogger.info("PetController", "potty_done", {"indoor": _potty_indoor})
+	if _potty_indoor:
+		_potty_indoor = false
+		_set_state(State.WILD if _wild_mode_active else State.IDLE)
+	else:
+		_garden_linger_left = _rng.randf_range(GARDEN_LINGER_MIN, GARDEN_LINGER_MAX)
+		_outing_target = Helpers.random_point_in_zone(GARDEN_ZONE, _rng)
+		_set_state(State.ROAM_GARDEN)
+
+
+func _process_roam_garden(delta: float) -> void:
+	_garden_linger_left -= delta
+	if _garden_linger_left <= 0.0:
+		_outing_target = Helpers.clamp_inside_floor(_home_position + _random_offset(80.0))
+		_set_state(State.RETURN_HOME)
+		return
+	if _walk_outing(_outing_target, GARDEN_SPEED):
+		_play_anim("idle")
+		if _state_timer > 3.0:
+			_state_timer = 0.0
+			_outing_target = Helpers.random_point_in_zone(GARDEN_ZONE, _rng)
+
+
+func _process_return_home(_delta: float) -> void:
+	if _walk_outing(_outing_target, GARDEN_SPEED):
+		collision_mask = 1  # di nuovo dentro: i muri tornano solidi
+		_set_state(State.WILD if _wild_mode_active else State.IDLE)
 
 
 ## True se il gatto diffida e il player e` troppo vicino.

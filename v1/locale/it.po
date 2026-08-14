@@ -402,3 +402,10 @@ msgstr "Premi E per pulire"
 
 msgid "TOAST_SAVED"
 msgstr "Salvato"
+
+# Bisogni del gatto (fase 3, spec 2026-08-14)
+msgid "TOAST_CAT_POTTY_INDOOR"
+msgstr "Il gatto ha fatto i bisogni in casa!"
+
+msgid "TOAST_CAT_POTTY_AWAY"
+msgstr "Mentre eri via il gatto ha combinato %d disastri..."

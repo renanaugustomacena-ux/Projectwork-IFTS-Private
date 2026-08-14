@@ -9,6 +9,7 @@ const MessSpawnerScript := preload("res://scripts/systems/mess_spawner.gd")
 # il class_name cache di Godot puo` andare stale.
 const MessNodeScript := preload("res://scripts/rooms/mess_node.gd")
 const FoodBowlScript := preload("res://scripts/rooms/food_bowl.gd")
+const PetScript := preload("res://scripts/rooms/pet_controller.gd")
 
 ## Collision footprint ratios — only the bottom portion blocks movement.
 const COLLISION_WIDTH_RATIO := 0.7
@@ -51,6 +52,7 @@ func _ready() -> void:
 	SignalBus.decoration_placed.connect(_on_decoration_placed)
 	SignalBus.load_completed.connect(_on_load_completed)
 	SignalBus.pet_feed_requested.connect(_on_pet_feed_requested)
+	SignalBus.pet_pottied.connect(_on_pet_pottied)
 	_setup_floor_bounds()
 	_reload_decorations()
 	# Apply character chosen in main menu BEFORE spawning pet.
@@ -73,11 +75,82 @@ func _setup_floor_bounds() -> void:
 		push_warning("RoomBase: FloorBounds node not found at $RoomBounds/FloorBounds")
 		return
 	Helpers.set_floor_polygon_from_node(_floor_bounds_node)
+	# Zone giardino (fase 3): poligoni data-only in main.tscn (disabled=true,
+	# nessuna fisica) registrati nel registro zone. clear prima: gli statici
+	# di Helpers sopravvivono ai reload di scena.
+	Helpers.clear_zones()
+	var zones := get_node_or_null("GardenZones")
+	if zones != null:
+		for child in zones.get_children():
+			if child is CollisionPolygon2D:
+				Helpers.register_zone_polygon("garden", (child as CollisionPolygon2D).polygon)
 
 
 func _on_load_completed() -> void:
 	_reload_decorations()
 	_reload_messes()
+	_process_offline_potty()
+
+
+## Spawna un NUOVO mess (bisogno in stanza, accumulo offline): entry
+## persistita + nodo + segnale mess_spawned (che aggiunge lo stress).
+func _spawn_new_mess(mess_id: String, pos: Vector2) -> void:
+	var catalog_entry := GameManager.get_mess_entry(mess_id)
+	if catalog_entry.is_empty():
+		AppLogger.warn("RoomBase", "spawn_new_mess_unknown", {"id": mess_id})
+		return
+	pos = Helpers.clamp_inside_floor(pos, 16.0)
+	var persisted := {
+		"mess_id": mess_id,
+		"position": Helpers.vec2_to_array(pos),
+		"spawned_at": Time.get_unix_time_from_system(),
+		"cleaning_ends_at": 0.0,
+	}
+	var before := SaveManager.get_messes().size()
+	SaveManager.add_mess(persisted)
+	if SaveManager.get_messes().size() == before:
+		return  # cap raggiunto: niente nodo orfano
+	var mess: Area2D = MessNodeScript.new()
+	mess.setup(catalog_entry, pos, persisted)
+	mess_container.add_child(mess)
+	SignalBus.mess_spawned.emit(mess_id, pos)
+	SignalBus.save_requested.emit()
+
+
+## Bisogno fatto IN STANZA (tempesta): diventa uno sporco pesante dove
+## si trova il gatto (fase 3).
+func _on_pet_pottied(indoor: bool) -> void:
+	if not indoor:
+		return
+	var pet := get_node_or_null("Pet") as Node2D
+	var pos: Vector2 = pet.position if pet != null else Vector2(640, 500)
+	_spawn_new_mess("cat_poop", pos)
+	SignalBus.toast_requested.emit(tr("TOAST_CAT_POTTY_INDOOR"), "warning")
+
+
+## Bisogni maturati a gioco chiuso (accumulatore temporale, modulo 12).
+## Con mood salvato in tempesta diventano sporchi in stanza; altrimenti il
+## gatto se l'e` cavata in giardino e non resta traccia.
+func _process_offline_potty() -> void:
+	var next := float(SaveManager.pet_data.get("next_potty_at", 0.0))
+	var now := Time.get_unix_time_from_system()
+	if next <= 0.0:
+		return  # primo avvio: lo schedule lo fa il pet controller
+	var result: Dictionary = PetScript.accrue_offline_potties(next, now)
+	var count := int(result.get("count", 0))
+	if count <= 0:
+		return
+	SaveManager.pet_data["next_potty_at"] = float(result.get("next", 0.0))
+	var was_stormy := float(SaveManager.get_setting("mood_level", 1.0)) < Constants.MOOD_STORMY_THRESHOLD
+	if was_stormy:
+		var rng := RandomNumberGenerator.new()
+		rng.randomize()
+		for _i in range(count):
+			var offset := Vector2(rng.randf_range(-160.0, 160.0), rng.randf_range(-100.0, 100.0))
+			_spawn_new_mess("cat_poop", Vector2(646, 460) + offset)
+		SignalBus.toast_requested.emit(tr("TOAST_CAT_POTTY_AWAY") % count, "warning")
+	AppLogger.info("RoomBase", "offline_potty", {"count": count, "indoor": was_stormy})
+	SignalBus.save_requested.emit()
 
 
 ## Ricostruisce i mess dal salvataggio (spec 2026-08-14). Tre casi per voce:
@@ -524,6 +597,8 @@ func _exit_tree() -> void:
 		SignalBus.load_completed.disconnect(_on_load_completed)
 	if SignalBus.pet_feed_requested.is_connected(_on_pet_feed_requested):
 		SignalBus.pet_feed_requested.disconnect(_on_pet_feed_requested)
+	if SignalBus.pet_pottied.is_connected(_on_pet_pottied):
+		SignalBus.pet_pottied.disconnect(_on_pet_pottied)
 
 
 func _find_item_data(item_id: String) -> Dictionary:

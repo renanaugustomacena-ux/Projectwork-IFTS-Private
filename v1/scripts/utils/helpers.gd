@@ -46,6 +46,9 @@ static var _wall_right: Vector2 = Vector2.ZERO
 static var _wall_ready: bool = false
 # placement_type values already warned about (warn once per unknown value).
 static var _warned_placements: Dictionary = {}
+# Zone nominate (fase giardino): name → Array[PackedVector2Array]. Il gatto
+# in ROAM_GARDEN naviga clampato all'unione pavimento+zona.
+static var _zones: Dictionary = {}
 
 
 ## Convert a Vector2 to an Array for JSON serialization.
@@ -216,6 +219,113 @@ static func _polygon_centroid(poly: PackedVector2Array) -> Vector2:
 	for p in poly:
 		sum += p
 	return sum / float(poly.size())
+
+
+# ----------------------------------------------------------------------------
+# Named zones (fase giardino, spec 2026-08-14)
+#
+# Una zona e` un insieme di poligoni world-space con un nome ("garden").
+# Il gatto in ROAM_GARDEN naviga clampato all'UNIONE pavimento+zona, cosi`
+# puo` attraversare il bordo stanza→piazzale senza geometrie speciali.
+# ----------------------------------------------------------------------------
+
+
+static func clear_zones() -> void:
+	_zones.clear()
+
+
+static func register_zone_polygon(zone_name: String, poly: PackedVector2Array) -> void:
+	if poly.size() < 3:
+		push_warning("Helpers.register_zone_polygon: polygon needs >= 3 vertices")
+		return
+	if not _zones.has(zone_name):
+		_zones[zone_name] = []
+	(_zones[zone_name] as Array).append(poly)
+
+
+static func has_zone(zone_name: String) -> bool:
+	return _zones.has(zone_name) and not (_zones[zone_name] as Array).is_empty()
+
+
+static func is_inside_zone(zone_name: String, world_pos: Vector2) -> bool:
+	for poly: PackedVector2Array in _zones.get(zone_name, []):
+		if Geometry2D.is_point_in_polygon(world_pos, poly):
+			return true
+	return false
+
+
+## Punto piu` vicino dentro uno dei poligoni della zona (o il punto stesso
+## se gia` dentro). Permissivo se la zona non esiste, come is_inside_floor.
+static func clamp_inside_zone(zone_name: String, world_pos: Vector2, margin: float = 4.0) -> Vector2:
+	if not has_zone(zone_name):
+		return world_pos
+	if is_inside_zone(zone_name, world_pos):
+		return world_pos
+	var best := world_pos
+	var best_dist := INF
+	for poly: PackedVector2Array in _zones[zone_name]:
+		var candidate := _closest_point_inside(poly, world_pos, margin)
+		var d := world_pos.distance_squared_to(candidate)
+		if d < best_dist:
+			best_dist = d
+			best = candidate
+	return best
+
+
+## Clamp all'unione pavimento + zona: dentro una delle due → invariato,
+## altrimenti il piu` vicino tra i due clamp. E` il percorso di ROAM_GARDEN.
+static func clamp_inside_floor_or_zone(zone_name: String, world_pos: Vector2, margin: float = 4.0) -> Vector2:
+	if is_inside_floor(world_pos) and has_floor_polygon():
+		return world_pos
+	if is_inside_zone(zone_name, world_pos):
+		return world_pos
+	var floor_pt := clamp_inside_floor(world_pos, margin)
+	if not has_zone(zone_name):
+		return floor_pt
+	var zone_pt := clamp_inside_zone(zone_name, world_pos, margin)
+	if not has_floor_polygon():
+		return zone_pt
+	var use_floor := world_pos.distance_squared_to(floor_pt) <= world_pos.distance_squared_to(zone_pt)
+	return floor_pt if use_floor else zone_pt
+
+
+## Punto casuale dentro la zona (rejection sampling sul bbox, poi clamp).
+static func random_point_in_zone(zone_name: String, rng: RandomNumberGenerator) -> Vector2:
+	if not has_zone(zone_name):
+		return Vector2.ZERO
+	var polys: Array = _zones[zone_name]
+	var poly: PackedVector2Array = polys[rng.randi_range(0, polys.size() - 1)]
+	var bounds := Rect2(poly[0], Vector2.ZERO)
+	for p in poly:
+		bounds = bounds.expand(p)
+	for _i in range(24):
+		var candidate := Vector2(
+			rng.randf_range(bounds.position.x, bounds.end.x),
+			rng.randf_range(bounds.position.y, bounds.end.y),
+		)
+		if Geometry2D.is_point_in_polygon(candidate, poly):
+			return candidate
+	return _polygon_centroid(poly)
+
+
+## Nucleo condiviso: punto sul bordo del poligono, spinto `margin` px verso
+## il centroide (stessa strategia di clamp_inside_floor).
+static func _closest_point_inside(poly: PackedVector2Array, world_pos: Vector2, margin: float) -> Vector2:
+	var best := world_pos
+	var best_dist_sq := INF
+	var n := poly.size()
+	for i in n:
+		var a := poly[i]
+		var b := poly[(i + 1) % n]
+		var p := Geometry2D.get_closest_point_to_segment(world_pos, a, b)
+		var d := world_pos.distance_squared_to(p)
+		if d < best_dist_sq:
+			best_dist_sq = d
+			best = p
+	var to_center := _polygon_centroid(poly) - best
+	if to_center.length_squared() > 0.0001:
+		best += to_center.normalized() * margin
+	return best
 
 
 # ----------------------------------------------------------------------------
