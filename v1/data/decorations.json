@@ -25,10 +25,10 @@
 		{"id": "desk_3", "name": "Compact Desk", "category": "desks", "sprite_path": "res://assets/sprites/rooms/Individuals/Desk_3.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
 		{"id": "desk_4", "name": "Gaming Desk", "category": "desks", "sprite_path": "res://assets/sprites/rooms/Individuals/Desk_4.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
 
-		{"id": "chair_1", "name": "Executive Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_1.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
-		{"id": "chair_2", "name": "Mesh Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_2.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
-		{"id": "chair_3", "name": "Vintage Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_3.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
-		{"id": "chair_4", "name": "Gaming Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_4.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
+		{"id": "chair_1", "name": "Executive Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_1.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals", "sittable": true, "rideable": true},
+		{"id": "chair_2", "name": "Mesh Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_2.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals", "sittable": true, "rideable": true},
+		{"id": "chair_3", "name": "Vintage Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_3.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals", "sittable": true, "rideable": true},
+		{"id": "chair_4", "name": "Gaming Chair", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/Individuals/OfficeChair_4.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals", "sittable": true, "rideable": true},
 
 		{"id": "wardrobe_1", "name": "Tall Wardrobe", "category": "wardrobes", "sprite_path": "res://assets/sprites/rooms/Individuals/Wardrobe_1.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
 		{"id": "wardrobe_2", "name": "Double Wardrobe", "category": "wardrobes", "sprite_path": "res://assets/sprites/rooms/Individuals/Wardrobe_2.png", "placement_type": "floor", "item_scale": 3.0, "art_set": "individuals"},
@@ -90,9 +90,9 @@
 		{"id": "bongseng_table_small_wood", "name": "Tavolino Legno", "category": "tables", "sprite_path": "res://assets/sprites/rooms/bongseng/tables/small table wood leftt.png", "placement_type": "floor", "item_scale": 0.8, "art_set": "bongseng"},
 		{"id": "bongseng_table_small_glass", "name": "Tavolino Vetro", "category": "tables", "sprite_path": "res://assets/sprites/rooms/bongseng/tables/small table glass left.png", "placement_type": "floor", "item_scale": 0.8, "art_set": "bongseng"},
 
-		{"id": "bongseng_chair_wood", "name": "Sedia Legno", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/Chair wood left.png", "placement_type": "floor", "item_scale": 1.0, "art_set": "bongseng"},
-		{"id": "bongseng_chair_blue", "name": "Sedia Blu", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/chair blue left.png", "placement_type": "floor", "item_scale": 1.0, "art_set": "bongseng"},
-		{"id": "bongseng_chair_white", "name": "Sedia Bianca", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/chair white left.png", "placement_type": "floor", "item_scale": 1.0, "art_set": "bongseng"},
+		{"id": "bongseng_chair_wood", "name": "Sedia Legno", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/Chair wood left.png", "placement_type": "floor", "item_scale": 1.0, "art_set": "bongseng", "sittable": true},
+		{"id": "bongseng_chair_blue", "name": "Sedia Blu", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/chair blue left.png", "placement_type": "floor", "item_scale": 1.0, "art_set": "bongseng", "sittable": true},
+		{"id": "bongseng_chair_white", "name": "Sedia Bianca", "category": "chairs", "sprite_path": "res://assets/sprites/rooms/bongseng/chairs/chair white left.png", "placement_type": "floor", "item_scale": 1.0, "art_set": "bongseng", "sittable": true},
 
 		{"id": "bongseng_wardrobe_wood", "name": "Armadio Legno", "category": "wardrobes", "sprite_path": "res://assets/sprites/rooms/bongseng/wardrobes/wooden closet left.png", "placement_type": "floor", "item_scale": 0.6, "art_set": "bongseng"},
 		{"id": "bongseng_wardrobe_bookshelf", "name": "Libreria con Armadio", "category": "wardrobes", "sprite_path": "res://assets/sprites/rooms/bongseng/wardrobes/tall bookshelf and closet left.png", "placement_type": "floor", "item_scale": 0.6, "art_set": "bongseng"},
@@ -113,13 +113,13 @@
 		{"id": "kenney_desk_corner", "name": "Scrivania Angolare", "category": "desks", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/desk_corner.png", "placement_type": "floor", "item_scale": 1.0, "art_set": "kenney"},
 		{"id": "kenney_side_table_drawers", "name": "Cassettiera", "category": "desks", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/side_table_drawers.png", "placement_type": "floor", "item_scale": 2.0, "art_set": "kenney"},
 
-		{"id": "kenney_chair", "name": "Sedia Kenney", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney"},
-		{"id": "kenney_chair_cushion", "name": "Sedia Imbottita", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_cushion.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney"},
-		{"id": "kenney_chair_desk", "name": "Sedia da Scrivania", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_desk.png", "placement_type": "floor", "item_scale": 2.0, "art_set": "kenney"},
-		{"id": "kenney_chair_rounded", "name": "Sedia Arrotondata", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_rounded.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney"},
-		{"id": "kenney_lounge_chair", "name": "Poltrona", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lounge_chair.png", "placement_type": "floor", "item_scale": 2.0, "art_set": "kenney"},
-		{"id": "kenney_lounge_chair_relax", "name": "Poltrona Relax", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lounge_chair_relax.png", "placement_type": "floor", "item_scale": 2.0, "art_set": "kenney"},
-		{"id": "kenney_stool_bar", "name": "Sgabello Bar", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/stool_bar.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney"},
+		{"id": "kenney_chair", "name": "Sedia Kenney", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney", "sittable": true},
+		{"id": "kenney_chair_cushion", "name": "Sedia Imbottita", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_cushion.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney", "sittable": true},
+		{"id": "kenney_chair_desk", "name": "Sedia da Scrivania", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_desk.png", "placement_type": "floor", "item_scale": 2.0, "art_set": "kenney", "sittable": true, "rideable": true},
+		{"id": "kenney_chair_rounded", "name": "Sedia Arrotondata", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/chair_rounded.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney", "sittable": true},
+		{"id": "kenney_lounge_chair", "name": "Poltrona", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lounge_chair.png", "placement_type": "floor", "item_scale": 2.0, "art_set": "kenney", "sittable": true},
+		{"id": "kenney_lounge_chair_relax", "name": "Poltrona Relax", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/lounge_chair_relax.png", "placement_type": "floor", "item_scale": 2.0, "art_set": "kenney", "sittable": true},
+		{"id": "kenney_stool_bar", "name": "Sgabello Bar", "category": "chairs", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/stool_bar.png", "placement_type": "floor", "item_scale": 2.5, "art_set": "kenney", "sittable": true},
 
 		{"id": "kenney_bookcase_closed", "name": "Libreria Chiusa", "category": "wardrobes", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bookcase_closed.png", "placement_type": "floor", "item_scale": 1.5, "art_set": "kenney"},
 		{"id": "kenney_bookcase_closed_doors", "name": "Libreria con Ante", "category": "wardrobes", "sprite_path": "res://assets/sprites/decorations/kenney_furniture_cc0/bookcase_closed_doors.png", "placement_type": "floor", "item_scale": 1.5, "art_set": "kenney"},

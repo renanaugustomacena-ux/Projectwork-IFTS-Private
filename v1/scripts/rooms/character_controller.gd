@@ -9,6 +9,10 @@ const INTERACT_RADIUS := 48.0
 const INTERACT_LAYER_MASK := 4
 ## Durata dell'animazione interact quando si avvia un'azione.
 const INTERACT_ANIM_TIME := 0.8
+## Velocita` da seduti su una sedia con rotelle (fase 5).
+const RIDE_SPEED := 80.0
+## Dove siedono i piedi rispetto allo sprite della sedia (frazioni di w,h).
+const SEAT_ANCHOR := Vector2(0.5, 0.62)
 
 var _last_direction := Vector2.DOWN
 var _last_anim: String = ""
@@ -19,6 +23,11 @@ var _foot_offset := Vector2.ZERO
 # > 0 mentre gira l'animazione interact (avvio pulizia, mangiare): blocca
 # l'animazione di camminata per quel breve momento senza bloccare il corpo.
 var _interact_anim_left: float = 0.0
+# Fase 5: sedia occupata (null = in piedi). Se rideable, muoversi trascina
+# la sedia; altrimenti il primo input di movimento fa alzare.
+var _seat: Sprite2D = null
+var _seat_rideable: bool = false
+var _seat_offset := Vector2.ZERO  # posizione sedia relativa al personaggio
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -35,7 +44,79 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
-		_try_interact()
+		if _seat != null and is_instance_valid(_seat):
+			stand_up()
+		else:
+			_try_interact()
+
+
+## Siediti su una decorazione sittable (chiamata da SeatArea.on_interact).
+## I piedi si agganciano al punto-seduta dello sprite; le sedie con rotelle
+## (rideable) si possono guidare per la stanza restando seduti.
+func sit_on(deco: Sprite2D) -> void:
+	if _seat != null or deco == null or deco.texture == null:
+		return
+	var cat: Dictionary = deco.get("catalog_data") if "catalog_data" in deco else {}
+	if not (cat is Dictionary):
+		cat = {}
+	_seat = deco
+	_seat_rideable = bool(cat.get("rideable", false))
+	var tex_size: Vector2 = deco.texture.get_size() * deco.scale
+	var anchor := deco.global_position + Vector2(tex_size.x * SEAT_ANCHOR.x, tex_size.y * SEAT_ANCHOR.y)
+	global_position = anchor - _foot_offset
+	_seat_offset = deco.global_position - global_position
+	# Niente collisione con la propria sedia (layer 2), o resteremmo incastrati.
+	collision_mask = 1
+	velocity = Vector2.ZERO
+	_last_direction = Vector2.DOWN
+	AppLogger.info("Character", "sat_down", {"rideable": _seat_rideable})
+
+
+func stand_up() -> void:
+	if _seat == null:
+		return
+	var deco := _seat
+	_seat = null
+	_seat_rideable = false
+	collision_mask = 1 if GameManager.is_decoration_mode else 3
+	# La sedia trascinata resta dove l'abbiamo portata: persisti posizione e
+	# ripristina la banda di profondita` corretta.
+	if is_instance_valid(deco):
+		var deco_data: Variant = deco.get("deco_data") if "deco_data" in deco else null
+		if deco_data is Dictionary and not (deco_data as Dictionary).is_empty():
+			deco_data["position"] = Helpers.vec2_to_array(deco.position)
+			SignalBus.save_requested.emit()
+		if deco.texture != null:
+			deco.z_index = Helpers.z_for_foot_y(deco.position.y + deco.texture.get_size().y * deco.scale.y)
+	# Scendi davanti alla sedia e liberati da eventuali compenetrazioni.
+	global_position += Vector2(0, 26)
+	call_deferred("_nudge_out_of_decorations")
+	AppLogger.info("Character", "stood_up", {})
+
+
+## Da seduti: fermo = posa da seduto; input su sedia con rotelle = si guida
+## (sedia e personaggio si muovono insieme); input su sedia normale = alzati.
+func _process_seated(_delta: float) -> void:
+	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	if direction.length() < 0.1:
+		velocity = Vector2.ZERO
+		_play_anim("idle_down")
+		return
+	if not _seat_rideable:
+		stand_up()
+		return
+	velocity = direction.normalized() * RIDE_SPEED
+	move_and_slide()
+	var foot := global_position + _foot_offset
+	var clamped := Helpers.clamp_inside_floor(foot)
+	if clamped != foot:
+		global_position = clamped - _foot_offset
+	if is_instance_valid(_seat):
+		_seat.global_position = global_position + _seat_offset
+		_seat.z_index = maxi(z_index - 1, Helpers.Z_FOOT_MIN)
+	if _anim:
+		_anim.flip_h = direction.x < 0
+	_play_anim("idle_down")
 
 
 ## Cerca l'interagibile piu` vicino ai piedi (query fisica sul layer 4) e ne
@@ -137,6 +218,13 @@ func _physics_process(_delta: float) -> void:
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
 		return
+	if _seat != null and is_instance_valid(_seat):
+		_process_seated(_delta)
+		z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
+		return
+	if _seat != null:
+		_seat = null  # la sedia e` stata eliminata sotto di noi: in piedi
+		collision_mask = 1 if GameManager.is_decoration_mode else 3
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = direction.normalized() * SPEED
 	move_and_slide()

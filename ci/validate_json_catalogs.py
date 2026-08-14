@@ -122,11 +122,13 @@ def validate_decorations(data, errors):
         elif art not in VALID_ART_SETS:
             errors.append(("decorations.json", f"{prefix}.art_set", f"invalid value '{art}' (expected: {', '.join(sorted(VALID_ART_SETS))})"))
 
-        for flag in ("flat", "rotatable"):
+        for flag in ("flat", "rotatable", "sittable", "rideable"):
             if flag in deco and not isinstance(deco[flag], bool):
                 errors.append(("decorations.json", f"{prefix}.{flag}", f"must be a boolean, got {deco[flag]!r}"))
         if deco.get("flat") and pt != "floor":
             errors.append(("decorations.json", f"{prefix}.flat", "flat items must have placement_type 'floor'"))
+        if deco.get("rideable") and not deco.get("sittable"):
+            errors.append(("decorations.json", f"{prefix}.rideable", "rideable implies sittable"))
 
         lo, hi = deco.get("scale_min"), deco.get("scale_max")
         for name, val in (("scale_min", lo), ("scale_max", hi)):

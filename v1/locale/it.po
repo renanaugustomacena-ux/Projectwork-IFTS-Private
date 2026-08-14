@@ -398,7 +398,7 @@ msgid "TOAST_ATE"
 msgstr "%s: che relax!"
 
 msgid "UI_PROMPT_INTERACT"
-msgstr "Premi E per pulire"
+msgstr "Premi E"
 
 msgid "TOAST_SAVED"
 msgstr "Salvato"

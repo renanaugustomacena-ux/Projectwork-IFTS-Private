@@ -10,6 +10,7 @@ const MessSpawnerScript := preload("res://scripts/systems/mess_spawner.gd")
 const MessNodeScript := preload("res://scripts/rooms/mess_node.gd")
 const FoodBowlScript := preload("res://scripts/rooms/food_bowl.gd")
 const PetScript := preload("res://scripts/rooms/pet_controller.gd")
+const SeatAreaScript := preload("res://scripts/rooms/seat_area.gd")
 
 ## Collision footprint ratios — only the bottom portion blocks movement.
 const COLLISION_WIDTH_RATIO := 0.7
@@ -452,6 +453,23 @@ func _spawn_decoration(
 		shape.position = Vector2(tex_size.x * 0.5, tex_size.y - foot_h * 0.5)
 		body.add_child(shape)
 		sprite.add_child(body)
+
+	# --- Seduta (fase 5): le sedie espongono un'area sul layer interagibili
+	# che delega a sit_on() del personaggio. ---
+	if bool(item_data.get("sittable", false)):
+		var seat_area: Area2D = SeatAreaScript.new()
+		seat_area.seat = sprite
+		seat_area.collision_layer = 4
+		seat_area.collision_mask = 0
+		seat_area.monitorable = true
+		seat_area.monitoring = false
+		var seat_shape := CollisionShape2D.new()
+		var seat_rect := RectangleShape2D.new()
+		seat_rect.size = tex_size + Vector2.ONE * INTERACTION_PADDING * 2.0
+		seat_shape.shape = seat_rect
+		seat_shape.position = tex_size * 0.5
+		seat_area.add_child(seat_shape)
+		sprite.add_child(seat_area)
 
 	# --- Interaction Area2D for interactable furniture ---
 	var interaction_type: String = item_data.get("interaction_type", "")

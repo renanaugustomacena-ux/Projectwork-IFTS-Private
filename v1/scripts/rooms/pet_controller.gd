@@ -69,6 +69,12 @@ var _storm_bond_timer: float = 0.0
 var _outing_target := Vector2.ZERO
 var _potty_indoor: bool = false
 var _garden_linger_left: float = 0.0
+# Fase 5 (polish procedurale): squash breve al cambio di direzione.
+var _last_flip: bool = false
+var _squash_left: float = 0.0
+# Scala di fabbrica dello sprite (catturata in _ready): il polish la usa
+# come base immutabile per non accumulare deriva frame dopo frame.
+var _anim_base_scale: float = 1.0
 # Ground-contact point relative to the body origin, read from the collision
 # shape (the collider IS the paws — same convention as character_controller).
 var _foot_offset := Vector2.ZERO
@@ -82,6 +88,8 @@ func _ready() -> void:
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node != null:
 		_foot_offset = shape_node.position
+	if _anim != null:
+		_anim_base_scale = absf(_anim.scale.x)
 	collision_layer = 0  # Don't block anything
 	# B-030: seed deterministico in debug per riproducibilita` FSM pet
 	if OS.is_debug_build():
@@ -151,6 +159,7 @@ func _physics_process(delta: float) -> void:
 
 	_check_potty_due()
 	_accrue_storm_bond(delta)
+	_apply_walk_polish(delta)
 	# Maschera collisioni autoritativa per-frame: fuori dalla stanza (o in
 	# uscita) i muri del bordo non valgono, altrimenti bloccherebbero il
 	# rientro; dentro tornano solidi. Nessuno stato deve ricordarsi di
@@ -612,6 +621,27 @@ func _play_anim(anim_name: String) -> void:
 			_anim.play(anim_name)
 		elif _anim.sprite_frames and _anim.sprite_frames.has_animation("default"):
 			_anim.play("default")
+
+
+## Polish procedurale (fase 5): il passo dell'animazione segue la velocita`
+## reale (lento in giardino, frenetico in WILD) e un breve squash accompagna
+## i cambi di direzione. Solo in camminata: SLEEP/POTTY gestiscono la scala
+## per conto loro.
+func _apply_walk_polish(delta: float) -> void:
+	if _anim == null:
+		return
+	if _last_anim == "walk":
+		_anim.speed_scale = clampf(velocity.length() / FOLLOW_SPEED, 0.5, 1.6)
+		if _anim.flip_h != _last_flip:
+			_last_flip = _anim.flip_h
+			_squash_left = 0.12
+		if _squash_left > 0.0:
+			_squash_left -= delta
+			var base := _anim_base_scale
+			_anim.scale = Vector2(base * 1.1, base * 0.9) if _squash_left > 0.0 else Vector2(base, base)
+	else:
+		_anim.speed_scale = 1.0
+		_squash_left = 0.0
 
 
 func _reset_anim_scale() -> void:
