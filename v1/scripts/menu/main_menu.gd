@@ -12,8 +12,11 @@ const LOADING_PAUSE := 0.4
 ## has not happened after this long, something went wrong.
 const TRANSITION_TIMEOUT := 5.0
 
+const SlotSelectScript := preload("res://scripts/menu/slot_select.gd")
+
 var _settings_panel: PanelContainer = null
 var _profile_panel: PanelContainer = null
+var _slot_screen: Control = null
 # Live character-select overlay (Phase D guard): a double-click on Nuova
 # Partita must never stack a second select screen.
 var _select_screen: Control = null
@@ -108,6 +111,18 @@ func _on_language_changed(_lang_code: String) -> void:
 func _on_nuova_partita() -> void:
 	if _transitioning:
 		return
+	# Fase 4: una nuova partita NON distrugge piu' lo slot corrente — va nel
+	# primo slot libero; se sono tutti pieni si apre la schermata slot per
+	# liberarne uno.
+	var empty := SaveManager.first_empty_slot()
+	if empty < 0:
+		_show_slot_select()
+		return
+	SaveManager.set_active_slot(empty)
+	_start_new_game_flow()
+
+
+func _start_new_game_flow() -> void:
 	# Hard error path (V-039 / 4.1.9-L101): an empty/corrupt character catalog
 	# must never invent a character id. Validated BEFORE reset_character_data
 	# so a broken install cannot wipe an existing save. The menu scene has no
@@ -207,12 +222,48 @@ func _on_character_select_cancelled() -> void:
 func _on_carica_partita() -> void:
 	if _transitioning:
 		return
+	_show_slot_select()
+
+
+## Schermata dei 10 slot (fase 4): Carica su uno slot esistente, Nuova
+## partita su uno vuoto, Elimina con conferma. Il cambio di slot attivo
+## avviene QUI, prima di qualsiasi load, cosi' il flusso esistente resta
+## identico a valle.
+func _show_slot_select() -> void:
+	if _slot_screen != null and is_instance_valid(_slot_screen):
+		return
+	_slot_screen = SlotSelectScript.new()
+	_slot_screen.slot_load_requested.connect(_on_slot_load_requested)
+	_slot_screen.slot_new_requested.connect(_on_slot_new_requested)
+	_slot_screen.closed.connect(_close_slot_select)
+	$UILayer.add_child(_slot_screen)
+
+
+func _close_slot_select() -> void:
+	if _slot_screen != null and is_instance_valid(_slot_screen):
+		_slot_screen.queue_free()
+	_slot_screen = null
+
+
+func _on_slot_load_requested(slot: int) -> void:
+	if _transitioning:
+		return
+	_close_slot_select()
+	SaveManager.set_active_slot(slot)
 	_transitioning = true
 	SignalBus.load_completed.connect(
 		func() -> void: _transition_to_scene(GAMEPLAY_SCENE),
 		CONNECT_ONE_SHOT,
 	)
 	SaveManager.load_game()
+
+
+func _on_slot_new_requested(slot: int) -> void:
+	if _transitioning:
+		return
+	_close_slot_select()
+	SaveManager.set_active_slot(slot)
+	_start_new_game_flow()
 
 
 func _show_auth_screen() -> void:
@@ -248,7 +299,7 @@ func _on_auth_completed() -> void:
 ## the JSON save file OR a SQLite account owning a character row (V-081 /
 ## 4.1.9-L40). A guest account with a character counts — DB lookups are cheap.
 func _refresh_carica_partita_enabled() -> void:
-	var has_state := FileAccess.file_exists(SaveManager.SAVE_PATH) or _has_db_character()
+	var has_state := SaveManager.any_slot_has_save() or _has_db_character()
 	_carica_btn.disabled = not has_state
 	_carica_btn.modulate.a = 1.0 if has_state else 0.5
 

@@ -1,4 +1,4 @@
-# gdlint: disable=max-file-lines
+# gdlint: disable=max-file-lines,max-public-methods
 ## SaveManager — Handles JSON-based persistence of all game state.
 ## Auto-saves periodically and on significant state changes.
 ##
@@ -30,6 +30,14 @@ const NEWER_SAVE_PATH := "user://save_data.newer.json"
 # 4.1.2-L381: write-once snapshot of a malformed v3 inventory before reset.
 const V3_PRESERVED_PATH := "user://save_data.v3_preserved.json"
 const SECRET_PATH := "user://integrity.key"
+# --- Slot di salvataggio (fase 4, spec 2026-08-14) -------------------------
+# 10 partite indipendenti. Lo slot 1 vive sui percorsi STORICI (nessuna
+# migrazione: i profili esistenti sono gia' "slot 1"); gli slot 2..10 in
+# user://slots/slot_NN/. La chiave HMAC resta globale (per-installazione).
+# Lo slot attivo e' ricordato in un cfg di testo letto PRIMA del bootstrap
+# settings, cosi' lingua e volumi arrivano dallo slot giusto.
+const MAX_SLOTS := 10
+const ACTIVE_SLOT_PATH := "user://active_slot.cfg"
 # 5.1.0 (spec 2026-08-14): aggiunge room.messes (sporco persistente con
 # pulizia a tempo) e il blocco pet (trust, orologio bisogni, ultimo pasto).
 const SAVE_VERSION := "5.1.0"
@@ -93,6 +101,9 @@ var pet_data: Dictionary = {
 	"next_potty_at": 0.0,
 	"last_meal_at": 0.0,
 }
+
+## Slot attivo (1..MAX_SLOTS). Cambiarlo passa da set_active_slot().
+var active_slot: int = 1
 
 # Room decoration state
 var _decorations: Array = []
@@ -180,6 +191,136 @@ func remove_mess(data: Dictionary) -> bool:
 	return false
 
 
+# ---- Slot di salvataggio (fase 4) ------------------------------------------
+
+
+## Risolve un percorso canonico (le costanti user://...) nello slot dato.
+## Slot 1 = percorsi storici invariati; slot N = user://slots/slot_NN/<file>.
+static func slot_path(canonical: String, slot: int) -> String:
+	if slot <= 1:
+		return canonical
+	return "user://slots/slot_%02d/%s" % [slot, canonical.trim_prefix("user://")]
+
+
+## Percorso nello slot ATTIVO (uso interno: ogni accesso file passa da qui).
+func _p(canonical: String) -> String:
+	return slot_path(canonical, active_slot)
+
+
+func _ring() -> Array[String]:
+	var out: Array[String] = []
+	for ring_path in BACKUP_RING:
+		out.append(_p(ring_path))
+	return out
+
+
+func _ensure_slot_dir() -> void:
+	if active_slot > 1:
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("user://slots/slot_%02d" % active_slot))
+
+
+func slot_has_save(slot: int) -> bool:
+	return FileAccess.file_exists(slot_path(SAVE_PATH, slot))
+
+
+func any_slot_has_save() -> bool:
+	for slot in range(1, MAX_SLOTS + 1):
+		if slot_has_save(slot):
+			return true
+	return false
+
+
+## Primo slot senza salvataggio, o -1 se sono tutti occupati.
+func first_empty_slot() -> int:
+	for slot in range(1, MAX_SLOTS + 1):
+		if not slot_has_save(slot):
+			return slot
+	return -1
+
+
+## Metadati non-distruttivi di uno slot per la schermata di selezione.
+func peek_slot(slot: int) -> Dictionary:
+	var payload := _peek_save_payload(slot_path(SAVE_PATH, slot))
+	if payload.is_empty():
+		return {"exists": false}
+	var character: Dictionary = payload.get("character", {}) if payload.get("character") is Dictionary else {}
+	var char_data: Dictionary = character.get("data", {}) if character.get("data") is Dictionary else {}
+	var inventory: Dictionary = payload.get("inventory", {}) if payload.get("inventory") is Dictionary else {}
+	return {
+		"exists": true,
+		"nome": str(char_data.get("nome", "")),
+		"last_saved": str(payload.get("last_saved", "")),
+		"coins": int(inventory.get("coins", 0)),
+	}
+
+
+## Cambia lo slot attivo. SOLO dal menu (prima di load_game): azzera lo stato
+## in RAM ai default (senza toccare i file!) e ri-bootstrappa i settings dal
+## nuovo slot, cosi' nulla del vecchio profilo puo' colare nel nuovo.
+func set_active_slot(slot: int) -> void:
+	slot = clampi(slot, 1, MAX_SLOTS)
+	if slot == active_slot:
+		return
+	active_slot = slot
+	_write_active_slot_cfg()
+	_ensure_slot_dir()
+	_reset_ram_state_to_defaults()
+	SignalBus.profile_reset.emit()  # contatori RAM (BadgeManager) da zero
+	_settings_loaded = false
+	_language_explicit = false
+	ensure_settings_loaded()
+	SignalBus.save_slot_changed.emit(slot)
+	AppLogger.info("SaveManager", "slot_changed", {"slot": slot})
+
+
+## Cancella i file di uno slot (save + ring + temp). Non tocca lo slot attivo
+## in RAM: il chiamante decide cosa fare dopo.
+func delete_slot_files(slot: int) -> void:
+	var targets: Array[String] = [slot_path(SAVE_PATH, slot), slot_path(TEMP_PATH, slot)]
+	for ring_path in BACKUP_RING:
+		targets.append(slot_path(ring_path, slot))
+	for target in targets:
+		if FileAccess.file_exists(target):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(target))
+	AppLogger.warn("SaveManager", "slot_deleted", {"slot": slot})
+
+
+func _write_active_slot_cfg() -> void:
+	var f := FileAccess.open(ACTIVE_SLOT_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_string(str(active_slot))
+		f.close()
+
+
+func _read_active_slot_cfg() -> void:
+	if not FileAccess.file_exists(ACTIVE_SLOT_PATH):
+		return
+	var f := FileAccess.open(ACTIVE_SLOT_PATH, FileAccess.READ)
+	if f == null:
+		return
+	var raw := f.get_as_text().strip_edges()
+	f.close()
+	if raw.is_valid_int():
+		active_slot = clampi(raw.to_int(), 1, MAX_SLOTS)
+		_ensure_slot_dir()
+
+
+## Stato RAM ai default di fabbrica SENZA toccare i file (diverso da
+## reset_all, che cancella anche il salvataggio su disco).
+func _reset_ram_state_to_defaults() -> void:
+	character_data = {
+		"nome": "", "genere": true, "colore_occhi": 0, "colore_capelli": 0, "colore_pelle": 0, "livello_stress": 0
+	}
+	inventory_data = {"coins": 0, "capacita": 50, "items": []}
+	pet_data = {"trust": 0.0, "next_potty_at": 0.0, "last_meal_at": 0.0}
+	_decorations = []
+	_messes = []
+	_music_state = {"current_track_index": 0, "playlist_mode": Constants.DEFAULT_PLAYLIST_MODE, "active_ambience": []}
+	_settings = DEFAULT_SETTINGS.duplicate(true)
+	_full_state_loaded = false
+	_save_dirty = false
+
+
 # ---- Inventory items ([{id, qty}]) ----------------------------------------
 
 
@@ -254,11 +395,13 @@ func ensure_settings_loaded() -> void:
 	if _settings_loaded:
 		return
 	_settings_loaded = true
+	# Fase 4: lo slot attivo va conosciuto PRIMA di leggere i settings.
+	_read_active_slot_cfg()
 	# Must precede the scan: a crash between temp-write and rename leaves the
 	# newest settings in TEMP_PATH, and adoption promotes it to primary.
 	_adopt_orphan_temp()
-	var candidates: Array[String] = [SAVE_PATH]
-	candidates.append_array(BACKUP_RING)
+	var candidates: Array[String] = [_p(SAVE_PATH)]
+	candidates.append_array(_ring())
 	for path in candidates:
 		var data := _peek_save_payload(path)
 		if data.is_empty():
@@ -345,26 +488,26 @@ func _adopt_orphan_temp() -> void:
 	# HMAC-valid save at TEMP_PATH that would otherwise be ignored forever.
 	# Adopt it as primary when it verifies and the primary is missing/invalid;
 	# otherwise drop it so it cannot shadow future saves.
-	if not FileAccess.file_exists(TEMP_PATH):
+	if not FileAccess.file_exists(_p(TEMP_PATH)):
 		return
 	if _get_integrity_key().is_empty():
 		# Verification impossible — NOT proof the temp is bad. Leave it: the
 		# next save_game() truncates TEMP_PATH anyway, so it cannot go stale.
 		AppLogger.warn("SaveManager", "Orphan temp save found but integrity key unavailable, left in place")
 		return
-	if not _is_wrapper_hmac_valid(TEMP_PATH):
+	if not _is_wrapper_hmac_valid(_p(TEMP_PATH)):
 		AppLogger.warn("SaveManager", "Removing invalid orphan temp save")
 		_remove_temp_file()
 		return
-	if FileAccess.file_exists(SAVE_PATH) and _is_wrapper_hmac_valid(SAVE_PATH):
+	if FileAccess.file_exists(_p(SAVE_PATH)) and _is_wrapper_hmac_valid(_p(SAVE_PATH)):
 		# Healthy primary wins; the temp is leftover from a completed save.
 		_remove_temp_file()
 		return
-	if FileAccess.file_exists(SAVE_PATH):
+	if FileAccess.file_exists(_p(SAVE_PATH)):
 		# Invalid primary: move it aside for forensics before adopting.
-		_quarantine_file(SAVE_PATH)
+		_quarantine_file(_p(SAVE_PATH))
 	var err := DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(TEMP_PATH), ProjectSettings.globalize_path(SAVE_PATH)
+		ProjectSettings.globalize_path(_p(TEMP_PATH)), ProjectSettings.globalize_path(_p(SAVE_PATH))
 	)
 	if err != OK:
 		# Temp kept on disk: next boot retries, next save truncates it.
@@ -538,7 +681,7 @@ func _build_save_data() -> Dictionary:
 
 
 func _write_temp_file(wrapper: Dictionary) -> bool:
-	var file := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(_p(TEMP_PATH), FileAccess.WRITE)
 	if file == null:
 		push_error("SaveManager: cannot write temp file (error: %s)" % FileAccess.get_open_error())
 		return false
@@ -556,16 +699,16 @@ func _write_temp_file(wrapper: Dictionary) -> bool:
 
 
 func _backup_primary() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(_p(SAVE_PATH)):
 		return true
-	if not _is_wrapper_hmac_valid(SAVE_PATH):
+	if not _is_wrapper_hmac_valid(_p(SAVE_PATH)):
 		# An invalid primary must NEVER enter the backup ring: with a stuck
 		# primary (e.g. Windows read-share lock blocking rename), repeated
 		# failed saves would rotate the only good backup off the ring and
 		# refill every slot with corrupt copies. Quarantine it instead —
 		# there is nothing valid to back up, so the save may proceed.
 		AppLogger.warn("SaveManager", "Primary save invalid, quarantining instead of backing up")
-		_quarantine_file(SAVE_PATH)
+		_quarantine_file(_p(SAVE_PATH))
 		return true
 	if not _rotate_backup_ring():
 		# Slot 1 still holds the previous backup (the .backup -> .2 shift
@@ -573,8 +716,8 @@ func _backup_primary() -> bool:
 		# the older state; keep it and skip this cycle's fresh copy.
 		AppLogger.warn("SaveManager", "Backup slot 1 not clear after rotation, keeping existing backup")
 		return true
-	var src := ProjectSettings.globalize_path(SAVE_PATH)
-	var dst := ProjectSettings.globalize_path(BACKUP_PATH)
+	var src := ProjectSettings.globalize_path(_p(SAVE_PATH))
+	var dst := ProjectSettings.globalize_path(_p(BACKUP_PATH))
 	var err := DirAccess.copy_absolute(src, dst)
 	if err != OK:
 		AppLogger.error("SaveManager", "Backup fallito, save annullato", {"errore": err, "src": src, "dst": dst})
@@ -589,9 +732,10 @@ func _rotate_backup_ring() -> bool:
 	# save; the hard durability requirement stays on the slot-1 copy above.
 	# Returns whether slot 1 is clear: false means the previous backup still
 	# occupies it and the caller must NOT overwrite it (Phase E ring fix).
-	for i in range(BACKUP_RING.size() - 1, 0, -1):
-		var src_path: String = BACKUP_RING[i - 1]
-		var dst_path: String = BACKUP_RING[i]
+	var ring := _ring()
+	for i in range(ring.size() - 1, 0, -1):
+		var src_path: String = ring[i - 1]
+		var dst_path: String = ring[i]
 		if not FileAccess.file_exists(src_path):
 			continue
 		var dst_abs := ProjectSettings.globalize_path(dst_path)
@@ -603,13 +747,13 @@ func _rotate_backup_ring() -> bool:
 			AppLogger.warn(
 				"SaveManager", "Backup ring rotation failed", {"from": src_path, "to": dst_path, "errore": err}
 			)
-	return not FileAccess.file_exists(BACKUP_PATH)
+	return not FileAccess.file_exists(_p(BACKUP_PATH))
 
 
 func _promote_temp_to_primary(expected_hmac: String) -> String:
 	# Returns "" on verified success, else the save_failed reason.
-	var temp_abs := ProjectSettings.globalize_path(TEMP_PATH)
-	var save_abs := ProjectSettings.globalize_path(SAVE_PATH)
+	var temp_abs := ProjectSettings.globalize_path(_p(TEMP_PATH))
+	var save_abs := ProjectSettings.globalize_path(_p(SAVE_PATH))
 	var rename_err: int = FAILED
 	for _attempt in range(3):
 		rename_err = DirAccess.rename_absolute(temp_abs, save_abs)
@@ -639,15 +783,15 @@ func _promote_temp_to_primary(expected_hmac: String) -> String:
 
 
 func _primary_hmac_matches(expected_hmac: String) -> bool:
-	var wrapper: Variant = _load_wrapper_from_disk(SAVE_PATH)
+	var wrapper: Variant = _load_wrapper_from_disk(_p(SAVE_PATH))
 	if not wrapper is Dictionary:
 		return false
 	return str((wrapper as Dictionary).get("hmac", "")) == expected_hmac
 
 
 func _remove_temp_file() -> void:
-	if FileAccess.file_exists(TEMP_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP_PATH))
+	if FileAccess.file_exists(_p(TEMP_PATH)):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(_p(TEMP_PATH)))
 
 
 func _build_db_payload() -> Dictionary:
@@ -699,12 +843,12 @@ func _music_track_id_for_index(index: int) -> String:
 func load_game() -> void:
 	# 4.13.2: primary first, then each backup ring slot (newest first), with
 	# the same HMAC verification _load_from_file applies everywhere.
-	var candidates: Array[String] = [SAVE_PATH]
-	candidates.append_array(BACKUP_RING)
+	var candidates: Array[String] = [_p(SAVE_PATH)]
+	candidates.append_array(_ring())
 	for path in candidates:
 		if not FileAccess.file_exists(path):
 			continue
-		if path != SAVE_PATH:
+		if path != _p(SAVE_PATH):
 			AppLogger.warn("SaveManager", "Primary save corrupt or missing, trying backup", {"path": path})
 		var data: Variant = _load_from_file(path)
 		if data == null:
@@ -741,8 +885,8 @@ func _park_newer_save(path: String, save_version: String, data: Dictionary) -> v
 		)
 	)
 	var src := ProjectSettings.globalize_path(path)
-	var dst := ProjectSettings.globalize_path(NEWER_SAVE_PATH)
-	if FileAccess.file_exists(NEWER_SAVE_PATH):
+	var dst := ProjectSettings.globalize_path(_p(NEWER_SAVE_PATH))
+	if FileAccess.file_exists(_p(NEWER_SAVE_PATH)):
 		# Phase E: never clobber a previously parked save with an older copy
 		# (e.g. a pre-downgrade ring slot routed here on a later boot) — that
 		# would destroy the newest progress the park exists to preserve.
@@ -769,7 +913,7 @@ func _park_newer_save(path: String, save_version: String, data: Dictionary) -> v
 func _candidate_beats_parked(candidate_version: String, candidate_data: Dictionary) -> bool:
 	# Keep the highest version; tie-break on last_saved (ISO-like timestamps
 	# from Time.get_datetime_string_from_system compare lexicographically).
-	var parked := _read_parked_save_meta(NEWER_SAVE_PATH)
+	var parked := _read_parked_save_meta(_p(NEWER_SAVE_PATH))
 	if parked.is_empty():
 		# Unreadable/corrupt parked file: the verified candidate wins.
 		return true
@@ -1044,9 +1188,9 @@ func _migrate_save_data(data: Dictionary) -> Dictionary:
 func _preserve_v3_inventory(inv: Dictionary) -> void:
 	# 4.1.2-L381: snapshot the original malformed inventory before the reset
 	# drops items. Write-once: never overwrite an existing preserve file.
-	if FileAccess.file_exists(V3_PRESERVED_PATH):
+	if FileAccess.file_exists(_p(V3_PRESERVED_PATH)):
 		return
-	var f := FileAccess.open(V3_PRESERVED_PATH, FileAccess.WRITE)
+	var f := FileAccess.open(_p(V3_PRESERVED_PATH), FileAccess.WRITE)
 	if f == null:
 		(
 			AppLogger
@@ -1065,7 +1209,7 @@ func _preserve_v3_inventory(inv: Dictionary) -> void:
 		AppLogger.error("SaveManager", "v3 inventory preserve write failed", {"errore": werr})
 		# Remove the truncated file: leaving it would burn the write-once slot
 		# with garbage and permanently block a later preserve retry (Phase E).
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(V3_PRESERVED_PATH))
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(_p(V3_PRESERVED_PATH)))
 		return
 	AppLogger.warn("SaveManager", "Original v3 inventory preserved before reset", {"path": V3_PRESERVED_PATH})
 
@@ -1126,11 +1270,11 @@ func reset_all() -> void:
 	# In-RAM counters (BadgeManager) must restart too, or the deleted profile's
 	# totals unlock its badges on the brand-new account.
 	SignalBus.profile_reset.emit()
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	if FileAccess.file_exists(_p(SAVE_PATH)):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(_p(SAVE_PATH)))
 	# Drop every ring slot: a stale backup surviving reset_all would resurrect
 	# the old state through the load_game fallback chain.
-	for backup_path in BACKUP_RING:
+	for backup_path in _ring():
 		if FileAccess.file_exists(backup_path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(backup_path))
 

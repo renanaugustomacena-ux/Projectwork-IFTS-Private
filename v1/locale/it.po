@@ -409,3 +409,31 @@ msgstr "Il gatto ha fatto i bisogni in casa!"
 
 msgid "TOAST_CAT_POTTY_AWAY"
 msgstr "Mentre eri via il gatto ha combinato %d disastri..."
+
+# Slot di salvataggio (fase 4, spec 2026-08-14)
+msgid "UI_HUD_SAVE"
+msgstr "Salva"
+
+msgid "UI_SLOTS_TITLE"
+msgstr "Le tue partite"
+
+msgid "UI_SLOTS_CLOSE"
+msgstr "Chiudi"
+
+msgid "UI_SLOT_EMPTY"
+msgstr "— slot vuoto —"
+
+msgid "UI_SLOT_UNNAMED"
+msgstr "Senza nome"
+
+msgid "UI_SLOT_LOAD"
+msgstr "Carica"
+
+msgid "UI_SLOT_NEW"
+msgstr "Nuova partita qui"
+
+msgid "UI_SLOT_DELETE"
+msgstr "Elimina"
+
+msgid "UI_SLOT_DELETE_CONFIRM"
+msgstr "Sicuro?"

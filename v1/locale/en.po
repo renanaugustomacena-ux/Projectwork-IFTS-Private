@@ -409,3 +409,31 @@ msgstr "The cat did its business indoors!"
 
 msgid "TOAST_CAT_POTTY_AWAY"
 msgstr "While you were away the cat made %d messes..."
+
+# Save slots (phase 4, spec 2026-08-14)
+msgid "UI_HUD_SAVE"
+msgstr "Save"
+
+msgid "UI_SLOTS_TITLE"
+msgstr "Your games"
+
+msgid "UI_SLOTS_CLOSE"
+msgstr "Close"
+
+msgid "UI_SLOT_EMPTY"
+msgstr "— empty slot —"
+
+msgid "UI_SLOT_UNNAMED"
+msgstr "Unnamed"
+
+msgid "UI_SLOT_LOAD"
+msgstr "Load"
+
+msgid "UI_SLOT_NEW"
+msgstr "New game here"
+
+msgid "UI_SLOT_DELETE"
+msgstr "Delete"
+
+msgid "UI_SLOT_DELETE_CONFIRM"
+msgstr "Sure?"

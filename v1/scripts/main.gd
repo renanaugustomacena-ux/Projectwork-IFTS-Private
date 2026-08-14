@@ -100,6 +100,20 @@ func _wire_hud_buttons() -> void:
 	if menu_btn:
 		menu_btn.pressed.connect(_on_menu_pressed)
 
+	# Save button (fase 4): salvataggio manuale con conferma visiva. Il
+	# toast parte solo su save_completed reale, mai su un esito FAILED.
+	var save_btn := _hud.get_node_or_null("SaveButton") as Button
+	if save_btn:
+		save_btn.pressed.connect(_on_save_pressed)
+
+
+func _on_save_pressed() -> void:
+	SignalBus.save_completed.connect(
+		func() -> void: SignalBus.toast_requested.emit(tr("TOAST_SAVED"), "info"),
+		CONNECT_ONE_SHOT,
+	)
+	SaveManager.save_game()
+
 	_apply_hud_labels()
 	SignalBus.language_changed.connect(_on_language_changed)
 
@@ -109,6 +123,7 @@ func _wire_hud_buttons() -> void:
 func _apply_hud_labels() -> void:
 	var labels := {
 		"MenuButton": "UI_HUD_MENU",
+		"SaveButton": "UI_HUD_SAVE",
 		"DecoButton": "UI_HUD_DECO",
 		"ShopButton": "UI_HUD_SHOP",
 		"ProfileButton": "UI_HUD_PROFILE",
