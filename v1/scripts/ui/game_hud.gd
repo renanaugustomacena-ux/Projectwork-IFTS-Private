@@ -27,6 +27,11 @@ var _mood_label: Label
 var _serenity_header: Label
 var _profile_btn: TextureButton
 var _current_level: String = "calm"
+# Prompt "Premi E" mostrato quando il personaggio e` sopra un interagibile
+# (fase economia: avvio pulizia). Contatore, non bool: due aree sovrapposte
+# emettono available/unavailable interlacciati.
+var _interact_prompt: Label
+var _interactables_nearby: int = 0
 
 
 ## Mappa l'id interno del livello di stress sulla chiave di traduzione mostrata
@@ -50,9 +55,36 @@ func _ready() -> void:
 	SignalBus.coins_changed.connect(_on_coins_changed)
 	SignalBus.load_completed.connect(_on_load_completed)
 	SignalBus.language_changed.connect(_on_language_changed)
+	SignalBus.interaction_available.connect(_on_interaction_available)
+	SignalBus.interaction_unavailable.connect(_on_interaction_unavailable)
 	# Sync iniziale con stato corrente
 	_refresh_serenity(StressManager.get_stress_value(), StressManager.get_stress_level())
 	_refresh_coins(SaveManager.inventory_data.get("coins", 0))
+	_build_interact_prompt()
+
+
+func _build_interact_prompt() -> void:
+	_interact_prompt = Label.new()
+	_interact_prompt.text = tr("UI_PROMPT_INTERACT")
+	_interact_prompt.visible = false
+	_interact_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_interact_prompt.add_theme_font_size_override("font_size", 14)
+	_interact_prompt.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_interact_prompt.position = Vector2(-80, -84)
+	_interact_prompt.custom_minimum_size = Vector2(160, 20)
+	_interact_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_interact_prompt)
+
+
+func _on_interaction_available(_item_id: String, _itype: String) -> void:
+	_interactables_nearby += 1
+	_interact_prompt.visible = true
+
+
+func _on_interaction_unavailable() -> void:
+	_interactables_nearby = maxi(_interactables_nearby - 1, 0)
+	if _interactables_nearby == 0:
+		_interact_prompt.visible = false
 
 
 func _build_ui() -> void:
@@ -217,6 +249,8 @@ func _apply_translations() -> void:
 		_mood_label.text = tr(mood_key_for_level(_current_level))
 	if _profile_btn != null:
 		_profile_btn.tooltip_text = tr("UI_HUD_PROFILE_TOOLTIP")
+	if _interact_prompt != null:
+		_interact_prompt.text = tr("UI_PROMPT_INTERACT")
 
 
 func _color_for_level(level: String) -> Color:
@@ -238,3 +272,7 @@ func _exit_tree() -> void:
 		SignalBus.load_completed.disconnect(_on_load_completed)
 	if SignalBus.language_changed.is_connected(_on_language_changed):
 		SignalBus.language_changed.disconnect(_on_language_changed)
+	if SignalBus.interaction_available.is_connected(_on_interaction_available):
+		SignalBus.interaction_available.disconnect(_on_interaction_available)
+	if SignalBus.interaction_unavailable.is_connected(_on_interaction_unavailable):
+		SignalBus.interaction_unavailable.disconnect(_on_interaction_unavailable)

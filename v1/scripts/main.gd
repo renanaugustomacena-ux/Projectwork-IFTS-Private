@@ -83,6 +83,7 @@ func _ready() -> void:
 func _wire_hud_buttons() -> void:
 	var button_map := {
 		"DecoButton": "deco",
+		"ShopButton": "shop",
 		"ProfileButton": "profile",
 	}
 
@@ -109,6 +110,7 @@ func _apply_hud_labels() -> void:
 	var labels := {
 		"MenuButton": "UI_HUD_MENU",
 		"DecoButton": "UI_HUD_DECO",
+		"ShopButton": "UI_HUD_SHOP",
 		"ProfileButton": "UI_HUD_PROFILE",
 	}
 	for node_name: String in labels:

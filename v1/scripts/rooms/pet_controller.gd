@@ -2,7 +2,7 @@
 ## Manages idle, wander, follow, sleep, and play states.
 extends CharacterBody2D
 
-enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD }
+enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD, EAT }
 
 const WANDER_SPEED := 30.0
 const FOLLOW_SPEED := 80.0
@@ -15,6 +15,9 @@ const SLEEP_COOLDOWN := 120.0  # 2 min before considering sleep
 const PLAY_RANGE := 60.0
 const WILD_SPEED := 140.0  # T-R-015i: berserk mode quando mood < stormy
 const WILD_REDIRECT_INTERVAL := 0.8  # cambia direzione spesso
+const EAT_SPEED := 70.0  # corre verso la ciotola (spec 2026-08-14)
+const EAT_REACH := 18.0
+const EAT_DURATION := 10.0
 
 var _state: State = State.IDLE
 var _state_timer: float = 0.0
@@ -52,6 +55,13 @@ func _ready() -> void:
 	# Direct static reference (V-083 / 4.1.10-L46): a bus-side rename must
 	# fail loudly at parse time, not silently disable WILD behind has_signal.
 	SignalBus.pet_wild_mode_requested.connect(_on_wild_mode_requested)
+	SignalBus.pet_feed_requested.connect(_on_feed_requested)
+
+
+## La ciotola attira il gatto da qualsiasi stato: il cibo calma persino il
+## WILD (al termine, se la tempesta continua, il WILD riprende).
+func _on_feed_requested(_world_position: Vector2) -> void:
+	_set_state(State.EAT)
 
 
 func _on_wild_mode_requested(active: bool) -> void:
@@ -59,7 +69,10 @@ func _on_wild_mode_requested(active: bool) -> void:
 	if active:
 		_set_state(State.WILD)
 	elif _state == State.WILD:
-		_set_state(State.IDLE)
+		# Tempesta finita: se una ciotola era rimasta abbandonata (il WILD
+		# interrompe il pasto), il gatto torna a finirla.
+		var has_bowl := not get_tree().get_nodes_in_group("pet_bowl").is_empty()
+		_set_state(State.EAT if has_bowl else State.IDLE)
 
 
 func _physics_process(delta: float) -> void:
@@ -79,9 +92,40 @@ func _physics_process(delta: float) -> void:
 			_process_play(delta)
 		State.WILD:
 			_process_wild(delta)
+		State.EAT:
+			_process_eat(delta)
 
 	# Depth: sort by paw contact y, same band as character and furniture.
 	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
+
+
+func _process_eat(_delta: float) -> void:
+	var bowls := get_tree().get_nodes_in_group("pet_bowl")
+	if bowls.is_empty():
+		_set_state(State.WILD if _wild_mode_active else State.IDLE)
+		return
+	var bowl := bowls[0] as Node2D
+	var dist := position.distance_to(bowl.position)
+	if dist > EAT_REACH:
+		var dir := (bowl.position - position).normalized()
+		velocity = dir * EAT_SPEED
+		move_and_slide()
+		if _anim:
+			_anim.flip_h = dir.x < 0
+		_play_anim("walk")
+		return
+	# Mangia: fermo sulla ciotola, piccolo head-bob procedurale.
+	velocity = Vector2.ZERO
+	_play_anim("idle")
+	if _anim:
+		_anim.position.y = -absf(sin(_state_timer * 6.0)) * 2.0
+	if _state_timer >= EAT_DURATION:
+		_reset_anim_position()
+		if is_instance_valid(bowl):
+			bowl.queue_free()
+		SignalBus.pet_fed.emit()
+		# fase 2 (confidenza): qui il pasto consumato fara` crescere il trust.
+		_set_state(State.WILD if _wild_mode_active else State.IDLE)
 
 
 func _process_wild(delta: float) -> void:
@@ -290,3 +334,5 @@ func _exit_tree() -> void:
 	# T-R-015i: disconnect WILD mode signal to avoid zombies on scene reload
 	if SignalBus.pet_wild_mode_requested.is_connected(_on_wild_mode_requested):
 		SignalBus.pet_wild_mode_requested.disconnect(_on_wild_mode_requested)
+	if SignalBus.pet_feed_requested.is_connected(_on_feed_requested):
+		SignalBus.pet_feed_requested.disconnect(_on_feed_requested)

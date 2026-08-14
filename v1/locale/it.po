@@ -350,3 +350,55 @@ msgstr "Elimina"
 
 msgid "UI_HUD_PROFILE_TOOLTIP"
 msgstr "Profilo + Umore"
+
+# Negozio (fase economia, spec 2026-08-14)
+msgid "UI_HUD_SHOP"
+msgstr "Negozio"
+
+msgid "UI_SHOP_TITLE"
+msgstr "Negozio"
+
+msgid "UI_SHOP_BUY"
+msgstr "Compra"
+
+msgid "UI_SHOP_EAT"
+msgstr "Mangia"
+
+msgid "UI_SHOP_FEED"
+msgstr "Dai da mangiare"
+
+msgid "UI_SHOP_OWNED"
+msgstr "Acquistato"
+
+msgid "UI_SHOP_SECTION_FOOD"
+msgstr "Cibo per te"
+
+msgid "UI_SHOP_SECTION_CAT"
+msgstr "Per il gatto"
+
+msgid "UI_SHOP_SECTION_TOOLS"
+msgstr "Attrezzi per pulire"
+
+msgid "TOAST_NOT_ENOUGH_COINS"
+msgstr "Coins insufficienti"
+
+msgid "TOAST_CLEAN_DONE"
+msgstr "Pulizia completata! +%d coins"
+
+msgid "TOAST_CLEAN_DONE_AWAY"
+msgstr "Pulizie finite mentre eri via: +%d coins"
+
+msgid "TOAST_BOWL_ALREADY"
+msgstr "C'e' gia' una ciotola piena"
+
+msgid "TOAST_BOWL_PLACED"
+msgstr "Ciotola posata: il gatto arriva!"
+
+msgid "TOAST_ATE"
+msgstr "%s: che relax!"
+
+msgid "UI_PROMPT_INTERACT"
+msgstr "Premi E per pulire"
+
+msgid "TOAST_SAVED"
+msgstr "Salvato"

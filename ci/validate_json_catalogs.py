@@ -242,6 +242,41 @@ def validate_badges(data, errors):
             errors.append(("badges.json", f"{prefix}.icon_path", f"file not found: {icon_path}"))
 
 
+def validate_shop(data, errors):
+    """data/shop.json — fase economia (spec 2026-08-14)."""
+    sections = {"food_player", "food_cat", "tools"}
+    for section in sections:
+        if section not in data or not isinstance(data[section], list):
+            errors.append(("shop.json", section, "missing or invalid section array"))
+            continue
+        seen = set()
+        for i, entry in enumerate(data[section]):
+            prefix = f"{section}[{i}]"
+            for field in ("id", "label_it", "label_en", "price"):
+                if field not in entry:
+                    errors.append(("shop.json", prefix, f"missing required field '{field}'"))
+            eid = entry.get("id", "")
+            if eid in seen:
+                errors.append(("shop.json", f"{prefix}.id", f"duplicate id '{eid}'"))
+            seen.add(eid)
+            price = entry.get("price")
+            if not isinstance(price, (int, float)) or price < 0:
+                errors.append(("shop.json", f"{prefix}.price", f"must be a number >= 0, got {price!r}"))
+            if section == "food_player":
+                relief = entry.get("stress_relief")
+                if not isinstance(relief, (int, float)) or not 0 < relief <= 100:
+                    errors.append(("shop.json", f"{prefix}.stress_relief", f"must be in (0, 100], got {relief!r}"))
+            if section == "tools":
+                mult = entry.get("speed_multiplier")
+                if not isinstance(mult, (int, float)) or mult < 1:
+                    errors.append(("shop.json", f"{prefix}.speed_multiplier", f"must be >= 1, got {mult!r}"))
+    # unique ids ACROSS sections too: the runtime looks items up globally
+    all_ids = [e.get("id") for s in sections if isinstance(data.get(s), list) for e in data[s] if isinstance(e, dict)]
+    dupes = {i for i in all_ids if all_ids.count(i) > 1}
+    for d in sorted(dupes):
+        errors.append(("shop.json", "", f"id '{d}' appears in more than one section"))
+
+
 def validate_mess(data, errors):
     """Mess: id univoco, sprite reale, pesi entro i limiti usati dal codice."""
     if "mess" not in data or not isinstance(data["mess"], list):
@@ -279,6 +314,15 @@ def validate_mess(data, errors):
         elif not _res_exists(sprite_path):
             errors.append(("mess_catalog.json", f"{prefix}.sprite_path", f"file not found: {sprite_path}"))
 
+    # Fase economia (spec 2026-08-14): pulizia a tempo obbligatoria per voce.
+    for i, entry in enumerate(data.get("mess", [])):
+        prefix = f"mess[{i}]"
+        dur = entry.get("clean_duration_sec")
+        if not isinstance(dur, (int, float)) or dur <= 0:
+            errors.append(("mess_catalog.json", f"{prefix}.clean_duration_sec", f"must be a number > 0, got {dur!r}"))
+        rew = entry.get("clean_reward")
+        if not isinstance(rew, (int, float)) or rew < 0:
+            errors.append(("mess_catalog.json", f"{prefix}.clean_reward", f"must be a number >= 0, got {rew!r}"))
 
 def _res_exists(res_path):
     """res:// -> percorso reale, relativo alla cartella data/ passata a main()."""
@@ -294,6 +338,7 @@ VALIDATORS = {
     "tracks.json": validate_tracks,
     "badges.json": validate_badges,
     "mess_catalog.json": validate_mess,
+    "shop.json": validate_shop,
 }
 
 # Radice del progetto Godot: i cataloghi vivono in <root>/data/
@@ -343,6 +388,9 @@ def main():
             counts[filename] = f"{len(data.get('badges', []))} badges"
         elif filename == "mess_catalog.json":
             counts[filename] = f"{len(data.get('mess', []))} mess types"
+        elif filename == "shop.json":
+            total = sum(len(data.get(s, [])) for s in ("food_player", "food_cat", "tools"))
+            counts[filename] = f"{total} shop items"
 
         if len(errors) == before:
             print(f"OK: {filename} — {counts.get(filename, 'validated')}")

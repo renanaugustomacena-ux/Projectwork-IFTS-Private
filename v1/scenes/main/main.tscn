@@ -86,6 +86,12 @@ layout_mode = 2
 focus_mode = 0
 text = "Decora"
 
+[node name="ShopButton" type="Button" parent="UILayer/HUD" unique_id=1867223341]
+custom_minimum_size = Vector2(60, 36)
+layout_mode = 2
+focus_mode = 0
+text = "Negozio"
+
 [node name="ProfileButton" type="Button" parent="UILayer/HUD" unique_id=1292888094]
 custom_minimum_size = Vector2(60, 36)
 layout_mode = 2

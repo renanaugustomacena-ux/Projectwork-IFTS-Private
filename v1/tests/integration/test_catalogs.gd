@@ -240,7 +240,7 @@ func test_theme_colors_valid_hex() -> void:
 
 
 func test_mess_catalog_size() -> void:
-	assert_eq(GameManager.mess_catalog.get("mess", []).size(), 6)
+	assert_eq(GameManager.mess_catalog.get("mess", []).size(), 8)
 
 
 func test_mess_stress_weights_in_range() -> void:

@@ -350,3 +350,55 @@ msgstr "Delete"
 
 msgid "UI_HUD_PROFILE_TOOLTIP"
 msgstr "Profile + Mood"
+
+# Shop (economy phase, spec 2026-08-14)
+msgid "UI_HUD_SHOP"
+msgstr "Shop"
+
+msgid "UI_SHOP_TITLE"
+msgstr "Shop"
+
+msgid "UI_SHOP_BUY"
+msgstr "Buy"
+
+msgid "UI_SHOP_EAT"
+msgstr "Eat"
+
+msgid "UI_SHOP_FEED"
+msgstr "Feed cat"
+
+msgid "UI_SHOP_OWNED"
+msgstr "Owned"
+
+msgid "UI_SHOP_SECTION_FOOD"
+msgstr "Food for you"
+
+msgid "UI_SHOP_SECTION_CAT"
+msgstr "For the cat"
+
+msgid "UI_SHOP_SECTION_TOOLS"
+msgstr "Cleaning tools"
+
+msgid "TOAST_NOT_ENOUGH_COINS"
+msgstr "Not enough coins"
+
+msgid "TOAST_CLEAN_DONE"
+msgstr "Cleaning done! +%d coins"
+
+msgid "TOAST_CLEAN_DONE_AWAY"
+msgstr "Cleaning finished while you were away: +%d coins"
+
+msgid "TOAST_BOWL_ALREADY"
+msgstr "There is already a full bowl"
+
+msgid "TOAST_BOWL_PLACED"
+msgstr "Bowl placed: the cat is coming!"
+
+msgid "TOAST_ATE"
+msgstr "%s: so relaxing!"
+
+msgid "UI_PROMPT_INTERACT"
+msgstr "Press E to clean"
+
+msgid "TOAST_SAVED"
+msgstr "Saved"

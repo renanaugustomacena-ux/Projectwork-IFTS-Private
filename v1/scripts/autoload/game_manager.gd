@@ -16,6 +16,7 @@ var characters_catalog: Dictionary = {}
 var tracks_catalog: Dictionary = {}
 var mess_catalog: Dictionary = {}
 var badges_catalog: Dictionary = {}  # T-R-015d
+var shop_catalog: Dictionary = {}  # fase economia (spec 2026-08-14)
 
 # Character selected in character_select but not yet applied (load would overwrite).
 var _pending_character: String = ""
@@ -84,6 +85,7 @@ func _load_catalogs() -> void:
 	tracks_catalog = _load_catalog_or_empty("res://data/tracks.json")
 	mess_catalog = _load_catalog_or_empty("res://data/mess_catalog.json")
 	badges_catalog = _load_catalog_or_empty("res://data/badges.json")
+	shop_catalog = _load_catalog_or_empty("res://data/shop.json")
 
 
 ## Load one catalog; on failure log ERROR, emit SignalBus.catalog_load_failed,
@@ -234,6 +236,55 @@ func get_mess_stress_weight(mess_id: String) -> float:
 	if entry.is_empty():
 		return 0.10
 	return float(entry.get("stress_weight", 0.10))
+
+
+## Voce del negozio per id, cercata in tutte le sezioni. {} se sconosciuta.
+func get_shop_entry(item_id: String) -> Dictionary:
+	for section in ["food_player", "food_cat", "tools"]:
+		for entry in shop_catalog.get(section, []):
+			if entry is Dictionary and str(entry.get("id", "")) == item_id:
+				return entry
+	return {}
+
+
+## Sezione del negozio come Array di Dictionary validi (mai null).
+func get_shop_section(section: String) -> Array:
+	var out: Array = []
+	for entry in shop_catalog.get(section, []):
+		if entry is Dictionary and str(entry.get("id", "")) != "":
+			out.append(entry)
+	return out
+
+
+## Moltiplicatore di pulizia del miglior attrezzo posseduto (>= 1.0).
+## A mani nude vale 1.0; il catalogo shop definisce i valori (data-driven).
+func best_tool_multiplier() -> float:
+	var best := 1.0
+	for entry in get_shop_section("tools"):
+		var mult := float(entry.get("speed_multiplier", 1.0))
+		if mult > best and SaveManager.get_item_qty(str(entry.get("id", ""))) > 0:
+			best = mult
+	return best
+
+
+## Tenta un acquisto: ricontrolla il saldo AL momento del click (valida al
+## confine), sottrae i coins ed accredita l'oggetto. False se non bastano.
+func purchase_item(item_id: String) -> bool:
+	var entry := get_shop_entry(item_id)
+	if entry.is_empty():
+		AppLogger.warn("GameManager", "purchase_unknown_item", {"id": item_id})
+		return false
+	var price := maxi(int(entry.get("price", 0)), 0)
+	var coins := int(SaveManager.inventory_data.get("coins", 0))
+	if coins < price:
+		SignalBus.toast_requested.emit(tr("TOAST_NOT_ENOUGH_COINS"), "warning")
+		return false
+	SaveManager.inventory_data["coins"] = coins - price
+	SaveManager.add_item(item_id, 1)
+	SignalBus.coins_changed.emit(-price, coins - price)
+	SignalBus.shop_item_purchased.emit(item_id, price)
+	_request_save()
+	return true
 
 
 func _exit_tree() -> void:

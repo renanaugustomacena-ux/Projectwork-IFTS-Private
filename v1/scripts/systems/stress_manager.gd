@@ -26,8 +26,9 @@ var stress_value: float = 0.0
 var current_level: String = LEVEL_CALM
 var current_mood: String = LEVEL_CALM
 
-# Mappa degli id mess attivi → peso applicato, per scaricare il valore
-# corretto quando l'oggetto viene pulito
+# Ledger dei mess attivi: id → {"weight": float, "count": int}. Il count
+# permette piu' sporchi dello stesso tipo contemporaneamente (prima il
+# secondo spawn sovrascriveva il primo e la pulizia scaricava un solo peso).
 var _active_mess_weights: Dictionary = {}
 
 
@@ -69,16 +70,31 @@ func reset() -> void:
 
 
 func _on_mess_spawned(mess_id: String, _mess_position: Vector2) -> void:
+	track_mess(mess_id, true)
+
+
+## Registra un mess nel ledger. apply_stress=false per i mess RICARICATI dal
+## salvataggio: il loro peso e' gia' dentro livello_stress persistito, va
+## solo tenuta la contabilita' per poter scaricare il peso alla pulizia.
+func track_mess(mess_id: String, apply_stress: bool) -> void:
 	var weight := _lookup_mess_weight(mess_id)
-	_active_mess_weights[mess_id] = weight
-	_set_stress(stress_value + weight)
+	var entry: Dictionary = _active_mess_weights.get(mess_id, {"weight": weight, "count": 0})
+	entry["count"] = int(entry["count"]) + 1
+	_active_mess_weights[mess_id] = entry
+	if apply_stress:
+		_set_stress(stress_value + weight)
 
 
 func _on_mess_cleaned(mess_id: String) -> void:
 	if not _active_mess_weights.has(mess_id):
 		return
-	var weight: float = _active_mess_weights[mess_id]
-	_active_mess_weights.erase(mess_id)
+	var entry: Dictionary = _active_mess_weights[mess_id]
+	var weight := float(entry.get("weight", 0.0))
+	var count := int(entry.get("count", 1)) - 1
+	if count <= 0:
+		_active_mess_weights.erase(mess_id)
+	else:
+		entry["count"] = count
 	_set_stress(stress_value - weight)
 
 

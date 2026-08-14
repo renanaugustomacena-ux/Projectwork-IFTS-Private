@@ -1,0 +1,63 @@
+{
+	"food_player": [
+		{
+			"id": "tea",
+			"label_it": "Tisana rilassante",
+			"label_en": "Calming tea",
+			"price": 8,
+			"stress_relief": 10,
+			"icon_color": "#8fbf6f"
+		},
+		{
+			"id": "soup",
+			"label_it": "Zuppa calda",
+			"label_en": "Warm soup",
+			"price": 15,
+			"stress_relief": 25,
+			"icon_color": "#d98e4a"
+		},
+		{
+			"id": "cake",
+			"label_it": "Torta fatta in casa",
+			"label_en": "Homemade cake",
+			"price": 25,
+			"stress_relief": 40,
+			"icon_color": "#c96a8d"
+		}
+	],
+	"food_cat": [
+		{
+			"id": "cat_kibble",
+			"label_it": "Croccantini",
+			"label_en": "Kibble",
+			"price": 10,
+			"icon_color": "#a87c4f"
+		}
+	],
+	"tools": [
+		{
+			"id": "rag",
+			"label_it": "Straccio",
+			"label_en": "Rag",
+			"price": 30,
+			"speed_multiplier": 1.5,
+			"icon_color": "#7fa3b8"
+		},
+		{
+			"id": "broom",
+			"label_it": "Scopa",
+			"label_en": "Broom",
+			"price": 80,
+			"speed_multiplier": 2.0,
+			"icon_color": "#b89a5f"
+		},
+		{
+			"id": "vacuum",
+			"label_it": "Aspirapolvere",
+			"label_en": "Vacuum",
+			"price": 200,
+			"speed_multiplier": 4.0,
+			"icon_color": "#6f7fbf"
+		}
+	]
+}

@@ -8,6 +8,7 @@ const PANEL_SCENES: Dictionary = {
 	"settings": "res://scenes/ui/settings_panel.tscn",
 	"profile": "res://scenes/ui/profile_panel.tscn",
 	"profile_hud": "res://scenes/ui/profile_hud_panel.tscn",
+	"shop": "res://scenes/ui/shop_panel.tscn",
 }
 
 var _ui_layer: CanvasLayer = null

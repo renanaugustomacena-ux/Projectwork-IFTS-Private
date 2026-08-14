@@ -3,6 +3,12 @@ extends CharacterBody2D
 
 const SPEED := 120.0
 const DIRECTION_THRESHOLD := 1.2
+## Raggio della ricerca interagibili intorno ai piedi (tasto E).
+const INTERACT_RADIUS := 48.0
+## Layer fisico degli interagibili (mess, arredi interattivi).
+const INTERACT_LAYER_MASK := 4
+## Durata dell'animazione interact quando si avvia un'azione.
+const INTERACT_ANIM_TIME := 0.8
 
 var _last_direction := Vector2.DOWN
 var _last_anim: String = ""
@@ -10,6 +16,9 @@ var _last_anim: String = ""
 # shape so the shape stays the single source of truth (the collider IS the
 # feet — Q3 pattern: collision geometry is authoritative, visuals follow it).
 var _foot_offset := Vector2.ZERO
+# > 0 mentre gira l'animazione interact (avvio pulizia, mangiare): blocca
+# l'animazione di camminata per quel breve momento senza bloccare il corpo.
+var _interact_anim_left: float = 0.0
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -21,11 +30,54 @@ func _ready() -> void:
 	if shape_node != null:
 		_foot_offset = shape_node.position
 	SignalBus.decoration_mode_changed.connect(_on_decoration_mode_changed)
+	SignalBus.player_ate.connect(_on_player_ate)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("interact"):
+		_try_interact()
+
+
+## Cerca l'interagibile piu` vicino ai piedi (query fisica sul layer 4) e ne
+## invoca on_interact. Il dispatch e` per capacita`, non per tipo: qualsiasi
+## nodo con on_interact() e` interagibile (pattern entity-callback, modulo 14).
+func _try_interact() -> void:
+	if get_viewport().gui_get_focus_owner() != null:
+		return
+	var world := get_world_2d()
+	if world == null:
+		return
+	var query := PhysicsShapeQueryParameters2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = INTERACT_RADIUS
+	query.shape = circle
+	query.transform = Transform2D(0.0, global_position + _foot_offset)
+	query.collision_mask = INTERACT_LAYER_MASK
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	var best: Node = null
+	var best_dist := INF
+	for hit in world.direct_space_state.intersect_shape(query, 8):
+		var collider: Object = hit.get("collider")
+		if collider is Node and (collider as Node).has_method("on_interact"):
+			var dist := global_position.distance_squared_to((collider as Node2D).global_position)
+			if dist < best_dist:
+				best_dist = dist
+				best = collider
+	if best != null:
+		_interact_anim_left = INTERACT_ANIM_TIME
+		best.call("on_interact", self)
+
+
+func _on_player_ate(_food_id: String, _relief: float) -> void:
+	_interact_anim_left = INTERACT_ANIM_TIME
 
 
 func _exit_tree() -> void:
 	if SignalBus.decoration_mode_changed.is_connected(_on_decoration_mode_changed):
 		SignalBus.decoration_mode_changed.disconnect(_on_decoration_mode_changed)
+	if SignalBus.player_ate.is_connected(_on_player_ate):
+		SignalBus.player_ate.disconnect(_on_player_ate)
 
 
 func _on_decoration_mode_changed(active: bool) -> void:
@@ -97,6 +149,10 @@ func _physics_process(_delta: float) -> void:
 		global_position = clamped - _foot_offset
 	# Depth: entities sort by ground contact — feet lower on screen = in front.
 	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
+	if _interact_anim_left > 0.0:
+		_interact_anim_left -= _delta
+		_play_interact_anim()
+		return
 	_update_animation(direction)
 
 
@@ -121,6 +177,28 @@ func _update_animation(direction: Vector2) -> void:
 	else:
 		_anim.flip_h = direction.x < 0
 		anim_name = "walk_side_up"
+	_play_anim(anim_name)
+
+
+## Interact direzionale sui frame gia` esistenti (male_interact_*): stessa
+## logica di scelta direzione delle altre animazioni.
+func _play_interact_anim() -> void:
+	if _anim == null:
+		return
+	var abs_x := absf(_last_direction.x)
+	var abs_y := absf(_last_direction.y)
+	var anim_name: String
+	if abs_x > abs_y * DIRECTION_THRESHOLD:
+		_anim.flip_h = _last_direction.x < 0
+		anim_name = "interact_side"
+	elif abs_y > abs_x * DIRECTION_THRESHOLD:
+		anim_name = "interact_down" if _last_direction.y > 0 else "interact_up"
+	elif _last_direction.y > 0:
+		_anim.flip_h = _last_direction.x < 0
+		anim_name = "interact_vertical_down"
+	else:
+		_anim.flip_h = _last_direction.x < 0
+		anim_name = "interact_vertical_up"
 	_play_anim(anim_name)
 
 

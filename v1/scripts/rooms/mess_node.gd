@@ -1,29 +1,44 @@
-## MessNode — Oggetto sporco che si accumula sul pavimento della stanza.
+## MessNode — Oggetto sporco con pulizia a tempo (spec 2026-08-14).
 ##
-## Viene istanziato dal MessSpawner su una posizione casuale dentro il floor
-## polygon. Il personaggio ripulisce il mess avvicinandosi e premendo E
-## (sistema interact esistente). Alla pulizia emette mess_cleaned e reward
-## coin, poi si distrugge.
+## FSM minimale sul dato persistito: DIRTY (cleaning_ends_at == 0) →
+## CLEANING (ends_at = timestamp Unix reale) → completata. Il timestamp,
+## non un timer, e` l'autorita`: al riavvio la barra riprende esatta e una
+## pulizia puo` finire a gioco chiuso (room_base accredita al load).
+## Il player avvia con E (tasto "interact"); coins e rimozione dello stress
+## arrivano SOLO al completamento.
 class_name MessNode
 extends Area2D
+
+## Layer fisico degli interagibili: la query del personaggio cerca qui.
+const INTERACT_LAYER := 4
 
 ## Padding extra intorno allo sprite per rendere piu` permissiva l'interazione.
 const INTERACTION_PADDING: float = 6.0
 
 ## Coin reward di default per pulire un mess (se non override dal catalog).
 const DEFAULT_CLEAN_REWARD: int = 2
+const DEFAULT_CLEAN_DURATION: float = 7.0
+
+const BAR_SIZE := Vector2(36, 5)
 
 var mess_id: String = ""
 var stress_weight: float = 0.10
 var clean_reward: int = DEFAULT_CLEAN_REWARD
+var clean_duration: float = DEFAULT_CLEAN_DURATION
+## Entry dentro SaveManager._messes: stessa identita` usata per la rimozione
+## (pattern di _decorations). Vuoto solo nei test che non persistono.
+var save_entry: Dictionary = {}
 
 var _sprite: Sprite2D
+var _cleaning_started_at: float = 0.0
 
 
-func setup(entry: Dictionary, world_position: Vector2) -> void:
+func setup(entry: Dictionary, world_position: Vector2, persisted: Dictionary = {}) -> void:
 	mess_id = entry.get("id", "")
 	stress_weight = float(entry.get("stress_weight", 0.10))
 	clean_reward = int(entry.get("clean_reward", DEFAULT_CLEAN_REWARD))
+	clean_duration = maxf(float(entry.get("clean_duration_sec", DEFAULT_CLEAN_DURATION)), 1.0)
+	save_entry = persisted
 	position = world_position
 	name = "Mess_%s" % mess_id
 
@@ -38,10 +53,10 @@ func setup(entry: Dictionary, world_position: Vector2) -> void:
 	var half_h: float = mess_tex.get_size().y * 0.5 if mess_tex else 16.0
 	z_index = Helpers.z_for_foot_y(world_position.y + half_h)
 
-	collision_layer = 0
+	collision_layer = INTERACT_LAYER
 	collision_mask = 1  # Detects character on layer 1
 	monitoring = true
-	monitorable = false
+	monitorable = true  # la shape-query del personaggio deve poterlo vedere
 	set_meta("interaction_type", "clean")
 	set_meta("item_id", mess_id)
 
@@ -53,10 +68,17 @@ func setup(entry: Dictionary, world_position: Vector2) -> void:
 	shape.shape = rect
 	add_child(shape)
 
+	# Una pulizia gia` in corso nel salvataggio riprende dai suoi timestamp
+	# (started_at persistito per una barra fedele anche dopo il riavvio).
+	if ends_at() > 0.0:
+		_persisted_duration()  # clamp difensivo di ends_at prima di tutto
+		_cleaning_started_at = float(save_entry.get("cleaning_started_at", ends_at() - clean_duration))
+
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+	set_process(is_cleaning())
 
 
 func _exit_tree() -> void:
@@ -68,18 +90,90 @@ func _exit_tree() -> void:
 		body_exited.disconnect(_on_body_exited)
 
 
-## Invocata dal sistema di interazione esistente (room_base / character)
-## quando il giocatore preme E vicino al mess.
+func ends_at() -> float:
+	return float(save_entry.get("cleaning_ends_at", 0.0))
+
+
+func is_cleaning() -> bool:
+	return ends_at() > 0.0
+
+
+## Invocata dal sistema di interazione (tasto E del personaggio).
 func on_interact(_player: Node) -> void:
-	clean()
+	start_cleaning()
 
 
-func clean() -> void:
+## Avvia la pulizia: durata dal catalogo divisa per il miglior attrezzo
+## posseduto AL momento dell'avvio (un attrezzo comprato dopo non retro-
+## agisce sulle pulizie gia` in corso).
+func start_cleaning() -> void:
+	if is_cleaning():
+		return
+	var mult: float = maxf(GameManager.best_tool_multiplier(), 1.0)
+	var duration := clean_duration / mult
+	var now := Time.get_unix_time_from_system()
+	_cleaning_started_at = now
+	save_entry["cleaning_started_at"] = now
+	save_entry["cleaning_ends_at"] = now + duration
+	SignalBus.mess_cleaning_started.emit(mess_id, save_entry["cleaning_ends_at"])
+	SignalBus.save_requested.emit()
+	set_process(true)
+	queue_redraw()
+	AppLogger.info("MessNode", "cleaning_started", {"id": mess_id, "duration_s": duration})
+
+
+func _process(_delta: float) -> void:
+	if not is_cleaning():
+		set_process(false)
+		return
+	if Time.get_unix_time_from_system() >= ends_at():
+		_complete()
+	else:
+		queue_redraw()
+
+
+func _complete() -> void:
+	var total: int = SaveManager.inventory_data.get("coins", 0) + clean_reward
+	SaveManager.inventory_data["coins"] = total
+	SignalBus.coins_changed.emit(clean_reward, total)
+	if not save_entry.is_empty():
+		SaveManager.remove_mess(save_entry)
 	SignalBus.mess_cleaned.emit(mess_id)
-	SignalBus.coins_changed.emit(clean_reward, SaveManager.inventory_data.get("coins", 0) + clean_reward)
-	SaveManager.inventory_data["coins"] = SaveManager.inventory_data.get("coins", 0) + clean_reward
+	SignalBus.toast_requested.emit(tr("TOAST_CLEAN_DONE") % clean_reward, "info")
 	SignalBus.save_requested.emit()
 	queue_free()
+
+
+## Pulizia istantanea legacy (usata dai test pre-fase-economia).
+func clean() -> void:
+	_complete()
+
+
+func _draw() -> void:
+	if not is_cleaning():
+		return
+	var now := Time.get_unix_time_from_system()
+	var total := ends_at() - _cleaning_started_at
+	var ratio := clampf((now - _cleaning_started_at) / total, 0.0, 1.0) if total > 0.0 else 1.0
+	var tex := _sprite.texture if _sprite else null
+	var top_y: float = -(tex.get_size().y * 0.5 if tex else 16.0) - 10.0
+	var origin := Vector2(-BAR_SIZE.x * 0.5, top_y)
+	draw_rect(Rect2(origin, BAR_SIZE), Color(0, 0, 0, 0.55))
+	draw_rect(
+		Rect2(origin + Vector2.ONE, Vector2((BAR_SIZE.x - 2.0) * ratio, BAR_SIZE.y - 2.0)), Color(0.55, 0.85, 1.0, 0.9)
+	)
+
+
+func _persisted_duration() -> float:
+	# Difesa: un ends_at assurdo (orologio spostato in avanti di giorni) viene
+	# clampato alla durata massima possibile del catalogo per questo mess.
+	var now := Time.get_unix_time_from_system()
+	var remaining := ends_at() - now
+	if remaining > clean_duration:
+		save_entry["cleaning_ends_at"] = now + clean_duration
+		AppLogger.warn("MessNode", "ends_at_clamped", {"id": mess_id})
+		return clean_duration
+	return maxf(remaining, 0.0)
 
 
 func _on_body_entered(body: Node2D) -> void:

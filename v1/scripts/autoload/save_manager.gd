@@ -30,8 +30,12 @@ const NEWER_SAVE_PATH := "user://save_data.newer.json"
 # 4.1.2-L381: write-once snapshot of a malformed v3 inventory before reset.
 const V3_PRESERVED_PATH := "user://save_data.v3_preserved.json"
 const SECRET_PATH := "user://integrity.key"
-const SAVE_VERSION := "5.0.0"
+# 5.1.0 (spec 2026-08-14): aggiunge room.messes (sporco persistente con
+# pulizia a tempo) e il blocco pet (trust, orologio bisogni, ultimo pasto).
+const SAVE_VERSION := "5.1.0"
 const AUTO_SAVE_INTERVAL := 60.0
+## Difesa: mai piu' di cosi' tanti mess persistiti (accumulo offline incluso).
+const MAX_SAVED_MESSES := 20
 
 # Settings defaults. Every persisted setting MUST be declared here:
 # _apply_save_data whitelists on these keys, so a missing default silently
@@ -82,8 +86,21 @@ var inventory_data: Dictionary = {
 	"items": [],
 }
 
+# Pet state (5.1.0) — public like character_data. All floats (unix times)
+# so the typed-merge accepts them straight from JSON.
+var pet_data: Dictionary = {
+	"trust": 0.0,
+	"next_potty_at": 0.0,
+	"last_meal_at": 0.0,
+}
+
 # Room decoration state
 var _decorations: Array = []
+
+# Active messes (5.1.0): [{mess_id, position:[x,y], spawned_at,
+# cleaning_ends_at}] — cleaning_ends_at 0 = not being cleaned. Same
+# ownership pattern as _decorations: nodes hold the entry dict by identity.
+var _messes: Array = []
 
 # Music state
 var _music_state: Dictionary = {
@@ -140,6 +157,74 @@ func remove_decoration(data: Dictionary) -> bool:
 		_mark_dirty()
 		return true
 	return false
+
+
+func get_messes() -> Array:
+	return _messes
+
+
+func add_mess(data: Dictionary) -> void:
+	if _messes.size() >= MAX_SAVED_MESSES:
+		AppLogger.warn("SaveManager", "mess_cap_reached", {"cap": MAX_SAVED_MESSES})
+		return
+	_messes.append(data)
+	_mark_dirty()
+
+
+func remove_mess(data: Dictionary) -> bool:
+	var idx := _messes.find(data)
+	if idx >= 0:
+		_messes.remove_at(idx)
+		_mark_dirty()
+		return true
+	return false
+
+
+# ---- Inventory items ([{id, qty}]) ----------------------------------------
+
+
+func get_item_qty(item_id: String) -> int:
+	for entry in inventory_data.get("items", []):
+		if entry is Dictionary and str(entry.get("id", "")) == item_id:
+			return maxi(int(entry.get("qty", 0)), 0)
+	return 0
+
+
+func add_item(item_id: String, amount: int = 1) -> void:
+	if item_id.is_empty() or amount <= 0:
+		return
+	var items: Array = inventory_data.get("items", [])
+	for entry in items:
+		if entry is Dictionary and str(entry.get("id", "")) == item_id:
+			entry["qty"] = int(entry.get("qty", 0)) + amount
+			_after_inventory_change()
+			return
+	items.append({"id": item_id, "qty": amount})
+	inventory_data["items"] = items
+	_after_inventory_change()
+
+
+## False when the player does not own enough of the item (nothing consumed).
+func consume_item(item_id: String, amount: int = 1) -> bool:
+	var items: Array = inventory_data.get("items", [])
+	for i in items.size():
+		var entry: Variant = items[i]
+		if entry is Dictionary and str(entry.get("id", "")) == item_id:
+			var qty := int(entry.get("qty", 0))
+			if qty < amount:
+				return false
+			if qty == amount:
+				items.remove_at(i)
+			else:
+				entry["qty"] = qty - amount
+			_after_inventory_change()
+			return true
+	return false
+
+
+func _after_inventory_change() -> void:
+	_mark_dirty()
+	SignalBus.inventory_updated.emit()
 
 
 func get_setting(key: String, default: Variant = null) -> Variant:
@@ -438,7 +523,9 @@ func _build_save_data() -> Dictionary:
 			"current_room_id": GameManager.current_room_id,
 			"current_theme": GameManager.current_theme,
 			"decorations": _decorations,
+			"messes": _messes,
 		},
+		"pet": pet_data,
 		"character":
 		{
 			"character_id": GameManager.current_character_id,
@@ -789,6 +876,21 @@ func _apply_save_data(data: Dictionary) -> void:
 			GameManager.current_theme = room_data["current_theme"]
 		if "decorations" in room_data and room_data["decorations"] is Array:
 			_decorations = room_data["decorations"]
+		# Messes (5.1.0): keep only well-formed entries — a mess is spawn
+		# data, not gospel; room_base re-validates ids and positions on
+		# reload (valida ai confini).
+		_messes = []
+		if "messes" in room_data and room_data["messes"] is Array:
+			for entry in room_data["messes"]:
+				if entry is Dictionary and str(entry.get("mess_id", "")) != "":
+					_messes.append(entry)
+				if _messes.size() >= MAX_SAVED_MESSES:
+					break
+
+	# Pet state (5.1.0)
+	if "pet" in data and data["pet"] is Dictionary:
+		_merge_typed_block(pet_data, data["pet"], "pet")
+	pet_data["trust"] = clampf(float(pet_data.get("trust", 0.0)), 0.0, 100.0)
 
 	# Character state
 	if "character" in data and data["character"] is Dictionary:
@@ -811,6 +913,17 @@ func _apply_save_data(data: Dictionary) -> void:
 		_merge_typed_block(inventory_data, data["inventory"], "inventory")
 	inventory_data["coins"] = maxi(int(inventory_data.get("coins", 0)), 0)
 	inventory_data["capacita"] = clampi(int(inventory_data.get("capacita", 50)), 1, 999)
+	# Items sanitize (5.1.0): keep only {id: String non-vuoto, qty: int > 0};
+	# JSON arriva coi qty float, coerciamo qui una volta sola.
+	var clean_items: Array = []
+	for raw_item in inventory_data.get("items", []):
+		if not (raw_item is Dictionary):
+			continue
+		var iid := str(raw_item.get("id", ""))
+		var qty := int(raw_item.get("qty", 0))
+		if iid != "" and qty > 0:
+			clean_items.append({"id": iid, "qty": qty})
+	inventory_data["items"] = clean_items
 
 
 ## Merge a loaded save block over its defaults with the same type rules the
@@ -918,6 +1031,12 @@ func _migrate_save_data(data: Dictionary) -> Dictionary:
 			"account_id": -1,
 		}
 		data["version"] = "5.0.0"
+		version = "5.0.0"
+
+	# v5.0.0 -> v5.1.0: room.messes + pet block. I default mancanti vengono
+	# gia' riempiti da _apply_save_data, qui basta far avanzare la versione.
+	if version == "5.0.0":
+		data["version"] = "5.1.0"
 
 	return data
 
@@ -975,6 +1094,8 @@ func reset_character_data() -> void:
 		"livello_stress": 0,
 	}
 	_decorations = []
+	_messes = []
+	pet_data = {"trust": 0.0, "next_potty_at": 0.0, "last_meal_at": 0.0}
 	GameManager.current_character_id = "male_old"
 	GameManager.current_outfit_id = ""
 	GameManager.current_room_id = "cozy_studio"

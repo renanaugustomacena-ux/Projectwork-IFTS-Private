@@ -8,7 +8,9 @@
 			"spawn_weight": 1.6,
 			"sprite_path": "res://assets/room/mess/crumbs_spot.png",
 			"placeholder_color": "#c2a677",
-			"size_px": 32
+			"size_px": 32,
+			"clean_duration_sec": 7,
+			"clean_reward": 2
 		},
 		{
 			"id": "coffee_stain",
@@ -18,7 +20,9 @@
 			"spawn_weight": 1.1,
 			"sprite_path": "res://assets/room/mess/coffee_stain.png",
 			"placeholder_color": "#5b3b20",
-			"size_px": 40
+			"size_px": 40,
+			"clean_duration_sec": 45,
+			"clean_reward": 4
 		},
 		{
 			"id": "dust_bunny",
@@ -28,7 +32,9 @@
 			"spawn_weight": 1.8,
 			"sprite_path": "res://assets/room/mess/dust_bunny.png",
 			"placeholder_color": "#9b9380",
-			"size_px": 28
+			"size_px": 28,
+			"clean_duration_sec": 120,
+			"clean_reward": 6
 		},
 		{
 			"id": "crumpled_paper",
@@ -38,7 +44,9 @@
 			"spawn_weight": 1.0,
 			"sprite_path": "res://assets/room/mess/crumpled_paper.png",
 			"placeholder_color": "#e7e0c6",
-			"size_px": 36
+			"size_px": 36,
+			"clean_duration_sec": 20,
+			"clean_reward": 3
 		},
 		{
 			"id": "dirty_plate",
@@ -48,7 +56,9 @@
 			"spawn_weight": 0.7,
 			"sprite_path": "res://assets/room/mess/dirty_plate.png",
 			"placeholder_color": "#b8a892",
-			"size_px": 44
+			"size_px": 44,
+			"clean_duration_sec": 600,
+			"clean_reward": 12
 		},
 		{
 			"id": "sock_single",
@@ -58,7 +68,33 @@
 			"spawn_weight": 0.9,
 			"sprite_path": "res://assets/room/mess/sock_single.png",
 			"placeholder_color": "#4c6b8a",
-			"size_px": 38
+			"size_px": 38,
+			"clean_duration_sec": 300,
+			"clean_reward": 8
+		},
+		{
+			"id": "stubborn_stain",
+			"label_it": "Macchia ostinata",
+			"label_en": "Stubborn stain",
+			"stress_weight": 0.18,
+			"spawn_weight": 0.25,
+			"sprite_path": "res://assets/room/mess/stubborn_stain.png",
+			"placeholder_color": "#6e4f3a",
+			"size_px": 52,
+			"clean_duration_sec": 3600,
+			"clean_reward": 40
+		},
+		{
+			"id": "cat_poop",
+			"label_it": "Bisognino del gatto",
+			"label_en": "Cat business",
+			"stress_weight": 0.2,
+			"spawn_weight": 0.0,
+			"sprite_path": "res://assets/room/mess/cat_poop.png",
+			"placeholder_color": "#5a4632",
+			"size_px": 30,
+			"clean_duration_sec": 1800,
+			"clean_reward": 20
 		}
 	]
 }

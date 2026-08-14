@@ -87,6 +87,19 @@ signal mess_cleaned(mess_id: String)
 
 # Economy
 signal coins_changed(delta: int, total: int)
+# Fase economia (spec 2026-08-14): pulizia a tempo + negozio + ciotola.
+signal mess_cleaning_started(mess_id: String, ends_at: float)
+signal shop_item_purchased(item_id: String, cost: int)
+signal player_ate(food_id: String, stress_relief: float)
+signal inventory_updated
+signal pet_feed_requested(world_position: Vector2)
+signal pet_fed
+# Fase confidenza gatto (spec 2026-08-14).
+signal pet_trust_changed(value: float)
+# Fase giardino/bisogni (spec 2026-08-14). indoor=true → sporco in stanza.
+signal pet_pottied(indoor: bool)
+# Fase slot di salvataggio (spec 2026-08-14).
+signal save_slot_changed(slot: int)
 
 # Profile HUD (feature T-R-015 — minipanel in alto con profilo + mood bar)
 signal profile_hud_requested

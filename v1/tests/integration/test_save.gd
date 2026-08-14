@@ -134,7 +134,7 @@ func test_load_preserves_int_fields_from_json() -> void:
 func test_migrate_v1_to_v5_sets_version() -> void:
 	var data := {"version": "1.0.0", "settings": {"language": "en"}}
 	var migrated: Dictionary = SaveManager._migrate_save_data(data)
-	assert_eq(migrated.get("version", ""), "5.0.0")
+	assert_eq(migrated.get("version", ""), "5.1.0")
 
 
 func test_migrate_v3_to_v5_strips_obsolete_fields() -> void:
@@ -150,7 +150,7 @@ func test_migrate_v3_to_v5_strips_obsolete_fields() -> void:
 		"updated_at": "",
 	}
 	var migrated: Dictionary = SaveManager._migrate_save_data(data)
-	assert_eq(migrated.get("version", ""), "5.0.0")
+	assert_eq(migrated.get("version", ""), "5.1.0")
 	for key in ["tools", "therapeutic", "xp", "streak", "currency", "unlocks", "last_active_timestamp", "updated_at"]:
 		assert_false(migrated.has(key), "obsolete field %s must be removed" % key)
 	# Coins should be preserved via the currency.coins → inventory.coins path
@@ -161,7 +161,7 @@ func test_migrate_v3_to_v5_strips_obsolete_fields() -> void:
 func test_migrate_v4_to_v5_adds_account_section() -> void:
 	var data := {"version": "4.0.0", "inventory": {"coins": 0, "capacita": 50, "items": []}}
 	var migrated: Dictionary = SaveManager._migrate_save_data(data)
-	assert_eq(migrated.get("version", ""), "5.0.0")
+	assert_eq(migrated.get("version", ""), "5.1.0")
 	assert_has(migrated, "account")
 	assert_has(migrated["account"], "auth_uid")
 

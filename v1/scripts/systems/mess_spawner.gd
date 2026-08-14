@@ -84,10 +84,20 @@ func _spawn_random_mess() -> void:
 	if pos == Vector2.INF:
 		return  # No valid floor position found this cycle
 
+	# Persisted entry FIRST (spec 2026-08-14): the node holds the dict by
+	# identity, so removal at clean-completion updates the save in place.
+	var persisted := {
+		"mess_id": entry.get("id", ""),
+		"position": Helpers.vec2_to_array(pos),
+		"spawned_at": Time.get_unix_time_from_system(),
+		"cleaning_ends_at": 0.0,
+	}
+	SaveManager.add_mess(persisted)
 	var mess := MessNodeScript.new()
-	mess.setup(entry, pos)
+	mess.setup(entry, pos, persisted)
 	mess_container.add_child(mess)
 	SignalBus.mess_spawned.emit(entry.get("id", ""), pos)
+	SignalBus.save_requested.emit()
 
 
 func _weighted_pick(entries: Array) -> Dictionary:

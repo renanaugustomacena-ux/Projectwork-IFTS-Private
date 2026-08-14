@@ -1,8 +1,14 @@
+# gdlint: disable=max-file-lines
+## TODO post-fase-economia: estrarre la gestione mess (reload/offline)
 ## RoomBase — Manages modular room: decoration spawning and character display.
 extends Node2D
 
 const DecorationScript := preload("res://scripts/rooms/decoration_system.gd")
 const MessSpawnerScript := preload("res://scripts/systems/mess_spawner.gd")
+# Preload (non class_name) per lo stesso motivo documentato in mess_spawner:
+# il class_name cache di Godot puo` andare stale.
+const MessNodeScript := preload("res://scripts/rooms/mess_node.gd")
+const FoodBowlScript := preload("res://scripts/rooms/food_bowl.gd")
 
 ## Collision footprint ratios — only the bottom portion blocks movement.
 const COLLISION_WIDTH_RATIO := 0.7
@@ -44,6 +50,7 @@ func _ready() -> void:
 	SignalBus.character_changed.connect(_on_character_changed)
 	SignalBus.decoration_placed.connect(_on_decoration_placed)
 	SignalBus.load_completed.connect(_on_load_completed)
+	SignalBus.pet_feed_requested.connect(_on_pet_feed_requested)
 	_setup_floor_bounds()
 	_reload_decorations()
 	# Apply character chosen in main menu BEFORE spawning pet.
@@ -58,6 +65,7 @@ func _ready() -> void:
 		_character_pos_ready = true
 	_spawn_pet()
 	_setup_mess_spawner()
+	_reload_messes()
 
 
 func _setup_floor_bounds() -> void:
@@ -69,6 +77,48 @@ func _setup_floor_bounds() -> void:
 
 func _on_load_completed() -> void:
 	_reload_decorations()
+	_reload_messes()
+
+
+## Ricostruisce i mess dal salvataggio (spec 2026-08-14). Tre casi per voce:
+## id sconosciuto → scartata con warning; pulizia gia` finita (anche a gioco
+## chiuso) → coins accreditati subito con toast, mai rispawnata; altrimenti
+## → nodo ricreato con posizione clampata nel pavimento. Lo stress dei mess
+## ricaricati NON viene ri-aggiunto (e` gia` dentro livello_stress salvato):
+## si registra solo la contabilita` per lo scarico alla pulizia.
+func _reload_messes() -> void:
+	if mess_container == null:
+		return
+	for child in mess_container.get_children():
+		child.queue_free()
+	var now := Time.get_unix_time_from_system()
+	var offline_coins := 0
+	for entry: Dictionary in SaveManager.get_messes().duplicate():
+		var mess_id := str(entry.get("mess_id", ""))
+		var catalog_entry := GameManager.get_mess_entry(mess_id)
+		if catalog_entry.is_empty():
+			AppLogger.warn("RoomBase", "saved_mess_unknown", {"id": mess_id})
+			SaveManager.remove_mess(entry)
+			continue
+		var ends := float(entry.get("cleaning_ends_at", 0.0))
+		if ends > 0.0 and ends <= now:
+			var reward := int(catalog_entry.get("clean_reward", 2))
+			offline_coins += reward
+			SaveManager.remove_mess(entry)
+			SignalBus.mess_cleaned.emit(mess_id)
+			continue
+		var pos := Helpers.clamp_inside_floor(Helpers.array_to_vec2(entry.get("position", [640, 450])))
+		entry["position"] = Helpers.vec2_to_array(pos)
+		var mess: Area2D = MessNodeScript.new()
+		mess.setup(catalog_entry, pos, entry)
+		mess_container.add_child(mess)
+		StressManager.track_mess(mess_id, false)
+	if offline_coins > 0:
+		var total: int = SaveManager.inventory_data.get("coins", 0) + offline_coins
+		SaveManager.inventory_data["coins"] = total
+		SignalBus.coins_changed.emit(offline_coins, total)
+		SignalBus.toast_requested.emit(tr("TOAST_CLEAN_DONE_AWAY") % offline_coins, "info")
+		SignalBus.save_requested.emit()
 
 
 ## Percorso scena del personaggio: prima il catalogo (dato), poi la mappa
@@ -444,6 +494,27 @@ func _spawn_pet() -> void:
 	AppLogger.info("RoomBase", "pet_spawned", {"variant": variant, "pos": pet.position})
 
 
+## Posa la ciotola per il gatto (spec 2026-08-14). Una sola alla volta: la
+## porzione e` gia` stata scalata dall'inventario dal pannello negozio, quindi
+## il rifiuto qui restituisce... niente — per questo il pannello controlla
+## PRIMA se una ciotola esiste (get_tree().get_nodes_in_group("pet_bowl")).
+func _on_pet_feed_requested(world_position: Vector2) -> void:
+	if not get_tree().get_nodes_in_group("pet_bowl").is_empty():
+		SignalBus.toast_requested.emit(tr("TOAST_BOWL_ALREADY"), "warning")
+		return
+	# Vector2.INF (o comunque non finito) = "davanti al personaggio".
+	if not world_position.is_finite():
+		var char_pos := Vector2(640, 450)
+		if character_node != null and is_instance_valid(character_node):
+			char_pos = character_node.position
+		world_position = char_pos + Vector2(46, 30)
+	var bowl: Node2D = FoodBowlScript.new()
+	bowl.position = Helpers.clamp_inside_floor(world_position, 24.0)
+	bowl.z_index = Helpers.z_for_foot_y(bowl.position.y)
+	add_child(bowl)
+	AppLogger.info("RoomBase", "bowl_placed", {"pos": bowl.position})
+
+
 func _exit_tree() -> void:
 	if SignalBus.character_changed.is_connected(_on_character_changed):
 		SignalBus.character_changed.disconnect(_on_character_changed)
@@ -451,6 +522,8 @@ func _exit_tree() -> void:
 		SignalBus.decoration_placed.disconnect(_on_decoration_placed)
 	if SignalBus.load_completed.is_connected(_on_load_completed):
 		SignalBus.load_completed.disconnect(_on_load_completed)
+	if SignalBus.pet_feed_requested.is_connected(_on_pet_feed_requested):
+		SignalBus.pet_feed_requested.disconnect(_on_pet_feed_requested)
 
 
 func _find_item_data(item_id: String) -> Dictionary:
