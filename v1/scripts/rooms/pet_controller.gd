@@ -75,6 +75,10 @@ var _squash_left: float = 0.0
 # Scala di fabbrica dello sprite (catturata in _ready): il polish la usa
 # come base immutabile per non accumulare deriva frame dopo frame.
 var _anim_base_scale: float = 1.0
+# Cache della ciotola durante EAT (evita lookup di gruppo per-frame).
+var _bowl_ref: Node2D = null
+# L'orologio bisogni si controlla ~1 volta al secondo, non a 60Hz.
+var _potty_check_accum: float = 0.0
 # Ground-contact point relative to the body origin, read from the collision
 # shape (the collider IS the paws — same convention as character_controller).
 var _foot_offset := Vector2.ZERO
@@ -115,9 +119,10 @@ func _on_wild_mode_requested(active: bool) -> void:
 	_wild_mode_active = active
 	if active:
 		# In giardino niente scatto WILD immediato (il clamp lo teletraspor-
-		# terebbe dentro): accorcia la passeggiata, il WILD parte al rientro.
+		# terebbe dentro): _process_roam_garden legge _wild_mode_active e
+		# rientra subito; il WILD parte al rientro (review 2026-08-14: lo
+		# azzeramento del linger veniva sovrascritto dal ramo POTTY).
 		if _state in [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME]:
-			_garden_linger_left = 0.0
 			return
 		_set_state(State.WILD)
 	elif _state == State.WILD:
@@ -157,7 +162,12 @@ func _physics_process(delta: float) -> void:
 		State.RETURN_HOME:
 			_process_return_home(delta)
 
-	_check_potty_due()
+	# Review 2026-08-14: la scadenza e` a ore di distanza — un check al
+	# secondo basta, il syscall dell'orologio a 60Hz era spreco puro.
+	_potty_check_accum += delta
+	if _potty_check_accum >= 1.0:
+		_potty_check_accum = 0.0
+		_check_potty_due()
 	_accrue_storm_bond(delta)
 	_apply_walk_polish(delta)
 	# Maschera collisioni autoritativa per-frame: fuori dalla stanza (o in
@@ -332,7 +342,7 @@ func _process_potty(_delta: float) -> void:
 
 func _process_roam_garden(delta: float) -> void:
 	_garden_linger_left -= delta
-	if _garden_linger_left <= 0.0:
+	if _garden_linger_left <= 0.0 or _wild_mode_active:
 		_outing_target = Helpers.clamp_inside_floor(_home_position + _random_offset(80.0))
 		_set_state(State.RETURN_HOME)
 		return
@@ -359,11 +369,15 @@ func _should_flee() -> bool:
 
 
 func _process_eat(_delta: float) -> void:
-	var bowls := get_tree().get_nodes_in_group("pet_bowl")
-	if bowls.is_empty():
-		_set_state(State.WILD if _wild_mode_active else State.IDLE)
-		return
-	var bowl := bowls[0] as Node2D
+	# Review 2026-08-14: riferimento cache-ato — la lookup di gruppo alloca un
+	# Array a ogni chiamata, inutile 60 volte al secondo per 10+ secondi.
+	if _bowl_ref == null or not is_instance_valid(_bowl_ref):
+		var bowls := get_tree().get_nodes_in_group("pet_bowl")
+		if bowls.is_empty():
+			_set_state(State.WILD if _wild_mode_active else State.IDLE)
+			return
+		_bowl_ref = bowls[0] as Node2D
+	var bowl := _bowl_ref
 	var dist := position.distance_to(bowl.position)
 	if dist > EAT_REACH:
 		var dir := (bowl.position - position).normalized()
@@ -382,6 +396,7 @@ func _process_eat(_delta: float) -> void:
 		_reset_anim_position()
 		if is_instance_valid(bowl):
 			bowl.queue_free()
+		_bowl_ref = null
 		SignalBus.pet_fed.emit()
 		# Fase 2: il pasto nutre la confidenza solo se il gatto aveva fame
 		# (>= 4h dall'ultimo pasto) — anti spam di croccantini.
@@ -561,8 +576,13 @@ func _process_play(_delta: float) -> void:
 
 
 func _set_state(new_state: State) -> void:
-	if _state == State.SLEEP and new_state != State.SLEEP:
-		_reset_anim_scale()
+	# Reset incondizionato di scala e offset dello sprite a OGNI transizione
+	# (review 2026-08-14): SLEEP e POTTY li modificano per-frame, e un
+	# interrupt (es. ciotola durante l'accucciata) lasciava il gatto
+	# schiacciato per il resto della sessione. Gli stati che li vogliono li
+	# riapplicano comunque al frame successivo.
+	_reset_anim_scale()
+	_reset_anim_position()
 	_state = new_state
 	_state_timer = 0.0
 	if new_state == State.WANDER:

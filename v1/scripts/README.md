@@ -1,6 +1,6 @@
 # Relax Room — Script GDScript
 
-**51 script GDScript** (~12.325 LOC) organizzati per dominio + `main.gd` root controller.
+**55 script GDScript** (~14.4k LOC) organizzati per dominio + `main.gd` root controller.
 Architettura **signal-driven**: tutta la comunicazione cross-modulo passa per
 `SignalBus` (**56 segnali typed**). Nessun sistema conosce gli altri direttamente.
 
@@ -50,7 +50,7 @@ scripts/
 │   ├── room_base.gd                 #   Spawn decorazioni, character swap, pet, mess container
 │   ├── decoration_system.gd         #   Popup R/F/S/X su CanvasLayer 100, drag, snap grid
 │   ├── character_controller.gd      #   Movimento WASD 120 px/s + animazioni 8 direzioni
-│   ├── pet_controller.gd            #   FSM 6 stati (IDLE/WANDER/FOLLOW/SLEEP/PLAY/WILD)
+│   ├── pet_controller.gd            #   FSM 12 stati (IDLE/WANDER/FOLLOW/SLEEP/PLAY/WILD/EAT/AVOID/GO_POTTY/POTTY/ROAM_GARDEN/RETURN_HOME)
 │   ├── window_background.gd         #   Parallasse 8 layer foresta Eder Muniz
 │   ├── room_grid.gd                 #   Grid 64px overlay (edit mode)
 │   └── mess_node.gd                 #   Area2D mess cleanable interagente
@@ -103,7 +103,7 @@ Caricati in ordine da `project.godot` `[autoload]`:
 
 ## SignalBus — 56 segnali typed
 
-56 signal confermati via `rg -c "^signal " signal_bus.gd`. Raggruppati per dominio: Room (4) · Character (5) · Audio (4) · Decoration mode (5) · UI (3) · Save/Load (5) · Vocabolario dei fallimenti (7) · Settings update (1) · Music state (1) · Settings (1) · Auth (5) · Cloud (4) · Stress/Mood (3) · Mess (2) · Economy (1) · Profile HUD (3) · Effetti mood (2).
+65 signal confermati via `rg -c "^signal " signal_bus.gd`. Raggruppati per dominio: Room (4) · Character (5) · Audio (4) · Decoration mode (5) · UI (3) · Save/Load (5) · Vocabolario dei fallimenti (7) · Settings update (1) · Music state (1) · Settings (1) · Auth (5) · Cloud (4) · Stress/Mood (3) · Mess (2) · Economy (1) · Profile HUD (3) · Effetti mood (2).
 
 > Il propagation gap segnalato dall'audit 4.3 (un solo segnale d'errore, `auth_error`) e` **chiuso**: il gruppo "vocabolario dei fallimenti" aggiunge `save_failed`, `save_integrity_violation`, `save_integrity_unavailable`, `sync_error`, `sync_payload_corrupted`, `catalog_load_failed`, `db_error`, tutti cablati a toast visibili in `main.gd`.
 
@@ -121,7 +121,7 @@ JSONL bufferato + rotazione, ring dedicato per gli ERROR, scrub dei path di devi
 
 ### `autoload/game_manager.gd` (241 L)
 
-Stato di gioco + caricamento dei 6 cataloghi JSON. `_load_catalogs()` gira nel `_ready` dell'autoload, cioè prima che esista una scena: la `catalog_load_failed` emessa lì non ha ascoltatori. I fallimenti restano quindi in coda in `_pending_catalog_failures` e `main.gd` li ritira con `drain_pending_catalog_failures()` subito dopo aver collegato i toast — coda a consumo singolo, nessun timer di polling (V-019).
+Stato di gioco + caricamento dei 7 cataloghi JSON. `_load_catalogs()` gira nel `_ready` dell'autoload, cioè prima che esista una scena: la `catalog_load_failed` emessa lì non ha ascoltatori. I fallimenti restano quindi in coda in `_pending_catalog_failures` e `main.gd` li ritira con `drain_pending_catalog_failures()` subito dopo aver collegato i toast — coda a consumo singolo, nessun timer di polling (V-019).
 
 ### `autoload/local_database.gd` (388 L)
 
@@ -131,7 +131,7 @@ Facade SQLite. Delega ai 9 repo in `autoload/database/`. `PRAGMA journal_mode=WA
 
 ### `autoload/save_manager.gd` (1224 L)
 
-JSON v5.0.0 + HMAC-SHA256. Atomic write: temp → rename + copy fallback. Backup pre-overwrite. Migrazione chain v1→v5. Auto-save Timer 60 s. Vedi audit 4.1.2 per 4 HIGH finding sul path rename/copy + HMAC loss.
+JSON v5.1.0 + HMAC-SHA256. Atomic write: temp → rename + copy fallback. Backup pre-overwrite. Migrazione chain v1→v5. Auto-save Timer 60 s. Vedi audit 4.1.2 per 4 HIGH finding sul path rename/copy + HMAC loss.
 
 ### `autoload/auth_manager.gd` (414 L)
 
@@ -175,7 +175,7 @@ Idempotency guard in `_on_character_changed` (previene character duplication B-0
 
 ### `rooms/pet_controller.gd` (279 L)
 
-FSM 6 stati: IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD (stormy mood). Breathing scale pulse in SLEEP. Bounce animation in PLAY. Vedi audit 4.1.10 per WILD out-of-bounds finding.
+FSM 12 stati: i 6 storici piu' EAT (ciotola), AVOID (confidenza bassa) e il giro bisogni in giardino. Breathing scale pulse in SLEEP. Bounce animation in PLAY. Vedi audit 4.1.10 per WILD out-of-bounds finding.
 
 ### `ui/panel_manager.gd` (210 L)
 
@@ -215,5 +215,5 @@ CanvasLayer 90. `_container.mouse_filter = IGNORE` (critico: STOP blocca click i
 - [README v1](../README.md) — architettura + contenuti di gioco
 - [README data](../data/README.md) — schema SQLite + cataloghi JSON
 - [README scenes](../scenes/README.md) — scene Godot (.tscn)
-- [README tests](../tests/README.md) — 196 test harness
+- [README tests](../tests/README.md) — 234 test harness
 - [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità

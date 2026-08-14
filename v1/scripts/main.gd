@@ -100,22 +100,20 @@ func _wire_hud_buttons() -> void:
 	if menu_btn:
 		menu_btn.pressed.connect(_on_menu_pressed)
 
-	# Save button (fase 4): salvataggio manuale con conferma visiva. Il
-	# toast parte solo su save_completed reale, mai su un esito FAILED.
+	# Save button (fase 4): salvataggio manuale. La conferma visiva la da'
+	# gia' ToastManager, che ascolta save_completed e mostra "Partita
+	# salvata" per OGNI salvataggio riuscito (review 2026-08-14: un secondo
+	# toast qui duplicava il messaggio a ogni pressione).
 	var save_btn := _hud.get_node_or_null("SaveButton") as Button
 	if save_btn:
 		save_btn.pressed.connect(_on_save_pressed)
 
-
-func _on_save_pressed() -> void:
-	SignalBus.save_completed.connect(
-		func() -> void: SignalBus.toast_requested.emit(tr("TOAST_SAVED"), "info"),
-		CONNECT_ONE_SHOT,
-	)
-	SaveManager.save_game()
-
 	_apply_hud_labels()
 	SignalBus.language_changed.connect(_on_language_changed)
+
+
+func _on_save_pressed() -> void:
+	SaveManager.save_game()
 
 
 ## Etichette HUD dal catalogo traduzioni (la scena tiene l'italiano come

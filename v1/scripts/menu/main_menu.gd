@@ -17,6 +17,9 @@ const SlotSelectScript := preload("res://scripts/menu/slot_select.gd")
 var _settings_panel: PanelContainer = null
 var _profile_panel: PanelContainer = null
 var _slot_screen: Control = null
+# Slot prenotato per la nuova partita: lo switch reale avviene solo in
+# _begin_new_game (dopo conferma), mai al click (review 2026-08-14).
+var _pending_new_slot: int = -1
 # Live character-select overlay (Phase D guard): a double-click on Nuova
 # Partita must never stack a second select screen.
 var _select_screen: Control = null
@@ -113,12 +116,17 @@ func _on_nuova_partita() -> void:
 		return
 	# Fase 4: una nuova partita NON distrugge piu' lo slot corrente — va nel
 	# primo slot libero; se sono tutti pieni si apre la schermata slot per
-	# liberarne uno.
+	# liberarne uno. Lo slot viene SOLO prenotato: il cambio effettivo (che
+	# persiste il cfg e azzera la RAM) avviene in _begin_new_game, DOPO la
+	# validazione del catalogo e la conferma del personaggio — review
+	# 2026-08-14: switchare qui lasciava il gioco puntato su uno slot vuoto
+	# se il flusso veniva annullato (invariante V-039: niente mutazioni
+	# persistenti prima della conferma).
 	var empty := SaveManager.first_empty_slot()
 	if empty < 0:
 		_show_slot_select()
 		return
-	SaveManager.set_active_slot(empty)
+	_pending_new_slot = empty
 	_start_new_game_flow()
 
 
@@ -156,6 +164,10 @@ func _start_new_game_flow() -> void:
 ## viene raggiunto solo dopo che l'utente ha scelto il personaggio (o quando
 ## il catalogo ne offre uno solo e la scelta e` implicita).
 func _begin_new_game(char_id: String) -> void:
+	# Punto di non-ritorno: SOLO qui lo slot prenotato diventa attivo.
+	if _pending_new_slot >= 1:
+		SaveManager.set_active_slot(_pending_new_slot)
+		_pending_new_slot = -1
 	SaveManager.reset_character_data()
 	# Ripristina il flag tutorial cosi` una nuova partita riavvia sempre
 	# la sessione di onboarding, indipendentemente da precedenti completamenti.
@@ -213,6 +225,7 @@ func _on_character_chosen(character_id: String) -> void:
 ## L'overlay copre tutto il menu e ne intercetta i click: senza questa uscita
 ## l'unico modo di lasciare la selezione era confermare o chiudere il processo.
 func _on_character_select_cancelled() -> void:
+	_pending_new_slot = -1  # prenotazione annullata insieme al flusso
 	_button_container.visible = true
 	if _select_screen != null and is_instance_valid(_select_screen):
 		_select_screen.queue_free()
@@ -262,7 +275,7 @@ func _on_slot_new_requested(slot: int) -> void:
 	if _transitioning:
 		return
 	_close_slot_select()
-	SaveManager.set_active_slot(slot)
+	_pending_new_slot = slot  # prenotato: switch reale in _begin_new_game
 	_start_new_game_flow()
 
 

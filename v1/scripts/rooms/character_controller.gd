@@ -23,10 +23,10 @@ var _foot_offset := Vector2.ZERO
 # > 0 mentre gira l'animazione interact (avvio pulizia, mangiare): blocca
 # l'animazione di camminata per quel breve momento senza bloccare il corpo.
 var _interact_anim_left: float = 0.0
-# Fase 5: sedia occupata (null = in piedi). Se rideable, muoversi trascina
-# la sedia; altrimenti il primo input di movimento fa alzare.
+# Fase 5: sedia occupata (null = in piedi). L'unico stato reale e` _seat:
+# "rideable" si deriva dal catalogo della sedia al momento dell'uso (review
+# 2026-08-14 — il flag copiato restava stantio se la sedia veniva eliminata).
 var _seat: Sprite2D = null
-var _seat_rideable: bool = false
 var _seat_offset := Vector2.ZERO  # posizione sedia relativa al personaggio
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
@@ -56,20 +56,22 @@ func _unhandled_input(event: InputEvent) -> void:
 func sit_on(deco: Sprite2D) -> void:
 	if _seat != null or deco == null or deco.texture == null:
 		return
-	var cat: Dictionary = deco.get("catalog_data") if "catalog_data" in deco else {}
-	if not (cat is Dictionary):
-		cat = {}
 	_seat = deco
-	_seat_rideable = bool(cat.get("rideable", false))
 	var tex_size: Vector2 = deco.texture.get_size() * deco.scale
 	var anchor := deco.global_position + Vector2(tex_size.x * SEAT_ANCHOR.x, tex_size.y * SEAT_ANCHOR.y)
 	global_position = anchor - _foot_offset
 	_seat_offset = deco.global_position - global_position
-	# Niente collisione con la propria sedia (layer 2), o resteremmo incastrati.
-	collision_mask = 1
+	# La maschera per-frame in _physics_process togliera` il layer 2 (sedia).
 	velocity = Vector2.ZERO
 	_last_direction = Vector2.DOWN
-	AppLogger.info("Character", "sat_down", {"rideable": _seat_rideable})
+	AppLogger.info("Character", "sat_down", {"rideable": _seat_is_rideable()})
+
+
+func _seat_is_rideable() -> bool:
+	if _seat == null or not is_instance_valid(_seat):
+		return false
+	var cat: Variant = _seat.get("catalog_data") if "catalog_data" in _seat else null
+	return cat is Dictionary and bool((cat as Dictionary).get("rideable", false))
 
 
 func stand_up() -> void:
@@ -77,8 +79,6 @@ func stand_up() -> void:
 		return
 	var deco := _seat
 	_seat = null
-	_seat_rideable = false
-	collision_mask = 1 if GameManager.is_decoration_mode else 3
 	# La sedia trascinata resta dove l'abbiamo portata: persisti posizione e
 	# ripristina la banda di profondita` corretta.
 	if is_instance_valid(deco):
@@ -102,7 +102,7 @@ func _process_seated(_delta: float) -> void:
 		velocity = Vector2.ZERO
 		_play_anim("idle_down")
 		return
-	if not _seat_rideable:
+	if not _seat_is_rideable():
 		stand_up()
 		return
 	velocity = direction.normalized() * RIDE_SPEED
@@ -114,6 +114,12 @@ func _process_seated(_delta: float) -> void:
 	if is_instance_valid(_seat):
 		_seat.global_position = global_position + _seat_offset
 		_seat.z_index = maxi(z_index - 1, Helpers.Z_FOOT_MIN)
+		# La posizione nel save segue la sedia ANCHE durante la guida (review
+		# 2026-08-14): autosave o quit a meta' corsa non devono riportarla
+		# al punto di partenza. Solo scrittura nel dict, nessun save forzato.
+		var dd: Variant = _seat.get("deco_data") if "deco_data" in _seat else null
+		if dd is Dictionary and not (dd as Dictionary).is_empty():
+			dd["position"] = Helpers.vec2_to_array(_seat.position)
 	if _anim:
 		_anim.flip_h = direction.x < 0
 	_play_anim("idle_down")
@@ -162,15 +168,19 @@ func _exit_tree() -> void:
 
 
 func _on_decoration_mode_changed(active: bool) -> void:
-	if active:
-		# In edit mode, ignore decoration collisions so dragging doesn't push us
-		collision_mask = 1
-	else:
-		collision_mask = 3
-		# Sblocca il character se stiamo dentro una deco al rientro da edit:
-		# durante edit ignora layer 2, puo` finire sopra una scrivania; al
-		# ritorno a mask=3 senza nudge, move_and_slide non riesce a de-penetrare
-		# e l'utente resta bloccato. (fix B-035)
+	# La maschera collisioni e` calcolata in modo autoritativo per-frame in
+	# _physics_process (review 2026-08-14): tre feature la toccavano in modo
+	# indipendente (edit mode, sedersi, alzarsi) e litigavano — es. sedersi e
+	# poi uscire dall'edit mode rimetteva mask=3 da seduti, con collisione
+	# contro la propria sedia e nudge-teleport. Qui resta solo il nudge di
+	# rientro dall'edit (fix B-035), saltato se siamo seduti: la sedia sotto
+	# di noi non e` una compenetrazione da correggere.
+	if active and _seat != null:
+		# In edit mode le sedie si spostano, non si usano: alzati subito o la
+		# sedia trascinata lascerebbe il personaggio seduto a mezz'aria e il
+		# primo input da rideable la risucchierebbe sotto di lui (review).
+		stand_up()
+	if not active and _seat == null:
 		call_deferred("_nudge_out_of_decorations")
 
 
@@ -218,13 +228,15 @@ func _physics_process(_delta: float) -> void:
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
 		return
-	if _seat != null and is_instance_valid(_seat):
+	# Unica autorita` sulla maschera collisioni (stesso pattern del gatto):
+	# da seduti o in edit mode le decorazioni (layer 2) non collidono.
+	var seated := _seat != null and is_instance_valid(_seat)
+	collision_mask = 1 if seated or GameManager.is_decoration_mode else 3
+	if seated:
 		_process_seated(_delta)
 		z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
 		return
-	if _seat != null:
-		_seat = null  # la sedia e` stata eliminata sotto di noi: in piedi
-		collision_mask = 1 if GameManager.is_decoration_mode else 3
+	_seat = null  # se la sedia e` stata eliminata sotto di noi: in piedi
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = direction.normalized() * SPEED
 	move_and_slide()

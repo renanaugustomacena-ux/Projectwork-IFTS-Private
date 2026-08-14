@@ -118,4 +118,5 @@ func _on_delete_pressed(slot: int) -> void:
 		return
 	_confirm_slot = -1
 	SaveManager.delete_slot_files(slot)
+	SaveManager.reset_after_slot_delete(slot)
 	_rebuild()

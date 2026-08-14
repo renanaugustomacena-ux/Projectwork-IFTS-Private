@@ -31,6 +31,7 @@ var save_entry: Dictionary = {}
 
 var _sprite: Sprite2D
 var _cleaning_started_at: float = 0.0
+var _last_bar_px: int = -1
 
 
 func setup(entry: Dictionary, world_position: Vector2, persisted: Dictionary = {}) -> void:
@@ -71,7 +72,7 @@ func setup(entry: Dictionary, world_position: Vector2, persisted: Dictionary = {
 	# Una pulizia gia` in corso nel salvataggio riprende dai suoi timestamp
 	# (started_at persistito per una barra fedele anche dopo il riavvio).
 	if ends_at() > 0.0:
-		_persisted_duration()  # clamp difensivo di ends_at prima di tutto
+		_clamp_persisted_deadline()
 		_cleaning_started_at = float(save_entry.get("cleaning_started_at", ends_at() - clean_duration))
 
 
@@ -128,14 +129,34 @@ func _process(_delta: float) -> void:
 		return
 	if Time.get_unix_time_from_system() >= ends_at():
 		_complete()
-	else:
+		return
+	# Ridisegna solo quando la barra avanza di un pixel (review 2026-08-14):
+	# su una pulizia da 1h il redraw a 60Hz dipingeva pixel identici per il
+	# 99.98% dei frame.
+	var px := _bar_fill_px()
+	if px != _last_bar_px:
+		_last_bar_px = px
 		queue_redraw()
 
 
+func _bar_fill_px() -> int:
+	var total := ends_at() - _cleaning_started_at
+	if total <= 0.0:
+		return int(BAR_SIZE.x)
+	var ratio := clampf((Time.get_unix_time_from_system() - _cleaning_started_at) / total, 0.0, 1.0)
+	return int((BAR_SIZE.x - 2.0) * ratio)
+
+
 func _complete() -> void:
-	var total: int = SaveManager.inventory_data.get("coins", 0) + clean_reward
-	SaveManager.inventory_data["coins"] = total
-	SignalBus.coins_changed.emit(clean_reward, total)
+	# Review 2026-08-14: se il personaggio e` SOPRA il mess al completamento,
+	# il body_exited non arriva mai (nodo liberato) e il prompt "Premi E"
+	# resterebbe acceso per sempre — pareggia il contatore esplicitamente.
+	if monitoring:
+		for body in get_overlapping_bodies():
+			if body is CharacterBody2D:
+				SignalBus.interaction_unavailable.emit()
+				break
+	SaveManager.credit_coins(clean_reward)
 	if not save_entry.is_empty():
 		SaveManager.remove_mess(save_entry)
 	SignalBus.mess_cleaned.emit(mess_id)
@@ -164,16 +185,14 @@ func _draw() -> void:
 	)
 
 
-func _persisted_duration() -> float:
-	# Difesa: un ends_at assurdo (orologio spostato in avanti di giorni) viene
-	# clampato alla durata massima possibile del catalogo per questo mess.
+## Difesa (void, solo side-effect dichiarato nel nome — review 2026-08-14):
+## un ends_at assurdo (orologio spostato in avanti di giorni) viene clampato
+## alla durata massima possibile del catalogo per questo mess.
+func _clamp_persisted_deadline() -> void:
 	var now := Time.get_unix_time_from_system()
-	var remaining := ends_at() - now
-	if remaining > clean_duration:
+	if ends_at() - now > clean_duration:
 		save_entry["cleaning_ends_at"] = now + clean_duration
 		AppLogger.warn("MessNode", "ends_at_clamped", {"id": mess_id})
-		return clean_duration
-	return maxf(remaining, 0.0)
 
 
 func _on_body_entered(body: Node2D) -> void:

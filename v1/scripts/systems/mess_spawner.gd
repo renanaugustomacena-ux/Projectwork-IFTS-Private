@@ -92,7 +92,12 @@ func _spawn_random_mess() -> void:
 		"spawned_at": Time.get_unix_time_from_system(),
 		"cleaning_ends_at": 0.0,
 	}
+	var before := SaveManager.get_messes().size()
 	SaveManager.add_mess(persisted)
+	if SaveManager.get_messes().size() == before:
+		# Cap raggiunto: nessun nodo orfano non-persistito (review 2026-08-14 —
+		# prima il nodo nasceva comunque e spariva al reload).
+		return
 	var mess := MessNodeScript.new()
 	mess.setup(entry, pos, persisted)
 	mess_container.add_child(mess)

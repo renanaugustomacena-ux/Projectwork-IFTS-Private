@@ -275,13 +275,11 @@ func purchase_item(item_id: String) -> bool:
 		AppLogger.warn("GameManager", "purchase_unknown_item", {"id": item_id})
 		return false
 	var price := maxi(int(entry.get("price", 0)), 0)
-	var coins := int(SaveManager.inventory_data.get("coins", 0))
-	if coins < price:
+	if int(SaveManager.inventory_data.get("coins", 0)) < price:
 		SignalBus.toast_requested.emit(tr("TOAST_NOT_ENOUGH_COINS"), "warning")
 		return false
-	SaveManager.inventory_data["coins"] = coins - price
+	SaveManager.credit_coins(-price)
 	SaveManager.add_item(item_id, 1)
-	SignalBus.coins_changed.emit(-price, coins - price)
 	SignalBus.shop_item_purchased.emit(item_id, price)
 	_request_save()
 	return true

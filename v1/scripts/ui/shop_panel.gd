@@ -42,20 +42,25 @@ func _ready() -> void:
 	_list.add_theme_constant_override("separation", 4)
 	root.add_child(_list)
 
-	SignalBus.coins_changed.connect(_on_state_changed_i)
+	SignalBus.coins_changed.connect(_on_coins_changed)
 	SignalBus.inventory_updated.connect(_rebuild)
 	_rebuild()
 
 
 func _exit_tree() -> void:
-	if SignalBus.coins_changed.is_connected(_on_state_changed_i):
-		SignalBus.coins_changed.disconnect(_on_state_changed_i)
+	if SignalBus.coins_changed.is_connected(_on_coins_changed):
+		SignalBus.coins_changed.disconnect(_on_coins_changed)
 	if SignalBus.inventory_updated.is_connected(_rebuild):
 		SignalBus.inventory_updated.disconnect(_rebuild)
 
 
-func _on_state_changed_i(_delta: int, _total: int) -> void:
-	_rebuild()
+## Review 2026-08-14: i coins cambiano anche per pulizie che finiscono col
+## pannello aperto — aggiornare SOLO l'etichetta, non ricostruire le righe
+## (il rebuild distruggeva i bottoni sotto il mouse a ogni payout; un
+## acquisto emette anche inventory_updated, che fa il rebuild completo).
+func _on_coins_changed(_delta: int, total: int) -> void:
+	if _coins_label != null:
+		_coins_label.text = "★ %d" % total
 
 
 func _rebuild() -> void:

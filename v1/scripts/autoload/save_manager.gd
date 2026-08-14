@@ -276,13 +276,32 @@ func set_active_slot(slot: int) -> void:
 ## Cancella i file di uno slot (save + ring + temp). Non tocca lo slot attivo
 ## in RAM: il chiamante decide cosa fare dopo.
 func delete_slot_files(slot: int) -> void:
-	var targets: Array[String] = [slot_path(SAVE_PATH, slot), slot_path(TEMP_PATH, slot)]
+	# Review 2026-08-14: TUTTI i file per-slot, inclusi il save "parcheggiato"
+	# di versione futura e lo snapshot v3 — un residuo del vecchio profilo
+	# bloccherebbe (park write-once) il nuovo proprietario dello slot.
+	var targets: Array[String] = [
+		slot_path(SAVE_PATH, slot),
+		slot_path(TEMP_PATH, slot),
+		slot_path(NEWER_SAVE_PATH, slot),
+		slot_path(V3_PRESERVED_PATH, slot),
+	]
 	for ring_path in BACKUP_RING:
 		targets.append(slot_path(ring_path, slot))
 	for target in targets:
 		if FileAccess.file_exists(target):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(target))
 	AppLogger.warn("SaveManager", "slot_deleted", {"slot": slot})
+
+
+## Da chiamare DOPO delete_slot_files sullo slot ATTIVO (review 2026-08-14):
+## senza questo, lo stato in RAM (con _full_state_loaded ancora true) veniva
+## riscritto su disco dal quit-save, "resuscitando" lo slot appena eliminato.
+func reset_after_slot_delete(slot: int) -> void:
+	if slot != active_slot:
+		return
+	_reset_ram_state_to_defaults()
+	SignalBus.profile_reset.emit()
+	AppLogger.info("SaveManager", "active_slot_ram_cleared_after_delete", {"slot": slot})
 
 
 func _write_active_slot_cfg() -> void:
@@ -319,6 +338,17 @@ func _reset_ram_state_to_defaults() -> void:
 	_settings = DEFAULT_SETTINGS.duplicate(true)
 	_full_state_loaded = false
 	_save_dirty = false
+
+
+## UNICO punto di mutazione dei coins a runtime (review 2026-08-14: prima il
+## rituale read/write/emit/save era copiato in tre siti). Delta negativo =
+## spesa; il saldo non scende mai sotto zero. Ritorna il nuovo totale.
+func credit_coins(delta: int) -> int:
+	var total := maxi(int(inventory_data.get("coins", 0)) + delta, 0)
+	inventory_data["coins"] = total
+	SignalBus.coins_changed.emit(delta, total)
+	_mark_dirty()
+	return total
 
 
 # ---- Inventory items ([{id, qty}]) ----------------------------------------
@@ -1284,9 +1314,13 @@ func _quarantine_file(path: String) -> void:
 	# silently overwrite the evidence and load never retries it.
 	# Name includes source basename + sub-second component: primary and backup
 	# can both be quarantined in the same second without clobbering evidence.
-	var q_path := (
-		"user://%s.quarantine.%d.%d.json"
-		% [path.get_file().get_basename(), int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+	# Slot-local (review 2026-08-14): la quarantena di uno slot 2..10 deve
+	# restare nella sua directory, non inquinare la radice dello slot 1.
+	var q_path := _p(
+		(
+			"user://%s.quarantine.%d.%d.json"
+			% [path.get_file().get_basename(), int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+		)
 	)
 	var src := ProjectSettings.globalize_path(path)
 	var dst := ProjectSettings.globalize_path(q_path)

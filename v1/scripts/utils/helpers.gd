@@ -178,24 +178,9 @@ static func clamp_inside_floor(world_pos: Vector2, margin: float = 4.0) -> Vecto
 		return world_pos
 	if Geometry2D.is_point_in_polygon(world_pos, _floor_polygon_world):
 		return world_pos
-
-	var best := world_pos
-	var best_dist_sq := INF
-	var n := _floor_polygon_world.size()
-	for i in n:
-		var a := _floor_polygon_world[i]
-		var b := _floor_polygon_world[(i + 1) % n]
-		var p := Geometry2D.get_closest_point_to_segment(world_pos, a, b)
-		var d := world_pos.distance_squared_to(p)
-		if d < best_dist_sq:
-			best_dist_sq = d
-			best = p
-
-	# Nudge `margin` pixels toward the centroid so the point is strictly inside
-	var to_center := _floor_centroid_world - best
-	if to_center.length_squared() > 0.0001:
-		best += to_center.normalized() * margin
-	return best
+	# Stesso nucleo delle zone (review 2026-08-14: prima il loop era duplicato
+	# e un fix al boundary edge-case sarebbe finito in una copia sola).
+	return _closest_point_inside(_floor_polygon_world, world_pos, margin)
 
 
 ## Expose the polygon for debug overlays / tests. Empty if not initialized.

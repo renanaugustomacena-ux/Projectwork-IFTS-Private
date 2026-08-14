@@ -69,6 +69,11 @@ func _ready() -> void:
 	_spawn_pet()
 	_setup_mess_spawner()
 	_reload_messes()
+	# Review 2026-08-14: nel flusso menu load_completed scatta PRIMA che
+	# questa scena esista, quindi il handler sotto non correrebbe mai —
+	# l'accumulo offline va processato anche all'ingresso scena. Idempotente:
+	# dopo il primo processing next_potty_at e' nel futuro.
+	_process_offline_potty()
 
 
 func _setup_floor_bounds() -> void:
@@ -179,6 +184,10 @@ func _reload_messes() -> void:
 			var reward := int(catalog_entry.get("clean_reward", 2))
 			offline_coins += reward
 			SaveManager.remove_mess(entry)
+			# Review 2026-08-14: registra il peso PRIMA di emettere cleaned,
+			# o lo stress persistito del mess (gia' dentro livello_stress
+			# salvato) non verrebbe mai scaricato dal handler di StressManager.
+			StressManager.track_mess(mess_id, false)
 			SignalBus.mess_cleaned.emit(mess_id)
 			continue
 		var pos := Helpers.clamp_inside_floor(Helpers.array_to_vec2(entry.get("position", [640, 450])))
@@ -188,9 +197,7 @@ func _reload_messes() -> void:
 		mess_container.add_child(mess)
 		StressManager.track_mess(mess_id, false)
 	if offline_coins > 0:
-		var total: int = SaveManager.inventory_data.get("coins", 0) + offline_coins
-		SaveManager.inventory_data["coins"] = total
-		SignalBus.coins_changed.emit(offline_coins, total)
+		SaveManager.credit_coins(offline_coins)
 		SignalBus.toast_requested.emit(tr("TOAST_CLEAN_DONE_AWAY") % offline_coins, "info")
 		SignalBus.save_requested.emit()
 

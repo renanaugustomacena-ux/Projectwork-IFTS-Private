@@ -400,8 +400,6 @@ msgstr "%s: so relaxing!"
 msgid "UI_PROMPT_INTERACT"
 msgstr "Press E"
 
-msgid "TOAST_SAVED"
-msgstr "Saved"
 
 # Cat needs (phase 3, spec 2026-08-14)
 msgid "TOAST_CAT_POTTY_INDOOR"

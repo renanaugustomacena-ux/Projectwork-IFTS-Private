@@ -36,6 +36,9 @@ func _ready() -> void:
 	SignalBus.mess_spawned.connect(_on_mess_spawned)
 	SignalBus.mess_cleaned.connect(_on_mess_cleaned)
 	SignalBus.load_completed.connect(_on_load_completed)
+	# Cambio slot / reset profilo: contabilita' mess da zero (review
+	# 2026-08-14 — i "fantasmi" dello slot A falsavano lo scarico nello slot B).
+	SignalBus.profile_reset.connect(reset)
 
 
 func _process(delta: float) -> void:
@@ -99,6 +102,10 @@ func _on_mess_cleaned(mess_id: String) -> void:
 
 
 func _on_load_completed() -> void:
+	# Ledger da zero a ogni load: il baseline riparte dal valore persistito e
+	# room_base ri-registra i mess ricaricati subito dopo (l'ordine e' quello
+	# di connessione: questo autoload si collega al boot, prima della scena).
+	_active_mess_weights.clear()
 	# character_data.livello_stress è int 0-100 nello schema esistente;
 	# lo convertiamo a float 0.0-1.0 per il runtime interno.
 	var raw: int = int(SaveManager.character_data.get("livello_stress", 0))
