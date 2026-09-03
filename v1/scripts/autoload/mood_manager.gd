@@ -203,7 +203,10 @@ func _spawn_rain() -> void:
 	# ~600): a z 0 le gocce finivano dietro il letto (GP-03).
 	_rain_instance.z_as_relative = false
 	_rain_instance.z_index = RenderingServer.CANVAS_ITEM_Z_MAX - 1
-	scene_tree.current_scene.add_child(_rain_instance)
+	# Differito: reapply_effects() parte dal _ready della stanza, quando la
+	# scena sta ancora sistemando i figli e add_child diretto fallisce
+	# (e la pioggia orfana resta viva fino all'uscita).
+	scene_tree.current_scene.call_deferred("add_child", _rain_instance)
 	_apply_rain_intensity(_current_mood)
 
 
