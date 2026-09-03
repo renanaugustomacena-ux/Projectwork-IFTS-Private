@@ -98,7 +98,7 @@
                     <li>Container <code>barichello/godot-ci</code> 4.7.1 pinnato per digest, per build deterministiche; <code>requirements.txt</code> pinnato</li>
                     <li><strong>Export Windows .exe</strong> preset con icona, versione 1.0.0</li>
                     <li><strong>Export HTML5</strong> browser-playable</li>
-                    <li><strong>Export Android APK</strong> (aggiunto 2026-04-17) con architetture arm64-v8a, internet permission only — resta un <strong>esperimento non supportato</strong>: l'export fallisce nel container e il progetto non ha configurazione di firma, quindi non entra in nessuna release</li>
+                    <li><strong>Export Android APK</strong> (aggiunto 2026-04-17) con architetture arm64-v8a, internet permission only — resta <strong>sperimentale</strong>: dal 4.7.1 il job produce l'APK di debug (artefatto del run, 44 MB), ma senza configurazione di firma non entra in nessuna release</li>
                     <li>Setup export templates pre-installed in container</li>
                     <li>Debug keystore setup per CI Android (l'unico keystore che il progetto usa)</li>
                     <li>Artifact upload 30d retention per ogni platform</li>

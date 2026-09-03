@@ -3,11 +3,11 @@
 # Strategy post Fase D (plan BUILD_RELEASE_PLAN §5):
 # - Target SUPPORTATI: Windows x64 + HTML5. Sono gli unici che entrano in una
 #   release e gli unici su cui si fanno promesse.
-# - Android e` un ESPERIMENTO non supportato: l'export fallisce nel container e
-#   il progetto non ha una configurazione di firma (nessuna chiave `keystore/*`
-#   in export_presets.cfg). L'APK, quando esce, e` firmato col keystore di
-#   debug e NON e` distribuibile. Il job resta per non buttare il lavoro del
-#   team, ma non gate-a nulla e non entra in release.yml (audit G-003).
+# - Android e` SPERIMENTALE: l'export nel container funziona (dal 4.7.1 il job
+#   produce l'APK arm64), ma il progetto non ha una configurazione di firma
+#   (nessuna chiave `keystore/*` in export_presets.cfg): l'APK e` firmato col
+#   keystore di debug e NON e` distribuibile. Il job non gate-a nulla e non
+#   entra in release.yml (audit G-003); l'artefatto resta scaricabile dal run.
 # - Ogni job e` atomico: SHA256SUMS per artifact, size check in smoke-binaries
 # - Fase F (successivo): build dipende da CI green via workflow_run trigger
 #
@@ -275,7 +275,7 @@ jobs:
             echo "Firmato col keystore di debug: NON distribuibile, non entra in nessuna release." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "### Android (sperimentale): NESSUN APK prodotto (step $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
-            echo "Problema noto del container: preset Android con errori di configurazione." >> "$GITHUB_STEP_SUMMARY"
+            echo "Export Android fallito: vedi il log dello step precedente (preset, template o SDK)." >> "$GITHUB_STEP_SUMMARY"
             echo "Windows e HTML5 non sono interessati: Android non e' un target supportato." >> "$GITHUB_STEP_SUMMARY"
           fi
 
