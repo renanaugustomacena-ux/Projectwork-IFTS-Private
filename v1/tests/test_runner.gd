@@ -42,6 +42,7 @@ const TEST_MODULES := [
 	"res://tests/integration/test_bridge.gd",
 	"res://tests/integration/test_logger.gd",
 	"res://tests/integration/test_mood.gd",
+	"res://tests/integration/test_polish.gd",
 ]
 
 const RESULTS_PATH := "user://test_results.jsonl"

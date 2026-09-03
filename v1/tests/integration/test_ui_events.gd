@@ -290,8 +290,14 @@ func test_deco_panel_populates_drag_buttons_with_meta() -> void:
 	assert_eq(pm.get_current_panel_name(), "deco", "panel open (got %s)" % pm.get_current_panel_name())
 	var panel: Node = pm.get("_current_panel")
 	assert_non_null(panel)
+	# Le griglie sono pigre (v1.3): i DecoButton nascono alla prima apertura
+	# della categoria. Aprile tutte, come farebbe il giocatore.
+	var containers: Dictionary = panel.get("_category_containers")
+	for cat_id: String in containers.keys():
+		panel.call("_on_category_toggled", cat_id)
+	await wait_frames(2)
 	var count := _collect_nodes_with_meta(panel, "drag_data")
-	# Expect >= 72 items (one per decoration). Headers don't have meta.
+	# Una voce per decorazione in catalogo (129). Gli header non hanno meta.
 	assert_true(count >= 60, "expected >= 60 DecoButtons with drag_data meta inside panel, got %d" % count)
 
 

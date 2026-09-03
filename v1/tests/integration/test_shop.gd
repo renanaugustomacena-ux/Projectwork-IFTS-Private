@@ -26,9 +26,10 @@ func test_purchase_decrements_coins_and_grants_item() -> void:
 	_snapshot()
 	SaveManager.inventory_data["coins"] = 100
 	SaveManager.inventory_data["items"] = []
+	var price := int(GameManager.get_shop_entry("rag").get("price", 0))
 	var ok := GameManager.purchase_item("rag")
 	assert_true(ok, "purchase with enough coins succeeds")
-	assert_eq(int(SaveManager.inventory_data["coins"]), 70, "rag costs 30")
+	assert_eq(int(SaveManager.inventory_data["coins"]), 100 - price, "rag costs its catalog price")
 	assert_eq(SaveManager.get_item_qty("rag"), 1, "rag owned after purchase")
 	_restore()
 
