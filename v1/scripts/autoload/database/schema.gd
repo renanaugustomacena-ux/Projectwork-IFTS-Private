@@ -133,15 +133,12 @@ static func _all_schema_statements() -> Array[String]:
 			+ ");"
 		),
 	]
-	# Indexes on foreign key columns for query performance
+	# Indici sulle FK senza vincolo UNIQUE (DB-19: settings/save_metadata/
+	# music_state/badges hanno gia` l'autoindex UNIQUE su account_id).
 	stmts.append("CREATE INDEX IF NOT EXISTS idx_characters_account ON characters(account_id);")
 	stmts.append("CREATE INDEX IF NOT EXISTS idx_inventario_account ON inventario(account_id);")
 	stmts.append("CREATE INDEX IF NOT EXISTS idx_rooms_character ON rooms(character_id);")
-	stmts.append("CREATE INDEX IF NOT EXISTS idx_settings_account ON settings(account_id);")
-	stmts.append("CREATE INDEX IF NOT EXISTS idx_save_metadata_account ON save_metadata(account_id);")
-	stmts.append("CREATE INDEX IF NOT EXISTS idx_music_state_account ON music_state(account_id);")
 	stmts.append("CREATE INDEX IF NOT EXISTS idx_placed_decorations_room ON placed_decorations(room_id);")
-	stmts.append("CREATE INDEX IF NOT EXISTS idx_badges_account ON badges_unlocked(account_id);")
 	return stmts
 
 

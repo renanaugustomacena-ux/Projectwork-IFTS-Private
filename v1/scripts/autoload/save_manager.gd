@@ -58,6 +58,8 @@ const DEFAULT_SETTINGS := {
 	"master_volume": 0.8,
 	"music_volume": 0.6,
 	"ambience_volume": 0.4,
+	"sfx_volume": 0.8,
+	"stat_badges_unlocked": [],
 	"ambience_enabled": true,
 	"pet_variant": "simple",
 	"window_pos_x": -1,
@@ -97,7 +99,7 @@ var inventory_data: Dictionary = {
 # Pet state (5.1.0) — public like character_data. All floats (unix times)
 # so the typed-merge accepts them straight from JSON.
 var pet_data: Dictionary = {
-	"trust": 0.0,
+	"trust": 35.0,
 	"next_potty_at": 0.0,
 	"last_meal_at": 0.0,
 }
@@ -143,6 +145,9 @@ var _settings_loaded: bool = false
 # Without it the hardcoded "en" default is indistinguishable from a real
 # preference and the system-locale fallback can never run on a fresh install.
 var _language_explicit: bool = false
+## Impostazioni cambiate dal menu (dove load_game() non gira mai): vengono
+## persistite da sole, senza toccare stanza/inventario (SM-02).
+var _settings_dirty: bool = false
 # E.2 quit-after-save-confirmed: WM_CLOSE latch + gave-up marker (see
 # _final_save_and_quit for the retry/force-quit contract).
 var _quit_requested: bool = false
@@ -269,7 +274,6 @@ func set_active_slot(slot: int) -> void:
 	_settings_loaded = false
 	_language_explicit = false
 	ensure_settings_loaded()
-	SignalBus.save_slot_changed.emit(slot)
 	AppLogger.info("SaveManager", "slot_changed", {"slot": slot})
 
 
@@ -290,7 +294,7 @@ func delete_slot_files(slot: int) -> void:
 	for target in targets:
 		if FileAccess.file_exists(target):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(target))
-	AppLogger.warn("SaveManager", "slot_deleted", {"slot": slot})
+	AppLogger.info("SaveManager", "slot_deleted", {"slot": slot})
 
 
 ## Da chiamare DOPO delete_slot_files sullo slot ATTIVO (review 2026-08-14):
@@ -331,7 +335,7 @@ func _reset_ram_state_to_defaults() -> void:
 		"nome": "", "genere": true, "colore_occhi": 0, "colore_capelli": 0, "colore_pelle": 0, "livello_stress": 0
 	}
 	inventory_data = {"coins": 0, "capacita": 50, "items": []}
-	pet_data = {"trust": 0.0, "next_potty_at": 0.0, "last_meal_at": 0.0}
+	pet_data = {"trust": 35.0, "next_potty_at": 0.0, "last_meal_at": 0.0}
 	_decorations = []
 	_messes = []
 	_music_state = {"current_track_index": 0, "playlist_mode": Constants.DEFAULT_PLAYLIST_MODE, "active_ambience": []}
@@ -346,6 +350,8 @@ func _reset_ram_state_to_defaults() -> void:
 func credit_coins(delta: int) -> int:
 	var total := maxi(int(inventory_data.get("coins", 0)) + delta, 0)
 	inventory_data["coins"] = total
+	if delta > 0:
+		AudioManager.play_sfx("coin")
 	SignalBus.coins_changed.emit(delta, total)
 	_mark_dirty()
 	return total
@@ -570,6 +576,7 @@ func _mark_dirty() -> void:
 
 func _on_settings_updated(key: String, value: Variant) -> void:
 	_settings[key] = value
+	_settings_dirty = true
 	if key == "language":
 		_language_explicit = true
 	_mark_dirty()
@@ -589,6 +596,9 @@ func _on_auto_save() -> void:
 ## Precondizioni di save_game(): false = il salvataggio non deve partire ora.
 ## Estratte qui per tenere save_game() sotto il limite di return statements.
 func _save_preconditions_ok() -> bool:
+	if not _full_state_loaded and _settings_dirty and not _is_saving:
+		_save_settings_only()
+		return false
 	if not _full_state_loaded:
 		# F.7: refuse to persist state that was never loaded. In the main menu
 		# load_game() has not run, so _decorations/inventory/character_data are
@@ -597,9 +607,15 @@ func _save_preconditions_ok() -> bool:
 		# backup ring would rotate the last good copy out within minutes.
 		# The dirty flag survives, so the first save after a real load (or an
 		# explicit reset) still persists whatever changed meanwhile.
-		AppLogger.warn("SaveManager", "save_skipped_state_not_loaded")
+		AppLogger.info("SaveManager", "save_skipped_state_not_loaded")
 		_save_dirty = true
 		# Skip by-design, non un fallimento: il percorso di quit esce subito.
+		_last_save_outcome = SaveOutcome.NOTHING_TO_SAVE
+		return false
+	if AuthManager.auth_state == AuthManager.AuthState.LOGGED_OUT:
+		# DB-13: senza un account (dopo "Elimina account") il mirror SQLite
+		# finirebbe sull'ospite. Niente scritture finche` l'utente non sceglie.
+		AppLogger.info("SaveManager", "save_skipped_logged_out")
 		_last_save_outcome = SaveOutcome.NOTHING_TO_SAVE
 		return false
 	if _is_saving:
@@ -656,6 +672,7 @@ func save_game() -> void:
 		return
 
 	_is_saving = false
+	_settings_dirty = false
 	_last_save_outcome = SaveOutcome.COMPLETED
 	SignalBus.save_completed.emit()
 	if _flush_queued:
@@ -679,6 +696,59 @@ func _fail_save(reason: String) -> void:
 	_flush_queued = false
 	_last_save_outcome = SaveOutcome.FAILED
 	SignalBus.save_failed.emit(reason)
+
+
+## SM-02: nel menu principale non esiste stato reale da scrivere (latch F.7),
+## ma lingua e volumi cambiati da Opzioni vanno persistiti. Si riscrive il
+## salvataggio gia` su disco sostituendo SOLO il blocco settings: stanza,
+## inventario e gatto restano quelli del file. Nessun save_completed: non e`
+## un salvataggio di partita e il dirty flag di gioco resta com'e`.
+func _save_settings_only() -> void:
+	_last_save_outcome = SaveOutcome.NOTHING_TO_SAVE
+	var existing := _peek_save_payload(_p(SAVE_PATH))
+	if existing.is_empty():
+		# Nessuna partita in questo slot: i settings partiranno col primo save.
+		return
+	if _get_integrity_key().is_empty():
+		return
+	existing["settings"] = _settings.duplicate(true)
+	_is_saving = true
+	var json_string := JSON.stringify(existing, "\t")
+	var hmac := _compute_hmac(json_string)
+	if not _write_temp_file({"data": json_string, "hmac": hmac}):
+		_fail_save("temp_write")
+		return
+	if not _backup_primary():
+		_remove_temp_file()
+		_fail_save("backup")
+		return
+	var promote_reason := _promote_temp_to_primary(hmac)
+	if promote_reason != "":
+		_fail_save(promote_reason)
+		return
+	_is_saving = false
+	_settings_dirty = false
+	_last_save_outcome = SaveOutcome.COMPLETED
+	AppLogger.info("SaveManager", "settings_saved_without_game_state", {"slot": active_slot})
+
+
+## Lingua risolta dal sistema al primo avvio: diventa la scelta persistita.
+## Senza questo il default "en" finiva nel primo salvataggio e al secondo
+## avvio il gioco cambiava lingua da solo (PT-09).
+func adopt_language(code: String) -> void:
+	if _language_explicit and str(_settings.get("language", "")) == code:
+		return
+	_settings["language"] = code
+	_language_explicit = true
+	_settings_dirty = true
+	_mark_dirty()
+
+
+## Cancella i file di TUTTI gli slot ("Elimina account": il testo di conferma
+## promette che ogni dato sparisce, e ora e` vero).
+func delete_all_slots() -> void:
+	for slot in range(1, MAX_SLOTS + 1):
+		delete_slot_files(slot)
 
 
 func _build_save_data() -> Dictionary:
@@ -840,6 +910,14 @@ func _build_db_payload() -> Dictionary:
 		"settings": _settings,
 		"music_state": _music_db_payload(),
 		"room": room_payload,
+		# DB-01/DB-20: il DB e` unico mentre gli slot sono dieci; almeno dica
+		# QUALE slot ha scritto per ultimo (prima la tabella non era mai scritta).
+		"save_metadata":
+		{
+			"save_version": SAVE_VERSION,
+			"save_slot": active_slot,
+			"play_time_sec": BadgeManager.get_total_play_time_sec(),
+		},
 	}
 
 
@@ -896,7 +974,7 @@ func load_game() -> void:
 		SignalBus.load_completed.emit()
 		return
 
-	push_warning("SaveManager: no valid save file found, using defaults")
+	AppLogger.info("SaveManager", "no_save_found_using_defaults", {"slot": active_slot})
 	# Nothing to load is a legitimate loaded state (fresh profile): the
 	# defaults ARE the truth, so saving them is safe from here on.
 	_full_state_loaded = true
@@ -1269,7 +1347,7 @@ func reset_character_data() -> void:
 	}
 	_decorations = []
 	_messes = []
-	pet_data = {"trust": 0.0, "next_potty_at": 0.0, "last_meal_at": 0.0}
+	pet_data = {"trust": 35.0, "next_potty_at": 0.0, "last_meal_at": 0.0}
 	GameManager.current_character_id = "male_old"
 	GameManager.current_outfit_id = ""
 	GameManager.current_room_id = "cozy_studio"

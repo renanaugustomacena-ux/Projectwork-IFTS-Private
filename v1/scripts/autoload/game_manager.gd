@@ -30,12 +30,18 @@ var _last_catalog_error: String = ""
 # con i toast collegati non li ritira (drain_pending_catalog_failures, V-019).
 var _pending_catalog_failures: Array[Dictionary] = []
 
+## Nome del pannello UI aperto ("" = nessuno). Alimentato da PanelManager via
+## SignalBus: il personaggio lo usa per fermarsi (UI-05).
+var _open_panel: String = ""
+
 
 func _ready() -> void:
 	_load_catalogs()
 	_validate_catalogs()
 	_apply_saved_locale()
 	SignalBus.load_completed.connect(_on_load_completed)
+	SignalBus.panel_opened.connect(_on_panel_opened)
+	SignalBus.panel_closed.connect(_on_panel_closed)
 	call_deferred("_deferred_load")
 
 
@@ -59,6 +65,7 @@ func _apply_saved_locale() -> void:
 	if not SaveManager.has_explicit_language() or not Constants.LANGUAGES.has(saved):
 		var system_lang := OS.get_locale_language()
 		saved = system_lang if Constants.LANGUAGES.has(system_lang) else "it"
+		SaveManager.adopt_language(saved)
 	var changed := TranslationServer.get_locale() != saved
 	TranslationServer.set_locale(saved)
 	AppLogger.info("GameManager", "locale_applied", {"locale": saved})
@@ -194,8 +201,6 @@ func change_character(character_id: String, outfit_id: String = "") -> void:
 	if outfit_id != "":
 		current_outfit_id = outfit_id
 	SignalBus.character_changed.emit(current_character_id)
-	if outfit_id != "":
-		SignalBus.outfit_changed.emit(current_outfit_id)
 	_request_save()
 
 
@@ -258,6 +263,19 @@ func get_shop_section(section: String) -> Array:
 
 ## Moltiplicatore di pulizia del miglior attrezzo posseduto (>= 1.0).
 ## A mani nude vale 1.0; il catalogo shop definisce i valori (data-driven).
+func is_ui_panel_open() -> bool:
+	return _open_panel != ""
+
+
+func _on_panel_opened(panel_name: String) -> void:
+	_open_panel = panel_name
+
+
+func _on_panel_closed(panel_name: String) -> void:
+	if _open_panel == panel_name or panel_name == "":
+		_open_panel = ""
+
+
 func best_tool_multiplier() -> float:
 	var best := 1.0
 	for entry in get_shop_section("tools"):
@@ -280,7 +298,9 @@ func purchase_item(item_id: String) -> bool:
 		return false
 	SaveManager.credit_coins(-price)
 	SaveManager.add_item(item_id, 1)
-	SignalBus.shop_item_purchased.emit(item_id, price)
+	# PT-32: l'acquisto riuscito era l'unico esito muto del negozio.
+	SignalBus.toast_requested.emit(tr("TOAST_PURCHASED") % Helpers.locale_label(entry), "success")
+	AudioManager.play_sfx("purchase")
 	_request_save()
 	return true
 
@@ -288,3 +308,7 @@ func purchase_item(item_id: String) -> bool:
 func _exit_tree() -> void:
 	if SignalBus.load_completed.is_connected(_on_load_completed):
 		SignalBus.load_completed.disconnect(_on_load_completed)
+	if SignalBus.panel_opened.is_connected(_on_panel_opened):
+		SignalBus.panel_opened.disconnect(_on_panel_opened)
+	if SignalBus.panel_closed.is_connected(_on_panel_closed):
+		SignalBus.panel_closed.disconnect(_on_panel_closed)

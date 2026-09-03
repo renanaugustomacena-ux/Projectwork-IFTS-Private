@@ -6,27 +6,19 @@ extends Node
 signal room_changed(room_id: String, theme: String)
 signal decoration_placed(item_id: String, position: Vector2)
 signal decoration_removed(item_id: String)
-signal decoration_moved(item_id: String, new_position: Vector2)
 
 # Character signals
 signal character_changed(character_id: String)
 signal interaction_available(item_id: String, interaction_type: String)
 signal interaction_unavailable
-signal interaction_started(item_id: String, interaction_type: String)
-signal outfit_changed(outfit_id: String)
 
 # Music/Audio signals
-signal track_changed(track_index: int)
 signal track_play_pause_toggled(is_playing: bool)
-signal ambience_toggled(ambience_id: String, is_active: bool)
 signal volume_changed(bus_name: String, volume: float)
 
 # Decoration mode
 signal decoration_mode_changed(active: bool)
 signal decoration_selected(item_id: String)
-signal decoration_deselected
-signal decoration_rotated(item_id: String, rotation_deg: float)
-signal decoration_scaled(item_id: String, new_scale: float)
 
 # UI signals
 signal panel_opened(panel_name: String)
@@ -66,9 +58,6 @@ signal language_changed(lang_code: String)
 # Auth lifecycle
 signal auth_state_changed(state: int)
 signal auth_error(message: String)
-signal account_created(account_id: int)
-signal account_deleted
-signal character_deleted
 
 # Cloud sync
 signal sync_started
@@ -78,7 +67,6 @@ signal cloud_connection_changed(state: int)
 
 # Stress / Mood (stress_value is continuous 0.0-1.0; level is calm/neutral/tense)
 signal stress_changed(stress_value: float, level: String)
-signal stress_threshold_crossed(level: String)
 signal mood_changed(mood: String)
 
 # Mess / Cleanup
@@ -88,18 +76,13 @@ signal mess_cleaned(mess_id: String)
 # Economy
 signal coins_changed(delta: int, total: int)
 # Fase economia (spec 2026-08-14): pulizia a tempo + negozio + ciotola.
-signal mess_cleaning_started(mess_id: String, ends_at: float)
-signal shop_item_purchased(item_id: String, cost: int)
 signal player_ate(food_id: String, stress_relief: float)
 signal inventory_updated
 signal pet_feed_requested(world_position: Vector2)
-signal pet_fed
 # Fase confidenza gatto (spec 2026-08-14).
-signal pet_trust_changed(value: float)
 # Fase giardino/bisogni (spec 2026-08-14). indoor=true → sporco in stanza.
 signal pet_pottied(indoor: bool)
 # Fase slot di salvataggio (spec 2026-08-14).
-signal save_slot_changed(slot: int)
 
 # Profile HUD (feature T-R-015 — minipanel in alto con profilo + mood bar)
 signal profile_hud_requested

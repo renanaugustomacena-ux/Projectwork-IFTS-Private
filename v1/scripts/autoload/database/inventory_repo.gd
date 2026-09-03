@@ -70,14 +70,21 @@ static func _replace_items(db: SQLite, account_id: int, items: Array) -> bool:
 	if not DBHelpers.execute_bound(db, "DELETE FROM inventario WHERE account_id = ?;", [account_id]):
 		return false
 	for item in items:
-		if item is Dictionary and item.has("item_id"):
-			if not (
-				DBHelpers
-				. execute_bound(
-					db,
-					"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);",
-					[account_id, item.get("item_id", 0), item.get("quantita", 1)],
-				)
-			):
-				return false
+		if not (item is Dictionary):
+			continue
+		# DB-03: il salvataggio usa {id, qty}; la vecchia chiave {item_id,
+		# quantita} non e` mai esistita e la tabella restava vuota.
+		var item_id: String = str(item.get("id", item.get("item_id", "")))
+		if item_id.is_empty():
+			continue
+		var qty := int(item.get("qty", item.get("quantita", 1)))
+		if not (
+			DBHelpers
+			. execute_bound(
+				db,
+				"INSERT INTO inventario (account_id, item_id, quantita) VALUES (?, ?, ?);",
+				[account_id, item_id, qty],
+			)
+		):
+			return false
 	return true

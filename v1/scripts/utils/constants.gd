@@ -43,6 +43,7 @@ const FADE_DURATION := 0.5
 
 # Auth
 const AUTH_MIN_PASSWORD_LENGTH := 6
+const AUTH_MAX_PASSWORD_LENGTH := 128  # DB-14: il costo PBKDF2 cresce con la lunghezza
 const AUTH_GUEST_UID := "local"
 const AUTH_GUEST_EMAIL := "offline@local"
 const AUTH_MAX_FAILED_ATTEMPTS := 5
@@ -87,4 +88,4 @@ const MOOD_TENSE_THRESHOLD := 0.25
 const MOOD_STORMY_THRESHOLD := 0.10
 
 # Application version — synced da scripts/bump_version.sh
-const APP_VERSION := "1.2.0"
+const APP_VERSION := "1.3.0"

@@ -6,6 +6,10 @@ const OVERLAY_ALPHA := 0.6
 const TUTORIAL_SCRIPT := preload("res://scripts/menu/tutorial_manager.gd")
 const TOAST_SCRIPT := preload("res://scripts/ui/toast_manager.gd")
 const GAME_HUD_SCRIPT := preload("res://scripts/ui/game_hud.gd")
+## Lato del bottone touch "E" (mobile/web): grande abbastanza per il pollice.
+const TOUCH_INTERACT_SIZE := 72.0
+## Chiave settings del display: "windowed" | "fullscreen" (F11).
+const DISPLAY_MODE_KEY := "display_mode"
 
 var _panel_manager: PanelManager
 @onready var _ui_layer: CanvasLayer = $UILayer
@@ -21,6 +25,7 @@ func _ready() -> void:
 	add_child(_panel_manager)
 	_panel_manager.initialize(_ui_layer)
 
+	_apply_saved_display_mode()
 	_wire_hud_buttons()
 	_fit_background_to_viewport()
 	SignalBus.room_changed.connect(_on_room_changed)
@@ -78,6 +83,70 @@ func _ready() -> void:
 			var joystick: Node = joy_scene.instantiate()
 			_ui_layer.add_child(joystick)
 			AppLogger.info("Main", "VirtualJoystick instantiated (mobile/web)")
+		_add_touch_interact_button()
+
+
+## Su touch non esiste il tasto E: un bottone in basso a destra (sopra
+## l'HUD) inietta l'azione "interact" nel normale flusso di input, cosi` il
+## personaggio la riceve in _unhandled_input come dalla tastiera (pulire,
+## sedersi, alzarsi). Input.action_press non basta: aggiorna solo lo stato
+## letto da is_action_pressed e non genera alcun evento.
+func _add_touch_interact_button() -> void:
+	var btn := Button.new()
+	btn.name = "TouchInteractButton"
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.text = tr("UI_TOUCH_INTERACT")
+	btn.add_theme_font_size_override("font_size", 28)
+	btn.custom_minimum_size = Vector2(TOUCH_INTERACT_SIZE, TOUCH_INTERACT_SIZE)
+	btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	btn.offset_left = -TOUCH_INTERACT_SIZE - 20.0
+	btn.offset_right = -20.0
+	btn.offset_top = -TOUCH_INTERACT_SIZE - 64.0  # 20 px sopra l'HUD (44 px)
+	btn.offset_bottom = -64.0
+	btn.pressed.connect(_on_touch_interact_pressed)
+	_ui_layer.add_child(btn)
+
+
+func _on_touch_interact_pressed() -> void:
+	_send_interact_action(true)
+	# Rilascio al frame dopo: is_action_pressed vede un press pulito.
+	_send_interact_action.call_deferred(false)
+
+
+func _send_interact_action(pressed: bool) -> void:
+	var action := InputEventAction.new()
+	action.action = "interact"
+	action.pressed = pressed
+	Input.parse_input_event(action)
+
+
+## F11: finestra <-> schermo intero, persistito in settings ("display_mode",
+## gia` previsto da SaveManager.DEFAULT_SETTINGS e dal DB).
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_fullscreen"):
+		_set_fullscreen(not _is_fullscreen(), true)
+		get_viewport().set_input_as_handled()
+
+
+func _apply_saved_display_mode() -> void:
+	var mode := str(SaveManager.get_setting(DISPLAY_MODE_KEY, "windowed"))
+	_set_fullscreen(mode == "fullscreen", false)
+
+
+func _is_fullscreen() -> bool:
+	var mode := DisplayServer.window_get_mode()
+	return mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+
+
+func _set_fullscreen(enabled: bool, persist: bool) -> void:
+	if enabled != _is_fullscreen():
+		var target := DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED
+		DisplayServer.window_set_mode(target)
+	if persist:
+		SignalBus.settings_updated.emit(DISPLAY_MODE_KEY, "fullscreen" if enabled else "windowed")
+		AppLogger.info("Main", "display_mode_toggled", {"fullscreen": enabled})
 
 
 func _wire_hud_buttons() -> void:
@@ -114,6 +183,11 @@ func _wire_hud_buttons() -> void:
 
 func _on_save_pressed() -> void:
 	SaveManager.save_game()
+	# SM-08: il toast "salvata" solo qui. L'autosave ogni 60 s deve restare
+	# invisibile ("presente, non invadente").
+	if SaveManager.get("_last_save_outcome") == SaveManager.SaveOutcome.COMPLETED:
+		SignalBus.toast_requested.emit(tr("TOAST_SAVED"), "success")
+		AudioManager.play_sfx("save")
 
 
 ## Etichette HUD dal catalogo traduzioni (la scena tiene l'italiano come
@@ -183,7 +257,9 @@ func _check_tutorial() -> void:
 
 
 func _on_menu_pressed() -> void:
-	SignalBus.save_requested.emit()
+	# Salvataggio SINCRONO: il solo dirty flag aspettava l'autosave (60 s) e
+	# "Menu -> Esci" entro quel minuto perdeva tutto (SM-01).
+	SaveManager.save_game()
 	get_tree().change_scene_to_file("res://scenes/menu/main_menu.tscn")
 
 

@@ -65,9 +65,13 @@ func try_auto_login() -> bool:
 
 func play_as_guest() -> void:
 	var account_id := LocalDatabase.upsert_account(Constants.AUTH_GUEST_UID, Constants.AUTH_GUEST_EMAIL, "")
+	if account_id < 0:
+		# DB-09: senza riga ospite badge e coins nel profilo restano muti; va
+		# detto a voce alta invece di dichiarare uno stato GUEST che non esiste.
+		AppLogger.error("AuthManager", "guest_account_unavailable")
+		return
 	var account := LocalDatabase.get_account(account_id)
 	_set_state(AuthState.GUEST, account)
-	SignalBus.account_created.emit(account_id)
 
 
 ## Esito di errore come CHIAVE di traduzione + argomenti di formato, mai come
@@ -88,6 +92,8 @@ func register(username: String, password: String) -> Dictionary:
 	var min_pw := Constants.AUTH_MIN_PASSWORD_LENGTH
 	if password.length() < min_pw:
 		return _error("UI_AUTH_ERR_PASSWORD_TOO_SHORT", [min_pw])
+	if password.length() > Constants.AUTH_MAX_PASSWORD_LENGTH:
+		return _error("UI_AUTH_ERR_PASSWORD_TOO_LONG", [Constants.AUTH_MAX_PASSWORD_LENGTH])
 	var existing := LocalDatabase.get_account_by_username(clean_name)
 	if not existing.is_empty():
 		return _error("UI_AUTH_ERR_USERNAME_TAKEN")
@@ -103,11 +109,15 @@ func register(username: String, password: String) -> Dictionary:
 	# registration is rejected by a lockout the account never earned.
 	_reset_rate_limit(clean_name)
 	_set_state(AuthState.AUTHENTICATED, account)
-	SignalBus.account_created.emit(account_id)
 	return {}
 
 
 func login(username: String, password: String) -> Dictionary:
+	if password.length() > Constants.AUTH_MAX_PASSWORD_LENGTH:
+		# DB-14: la password e` la chiave HMAC di ogni iterazione PBKDF2, il
+		# costo cresce con la lunghezza. Rifiuto immediato, stesso messaggio
+		# delle credenziali sbagliate (nessuna informazione in piu`).
+		return _error("UI_AUTH_ERR_INVALID_CREDENTIALS")
 	var clean_name := username.strip_edges()
 	# Phase E: length bounds only — the charset whitelist is enforced at
 	# registration. Pre-E.3 accounts (spaces, non-ASCII names) predate the
@@ -181,10 +191,14 @@ func login(username: String, password: String) -> Dictionary:
 	# routine, then re-hashed with PBKDF2-HMAC-SHA256 and UPDATEd in the DB.
 	if needs_rehash_to_v4:
 		var new_hash := _hash_password(password)
-		LocalDatabase.update_password_hash(account.get("account_id", -1), new_hash)
-		AppLogger.info(
-			"AuthManager", "hash_migration_applied", {"account_id": account.get("account_id", -1), "to": "v4"}
-		)
+		if LocalDatabase.update_password_hash(account.get("account_id", -1), new_hash):
+			AppLogger.info(
+				"AuthManager", "hash_migration_applied", {"account_id": account.get("account_id", -1), "to": "v4"}
+			)
+		else:
+			# DB-10: un log che afferma la migrazione mentre l'UPDATE e` fallito
+			# nasconde il prossimo login lento sotto lo stesso hash legacy.
+			AppLogger.warn("AuthManager", "hash_migration_failed", {"account_id": account.get("account_id", -1)})
 
 	_reset_rate_limit(clean_name)
 	_set_state(AuthState.AUTHENTICATED, account)
@@ -270,26 +284,16 @@ func delete_character() -> void:
 		return
 	LocalDatabase.delete_character(current_account_id)
 	has_character = false
-	SignalBus.character_deleted.emit()
 
 
 func delete_account() -> void:
 	if current_account_id < 0:
 		return
-	(
-		AppLogger
-		. info(
-			"AuthManager",
-			"Account deleted",
-			{
-				"account_id": current_account_id,
-				"username": current_username,
-			}
-		)
-	)
-	LocalDatabase.soft_delete_account(current_account_id)
+	# Niente username nel log (DB-23) e cancellazione VERA: il soft delete
+	# lasciava auth_uid occupato per sempre e i figli orfani (DB-04/DB-12).
+	AppLogger.info("AuthManager", "Account deleted", {"account_id": current_account_id})
+	LocalDatabase.delete_account(current_account_id)
 	_set_state(AuthState.LOGGED_OUT, {})
-	SignalBus.account_deleted.emit()
 
 
 func sign_out() -> void:

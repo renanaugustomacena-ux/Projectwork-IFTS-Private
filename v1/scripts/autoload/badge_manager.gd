@@ -18,6 +18,13 @@ const TIME_CHECK_INTERVAL: float = 60.0
 const STAT_DECOS := "stat_decos_placed_total"
 const STAT_COINS := "stat_coins_earned_total"
 const STAT_PLAY_TIME := "stat_play_time_total"
+## Badge sbloccati: vivono nel salvataggio PER-SLOT (DB-02: la tabella SQLite
+## e` per-account e una partita nuova nasceva con i badge di quella vecchia).
+## La tabella resta come specchio best-effort per il DB.
+const STAT_BADGES := "stat_badges_unlocked"
+## mood_explorer contava ogni pixel di trascinamento dello slider (DB-17):
+## una sola variazione al secondo conta come "cambio di umore".
+const MOOD_COUNT_MIN_INTERVAL_MSEC := 1000
 
 var _decorations_placed_total: int = 0
 var _coins_earned_total: int = 0
@@ -25,6 +32,8 @@ var _play_time_base_sec: int = 0
 var _mood_changes_counter: int = 0
 var _session_start_ms: int = 0
 var _stormy_mood_reached: bool = false  # flag per badge storm_survivor
+var _unlocked_ids: Array = []
+var _last_mood_count_msec: int = -100000
 
 var _time_timer: Timer
 
@@ -73,6 +82,7 @@ func _load_lifetime_counters() -> void:
 	_decorations_placed_total = int(SaveManager.get_setting(STAT_DECOS, 0))
 	_coins_earned_total = int(SaveManager.get_setting(STAT_COINS, 0))
 	_play_time_base_sec = int(SaveManager.get_setting(STAT_PLAY_TIME, 0))
+	_unlocked_ids = Array(SaveManager.get_setting(STAT_BADGES, [])).duplicate()
 	# The reloaded base already contains the session elapsed so far (the 60 s
 	# timer persists base + session). Without rebasing the session clock here,
 	# every load_completed would add the same elapsed time a second time and
@@ -100,6 +110,7 @@ func _on_profile_reset() -> void:
 	_play_time_base_sec = 0
 	_mood_changes_counter = 0
 	_stormy_mood_reached = false
+	_unlocked_ids = []
 	_session_start_ms = Time.get_ticks_msec()
 
 
@@ -117,7 +128,10 @@ func _on_coins_changed(delta: int, _total: int) -> void:
 
 
 func _on_mood_level_changed(mood: float) -> void:
-	_mood_changes_counter += 1
+	var now := Time.get_ticks_msec()
+	if now - _last_mood_count_msec >= MOOD_COUNT_MIN_INTERVAL_MSEC:
+		_last_mood_count_msec = now
+		_mood_changes_counter += 1
 	if mood < Constants.MOOD_STORMY_THRESHOLD:
 		_stormy_mood_reached = true
 	_check_all_conditions()
@@ -162,16 +176,15 @@ func _check_all_conditions() -> void:
 
 
 func _try_unlock(badge_id: String) -> void:
-	if badge_id.is_empty():
+	if badge_id.is_empty() or badge_id in _unlocked_ids:
 		return
+	_unlocked_ids.append(badge_id)
+	SignalBus.settings_updated.emit(STAT_BADGES, _unlocked_ids.duplicate())
 	var account_id: int = AuthManager.current_account_id
-	if account_id < 0 or not LocalDatabase.is_open():
-		return
-	if LocalDatabase.is_badge_unlocked(account_id, badge_id):
-		return
-	if not LocalDatabase.unlock_badge(account_id, badge_id):
-		return
+	if account_id >= 0 and LocalDatabase.is_open():
+		LocalDatabase.unlock_badge(account_id, badge_id)  # specchio, non autorita`
 	SignalBus.badge_unlocked.emit(badge_id)
+	AudioManager.play_sfx("badge")
 	SignalBus.toast_requested.emit(tr("TOAST_BADGE_UNLOCKED") % _get_badge_name(badge_id), "success")
 	AppLogger.info("BadgeManager", "badge_unlocked", {"badge_id": badge_id, "account_id": account_id})
 
@@ -200,8 +213,9 @@ func _get_counter_for_type(cond_type: String) -> int:
 	return 0
 
 
+## Stesso formato delle righe SQLite ({badge_id}) per i consumatori esistenti.
 func get_unlocked_badges() -> Array:
-	var account_id: int = AuthManager.current_account_id
-	if account_id < 0 or not LocalDatabase.is_open():
-		return []
-	return LocalDatabase.get_unlocked_badges(account_id)
+	var out: Array = []
+	for badge_id in _unlocked_ids:
+		out.append({"badge_id": badge_id})
+	return out

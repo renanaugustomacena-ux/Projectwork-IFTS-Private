@@ -228,6 +228,10 @@ func _try_restore_session() -> void:
 
 
 func _save_session() -> void:
+	# DB-06: senza configurazione cloud non c'e` nessuna sessione da
+	# persistere; prima ogni uscita scriveva un .cfg cifrato vuoto in user://.
+	if not is_configured():
+		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("session", "jwt", _jwt_token)
 	cfg.set_value("session", "refresh_token", _refresh_token)
@@ -656,7 +660,8 @@ func _process_sync_queue() -> void:
 		var payload: Variant = json.data
 		if item.get("operation", "") == "DELETE":
 			var row_id := str(payload.get("id", "")) if payload is Dictionary else ""
-			_dispatch_sync_request("queue", queue_id, "delete", table_name, "id=eq." + row_id, null)
+			# DB-30: id codificato, niente parametri PostgREST iniettati nella query.
+			_dispatch_sync_request("queue", queue_id, "delete", table_name, "id=eq." + row_id.uri_encode(), null)
 		else:
 			_dispatch_sync_request("queue", queue_id, "upsert", table_name, "", payload)
 		dispatched += 1

@@ -78,7 +78,6 @@ func _open_database() -> void:
 				{
 					"path": DB_PATH,
 					"os": OS.get_name(),
-					"user_data_dir": OS.get_user_data_dir(),
 				},
 			)
 		)
@@ -95,7 +94,13 @@ func _open_database() -> void:
 	DBHelpers.execute(_db, "PRAGMA busy_timeout=5000;")
 	var fk_check := DBHelpers.select(_db, "PRAGMA foreign_keys;", [])
 	if fk_check.is_empty() or fk_check[0].get("foreign_keys", 0) != 1:
-		AppLogger.warn("LocalDatabase", "Foreign keys not enabled")
+		# V-062: senza FK ogni ON DELETE CASCADE dello schema smette di
+		# funzionare in silenzio. Fail-closed: meglio nessun mirror che uno
+		# incoerente (modulo 23, valida ai confini).
+		AppLogger.error("LocalDatabase", "foreign_keys_unavailable_db_closed")
+		_db.close_db()
+		_is_open = false
+		return
 
 
 ## C.6 synchronous facade for the dual-write mirror (replaces the old
@@ -174,28 +179,29 @@ func _resolve_save_account_id() -> int:
 
 
 func _apply_save_writes(account_id: int, data: Dictionary) -> bool:
+	# Fail-fast per blocco: `ok and X` non chiama X dopo il primo fallimento.
+	var ok := true
 	if data.has("character") and data["character"] is Dictionary:
-		if not CharactersRepo.upsert_character(_db, account_id, data["character"]):
-			return false
+		ok = ok and CharactersRepo.upsert_character(_db, account_id, data["character"])
 	if data.has("inventory") and data["inventory"] is Dictionary:
-		if not InventoryRepo.save_inventory(_db, account_id, data["inventory"]):
-			return false
-	# B-016 dual-write completo: settings, music_state, room+decorations
+		ok = ok and InventoryRepo.save_inventory(_db, account_id, data["inventory"])
+	# B-016 dual-write completo: settings, music_state, save_metadata, room+decorazioni
 	if data.has("settings") and data["settings"] is Dictionary:
-		if not SettingsRepo.upsert_settings(_db, account_id, data["settings"]):
-			return false
+		ok = ok and SettingsRepo.upsert_settings(_db, account_id, data["settings"])
 	if data.has("music_state") and data["music_state"] is Dictionary:
-		if not SettingsRepo.upsert_music_state(_db, account_id, data["music_state"]):
-			return false
-	if data.has("room") and data["room"] is Dictionary:
+		ok = ok and SettingsRepo.upsert_music_state(_db, account_id, data["music_state"])
+	if data.has("save_metadata") and data["save_metadata"] is Dictionary:
+		ok = ok and SettingsRepo.upsert_save_metadata(_db, account_id, data["save_metadata"])
+	if ok and data.has("room") and data["room"] is Dictionary:
 		# upsert_room richiede character_id (rooms table ha FK su characters)
 		var char_row := CharactersRepo.get_character(_db, account_id)
-		if not char_row.is_empty():
-			var character_id: int = char_row.get("character_id", -1)
-			if character_id >= 0:
-				if not RoomsDecoRepo.upsert_room(_db, character_id, data["room"]):
-					return false
-	return true
+		var character_id: int = int(char_row.get("character_id", -1)) if not char_row.is_empty() else -1
+		if character_id >= 0:
+			ok = RoomsDecoRepo.upsert_room(_db, character_id, data["room"])
+		else:
+			# DB-11: era l'unico ramo che saltava lo specchio senza dirlo.
+			AppLogger.warn("LocalDatabase", "room_mirror_skipped_no_character", {"account_id": account_id})
+	return ok
 
 
 # ==========================================================================

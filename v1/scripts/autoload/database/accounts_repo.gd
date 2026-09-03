@@ -59,7 +59,11 @@ static func get_account_by_username(db: SQLite, username: String) -> Dictionary:
 		DBHelpers
 		. select(
 			db,
-			"SELECT * FROM accounts" + " WHERE display_name = ? AND auth_uid != ?" + " AND deleted_at IS NULL;",
+			(
+				"SELECT * FROM accounts"
+				+ " WHERE display_name = ? COLLATE NOCASE AND auth_uid != ?"
+				+ " AND deleted_at IS NULL;"
+			),
 			[username, Constants.AUTH_GUEST_UID],
 		)
 	)
@@ -149,7 +153,7 @@ static func get_rate_limit(db: SQLite, username: String) -> Dictionary:
 			db,
 			(
 				"SELECT failed_attempts, lockout_until_unix FROM accounts"
-				+ " WHERE display_name = ? AND auth_uid != ? AND deleted_at IS NULL;"
+				+ " WHERE display_name = ? COLLATE NOCASE AND auth_uid != ? AND deleted_at IS NULL;"
 			),
 			[username, Constants.AUTH_GUEST_UID],
 		)
@@ -171,7 +175,7 @@ static func set_rate_limit(db: SQLite, username: String, attempts: int, lockout_
 			db,
 			(
 				"UPDATE accounts SET failed_attempts = ?, lockout_until_unix = ?"
-				+ " WHERE display_name = ? AND auth_uid != ? AND deleted_at IS NULL;"
+				+ " WHERE display_name = ? COLLATE NOCASE AND auth_uid != ? AND deleted_at IS NULL;"
 			),
 			[attempts, lockout_until_unix, username, Constants.AUTH_GUEST_UID],
 		)

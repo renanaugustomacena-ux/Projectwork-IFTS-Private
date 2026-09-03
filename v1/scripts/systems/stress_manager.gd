@@ -131,7 +131,6 @@ func _notify_change() -> void:
 	SignalBus.stress_changed.emit(stress_value, current_level)
 
 	if level_changed:
-		SignalBus.stress_threshold_crossed.emit(current_level)
 		if current_level != current_mood:
 			current_mood = current_level
 			SignalBus.mood_changed.emit(current_mood)
