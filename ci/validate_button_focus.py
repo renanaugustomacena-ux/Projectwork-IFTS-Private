@@ -21,7 +21,8 @@ import sys
 from pathlib import Path
 
 BUTTON_NEW_RE = re.compile(
-    r"^\s*(?:var\s+)?(\w+)\s*(?::\s*\w+)?\s*:?=\s*Button\.new\(\)"
+    r"^\s*(?:var\s+)?(\w+)\s*(?::\s*\w+)?\s*:?=\s*"
+    r"(?:(?:Option|Check|Texture|Link|Menu)?Button|[HV]Slider|ProgressBar)\.new\(\)"
 )
 FOCUS_MODE_RE = re.compile(r"\.focus_mode\s*=")
 LOOKAHEAD = 12  # lines

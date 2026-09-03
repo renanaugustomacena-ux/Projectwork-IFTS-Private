@@ -2,8 +2,15 @@
 ## Items are organized by category. Drag an item from the panel to the room to place it.
 extends PanelContainer
 
+## Ultima categoria aperta dal giocatore. Statica: sopravvive alla ricostruzione
+## del pannello (cambio stanza, rientro in scena) e viene riaperta in _populate_catalog.
+static var _last_open_category: String = ""
+
 var _vbox: VBoxContainer
 var _mode_button: Button
+## cat_id -> {"header": Button, "grid": GridContainer, "name": String,
+## "items": Array[Dictionary], "built": bool}. La griglia viene popolata solo
+## alla prima apertura (costruzione pigra: niente 129 load() a ogni _ready).
 var _category_containers: Dictionary = {}
 
 
@@ -31,6 +38,16 @@ func _build_ui() -> void:
 	title.text = tr("UI_DECO_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer_vbox.add_child(title)
+
+	# Suggerimento snap a griglia (Shift tenuto durante il drag): prima
+	# nessuna stringa lo diceva al giocatore.
+	var hint := Label.new()
+	hint.text = tr("UI_DECO_GRID_HINT")
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 11)
+	hint.modulate.a = 0.7
+	outer_vbox.add_child(hint)
 
 	# Mode toggle button
 	_mode_button = Button.new()
@@ -72,13 +89,23 @@ func _populate_catalog() -> void:
 		_vbox.add_child(empty)
 		return
 
+	# Raggruppa una volta sola per categoria (evita 13 scansioni delle 129 voci).
+	var items_by_category: Dictionary = {}
+	for item_data in items:
+		if item_data is not Dictionary:
+			continue
+		var item_cat: String = item_data.get("category", "")
+		if item_cat not in items_by_category:
+			items_by_category[item_cat] = []
+		items_by_category[item_cat].append(item_data)
+
 	for cat_data in categories:
 		if cat_data is not Dictionary:
 			continue
 		if cat_data.get("hidden", false):
 			continue
 		var cat_id: String = cat_data.get("id", "")
-		var cat_name: String = cat_data.get("name", cat_id)
+		var cat_name: String = Helpers.locale_label(cat_data)
 
 		# Category header button
 		var header := Button.new()
@@ -90,33 +117,60 @@ func _populate_catalog() -> void:
 		header.pressed.connect(_on_category_toggled.bind(cat_id))
 		_vbox.add_child(header)
 
-		# Grid for items in this category
+		# Grid for items in this category (empty until first opened)
 		var grid := GridContainer.new()
 		grid.columns = 3
 		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_theme_constant_override("h_separation", 4)
 		grid.add_theme_constant_override("v_separation", 4)
+		grid.visible = false
 		_vbox.add_child(grid)
 
-		grid.visible = false
-		_category_containers[cat_id] = {"header": header, "grid": grid}
+		# Stili raggruppati: prima per art_set, poi per nome inglese (ordine
+		# naturale, cosi` "Plant 2" precede "Plant 10").
+		var cat_items: Array = items_by_category.get(cat_id, [])
+		cat_items.sort_custom(_compare_items)
 
-		# Add drag-enabled buttons for items in this category
-		for item_data in items:
-			if item_data is not Dictionary:
-				continue
-			if item_data.get("category", "") != cat_id:
-				continue
+		_category_containers[cat_id] = {
+			"header": header,
+			"grid": grid,
+			"name": cat_name,
+			"items": cat_items,
+			"built": false,
+		}
 
-			var item_id: String = item_data.get("id", "")
-			var item_name: String = item_data.get("name", item_id)
-			var sprite_path: String = item_data.get("sprite_path", "")
-			var item_scale: float = item_data.get("item_scale", 1.0)
-			var placement_type: String = Helpers.placement_type_of(item_data)
+	# Riapre la categoria dove il giocatore era rimasto.
+	if _last_open_category in _category_containers:
+		_on_category_toggled(_last_open_category)
 
-			var drag_btn := _create_drag_button(item_id, item_name, sprite_path, item_scale, placement_type)
-			if drag_btn:
-				grid.add_child(drag_btn)
+
+## Ordinamento voci in una categoria: art_set, poi name_en (fallback name).
+static func _compare_items(a: Dictionary, b: Dictionary) -> bool:
+	var set_a: String = str(a.get("art_set", ""))
+	var set_b: String = str(b.get("art_set", ""))
+	if set_a != set_b:
+		return set_a < set_b
+	var name_a: String = str(a.get("name_en", a.get("name", "")))
+	var name_b: String = str(b.get("name_en", b.get("name", "")))
+	return name_a.naturalnocasecmp_to(name_b) < 0
+
+
+## Costruisce i DecoButton di una categoria. Chiamata una sola volta, alla
+## prima apertura: i load() delle texture avvengono solo per le griglie
+## effettivamente guardate dal giocatore.
+func _build_category_grid(data: Dictionary) -> void:
+	var grid: GridContainer = data["grid"]
+	for item_data in data["items"]:
+		var item_id: String = item_data.get("id", "")
+		var item_name: String = Helpers.locale_label(item_data)
+		var sprite_path: String = item_data.get("sprite_path", "")
+		var item_scale: float = item_data.get("item_scale", 1.0)
+		var placement_type: String = Helpers.placement_type_of(item_data)
+
+		var drag_btn := _create_drag_button(item_id, item_name, sprite_path, item_scale, placement_type)
+		if drag_btn:
+			grid.add_child(drag_btn)
+	data["built"] = true
 
 
 func _create_drag_button(
@@ -160,12 +214,18 @@ func _on_category_toggled(cat_id: String) -> void:
 	var data: Dictionary = _category_containers[cat_id]
 	var grid: GridContainer = data["grid"]
 	var header: Button = data["header"]
-	grid.visible = not grid.visible
-	var cat_name := header.text.substr(2)
-	if grid.visible:
+	var opening: bool = not grid.visible
+	if opening and not data["built"]:
+		_build_category_grid(data)
+	grid.visible = opening
+	var cat_name: String = data["name"]
+	if opening:
 		header.text = "- %s" % cat_name
+		_last_open_category = cat_id
 	else:
 		header.text = "+ %s" % cat_name
+		if _last_open_category == cat_id:
+			_last_open_category = ""
 
 
 func _on_mode_toggled() -> void:

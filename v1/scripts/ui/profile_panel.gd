@@ -2,12 +2,16 @@
 ## Built programmatically following the settings_panel.gd pattern.
 extends PanelContainer
 
+## Chiede al PanelManager di chiudere questo pannello (bottone Chiudi).
+signal close_requested
+
 var _account_type_label: Label
 var _email_label: Label
 var _coins_label: Label
 var _delete_char_btn: Button
 var _delete_account_btn: Button
 var _confirm_dialog: ConfirmationDialog
+var _close_btn: Button = null
 
 
 func _ready() -> void:
@@ -34,11 +38,7 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 8)
 	margin.add_child(vbox)
 
-	# Title
-	var title := Label.new()
-	title.text = tr("UI_PROFILE_TITLE")
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	_build_header(vbox)
 
 	# Account info section
 	var info_label := Label.new()
@@ -109,7 +109,10 @@ func _build_ui() -> void:
 	# Logout
 	var logout_btn := Button.new()
 	logout_btn.focus_mode = Control.FOCUS_NONE
-	logout_btn.text = tr("UI_PROFILE_LOGOUT")
+	# Per l'ospite il pulsante e` la porta d'ingresso a login/registrazione:
+	# la schermata auth non compare mai da sola al primo avvio (PT-01).
+	var is_guest := AuthManager.auth_state == AuthManager.AuthState.GUEST
+	logout_btn.text = tr("UI_PROFILE_LOGIN") if is_guest else tr("UI_PROFILE_LOGOUT")
 	logout_btn.custom_minimum_size = Vector2(0, 32)
 	logout_btn.pressed.connect(_on_logout_pressed)
 	vbox.add_child(logout_btn)
@@ -118,6 +121,32 @@ func _build_ui() -> void:
 	_confirm_dialog = ConfirmationDialog.new()
 	_confirm_dialog.min_size = Vector2(300, 100)
 	add_child(_confirm_dialog)
+
+
+## Riga di testa: titolo + Chiudi (stesso schema di settings_panel.gd):
+## close_requested viene collegato da PanelManager a close_current_panel.
+func _build_header(parent: VBoxContainer) -> void:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	parent.add_child(header)
+
+	var title := Label.new()
+	title.text = tr("UI_PROFILE_TITLE")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+
+	_close_btn = Button.new()
+	_close_btn.focus_mode = Control.FOCUS_NONE
+	_close_btn.text = tr("UI_CLOSE")
+	_close_btn.flat = true
+	_close_btn.add_theme_font_size_override("font_size", 11)
+	_close_btn.pressed.connect(_on_close_pressed)
+	header.add_child(_close_btn)
+
+
+func _on_close_pressed() -> void:
+	close_requested.emit()
 
 
 func _create_info_row(parent: VBoxContainer, label_text: String) -> Label:
@@ -153,8 +182,9 @@ func _update_info() -> void:
 		_account_type_label.text = tr("UI_PROFILE_LOGGED_OUT")
 		_email_label.text = "—"
 
-	var coins := LocalDatabase.get_coins(AuthManager.current_account_id)
-	_coins_label.text = str(coins)
+	# Il JSON per-slot e` la verita` (DB-01/PT-52): il DB conosce solo lo
+	# slot che ha salvato per ultimo, e per un account nuovo direbbe 0.
+	_coins_label.text = str(int(SaveManager.inventory_data.get("coins", 0)))
 
 	_delete_char_btn.disabled = not AuthManager.has_character
 
@@ -181,13 +211,18 @@ func _confirm_action(title_key: String, body_key: String, callback: Callable) ->
 func _on_delete_character_confirmed() -> void:
 	AuthManager.delete_character()
 	SaveManager.reset_character_data()
-	_update_info()
 	AppLogger.info("ProfilePanel", "Character deleted")
+	# PT-54: la RAM e` vuota ma la scena mostrava ancora i vecchi mobili, che
+	# venivano poi salvati... nel nulla. Persisti e ricostruisci la stanza.
+	SaveManager.save_game()
+	get_tree().call_deferred("reload_current_scene")
 
 
 func _on_delete_account_confirmed() -> void:
-	AuthManager.delete_account()
+	# PT-53: il testo promette "tutti i dati": tutti i 10 slot + la riga account.
+	SaveManager.delete_all_slots()
 	SaveManager.reset_all()
+	AuthManager.delete_account()
 	AppLogger.info("ProfilePanel", "Account deleted")
 	get_tree().change_scene_to_file("res://scenes/menu/main_menu.tscn")
 
@@ -212,6 +247,8 @@ func _exit_tree() -> void:
 		SignalBus.auth_state_changed.disconnect(_on_auth_state_changed)
 	if SignalBus.coins_changed.is_connected(_on_coins_changed):
 		SignalBus.coins_changed.disconnect(_on_coins_changed)
+	if _close_btn and _close_btn.pressed.is_connected(_on_close_pressed):
+		_close_btn.pressed.disconnect(_on_close_pressed)
 	# I pressed callback dei 3 Button (delete_char, delete_account, logout)
 	# vengono automaticamente puliti quando il panel e` queue_free: i button
 	# sono children di questo PanelContainer, distrutti con esso.

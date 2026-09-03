@@ -60,7 +60,13 @@ func open_panel(panel_name: String) -> void:
 	_current_panel_name = panel_name
 	_current_panel.modulate.a = 0.0
 	_ui_layer.add_child(_current_panel)
-	_grab_focus_recursive(_current_panel)
+	# Il bottone Chiudi in testa al pannello chiede la chiusura al manager
+	# con un segnale locale: il pannello non sa chi lo gestisce (menu o
+	# gioco). La connessione muore col pannello, che viene liberato qui.
+	if _current_panel.has_signal("close_requested"):
+		_current_panel.connect("close_requested", close_current_panel)
+	# Nessun grab di focus automatico (UI-02/03/07): il primo controllo
+	# focusabile riceveva Invio/Spazio/frecce a sorpresa (acquisti, volumi).
 
 	# Fade in
 	if _tween and _tween.is_running():
@@ -70,17 +76,8 @@ func open_panel(panel_name: String) -> void:
 	_tween.tween_property(_current_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
 
 	SignalBus.panel_opened.emit(panel_name)
+	AudioManager.play_sfx("ui_open")
 	AppLogger.info("PanelManager", "Panel opened", {"name": panel_name})
-
-
-func _grab_focus_recursive(node: Node) -> bool:
-	if node is Control and node.focus_mode != Control.FOCUS_NONE and node.visible:
-		node.grab_focus()
-		return true
-	for child in node.get_children():
-		if _grab_focus_recursive(child):
-			return true
-	return false
 
 
 func close_current_panel() -> void:
@@ -120,6 +117,7 @@ func close_current_panel() -> void:
 	_current_panel = null
 	_current_panel_name = ""
 	SignalBus.panel_closed.emit(closing_name)
+	AudioManager.play_sfx("ui_close")
 
 	# Panel-owned tween: killing the shared open-fade tween (_tween) can
 	# never cancel this pending queue_free.
@@ -172,6 +170,7 @@ func _close_immediate() -> void:
 	_current_panel = null
 	_current_panel_name = ""
 	SignalBus.panel_closed.emit(closing_name)
+	AudioManager.play_sfx("ui_close")
 
 
 func _load_panel_scene(panel_name: String) -> PackedScene:
@@ -197,6 +196,10 @@ func _exit_tree() -> void:
 	if _tween and _tween.is_running():
 		_tween.kill()
 	if _current_panel and is_instance_valid(_current_panel):
+		# La scena muore col pannello aperto (Menu dal gioco, Nuova Partita
+		# dal menu): senza panel_closed GameManager.is_ui_panel_open()
+		# resterebbe true nella scena successiva e bloccherebbe WASD ed E.
+		SignalBus.panel_closed.emit(_current_panel_name)
 		_current_panel.queue_free()
 	# A panel still mid-fade must not outlive the manager: freeing it also
 	# kills its close tween, whose callback targets this (dying) node.

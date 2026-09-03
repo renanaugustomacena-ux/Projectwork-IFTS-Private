@@ -11,6 +11,8 @@ signal slot_load_requested(slot: int)
 signal slot_new_requested(slot: int)
 signal closed
 
+const CONFIRM_TIMEOUT_SEC := 4.0
+
 var _rows: VBoxContainer = null
 var _confirm_slot: int = -1
 
@@ -110,13 +112,29 @@ func _build_row(slot: int) -> Control:
 	return row
 
 
+## ESC chiude la schermata come ogni altro pannello (UI-24).
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		closed.emit()
+
+
 ## Doppio tap di conferma: il primo click arma, il secondo cancella davvero.
+## La conferma si disarma da sola dopo pochi secondi (PT-50: un "Sicuro?"
+## dimenticato restava un click dalla cancellazione irreversibile).
 func _on_delete_pressed(slot: int) -> void:
 	if _confirm_slot != slot:
 		_confirm_slot = slot
 		_rebuild()
+		get_tree().create_timer(CONFIRM_TIMEOUT_SEC).timeout.connect(_disarm_confirm.bind(slot))
 		return
 	_confirm_slot = -1
 	SaveManager.delete_slot_files(slot)
 	SaveManager.reset_after_slot_delete(slot)
 	_rebuild()
+
+
+func _disarm_confirm(slot: int) -> void:
+	if _confirm_slot == slot and is_inside_tree():
+		_confirm_slot = -1
+		_rebuild()

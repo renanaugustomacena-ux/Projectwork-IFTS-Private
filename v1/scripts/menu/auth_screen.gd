@@ -3,6 +3,9 @@ extends Control
 
 signal auth_completed
 
+const ERROR_COLOR := Color(0.9, 0.3, 0.3)
+const WORKING_COLOR := Color(0.85, 0.8, 0.7)
+
 var _username_input: LineEdit = null
 var _password_input: LineEdit = null
 var _confirm_input: LineEdit = null
@@ -11,6 +14,9 @@ var _login_form: VBoxContainer = null
 var _register_form: VBoxContainer = null
 var _finish_tween: Tween = null
 var _finishing: bool = false
+# Bottoni del form, disabilitati mentre gira PBKDF2 (login/registrazione).
+var _form_buttons: Array[Button] = []
+var _busy: bool = false
 
 
 func _ready() -> void:
@@ -62,7 +68,7 @@ func _build_ui() -> void:
 	_error_label = Label.new()
 	_error_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_error_label.add_theme_font_size_override("font_size", 11)
-	_error_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+	_error_label.add_theme_color_override("font_color", ERROR_COLOR)
 	_error_label.visible = false
 	_error_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(_error_label)
@@ -91,6 +97,7 @@ func _build_ui() -> void:
 	guest_btn.custom_minimum_size = Vector2(0, 40)
 	guest_btn.pressed.connect(_on_guest_pressed)
 	vbox.add_child(guest_btn)
+	_form_buttons.append(guest_btn)
 
 
 func _build_login_form(container: VBoxContainer) -> void:
@@ -112,6 +119,7 @@ func _build_login_form(container: VBoxContainer) -> void:
 	login_btn.custom_minimum_size = Vector2(0, 42)
 	login_btn.pressed.connect(_on_login_pressed)
 	container.add_child(login_btn)
+	_form_buttons.append(login_btn)
 
 	var switch_btn := Button.new()
 	switch_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
@@ -120,6 +128,7 @@ func _build_login_form(container: VBoxContainer) -> void:
 	switch_btn.add_theme_font_size_override("font_size", 11)
 	switch_btn.pressed.connect(_show_register)
 	container.add_child(switch_btn)
+	_form_buttons.append(switch_btn)
 
 
 func _build_register_form(container: VBoxContainer) -> void:
@@ -149,6 +158,7 @@ func _build_register_form(container: VBoxContainer) -> void:
 	reg_btn.custom_minimum_size = Vector2(0, 42)
 	reg_btn.pressed.connect(_on_register_pressed)
 	container.add_child(reg_btn)
+	_form_buttons.append(reg_btn)
 
 	var switch_btn := Button.new()
 	switch_btn.focus_mode = Control.FOCUS_ALL  # form keyboard nav
@@ -157,6 +167,7 @@ func _build_register_form(container: VBoxContainer) -> void:
 	switch_btn.add_theme_font_size_override("font_size", 11)
 	switch_btn.pressed.connect(_show_login)
 	container.add_child(switch_btn)
+	_form_buttons.append(switch_btn)
 
 
 func _show_register() -> void:
@@ -172,12 +183,19 @@ func _show_login() -> void:
 
 
 func _on_login_pressed() -> void:
+	if _busy:
+		return
 	var username := _username_input.text.strip_edges()
 	var password := _password_input.text
 	if username.is_empty() or password.is_empty():
 		_show_error(tr("UI_AUTH_ERR_EMPTY_LOGIN"))
 		return
+	_set_busy(true)
+	# PBKDF2 (100k iterazioni) e` sincrono: senza un frame di respiro il
+	# "Un momento..." e i bottoni disabilitati non vengono mai disegnati.
+	await get_tree().process_frame
 	var result := AuthManager.login(username, password)
+	_set_busy(false)
 	if result.has("error"):
 		_show_error_result(result)
 		return
@@ -185,6 +203,8 @@ func _on_login_pressed() -> void:
 
 
 func _on_register_pressed() -> void:
+	if _busy:
+		return
 	var reg_user := _register_form.get_node_or_null("RegUsername") as LineEdit
 	var reg_pass := _register_form.get_node_or_null("RegPassword") as LineEdit
 	if reg_user == null or reg_pass == null:
@@ -199,7 +219,10 @@ func _on_register_pressed() -> void:
 	if password != confirm:
 		_show_error(tr("UI_AUTH_ERR_PASSWORD_MISMATCH"))
 		return
+	_set_busy(true)
+	await get_tree().process_frame
 	var result := AuthManager.register(username, password)
+	_set_busy(false)
 	if result.has("error"):
 		_show_error_result(result)
 		return
@@ -223,6 +246,18 @@ func _show_error_result(result: Dictionary) -> void:
 	if not args.is_empty() and text.contains("%"):
 		text = text % args
 	_show_error(text)
+
+
+## Blocca il form durante l'hashing: un doppio click su Registrati creava
+## due account, e la UI congelata senza messaggio sembrava un crash.
+func _set_busy(busy: bool) -> void:
+	_busy = busy
+	for button: Button in _form_buttons:
+		if is_instance_valid(button):
+			button.disabled = busy
+	_error_label.add_theme_color_override("font_color", WORKING_COLOR if busy else ERROR_COLOR)
+	_error_label.text = tr("UI_AUTH_WORKING") if busy else ""
+	_error_label.visible = busy
 
 
 func _show_error(msg: String) -> void:

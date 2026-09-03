@@ -76,8 +76,15 @@ func _build_interact_prompt() -> void:
 	add_child(_interact_prompt)
 
 
-func _on_interaction_available(_item_id: String, _itype: String) -> void:
+func _on_interaction_available(_item_id: String, itype: String) -> void:
 	_interactables_nearby += 1
+	match itype:
+		"sit":
+			_interact_prompt.text = tr("UI_PROMPT_SIT")
+		"clean":
+			_interact_prompt.text = tr("UI_PROMPT_CLEAN")
+		_:
+			_interact_prompt.text = tr("UI_PROMPT_INTERACT")
 	_interact_prompt.visible = true
 
 
@@ -155,7 +162,7 @@ func _build_ui() -> void:
 	_mood_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
 	serenity_block.add_child(_mood_label)
 
-	# --- Achievement points block (NON e` denaro, non c'e` shop) ---
+	# --- Monete: la valuta del negozio (fase 1 v1.2) ---
 	var points_block := HBoxContainer.new()
 	points_block.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	points_block.add_theme_constant_override("separation", 6)

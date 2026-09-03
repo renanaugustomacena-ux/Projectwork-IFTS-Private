@@ -1,5 +1,6 @@
 [gd_resource type="Theme" format=3 uid="uid://c33lri4rnp82y"]
 
+[ext_resource type="FontFile" uid="uid://bpxop8regular01" path="res://assets/ui/fonts/PixelOperator8.ttf" id="11_font_px"]
 [ext_resource type="Texture2D" uid="uid://cmkexh27ie8jf" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/brown.png" id="1_brown"]
 [ext_resource type="Texture2D" uid="uid://bvrf3shjf1ex5" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/brown_inlay.png" id="2_brown_inlay"]
 [ext_resource type="Texture2D" uid="uid://dt3unbd4rcrwc" path="res://assets/ui/kenney_pixel-ui-pack/9-Slice/Ancient/tan.png" id="3_tan"]
@@ -240,7 +241,11 @@ texture_margin_bottom = 4.0
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
 
+[sub_resource type="StyleBoxEmpty" id="check_empty"]
+
 [resource]
+default_font = ExtResource("11_font_px")
+default_font_size = 16
 Button/colors/font_color = Color(0.95, 0.9, 0.8, 1)
 Button/colors/font_disabled_color = Color(0.5, 0.48, 0.45, 0.7)
 Button/colors/font_focus_color = Color(1, 0.98, 0.9, 1)
@@ -254,6 +259,12 @@ Button/styles/normal = SubResource("btn_normal")
 Button/styles/pressed = SubResource("btn_pressed")
 CheckButton/colors/font_color = Color(0.95, 0.9, 0.8, 1)
 CheckButton/colors/font_hover_color = Color(1, 0.98, 0.9, 1)
+CheckButton/styles/disabled = SubResource("check_empty")
+CheckButton/styles/focus = SubResource("check_empty")
+CheckButton/styles/hover = SubResource("check_empty")
+CheckButton/styles/hover_pressed = SubResource("check_empty")
+CheckButton/styles/normal = SubResource("check_empty")
+CheckButton/styles/pressed = SubResource("check_empty")
 HSeparator/styles/separator = SubResource("separator_style")
 HSlider/styles/grabber_area = SubResource("slider_grabber")
 HSlider/styles/grabber_area_highlight = SubResource("slider_grabber")

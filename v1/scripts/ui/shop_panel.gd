@@ -69,6 +69,13 @@ func _rebuild() -> void:
 	for child in _list.get_children():
 		child.queue_free()
 	_coins_label.text = "★ %d" % int(SaveManager.inventory_data.get("coins", 0))
+	# Il moltiplicatore in vigore (miglior attrezzo posseduto), altrimenti
+	# dopo l'acquisto sparisce ogni traccia dell'effetto (PT-33).
+	var speed := Label.new()
+	speed.add_theme_font_size_override("font_size", 11)
+	speed.modulate = Color(1, 1, 1, 0.75)
+	speed.text = tr("UI_SHOP_SPEED_NOW") % GameManager.best_tool_multiplier()
+	_list.add_child(speed)
 	for section: String in SECTION_KEYS:
 		var entries: Array = GameManager.get_shop_section(section)
 		if entries.is_empty():
@@ -112,11 +119,12 @@ func _subtitle_for(section: String, entry: Dictionary) -> String:
 	var qty := SaveManager.get_item_qty(str(entry.get("id", "")))
 	match section:
 		"food_player":
-			return "-%d stress · x%d" % [int(entry.get("stress_relief", 0)), qty]
+			return tr("UI_SHOP_FOOD_SUB") % [int(entry.get("stress_relief", 0)), qty]
 		"food_cat":
 			return "x%d" % qty
 		"tools":
-			return "x%.1f" % float(entry.get("speed_multiplier", 1.0))
+			# PT-33: "x4.0" nudo non diceva cosa fa l'attrezzo.
+			return tr("UI_SHOP_TOOL_SUB") % float(entry.get("speed_multiplier", 1.0))
 	return ""
 
 
@@ -128,26 +136,31 @@ func _action_buttons(section: String, entry: Dictionary) -> Array[Button]:
 	var owned_tool := section == "tools" and qty > 0
 
 	var buy := Button.new()
-	buy.focus_mode = Control.FOCUS_ALL
+	buy.focus_mode = Control.FOCUS_NONE  # UI-02: Spazio comprava il primo articolo
 	buy.custom_minimum_size = Vector2(72, 30)
 	if owned_tool:
 		buy.text = tr("UI_SHOP_OWNED")
 		buy.disabled = true
 	else:
 		buy.text = "%s %d" % [tr("UI_SHOP_BUY"), price]
+		# PT-35: grigio se non bastano le monete, invece del rifiuto dopo il click.
+		buy.disabled = int(SaveManager.inventory_data.get("coins", 0)) < price
 		buy.pressed.connect(_on_buy_pressed.bind(item_id))
 	out.append(buy)
 
 	if section == "food_player" and qty > 0:
 		var eat := Button.new()
-		eat.focus_mode = Control.FOCUS_ALL
+		eat.focus_mode = Control.FOCUS_NONE
 		eat.custom_minimum_size = Vector2(72, 30)
 		eat.text = tr("UI_SHOP_EAT")
+		# PT-34: a stress zero il cibo non fa nulla, ma veniva consumato lo stesso.
+		eat.disabled = StressManager.get_stress_value() <= 0.01
+		eat.tooltip_text = tr("UI_SHOP_EAT_FULL_TIP") if eat.disabled else ""
 		eat.pressed.connect(_on_eat_pressed.bind(item_id))
 		out.append(eat)
 	elif section == "food_cat" and qty > 0:
 		var feed := Button.new()
-		feed.focus_mode = Control.FOCUS_ALL
+		feed.focus_mode = Control.FOCUS_NONE
 		feed.custom_minimum_size = Vector2(72, 30)
 		feed.text = tr("UI_SHOP_FEED")
 		feed.disabled = not get_tree().get_nodes_in_group("pet_bowl").is_empty()
@@ -167,6 +180,7 @@ func _on_eat_pressed(item_id: String) -> void:
 		return
 	var relief := float(entry.get("stress_relief", 0)) / 100.0
 	StressManager.apply_delta(-relief)
+	AudioManager.play_sfx("drink" if item_id == "tea" else "eat")
 	SignalBus.player_ate.emit(item_id, relief)
 	SignalBus.toast_requested.emit(tr("TOAST_ATE") % Helpers.locale_label(entry), "info")
 	SignalBus.save_requested.emit()

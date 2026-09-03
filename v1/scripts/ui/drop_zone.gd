@@ -13,6 +13,8 @@ extends Control
 const FLOOR_DROP_SLACK := 120.0
 const WALL_DROP_SLACK := 90.0
 
+var _last_hint_msec: int = -100000
+
 
 func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 	if not _is_valid_drop(data):
@@ -21,8 +23,20 @@ func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
 	var placement_type := Helpers.placement_type_of(data)
 	if not _is_zone_valid(at_position, placement_type, data):
 		AppLogger.info("DropZone", "can_drop_zone_invalid", {"pos": at_position, "placement_type": placement_type})
+		_hint_invalid_zone(placement_type)
 		return false
 	return true
+
+
+## Un toast al massimo ogni 2 s durante il trascinamento: prima l'unico
+## segnale era il cursore "vietato" e il rilascio spariva nel nulla (PT-11).
+func _hint_invalid_zone(placement_type: String) -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_hint_msec < 2000:
+		return
+	_last_hint_msec = now
+	var key := "TOAST_DROP_INVALID_WALL" if placement_type == "wall" else "TOAST_DROP_INVALID_FLOOR"
+	SignalBus.toast_requested.emit(tr(key), "warning")
 
 
 func _is_valid_drop(data: Variant) -> bool:

@@ -3,6 +3,7 @@
 extends Node
 
 const AmbienceControllerScript := preload("res://scripts/systems/ambience_controller.gd")
+const SfxControllerScript := preload("res://scripts/systems/sfx_controller.gd")
 
 const VOLUME_DB_FLOOR := -80.0
 const MAX_AUDIO_FILE_SIZE := 52_428_800  # 50 MB limit for external audio imports
@@ -22,6 +23,9 @@ var playlist_mode: String = Constants.DEFAULT_PLAYLIST_MODE:  # "sequential", "s
 var master_volume: float = 0.8
 var music_volume: float = 0.6
 var ambience_volume: float = 0.4
+## Effetti sonori (v1.3): vedi systems/sfx_controller.gd. Il volume era gia`
+## persistito (sfx_volume) ma non pilotava nulla.
+var sfx: Node = null  # SfxControllerScript instance
 # Stato mood per il crossfade dinamico pilotato da StressManager
 var current_mood: String = "calm"
 
@@ -56,9 +60,9 @@ func _ready() -> void:
 	add_child(_ambience)
 
 	SignalBus.volume_changed.connect(_on_volume_changed)
-	SignalBus.ambience_toggled.connect(_on_ambience_toggled)
 	SignalBus.load_completed.connect(_on_load_completed)
-	SignalBus.mood_changed.connect(_on_mood_changed)
+	# GP-04: la musica segue SOLO il cursore atmosfera (apply_mood_scalar), non
+	# il mood_changed dello StressManager (vocabolario diverso, si sovrascrivevano).
 	# G-054: release streams during teardown so the AudioServer drops its
 	# active AudioStreamPlayback before the ObjectDB exit-leak check.
 	# tree_exiting is a Node signal (SceneTree has none): connect this
@@ -70,6 +74,15 @@ func _ready() -> void:
 		_mood_rng.seed = Constants.DEBUG_RNG_SEED
 	else:
 		_mood_rng.randomize()
+	# SM-03: i volumi salvati valgono anche nel menu, dove load_completed non
+	# arriva mai (i settings sono gia` bootstrappati da GameManager).
+	master_volume = float(SaveManager.get_setting("master_volume", master_volume))
+	music_volume = float(SaveManager.get_setting("music_volume", music_volume))
+	ambience_volume = float(SaveManager.get_setting("ambience_volume", ambience_volume))
+	sfx = SfxControllerScript.new()
+	sfx.name = "SfxController"
+	sfx.setup(func() -> float: return master_volume, float(SaveManager.get_setting("sfx_volume", 0.8)))
+	add_child(sfx)
 	_load_tracks()
 	call_deferred("_auto_start_music")
 
@@ -121,6 +134,7 @@ func _on_load_completed() -> void:
 	master_volume = SaveManager.get_setting("master_volume", 0.8)
 	music_volume = SaveManager.get_setting("music_volume", 0.6)
 	ambience_volume = SaveManager.get_setting("ambience_volume", 0.4)
+	sfx.set_volume(float(SaveManager.get_setting("sfx_volume", 0.8)))
 
 	_apply_music_volume()
 
@@ -153,7 +167,6 @@ func play() -> void:
 
 	_crossfade_to(stream)
 	is_playing = true
-	SignalBus.track_changed.emit(current_track_index)
 	SignalBus.track_play_pause_toggled.emit(true)
 
 
@@ -250,7 +263,6 @@ func _on_mood_changed(mood: String) -> void:
 	current_track_index = choice
 	is_playing = true
 	_crossfade_to(stream)
-	SignalBus.track_changed.emit(current_track_index)
 	_sync_music_state()
 
 
@@ -310,6 +322,8 @@ func _crossfade_to(stream: AudioStream) -> void:
 	if _active_player.playing:
 		var old_player := _active_player
 		_crossfade_tween = create_tween()
+		# P2: curva sinusoidale in/out per entrambi i volumi (lineare in dB = salto secco).
+		_crossfade_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_crossfade_tween.set_parallel(true)
 		_crossfade_tween.tween_property(old_player, "volume_db", VOLUME_DB_FLOOR, Constants.CROSSFADE_DURATION)
 		_crossfade_tween.tween_property(next_player, "volume_db", target_db, Constants.CROSSFADE_DURATION)
@@ -326,16 +340,6 @@ func _on_track_finished(player: AudioStreamPlayer) -> void:
 	# During crossfade, the old player's stop() fires finished — ignore it.
 	if player == _active_player:
 		next_track()
-
-
-func _on_ambience_toggled(ambience_id: String, is_active: bool) -> void:
-	if _ambience == null:
-		return
-	if is_active:
-		_ambience.start(ambience_id)
-	else:
-		_ambience.stop(ambience_id)
-	_sync_music_state()
 
 
 ## API pubblica ambience (delegata al controller, F.5).
@@ -365,6 +369,8 @@ func _on_volume_changed(bus_name: String, volume: float) -> void:
 			music_volume = volume
 		"ambience":
 			ambience_volume = volume
+		"sfx":
+			sfx.set_volume(volume)
 		_:
 			push_warning("AudioManager: bus_name sconosciuto '%s'" % bus_name)
 			return
@@ -401,6 +407,7 @@ func apply_mood_scalar(mood: float) -> void:
 	var target_mood := _music_band_for(clamped)
 	if target_mood != current_mood:
 		SignalBus.mood_changed.emit(target_mood)
+		_on_mood_changed(target_mood)
 	# DOPO l'emit, e non prima: _on_mood_changed riallinea l'ambience sulla
 	# banda MUSICALE, ma per il cursore l'autorita` e` la banda VISIVA, piu`
 	# larga. Invertire l'ordine lascerebbe muta la pioggia fra 0.25 e 0.50 —
@@ -411,6 +418,10 @@ func apply_mood_scalar(mood: float) -> void:
 
 ## Banda che pilota la MUSICA. Soglia propria (MOOD_TENSE_THRESHOLD): il
 ## temporale deve arrivare quando il buio e` evidente, non a meta` cursore.
+func play_sfx(sfx_name: String, volume_offset_db: float = 0.0) -> void:
+	sfx.play(sfx_name, volume_offset_db)
+
+
 func _music_band_for(mood: float) -> String:
 	if mood < Constants.MOOD_STORMY_THRESHOLD:
 		return "stormy"
@@ -460,6 +471,8 @@ func _notification(what: int) -> void:
 
 
 func _release_streams() -> void:
+	if sfx != null:
+		sfx.release()
 	if _music_player_a and is_instance_valid(_music_player_a):
 		_music_player_a.stop()
 		_music_player_a.stream = null
@@ -476,12 +489,8 @@ func _exit_tree() -> void:
 		tree_exiting.disconnect(_release_streams)
 	if SignalBus.volume_changed.is_connected(_on_volume_changed):
 		SignalBus.volume_changed.disconnect(_on_volume_changed)
-	if SignalBus.ambience_toggled.is_connected(_on_ambience_toggled):
-		SignalBus.ambience_toggled.disconnect(_on_ambience_toggled)
 	if SignalBus.load_completed.is_connected(_on_load_completed):
 		SignalBus.load_completed.disconnect(_on_load_completed)
-	if SignalBus.mood_changed.is_connected(_on_mood_changed):
-		SignalBus.mood_changed.disconnect(_on_mood_changed)
 	if _crossfade_tween != null and _crossfade_tween.is_running():
 		_crossfade_tween.kill()
 		_crossfade_tween = null

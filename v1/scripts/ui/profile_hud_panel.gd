@@ -7,8 +7,7 @@
 ##   magic byte) e scritta con staging write-then-rename (T-R-015c)
 ## - Badge sbloccati, letti da BadgeManager (T-R-015d)
 ## - Bottone "Impostazioni" (apre settings_panel via PanelManager)
-## - Toggle lingua IT/EN: cambia davvero locale a runtime via
-##   TranslationServer, l'intera UI si ri-etichetta (T-R-015g)
+## - La lingua si cambia dal pannello Impostazioni (icona ingranaggio)
 ## - Mood slider HSlider 0..1: emette mood_level_changed, che pilota overlay,
 ##   pioggia, ambience, musica e comportamento del pet (T-R-015i)
 ##
@@ -338,18 +337,32 @@ func _refresh_badges() -> void:
 	for badge in catalog:
 		if not (badge is Dictionary):
 			continue
-		var icon: String = badge.get("icon", "🏅")
 		var is_unlocked: bool = unlocked_ids.has(badge.get("id", ""))
-		var lbl := Label.new()
-		lbl.text = icon
-		lbl.add_theme_font_size_override("font_size", 14)
+		# Le icone pixel art disegnate dal team (icon_path) al posto delle emoji
+		# di sistema, che sul font di fallback rendevano male (G-018/UI-12).
+		var icon_path: String = str(badge.get("icon_path", ""))
+		var icon_tex: Texture2D = load(icon_path) as Texture2D if ResourceLoader.exists(icon_path) else null
+		var node: Control
+		if icon_tex != null:
+			var rect := TextureRect.new()
+			rect.texture = icon_tex
+			rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			rect.custom_minimum_size = Vector2(24, 24)
+			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			node = rect
+		else:
+			var lbl := Label.new()
+			lbl.text = str(badge.get("icon", "*"))
+			lbl.add_theme_font_size_override("font_size", 14)
+			node = lbl
 		# Helpers.locale_* e non i campi grezzi: name/description nel catalogo
 		# sono le stringhe italiane, quindi leggerli direttamente rendeva i
 		# tooltip monolingua in qualunque locale.
-		lbl.tooltip_text = "%s — %s" % [Helpers.locale_label(badge), Helpers.locale_description(badge)]
+		node.tooltip_text = "%s — %s" % [Helpers.locale_label(badge), Helpers.locale_description(badge)]
 		if not is_unlocked:
-			lbl.modulate = Color(0.4, 0.4, 0.4, 0.5)  # locked grey
-		_badges_row.add_child(lbl)
+			node.modulate = Color(0.4, 0.4, 0.4, 0.5)  # locked grey
+		_badges_row.add_child(node)
 
 
 func _on_badge_unlocked(_badge_id: String) -> void:

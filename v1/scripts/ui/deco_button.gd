@@ -45,16 +45,18 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 		AppLogger.warn("DecoButton", "drag_no_meta", {"btn_name": name})
 		return null
 
-	# Drag preview: texture pixel art scalata ~50% dell'item_scale in-world
-	# (il preview segue il cursore quindi deve essere ridotto per non ingombrare).
+	# Drag preview: texture pixel art alla stessa scala in-world (1:1 con
+	# item_scale) e semi-trasparente, cosi` il giocatore vede l'ingombro reale
+	# del mobile senza perdere di vista la stanza sotto il cursore.
 	var preview := TextureRect.new()
 	var tex := load(drag_data.get("sprite_path", "")) as Texture2D
 	if tex != null:
 		preview.texture = tex
 		preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		var preview_scale: float = drag_data.get("item_scale", 1.0)
-		preview.custom_minimum_size = tex.get_size() * preview_scale * 0.5
+		preview.custom_minimum_size = tex.get_size() * preview_scale
 		preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		preview.modulate = Color(1, 1, 1, 0.7)
 
 	set_drag_preview(preview)
 	(

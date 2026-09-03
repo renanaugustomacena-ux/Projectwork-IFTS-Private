@@ -2,13 +2,18 @@
 ## Reads/writes via SaveManager.settings and emits signals for live updates.
 extends PanelContainer
 
+## Chiede al PanelManager di chiudere questo pannello (bottone Chiudi).
+signal close_requested
+
 var _master_slider: HSlider
 var _music_slider: HSlider
 var _ambience_slider: HSlider
+var _sfx_slider: HSlider
 var _language_option: OptionButton
 var _ambience_check: CheckButton
 var _loading: bool = false
 var _root_box: VBoxContainer
+var _close_btn: Button = null
 
 
 func _ready() -> void:
@@ -30,11 +35,7 @@ func _build_ui() -> void:
 	margin.add_child(vbox)
 	_root_box = vbox
 
-	# Title
-	var title := Label.new()
-	title.text = tr("UI_SETTINGS_TITLE")
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	_build_header(vbox)
 
 	# Audio section
 	var audio_label := Label.new()
@@ -52,6 +53,9 @@ func _build_ui() -> void:
 	_ambience_slider = _create_slider(vbox, tr("UI_SETTINGS_AMBIENCE"), 0.4)
 	_ambience_slider.value_changed.connect(_on_ambience_changed)
 
+	_sfx_slider = _create_slider(vbox, tr("UI_SETTINGS_SFX"), 0.8)
+	_sfx_slider.value_changed.connect(_on_sfx_changed)
+
 	# Separator
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
@@ -68,6 +72,7 @@ func _build_ui() -> void:
 	lang_row.add_child(lang_label)
 
 	_language_option = OptionButton.new()
+	_language_option.focus_mode = Control.FOCUS_NONE  # UI-03: A/D non devono cambiarla
 	var lang_keys := Constants.LANGUAGES.keys()
 	for i in lang_keys.size():
 		var code: String = lang_keys[i]
@@ -99,6 +104,33 @@ func _build_ui() -> void:
 		tutorial_btn.text = tr("UI_SETTINGS_REPLAY_TUTORIAL")
 		tutorial_btn.pressed.connect(_on_replay_tutorial)
 		vbox.add_child(tutorial_btn)
+
+
+## Riga di testa: titolo + Chiudi. Prima l'unica uscita era Esc, mai
+## documentato; il bottone passa da close_requested, che PanelManager collega
+## a close_current_panel (stessa idea del profile HUD, che usa SignalBus).
+func _build_header(parent: VBoxContainer) -> void:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 8)
+	parent.add_child(header)
+
+	var title := Label.new()
+	title.text = tr("UI_SETTINGS_TITLE")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+
+	_close_btn = Button.new()
+	_close_btn.focus_mode = Control.FOCUS_NONE
+	_close_btn.text = tr("UI_CLOSE")
+	_close_btn.flat = true
+	_close_btn.add_theme_font_size_override("font_size", 11)
+	_close_btn.pressed.connect(_on_close_pressed)
+	header.add_child(_close_btn)
+
+
+func _on_close_pressed() -> void:
+	close_requested.emit()
 
 
 ## Crediti: la licenza del pack foresta (Eder Muniz) richiede attribuzione
@@ -169,6 +201,7 @@ func _create_slider(parent: VBoxContainer, label_text: String, default_value: fl
 	row.add_child(label)
 
 	var slider := HSlider.new()
+	slider.focus_mode = Control.FOCUS_NONE  # UI-03: A/D muovevano il volume
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05
@@ -184,6 +217,7 @@ func _load_settings() -> void:
 	_master_slider.value = SaveManager.get_setting("master_volume", 0.8)
 	_music_slider.value = SaveManager.get_setting("music_volume", 0.6)
 	_ambience_slider.value = SaveManager.get_setting("ambience_volume", 0.4)
+	_sfx_slider.value = float(SaveManager.get_setting("sfx_volume", 0.8))
 	if _ambience_check != null:
 		_ambience_check.button_pressed = bool(SaveManager.get_setting("ambience_enabled", true))
 	_loading = false
@@ -216,6 +250,13 @@ func _on_ambience_changed(value: float) -> void:
 		SignalBus.settings_updated.emit("ambience_volume", value)
 
 
+func _on_sfx_changed(value: float) -> void:
+	if not _loading:
+		SignalBus.volume_changed.emit("sfx", value)
+		SignalBus.settings_updated.emit("sfx_volume", value)
+		AudioManager.play_sfx("ui_click")
+
+
 func _on_language_selected(index: int) -> void:
 	var lang_code: String = _language_option.get_item_metadata(index)
 	# I nodi con testo = "UI_KEY" si ri-traducono da soli; quelli costruiti da
@@ -230,6 +271,8 @@ func _on_language_selected(index: int) -> void:
 func _exit_tree() -> void:
 	if SignalBus.language_changed.is_connected(_on_language_changed):
 		SignalBus.language_changed.disconnect(_on_language_changed)
+	if _close_btn and _close_btn.pressed.is_connected(_on_close_pressed):
+		_close_btn.pressed.disconnect(_on_close_pressed)
 	if _ambience_check and _ambience_check.toggled.is_connected(_on_ambience_enabled_toggled):
 		_ambience_check.toggled.disconnect(_on_ambience_enabled_toggled)
 	if _master_slider and _master_slider.value_changed.is_connected(_on_master_changed):

@@ -3,7 +3,6 @@
 extends Node2D
 
 const GAMEPLAY_SCENE := "res://scenes/main/main.tscn"
-const SETTINGS_SCENE := "res://scenes/ui/settings_panel.tscn"
 const AUTH_SCREEN_SCENE := "res://scenes/menu/auth_screen.tscn"
 const LOADING_SCREEN_SCENE := "res://scenes/menu/loading_screen.tscn"
 const CHARACTER_SELECT_SCENE := "res://scenes/menu/character_select.tscn"
@@ -14,8 +13,9 @@ const TRANSITION_TIMEOUT := 5.0
 
 const SlotSelectScript := preload("res://scripts/menu/slot_select.gd")
 
-var _settings_panel: PanelContainer = null
-var _profile_panel: PanelContainer = null
+# Opzioni e Profilo passano dallo stesso PanelManager del gioco: mutua
+# esclusione, fade, Esc e bottone Chiudi vivono in un posto solo.
+var _panel_manager: PanelManager = null
 var _slot_screen: Control = null
 # Slot prenotato per la nuova partita: lo switch reale avviene solo in
 # _begin_new_game (dopo conferma), mai al click (review 2026-08-14).
@@ -25,7 +25,6 @@ var _pending_new_slot: int = -1
 var _select_screen: Control = null
 var _transitioning: bool = false
 var _intro_tween: Tween = null
-var _panel_tween: Tween = null
 
 @onready var _loading_screen: ColorRect = $LoadingScreen
 @onready var _menu_character: Node2D = $MenuCharacter
@@ -42,6 +41,11 @@ func _ready() -> void:
 	_loading_screen.visible = true
 	_loading_screen.modulate.a = 1.0
 	_setup_graphical_loading_screen()
+
+	_panel_manager = PanelManager.new()
+	_panel_manager.name = "PanelManager"
+	add_child(_panel_manager)
+	_panel_manager.initialize($UILayer)
 
 	_apply_button_labels()
 	SignalBus.language_changed.connect(_on_language_changed)
@@ -163,12 +167,21 @@ func _start_new_game_flow() -> void:
 ## Punto unico in cui una nuova partita distrugge il salvataggio esistente:
 ## viene raggiunto solo dopo che l'utente ha scelto il personaggio (o quando
 ## il catalogo ne offre uno solo e la scelta e` implicita).
+func _character_label(char_id: String) -> String:
+	for entry in GameManager.characters_catalog.get("characters", []):
+		if entry is Dictionary and str(entry.get("id", "")) == char_id:
+			return Helpers.locale_label(entry)
+	return char_id
+
+
 func _begin_new_game(char_id: String) -> void:
 	# Punto di non-ritorno: SOLO qui lo slot prenotato diventa attivo.
 	if _pending_new_slot >= 1:
 		SaveManager.set_active_slot(_pending_new_slot)
 		_pending_new_slot = -1
 	SaveManager.reset_character_data()
+	# PT-08: senza un nome tutti e dieci gli slot dicevano "Senza nome".
+	SaveManager.character_data["nome"] = _character_label(char_id)
 	# Ripristina il flag tutorial cosi` una nuova partita riavvia sempre
 	# la sessione di onboarding, indipendentemente da precedenti completamenti.
 	# Flush sincrono necessario prima della scene transition.
@@ -196,15 +209,15 @@ func _show_character_select() -> void:
 		return
 	var scene := load(CHARACTER_SELECT_SCENE) as PackedScene
 	if scene == null:
-		push_warning("MainMenu: character select not found")
-		_transitioning = true
-		_transition_to_scene(GAMEPLAY_SCENE)
+		# SM-04: entrare in gioco senza _begin_new_game lascerebbe il latch F.7
+		# spento per tutta la sessione (nessun salvataggio). Meglio fermarsi.
+		AppLogger.error("MainMenu", "character_select_scene_missing", {"path": CHARACTER_SELECT_SCENE})
+		_pending_new_slot = -1
 		return
 	var select_screen := scene.instantiate() as Control
 	if select_screen == null:
-		push_warning("MainMenu: failed to instantiate select")
-		_transitioning = true
-		_transition_to_scene(GAMEPLAY_SCENE)
+		AppLogger.error("MainMenu", "character_select_instantiate_failed")
+		_pending_new_slot = -1
 		return
 	select_screen.character_selected.connect(_on_character_chosen, CONNECT_ONE_SHOT)
 	select_screen.cancelled.connect(_on_character_select_cancelled, CONNECT_ONE_SHOT)
@@ -324,98 +337,22 @@ func _has_db_character() -> bool:
 
 
 func _on_profilo() -> void:
-	if _profile_panel != null and is_instance_valid(_profile_panel):
-		_close_profile()
-		return
-	if _settings_panel != null and is_instance_valid(_settings_panel):
-		_close_settings()
-	var scene := load("res://scenes/ui/profile_panel.tscn") as PackedScene
-	if scene == null:
-		push_warning("MainMenu: profile panel scene not found")
-		return
-	_profile_panel = scene.instantiate() as PanelContainer
-	if _profile_panel == null:
-		push_warning("MainMenu: failed to instantiate profile panel")
-		return
-	_profile_panel.modulate.a = 0.0
-	$UILayer.add_child(_profile_panel)
-	if _panel_tween and _panel_tween.is_running():
-		_panel_tween.kill()
-	_panel_tween = create_tween()
-	_panel_tween.tween_property(_profile_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
+	_panel_manager.toggle_panel("profile")
 
 
 func _on_opzioni() -> void:
-	if _settings_panel != null and is_instance_valid(_settings_panel):
-		_close_settings()
-		return
-	if _profile_panel != null and is_instance_valid(_profile_panel):
-		_close_profile()
-	var scene := load(SETTINGS_SCENE) as PackedScene
-	if scene == null:
-		push_warning("MainMenu: settings scene not found")
-		return
-	_settings_panel = scene.instantiate() as PanelContainer
-	if _settings_panel == null:
-		push_warning("MainMenu: failed to instantiate settings panel")
-		return
-	_settings_panel.modulate.a = 0.0
-	$UILayer.add_child(_settings_panel)
-	if _panel_tween and _panel_tween.is_running():
-		_panel_tween.kill()
-	_panel_tween = create_tween()
-	_panel_tween.tween_property(_settings_panel, "modulate:a", 1.0, Constants.PANEL_TWEEN_DURATION)
+	_panel_manager.toggle_panel("settings")
 
 
 func _on_esci() -> void:
-	get_tree().quit()
-
-
-func _close_settings() -> void:
-	if _settings_panel == null:
-		return
-	var panel := _settings_panel
-	_settings_panel = null
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if _panel_tween and _panel_tween.is_running():
-		_panel_tween.kill()
-	_panel_tween = create_tween()
-	_panel_tween.tween_property(panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
-	_panel_tween.tween_callback(panel.queue_free)
-
-
-func _close_profile() -> void:
-	if _profile_panel == null:
-		return
-	var panel := _profile_panel
-	_profile_panel = null
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if _panel_tween and _panel_tween.is_running():
-		_panel_tween.kill()
-	_panel_tween = create_tween()
-	_panel_tween.tween_property(panel, "modulate:a", 0.0, Constants.PANEL_TWEEN_DURATION)
-	_panel_tween.tween_callback(panel.queue_free)
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		if _settings_panel != null and is_instance_valid(_settings_panel):
-			_close_settings()
-			get_viewport().set_input_as_handled()
-		elif _profile_panel != null and is_instance_valid(_profile_panel):
-			_close_profile()
-			get_viewport().set_input_as_handled()
+	# Stesso percorso della X della finestra: SaveManager intercetta
+	# WM_CLOSE_REQUEST, salva e poi esce. get_tree().quit() lo saltava (SM-01).
+	get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)
 
 
 func _exit_tree() -> void:
 	if _intro_tween and _intro_tween.is_running():
 		_intro_tween.kill()
-	if _panel_tween and _panel_tween.is_running():
-		_panel_tween.kill()
-	if _settings_panel and is_instance_valid(_settings_panel):
-		_settings_panel.queue_free()
-	if _profile_panel and is_instance_valid(_profile_panel):
-		_profile_panel.queue_free()
 	if SignalBus.language_changed.is_connected(_on_language_changed):
 		SignalBus.language_changed.disconnect(_on_language_changed)
 	if _nuova_btn and _nuova_btn.pressed.is_connected(_on_nuova_partita):

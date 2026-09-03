@@ -43,10 +43,10 @@ msgid "UI_PROFILE_CLOSE_TOOLTIP"
 msgstr "Close"
 
 msgid "UI_PROFILE_MOOD_LABEL"
-msgstr "Mood"
+msgstr "Atmosphere"
 
 msgid "UI_PROFILE_MOOD_HINT"
-msgstr "🌧 ↔ 🌸"
+msgstr "gloomy ↔ sunny"
 
 # Toast messages
 
@@ -138,7 +138,7 @@ msgid "UI_SETTINGS_CREDITS"
 msgstr "Credits"
 
 msgid "CREDITS_BODY"
-msgstr "Pixel art forest: Eder Muniz. Indoor plants: SoppyCraft. Isometric Room Builder: Thurraya. Furniture and UI packs: Kenney (CC0). Rain sounds: Mixkit. Ambience loops, characters, room, pet and icons: Team IFTS."
+msgstr "Pixel art forest: Eder Muniz. Indoor plants: SoppyCraft. Isometric Room Builder: Thurraya. Furniture, UI and sounds: Kenney (CC0). Pixel Operator font: Jayvee Enaguas (CC0). Calm music: omfgdude (CC0). Rain on glass: alxl (CC0). Rain sounds: Mixkit. Ambience loops, characters, room, pet and icons: Team IFTS."
 
 msgid "UI_AUTH_SUBTITLE"
 msgstr "Your cozy desktop companion"
@@ -247,7 +247,7 @@ msgid "TUTORIAL_STEP_4"
 msgstr "Browse the categories and [b]drag[/b] a decoration into the room!\nTry a plant or a desk."
 
 msgid "TUTORIAL_STEP_5"
-msgstr "Nice! Click any decoration to select it.\nPress [b]R[/b] to rotate, [b]F[/b] to flip, [b]S[/b] to resize, [b]X[/b] to delete."
+msgstr "Nice! Turn on [b]Edit mode[/b] in the panel and click a decoration: the [b]F[/b] (flip), [b]S[/b] (scale) and [b]X[/b] (delete) buttons appear. Rugs also get [b]R[/b] (rotate)."
 
 msgid "TUTORIAL_STEP_6"
 msgstr "Open your [b]Profile[/b] to see your account info.\nClick the Profile button! ⬇"
@@ -256,7 +256,7 @@ msgid "TUTORIAL_STEP_7"
 msgstr "Press [b]Esc[/b] to close a panel.\nGive it a try!"
 
 msgid "TUTORIAL_STEP_8"
-msgstr "Your room saves [b]automatically[/b]! ✓\n\n[b]Mission complete![/b] 🎉\nEnjoy your Relax Room!"
+msgstr "Your room saves [b]on its own[/b] every minute, and with the [b]Save[/b] button whenever you like. ✓\n\n[b]Mission complete![/b] 🎉\nEnjoy your Relax Room!"
 
 # Destructive confirmations — irreversible deletions, they must be readable in
 # the player's own language before consent is given (audit G-036).
@@ -435,3 +435,72 @@ msgstr "Delete"
 
 msgid "UI_SLOT_DELETE_CONFIRM"
 msgstr "Sure?"
+
+msgid "UI_PROFILE_LOGIN"
+msgstr "Log in / Register"
+
+msgid "UI_AUTH_ERR_PASSWORD_TOO_LONG"
+msgstr "Password cannot exceed %d characters."
+
+msgid "TUTORIAL_TIMEOUT_HINT"
+msgstr "No worries: you can try later. Moving on!"
+
+msgid "TOAST_PURCHASED"
+msgstr "Purchased: %s"
+
+msgid "TOAST_PET_FED_HUNGRY"
+msgstr "The cat ate happily: it trusts you a bit more"
+
+msgid "TOAST_PET_FED_FULL"
+msgstr "The cat ate, but it was not hungry"
+
+msgid "TOAST_TRUST_UP"
+msgstr "The cat trusts you more"
+
+msgid "TOAST_CLEAN_STARTED"
+msgstr "Cleaning started: ready in %s, even while the game is closed"
+
+msgid "TOAST_DROP_INVALID_WALL"
+msgstr "This item hangs on the wall"
+
+msgid "TOAST_DROP_INVALID_FLOOR"
+msgstr "This item goes on the floor"
+
+msgid "UI_SHOP_FOOD_SUB"
+msgstr "−%d stress · you have %d"
+
+msgid "UI_SHOP_TOOL_SUB"
+msgstr "Clean ×%.1f faster"
+
+msgid "UI_SHOP_SPEED_NOW"
+msgstr "Current cleaning speed: ×%.1f"
+
+msgid "UI_SHOP_EAT_FULL_TIP"
+msgstr "You are already fully relaxed"
+
+msgid "UI_PROMPT_SIT"
+msgstr "Press E to sit"
+
+msgid "UI_PROMPT_CLEAN"
+msgstr "Press E to clean"
+
+msgid "UI_DECO_GRID_HINT"
+msgstr "Hold Shift while dragging to snap to the grid"
+
+msgid "UI_SETTINGS_SFX"
+msgstr "Effects"
+
+msgid "UI_CLOSE"
+msgstr "Close"
+
+msgid "UI_AUTH_WORKING"
+msgstr "One moment…"
+
+msgid "UI_TOUCH_INTERACT"
+msgstr "E"
+
+msgid "TUTORIAL_STEP_CLEAN"
+msgstr "Press [b]E[/b] next to a mess to start cleaning: it carries on by itself, even while the game is closed."
+
+msgid "TUTORIAL_STEP_SHOP"
+msgstr "Coins earned by cleaning are spent in the [b]Shop[/b]: food for you, kibble for the cat, tools. ⬇"

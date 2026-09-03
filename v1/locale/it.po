@@ -43,10 +43,10 @@ msgid "UI_PROFILE_CLOSE_TOOLTIP"
 msgstr "Chiudi"
 
 msgid "UI_PROFILE_MOOD_LABEL"
-msgstr "Umore"
+msgstr "Atmosfera"
 
 msgid "UI_PROFILE_MOOD_HINT"
-msgstr "🌧 ↔ 🌸"
+msgstr "cupa ↔ serena"
 
 # Toast messages
 
@@ -138,7 +138,7 @@ msgid "UI_SETTINGS_CREDITS"
 msgstr "Crediti"
 
 msgid "CREDITS_BODY"
-msgstr "Foresta pixel art: Eder Muniz. Piante da interno: SoppyCraft. Isometric Room Builder: Thurraya. Mobili e UI pack: Kenney (CC0). Suoni di pioggia: Mixkit. Loop ambientali, personaggi, stanza, pet e icone: Team IFTS."
+msgstr "Foresta pixel art: Eder Muniz. Piante da interno: SoppyCraft. Isometric Room Builder: Thurraya. Mobili, UI e suoni: Kenney (CC0). Font Pixel Operator: Jayvee Enaguas (CC0). Musica calma: omfgdude (CC0). Pioggia sul vetro: alxl (CC0). Suoni di pioggia: Mixkit. Loop ambientali, personaggi, stanza, pet e icone: Team IFTS."
 
 msgid "UI_AUTH_SUBTITLE"
 msgstr "Il tuo angolo tranquillo sul desktop"
@@ -247,7 +247,7 @@ msgid "TUTORIAL_STEP_4"
 msgstr "Sfoglia le categorie e [b]trascina[/b] una decorazione nella stanza!\nProva con una pianta o una scrivania."
 
 msgid "TUTORIAL_STEP_5"
-msgstr "Ottimo! Clicca su qualsiasi decorazione per selezionarla.\nPremi [b]R[/b] per ruotare, [b]F[/b] per specchiare, [b]S[/b] per ridimensionare, [b]X[/b] per eliminare."
+msgstr "Ottimo! Attiva la [b]Modalità modifica[/b] nel pannello e clicca una decorazione: compaiono i pulsanti [b]F[/b] (specchia), [b]S[/b] (scala) e [b]X[/b] (elimina). I tappeti hanno anche [b]R[/b] (ruota)."
 
 msgid "TUTORIAL_STEP_6"
 msgstr "Apri il [b]Profilo[/b] per vedere le info del tuo account.\nClicca il pulsante Profilo! ⬇"
@@ -256,7 +256,7 @@ msgid "TUTORIAL_STEP_7"
 msgstr "Premi [b]Esc[/b] per chiudere un pannello.\nProvalo ora!"
 
 msgid "TUTORIAL_STEP_8"
-msgstr "La tua stanza si salva [b]automaticamente[/b]! ✓\n\n[b]Missione completata![/b] 🎉\nBuon relax nella tua Relax Room!"
+msgstr "La tua stanza si salva [b]da sola[/b] ogni minuto, e con il pulsante [b]Salva[/b] quando vuoi. ✓\n\n[b]Missione completata![/b] 🎉\nBuon relax nella tua Relax Room!"
 
 # Conferme distruttive — cancellazioni irreversibili, devono essere leggibili
 # nella lingua del giocatore prima che dia il consenso (audit G-036).
@@ -380,13 +380,13 @@ msgid "UI_SHOP_SECTION_TOOLS"
 msgstr "Attrezzi per pulire"
 
 msgid "TOAST_NOT_ENOUGH_COINS"
-msgstr "Coins insufficienti"
+msgstr "Monete insufficienti"
 
 msgid "TOAST_CLEAN_DONE"
-msgstr "Pulizia completata! +%d coins"
+msgstr "Pulizia completata! +%d monete"
 
 msgid "TOAST_CLEAN_DONE_AWAY"
-msgstr "Pulizie finite mentre eri via: +%d coins"
+msgstr "Pulizie finite mentre eri via: +%d monete"
 
 msgid "TOAST_BOWL_ALREADY"
 msgstr "C'e' gia' una ciotola piena"
@@ -435,3 +435,72 @@ msgstr "Elimina"
 
 msgid "UI_SLOT_DELETE_CONFIRM"
 msgstr "Sicuro?"
+
+msgid "UI_PROFILE_LOGIN"
+msgstr "Accedi / Registrati"
+
+msgid "UI_AUTH_ERR_PASSWORD_TOO_LONG"
+msgstr "La password non può superare %d caratteri."
+
+msgid "TUTORIAL_TIMEOUT_HINT"
+msgstr "Nessun problema: puoi provarci più tardi. Andiamo avanti!"
+
+msgid "TOAST_PURCHASED"
+msgstr "Acquistato: %s"
+
+msgid "TOAST_PET_FED_HUNGRY"
+msgstr "Il gatto ha mangiato di gusto: si fida un po' di più"
+
+msgid "TOAST_PET_FED_FULL"
+msgstr "Il gatto ha mangiato, ma non aveva fame"
+
+msgid "TOAST_TRUST_UP"
+msgstr "Il gatto si fida di più di te"
+
+msgid "TOAST_CLEAN_STARTED"
+msgstr "Pulizia avviata: pronta tra %s, anche a gioco chiuso"
+
+msgid "TOAST_DROP_INVALID_WALL"
+msgstr "Questo oggetto va appeso al muro"
+
+msgid "TOAST_DROP_INVALID_FLOOR"
+msgstr "Questo oggetto va sul pavimento"
+
+msgid "UI_SHOP_FOOD_SUB"
+msgstr "−%d stress · ne hai %d"
+
+msgid "UI_SHOP_TOOL_SUB"
+msgstr "Pulisci ×%.1f più in fretta"
+
+msgid "UI_SHOP_SPEED_NOW"
+msgstr "Velocità di pulizia attuale: ×%.1f"
+
+msgid "UI_SHOP_EAT_FULL_TIP"
+msgstr "Sei già completamente rilassato"
+
+msgid "UI_PROMPT_SIT"
+msgstr "Premi E per sederti"
+
+msgid "UI_PROMPT_CLEAN"
+msgstr "Premi E per pulire"
+
+msgid "UI_DECO_GRID_HINT"
+msgstr "Tieni premuto Shift mentre trascini per allineare alla griglia"
+
+msgid "UI_SETTINGS_SFX"
+msgstr "Effetti"
+
+msgid "UI_CLOSE"
+msgstr "Chiudi"
+
+msgid "UI_AUTH_WORKING"
+msgstr "Un momento…"
+
+msgid "UI_TOUCH_INTERACT"
+msgstr "E"
+
+msgid "TUTORIAL_STEP_CLEAN"
+msgstr "Premi [b]E[/b] vicino allo sporco per avviare la pulizia: continua da sola, anche a gioco chiuso."
+
+msgid "TUTORIAL_STEP_SHOP"
+msgstr "Le monete guadagnate pulendo si spendono nel [b]Negozio[/b]: cibo per te, croccantini per il gatto, attrezzi. ⬇"

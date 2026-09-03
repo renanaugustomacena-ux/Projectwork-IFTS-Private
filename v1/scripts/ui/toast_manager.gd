@@ -23,7 +23,6 @@ func _ready() -> void:
 	# autoload persistenti. Metodi membri permettono disconnect simmetrico
 	# e pulito in _exit_tree.
 	SignalBus.toast_requested.connect(_on_toast_requested)
-	SignalBus.save_completed.connect(_on_save_completed)
 	SignalBus.decoration_placed.connect(_on_decoration_placed_toast)
 	SignalBus.decoration_removed.connect(_on_decoration_removed_toast)
 
@@ -31,26 +30,33 @@ func _ready() -> void:
 ## I toast sono effimeri e vengono tradotti al momento in cui nascono: un
 ## cambio lingua non deve riscrivere quelli gia` a schermo (spariscono entro
 ## TOAST_DURATION), ma il successivo esce gia` nella lingua nuova.
-func _on_save_completed() -> void:
-	show_toast(tr("TOAST_SAVED"), "success")
-
-
 func _on_decoration_placed_toast(item_id: String, _pos: Vector2) -> void:
-	show_toast(tr("TOAST_DECO_PLACED") % item_id, "info")
+	show_toast(tr("TOAST_DECO_PLACED") % _deco_name(item_id), "info")
 
 
 func _on_decoration_removed_toast(item_id: String) -> void:
-	show_toast(tr("TOAST_DECO_REMOVED") % item_id, "warning")
+	show_toast(tr("TOAST_DECO_REMOVED") % _deco_name(item_id), "warning")
+
+
+## Nome leggibile della decorazione (UI-09: il toast mostrava l'id interno).
+func _deco_name(item_id: String) -> String:
+	for entry in GameManager.decorations_catalog.get("decorations", []):
+		if entry is Dictionary and str(entry.get("id", "")) == item_id:
+			return Helpers.locale_label(entry)
+	return item_id
 
 
 func _build_container() -> void:
 	_container = VBoxContainer.new()
-	_container.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_container.anchor_left = 0.65
-	_container.anchor_right = 0.98
+	# UI-08: in alto a destra i toast coprivano proprio i pannelli (profilo,
+	# decorazioni, negozio); in basso finivano sul dialogo del tutorial. In
+	# alto al centro, tra la barra Serenita` e il Profile HUD, non c'e` nulla.
+	_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_container.anchor_left = 0.31
+	_container.anchor_right = 0.63
 	_container.anchor_top = 0.02
-	_container.anchor_bottom = 0.4
-	_container.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_container.anchor_bottom = 0.30
+	_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_container.add_theme_constant_override("separation", TOAST_GAP)
 	# CRITICAL: VBoxContainer default mouse_filter is STOP. Since this container
@@ -76,10 +82,13 @@ func show_toast(message: String, toast_type: String = "info") -> void:
 	var toast := _create_toast(message, toast_type)
 	_container.add_child(toast)
 	_toasts.append(toast)
+	if toast_type == "warning" or toast_type == "error":
+		AudioManager.play_sfx("toast", -3.0)
 
-	# Fade in
+	# Fade in. Tween POSSEDUTO dal toast (UI-29d): l'espulsione del piu`
+	# vecchio non lascia tween orfani sul manager.
 	toast.modulate.a = 0.0
-	var tween := create_tween()
+	var tween := toast.create_tween()
 	tween.tween_property(toast, "modulate:a", 1.0, FADE_DURATION)
 	# Auto-dismiss
 	tween.tween_interval(TOAST_DURATION)
@@ -145,8 +154,6 @@ func _exit_tree() -> void:
 	# Disconnect simmetrico di tutti 4 segnali connessi in _ready.
 	if SignalBus.toast_requested.is_connected(_on_toast_requested):
 		SignalBus.toast_requested.disconnect(_on_toast_requested)
-	if SignalBus.save_completed.is_connected(_on_save_completed):
-		SignalBus.save_completed.disconnect(_on_save_completed)
 	if SignalBus.decoration_placed.is_connected(_on_decoration_placed_toast):
 		SignalBus.decoration_placed.disconnect(_on_decoration_placed_toast)
 	if SignalBus.decoration_removed.is_connected(_on_decoration_removed_toast):

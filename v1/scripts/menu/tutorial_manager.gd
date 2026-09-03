@@ -27,6 +27,9 @@ var _progress_label: Label = null
 var _skip_btn: Button = null
 var _arrow: Label = null
 var _tween: Tween = null
+## Timer dei passi a tempo (auto_advance), separato da _tween: il fade del
+## dialogo non deve mai cancellare il fallback a tempo di un passo a segnale.
+var _auto_tween: Tween = null
 ## Anchor y set once per target by _show_arrow; the bob in _process writes an
 ## absolute offset from it (V-104 / 4.2-L300-arrow-drift — no cumulative +=).
 var _arrow_base_y: float = 0.0
@@ -75,6 +78,19 @@ func _define_steps() -> void:
 			"signal_name": "decoration_selected",
 		},
 		{
+			# Pulizia con E: avanza al primo interagibile nel raggio oppure,
+			# se la stanza e` ancora pulita, dopo 20 s (fallback a tempo).
+			"message": "TUTORIAL_STEP_CLEAN",
+			"signal_name": "interaction_available",
+			"auto_advance": 20.0,
+		},
+		{
+			"message": "TUTORIAL_STEP_SHOP",
+			"signal_name": "panel_opened",
+			"signal_filter": "shop",
+			"arrow_target": "ShopButton",
+		},
+		{
 			"message": "TUTORIAL_STEP_6",
 			"signal_name": "panel_opened",
 			"signal_filter": "profile",
@@ -103,10 +119,13 @@ func _build_ui() -> void:
 
 	# Dialog panel at bottom
 	_dialog_panel = PanelContainer.new()
+	# PT-03: il pannello copriva la fascia bassa del pavimento e mangiava il
+	# drop dello step 4. I bottoni figli restano cliccabili.
+	_dialog_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dialog_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_dialog_panel.anchor_top = 0.75
+	_dialog_panel.anchor_top = 0.70
 	_dialog_panel.offset_top = 0
-	_dialog_panel.offset_bottom = -50
+	_dialog_panel.offset_bottom = -70  # UI-21: 6 px dall'HUD e la freccia finiva dentro il dialogo
 	_dialog_panel.offset_left = 80
 	_dialog_panel.offset_right = -80
 	var style := StyleBoxFlat.new()
@@ -176,6 +195,9 @@ func _build_ui() -> void:
 
 func _advance_step() -> void:
 	_current_step += 1
+	# Chi arriva prima vince: un segnale ricevuto spegne il timer del passo.
+	if _auto_tween and _auto_tween.is_running():
+		_auto_tween.kill()
 	if _current_step >= _steps.size():
 		_finish()
 		return
@@ -189,19 +211,25 @@ func _advance_step() -> void:
 	# Disconnect the previous step's signal listener
 	_disconnect_step_signal()
 
-	# Final step — bottone di chiusura
+	# Final step — "Chiudi" completa il tutorial (prima era cablato a
+	# _on_skip e un tutorial letto fino in fondo finiva nel log come saltato).
 	if step.get("is_final", false):
 		_skip_btn.text = tr("TUTORIAL_DONE")
+		if _skip_btn.pressed.is_connected(_on_skip):
+			_skip_btn.pressed.disconnect(_on_skip)
+		_skip_btn.pressed.connect(_on_done_pressed)
 
-	# Auto-advance step (timed, no signal)
+	var sig_name: String = step.get("signal_name", "")
+
+	# Auto-advance: da solo e` un passo a tempo; insieme a signal_name e` il
+	# fallback del passo a segnale (vince chi arriva prima).
 	var auto_time: float = step.get("auto_advance", 0.0)
 	if auto_time > 0.0:
-		if _tween and _tween.is_running():
-			_tween.kill()
-		_tween = create_tween()
-		_tween.tween_interval(auto_time)
-		_tween.tween_callback(_advance_step)
-		return
+		_auto_tween = create_tween()
+		_auto_tween.tween_interval(auto_time)
+		_auto_tween.tween_callback(_advance_step)
+		if sig_name.is_empty():
+			return
 
 	# Movement detection step
 	if step.has("wait_for_input"):
@@ -211,7 +239,6 @@ func _advance_step() -> void:
 	# Signal-based step — single stateful connection per step. The filter is
 	# checked inside _on_signal_received: a non-matching event simply returns,
 	# keeping the connection alive (no disconnect/reconnect churn).
-	var sig_name: String = step.get("signal_name", "")
 	if not sig_name.is_empty() and SignalBus.has_signal(sig_name):
 		var sig: Signal = SignalBus.get(sig_name)
 		_step_signal_name = sig_name
@@ -244,7 +271,9 @@ func _on_signal_received(
 		var received: String = ""
 		if a is String:
 			received = a
-		if filter not in received:
+		# Confronto esatto: col substring "profile" avrebbe accettato anche
+		# "profile_hud" e un passo sarebbe passato per il pannello sbagliato.
+		if received != filter:
 			var miss_ctx := {
 				"step": _current_step,
 				"signal": _step_signal_name,
@@ -275,8 +304,9 @@ func _process(delta: float) -> void:
 				_advance_step()
 				return
 
-	# Step timeout — auto-advance with help message
+	# Step timeout — auto-advance with help message (PT-04: avvisa, non saltare muto)
 	if _step_timer > STEP_TIMEOUT:
+		SignalBus.toast_requested.emit(tr("TUTORIAL_TIMEOUT_HINT"), "info")
 		_advance_step()
 
 	# Animate arrow — absolute write from the stored anchor: frame-rate
@@ -307,7 +337,7 @@ func _show_arrow(target_name: String) -> void:
 			break
 	if target is Control:
 		var pos: Vector2 = target.global_position
-		_arrow_base_y = pos.y - 30.0
+		_arrow_base_y = pos.y - 46.0
 		_arrow.position = Vector2(pos.x + target.size.x / 2.0 - 12.0, _arrow_base_y)
 		_arrow.visible = true
 
@@ -332,14 +362,25 @@ func _animate_dialog_in() -> void:
 func _on_skip() -> void:
 	_is_active = false
 	visible = false
+	if _auto_tween and _auto_tween.is_running():
+		_auto_tween.kill()
 	_disconnect_step_signal()
 	tutorial_skipped.emit()
 	AppLogger.info("Tutorial", "Tutorial skipped", {"step": _current_step})
 	queue_free()
 
 
+## "Chiudi" sull'ultimo passo: completamento, non salto.
+func _on_done_pressed() -> void:
+	_finish()
+
+
 func _finish() -> void:
+	if not _is_active:
+		return  # gia` in chiusura (Chiudi premuto mentre scadeva il timer)
 	_is_active = false
+	if _auto_tween and _auto_tween.is_running():
+		_auto_tween.kill()
 	if _tween and _tween.is_running():
 		_tween.kill()
 	_tween = create_tween()
@@ -369,6 +410,10 @@ func _disconnect_step_signal() -> void:
 func _exit_tree() -> void:
 	if _tween and _tween.is_running():
 		_tween.kill()
+	if _auto_tween and _auto_tween.is_running():
+		_auto_tween.kill()
 	_disconnect_step_signal()
 	if _skip_btn and _skip_btn.pressed.is_connected(_on_skip):
 		_skip_btn.pressed.disconnect(_on_skip)
+	if _skip_btn and _skip_btn.pressed.is_connected(_on_done_pressed):
+		_skip_btn.pressed.disconnect(_on_done_pressed)
