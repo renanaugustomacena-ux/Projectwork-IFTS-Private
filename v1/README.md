@@ -159,7 +159,7 @@ v1/
 │   ├── mess_catalog.json            #   8 tipi di sporco con durata/ricompensa di pulizia
 │   └── shop.json                    #   negozio: 3 cibi, croccantini, 3 attrezzi
 ├── docs/specs/                     # Spec di design (DevBridge 2026-08-08, espansione gameplay 2026-08-14)
-├── locale/                         # .po IT + EN (159 chiavi per lingua: `grep -c '^msgid ' locale/it.po` - 1)
+├── locale/                         # .po IT + EN (160 chiavi per lingua: `grep -c '^msgid ' locale/it.po` - 1)
 ├── scenes/                         # 18 scene Godot (.tscn) + 1 TRES theme
 ├── scripts/                        # 57 script GDScript (~15.5k righe)
 │   ├── autoload/                    #   11 singleton + database/ 9 repo
@@ -335,11 +335,12 @@ Container: `barichello/godot-ci` **4.7.1**, pinnato per digest.
 ## Testing
 
 ```bash
-./scripts/smoke_test.sh          # boot headless ~2 s
-./scripts/preflight.sh           # 8 step GO/NO-GO
-./scripts/godot-validate.sh      # ciclo completo re-import + runtime ~3 min
-./scripts/deep_test.sh           # 250 test in 25 moduli, ~20-30 s (user:// isolato, vedi tests/README)
+export GODOT_BIN="$HOME/Downloads/Godot_v4.7.1-stable_win64_console.exe"
+./scripts/deep_test.sh --timeout 300   # 250 test in 25 moduli, ~20-30 s (user:// isolato, vedi tests/README)
+./scripts/preflight.sh                 # GO/NO-GO: validator della CI + lint + boot headless + suite
 ```
+
+Script, validator, pre-commit e ricette di export: [../scripts/README.md](../scripts/README.md).
 
 `deep_test.sh` e` l'**unico** modo supportato di lanciare la suite: crea una
 user dir usa-e-getta per ogni run e ci pianta un sentinella `.test_sandbox`.

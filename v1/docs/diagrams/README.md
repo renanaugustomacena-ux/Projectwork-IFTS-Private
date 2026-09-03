@@ -1,17 +1,21 @@
 # Diagrammi Architettura
 
-Cartella placeholder per diagrammi di architettura (FigJam export,
-schema SQLite, scene tree, flow sync).
+Quattro file, prodotti ad aprile 2026 per la demo (commit del 2026-04-16) e non piu` aggiornati:
 
-Al 2026-04-23 la cartella è vuota: i diagrammi sono stati prodotti in FigJam
-durante la fase pre-demo e non sono stati esportati in repo. Se/quando saranno
-serviti in docs/ o nelle slide di una futura presentazione, esportare in
-`signal_bus.png` + `.svg`, `sync_flow.png` + `.svg` in questa cartella.
+| File | Contenuto | Stato |
+|------|-----------|-------|
+| `signal_bus.svg` / `.png` | SignalBus e i sistemi che vi si collegano | **Stantio**: nella 1.3.0 il bus e` passato a 48 segnali (16 rimossi) |
+| `sync_flow.svg` / `.png` | Flusso di backup push-only verso Supabase | **Stantio**: il client e` dormiente, nessun percorso lo attiva |
 
-## Conversione SVG → PNG (quando servirà)
+Nessun documento, pagina del sito o script li referenzia: restano qui come
+materiale per le slide, da rigenerare prima di usarli. La fonte di verita`
+resta il codice (`scripts/autoload/signal_bus.gd`, `supabase/README.md`).
+
+## Conversione SVG → PNG (quando servira`)
 
 ```bash
-python3 -c "import cairosvg; cairosvg.svg2png(url='signal_bus.svg', write_to='signal_bus.png', output_width=1920)"
+pip install cairosvg
+python -c "import cairosvg; cairosvg.svg2png(url='signal_bus.svg', write_to='signal_bus.png', output_width=1920)"
 ```
 
 ## Palette di riferimento

@@ -66,7 +66,7 @@ scripts/
 │   ├── slot_select.gd               #   Schermata 10 slot: anteprima, Nuova/Carica/Elimina (conferma a tempo), ESC
 │   ├── character_select.gd          #   Preview carousel (solo se piu` di 1 personaggio)
 │   ├── menu_character.gd            #   Walk-in animato
-│   └── tutorial_manager.gd          #   8 step scripted signal-driven, avviso al timeout
+│   └── tutorial_manager.gd          #   10 step scripted signal-driven, avviso al timeout
 ├── ui/                             # Pannelli UI + HUD + overlay
 │   ├── panel_manager.gd             #   Lifecycle pannelli (deco/settings/profile/profile_hud/shop), blocco movimento = "pannello aperto"
 │   ├── deco_panel.gd                #   Catalog browser: griglie pigre, ordinamento per stile, ultima categoria, nomi IT/EN
@@ -214,7 +214,7 @@ CanvasLayer 90, 3 toast max, auto-dismiss 3 s, posizionati dove non coprono i pa
 
 ### `menu/tutorial_manager.gd`
 
-8 step scripted signal-driven. Step 5 riscritto nella 1.3.0 (R/F/S/X sono bottoni del popup, non tasti); il dialogo non copre il pavimento durante lo step del drop; avviso al timeout.
+10 step scripted signal-driven (movimento, Decora, drop, popup, pulizia con E con filtro sul tipo `clean`, Negozio, Profilo, chiusura). Step 5 riscritto nella 1.3.0 (R/F/S/X sono bottoni del popup, non tasti); il dialogo e i suoi figli hanno `mouse_filter` IGNORE (solo Salta resta cliccabile), cosi` il drop dello step 4 arriva al pavimento; avviso al timeout.
 
 ---
 

@@ -73,6 +73,20 @@ configurazione. Suite: **250 test in 25 moduli** (moduli nuovi `test_polish` e `
   `register_kenney_assets.py`, spec spostata fuori dalla cartella pubblica
   del sito, `~*.dll` e `.vscode/` ignorati, riga APK fantasma nelle note di
   release, CHANGELOG `[Unreleased-pre-1.2]` confluito in 1.2.0.
+- **Rilettura integrale (2026-09-03)**: "Nuova partita" in un altro slot
+  rimetteva lingua e volumi ai default (`INSTALL_PREFERENCE_KEYS`); su
+  Android il tasto Indietro chiudeva senza salvare; Logout in gioco e
+  "Elimina personaggio" dal menu perdevano dati; "Carica" sovrascriveva le
+  impostazioni cambiate nel menu; salvataggio fantasma dopo "Elimina
+  account"; gioco muto senza database (`UI_AUTH_ERR_DB_UNAVAILABLE`); chiave
+  HMAC corrotta fail-closed; il dialogo del tutorial intercettava ancora
+  click, drop e joystick; prompt "pulisci" su pulizia avviata; gatto
+  teletrasportato dalla ciotola in giardino; bersagli touch sotto soglia
+  (`Helpers.touch_size`); `build.yml` non era YAML valido dal 21 aprile.
+- **Tooling**: `smoke_test.sh`, `godot-validate.sh` e `generate_keystores.sh`
+  ritirati; `build_apk_local.sh` per Godot 4.7.1; validator pixel art sul
+  formato reale delle sprite; pre-commit con gli stessi validator della CI;
+  `sync_version_to_presets.py` preserva i fine riga.
 
 ### Added
 
@@ -103,7 +117,10 @@ configurazione. Suite: **250 test in 25 moduli** (moduli nuovi `test_polish` e `
   `v1/assets/audio/sfx/kenney`.
 - Economia (solo dati): `clean_reward = durata/15 + 2` (rendimento non piu`
   decrescente); attrezzi a 25/60/100 monete.
-- Test: modulo `test_polish` (8 regressioni). Versione 1.3.0.
+- Test: moduli `test_polish` (9 regressioni) e `test_review` (7). Versione 1.3.0.
+- `scripts/README.md`: tooling documentato (script, validator, pre-commit,
+  workflow, export locale desktop e APK); `preflight.sh` riscritto sugli
+  stessi validator della CI; `deep_test.sh` con gate anche sul JSONL.
 
 ### Changed
 

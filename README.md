@@ -42,7 +42,7 @@ Il loop del giocatore, nell'ordine in cui lo incontra:
 Attorno al loop: il cursore **atmosfera** nel profilo (sotto 0.50 piove e la
 stanza si scurisce, sotto 0.25 entra il temporale, sotto 0.10 il gatto va in
 WILD), le sedie usabili (E per sedersi; le sedie con le rotelle si guidano),
-**6 badge**, il tutorial in 8 step, **10 slot** di partita e i pochi toast che
+**6 badge**, il tutorial in 10 step, **10 slot** di partita e i pochi toast che
 servono (acquisto, pulizia avviata, pasto del gatto, "Partita salvata" solo col
 bottone Salva). Effetti sonori su ogni azione, volume a parte.
 
@@ -63,8 +63,8 @@ cd Projectwork-IFTS-Private
 
 # Apri in Godot 4.7.1 Stable (project.godot dichiara 4.7)
 #   Import -> v1/project.godot -> Play (F5)
-# OPPURE da CLI:
-godot4 --path v1/
+# OPPURE da CLI (binario console 4.7.1, es. Godot_v4.7.1-stable_win64_console.exe):
+godot --path v1/
 ```
 
 Il gioco funziona **offline** con JSON + SQLite locali. Opzionale:
@@ -97,8 +97,8 @@ non scarica la stanza, la riscrive dal locale. Vedi
 .
 ├── .github/workflows/     # CI/CD: ci.yml, build.yml, release.yml, pages.yml
 ├── ci/                    # Python validator (10) + 3 tool asset + requirements.txt pinnato
-├── scripts/               # Shell: smoke, preflight, deep_test, godot-validate, bump_version
-│   └── ci/                # extract_changelog.py
+├── scripts/               # deep_test, preflight, bump_version, build_apk_local (vedi scripts/README.md)
+│   └── ci/                # extract_changelog.py, verify_binary.sh
 ├── tools/                 # gen_sfx.py: sintetizza i 29 effetti sonori (deterministico)
 ├── assets-library/        # 49 pack CC0/CC-BY/OFL/MIT con licenze + CATALOG.md (fuori da v1/)
 ├── docs/                  # Landing page statica (Netlify / GitHub Pages)
@@ -110,7 +110,7 @@ non scarica la stanza, la riscrive dal locale. Vedi
 │   ├── assets/            #   Sprite, audio (musica, ambience, sfx), font, UI, palette
 │   ├── data/              #   7 cataloghi JSON (129 deco, char, room, track, badge, mess, shop)
 │   ├── docs/specs/        #   Spec di design (DevBridge, espansione gameplay)
-│   ├── locale/            #   .po Italiano + Inglese (159 chiavi per lingua)
+│   ├── locale/            #   .po Italiano + Inglese (160 chiavi per lingua)
 │   ├── scenes/            #   18 scene Godot (.tscn) + 1 TRES theme
 │   ├── scripts/           #   57 script GDScript (~15.5k righe)
 │   └── tests/             #   250 test invasivi in 25 moduli + runner headless custom
@@ -134,6 +134,7 @@ Conteggi misurati sul repository (li ricontrolla `ci/validate_doc_counts.py`): *
 | [v1/scenes/README.md](v1/scenes/README.md) | Scene, struttura nodi, flusso fra scene |
 | [v1/scripts/README.md](v1/scripts/README.md) | GDScript organizzato per dominio, 13 autoload |
 | [v1/tests/README.md](v1/tests/README.md) | Test harness deep (250 test, 25 moduli) |
+| [scripts/README.md](scripts/README.md) | Tooling: script, validator CI, pre-commit, workflow, export locale |
 | [v1/study/README.md](v1/study/README.md) | Mappa documenti ↔ argomenti d'esame, glossario |
 | [supabase/README.md](supabase/README.md) | Backup cloud push-only, stato schema |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes Keep-a-Changelog + SemVer |
@@ -174,23 +175,24 @@ Chain di inizializzazione in ordine da `v1/project.godot` (**13 autoload**, inva
 - **10 slot di partita** con anteprima (nome personaggio, monete, data), Nuova/Carica/Elimina, bottone Salva in gioco; badge per slot
 - Sedie usabili: E per sedersi; le sedie da ufficio si guidano e la posizione si salva
 - Account locale guest + username/password con lockout anti-brute-force; "Elimina account" cancella davvero tutti gli slot
-- Tutorial 8 step signal-driven, re-giocabile da settings
+- Tutorial 10 step signal-driven (movimento, decora, pulisci con E, negozio, profilo), re-giocabile da Opzioni
 - Toast (3 visibili max, auto-dismiss 3 s), nomi umani al posto degli id
 - HMAC save integrity: manomissione rilevata, fallback ai backup
 - 6 badge sbloccabili via eventi di gioco
-- i18n IT/EN via `.po` + `TranslationServer.set_locale()` — 159 chiavi per lingua; lingua di sistema adottata al primo avvio
+- i18n IT/EN via `.po` + `TranslationServer.set_locale()` — 160 chiavi per lingua; lingua di sistema adottata al primo avvio
 - Effetti sonori sintetizzati (29) con slider "Effetti"; font pixel Pixel Operator 8
 - Mobile-ready: joystick virtuale = nodo nativo `VirtualJoystick` di Godot 4.7, gated `OS.has_feature("mobile")`
 
 ## Testing
 
 ```bash
-./scripts/smoke_test.sh       # Boot headless ~2 s
-./scripts/preflight.sh        # 8 step: toolchain, integrita`, JSON, asset, boot, runtime,
-                              #   deep tests, artefatti di presentazione. GO/NO-GO exit 0/1
-./scripts/godot-validate.sh   # Full re-import + runtime ~3 min
-./scripts/deep_test.sh        # 250 test invasivi in 25 moduli, ~20-30 s (user:// isolato)
+export GODOT_BIN="$HOME/Downloads/Godot_v4.7.1-stable_win64_console.exe"   # nessun godot in PATH su Windows
+./scripts/deep_test.sh --timeout 300   # 250 test invasivi in 25 moduli, ~20-30 s (user:// isolato)
+./scripts/preflight.sh                 # GO/NO-GO: gli stessi validator della CI, lint, boot headless, suite
 ```
+
+Tutto il tooling (script, validator, pre-commit, workflow, export locale desktop
+e APK) e` documentato in [scripts/README.md](scripts/README.md).
 
 > La suite gira **solo** tramite `./scripts/deep_test.sh`. Il wrapper redirige
 > `user://` su una directory temporanea unica per run, altrimenti i test
@@ -202,7 +204,7 @@ Chain di inizializzazione in ordine da `v1/project.godot` (**13 autoload**, inva
 Dev bridge (solo build debug, mai attivo senza flag):
 
 ```bash
-godot4 --path v1/ -- --bridge          # avvia il gioco con l'API su 127.0.0.1:8080
+"$GODOT_BIN" --path v1/ -- --bridge    # avvia il gioco con l'API su 127.0.0.1:8080
 curl http://127.0.0.1:8080/status      # stato: versione, fps, mood, stress, coins
 curl -X POST http://127.0.0.1:8080/command -d '{"action":"set_mood","value":0.5}'
 ```

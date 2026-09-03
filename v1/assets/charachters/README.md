@@ -10,7 +10,7 @@
 
 ## Stato Attuale
 
-Verificato sul disco e contro `data/characters.json` il 2026-08-09.
+Verificato sul disco e contro `data/characters.json` il 2026-09-03.
 
 | Personaggio | Cartella | Nel catalogo | Note |
 |-------------|----------|:------------:|------|
@@ -111,7 +111,11 @@ opzionali (`male_rose` non ne ha: e' derivato, vedi `male_rose/DERIVED.md`).
 
 `test_catalogs.gd` carica tutti gli sprite dichiarati in `characters.json` e ne
 verifica le dimensioni: un file mancante o della misura sbagliata fa fallire la
-suite.
+suite. In CI `ci/validate_pixelart_deliverables.py --check-palette` controlla
+lo stesso formato su ogni cartella personaggio (25 PNG, 128x32 / 256x32, almeno
+un `.aseprite` salvo i set derivati con `DERIVED.md`) e segnala come warning i
+colori fuori da `assets/palette/palette_projectwork.gpl`;
+`ci/scaffold_character.py --gender male --name nome` crea la struttura vuota.
 
 ## Come Sostituire gli Sprite di un Personaggio
 

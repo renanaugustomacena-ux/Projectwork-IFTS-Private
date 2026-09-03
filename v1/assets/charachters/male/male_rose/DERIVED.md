@@ -12,5 +12,5 @@ Non esiste una cartella `aseprite_male_rose/`: la sorgente autoriale e'
 quella di `male/old/`, e una copia .aseprite ricolorata sarebbe un secondo
 originale da tenere allineato a mano.
 
-Rigenerazione: `python3 ci/recolor_character.py` (vedi lo script per la
+Rigenerazione: `python ci/recolor_character.py` (verifica in CI: `--check`) (vedi lo script per la
 tabella di rimappatura).

@@ -105,7 +105,7 @@
                     <li>6 panel UI programmatici: <code>deco_panel</code>, <code>shop_panel</code>, <code>settings_panel</code>, <code>profile_panel</code>, <code>profile_hud_panel</code>, <code>toast_manager</code></li>
                     <li><code>game_hud.gd</code> — serenity bar in-game, coin counter, prompt “Premi E”, barra di pulizia con tempo residuo, profile icon</li>
                     <li><code>deco_button.gd</code> (TextureRect subclass) — fix drag-drop Godot 4 usando pattern da reference repos</li>
-                    <li>Tutorial scripted 8 step signal-driven (<code>tutorial_manager.gd</code> 419 righe)</li>
+                    <li>Tutorial scripted 10 step signal-driven (<code>tutorial_manager.gd</code> 419 righe)</li>
                 </ul>
             </div>
 
@@ -150,7 +150,7 @@
                     <li>Test catalog integrity: ogni 129 sprite_path viene caricata, 25 char sprite verificati</li>
                     <li>Test save migration: sintetizza save v1/v3/v4 → verifica struttura v5</li>
                     <li>Test stress hysteresis: 12 casi sui threshold up/down</li>
-                    <li>Script shell: <code>smoke_test.sh</code>, <code>preflight.sh</code>, <code>deep_test.sh</code>, <code>godot-validate.sh</code></li>
+                    <li>Script shell: <code>deep_test.sh</code> (sandbox <code>user://</code>), <code>preflight.sh</code> (GO/NO-GO con gli stessi validator della CI), <code>bump_version.sh</code>, <code>build_apk_local.sh</code> — documentati in <code>scripts/README.md</code></li>
                 </ul>
             </div>
 

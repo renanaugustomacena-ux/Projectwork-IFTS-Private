@@ -447,6 +447,27 @@ piu` recente valido. Un save di versione futura viene parcheggiato, non applicat
 }
 ```
 
+### Preferenze dell'installazione, slot e reset
+
+`SaveManager.INSTALL_PREFERENCE_KEYS` = `language`, `master_volume`,
+`music_volume`, `ambience_volume`, `sfx_volume`, `ambience_enabled`,
+`display_mode`. Sono preferenze del giocatore, non della partita: quando si
+cambia slot (`set_active_slot`), si elimina lo slot attivo
+(`reset_after_slot_delete`) o si azzera il profilo (`reset_all`) il blocco
+`settings` riparte da `DEFAULT_SETTINGS` **tranne** queste chiavi, che
+conservano il valore corrente. Uno slot che ha gia` un salvataggio le
+sovrascrive con le sue in `ensure_settings_loaded`. Monete, inventario, gatto,
+decorazioni, sporco e `stat_badges_unlocked` ripartono invece da zero.
+
+Nel menu principale (latch `_full_state_loaded` spento) un cambio di lingua o
+volume viene scritto con `_save_settings_only()`: riscrive solo il blocco
+`settings` del file dello slot attivo, senza `save_completed` e senza toccare
+un file di versione futura. Su Android il salvataggio finale parte anche dal
+tasto Indietro (`NOTIFICATION_WM_GO_BACK_REQUEST`) e dal passaggio in
+background (`NOTIFICATION_APPLICATION_PAUSED`). Senza account (database non
+apribile) il salvataggio viene rifiutato ed emesso `save_failed("logged_out")`
+una sola volta per sessione.
+
 ### Migrazione save
 
 `SaveManager._migrate_save_data()` chain:

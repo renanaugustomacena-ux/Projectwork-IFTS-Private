@@ -19,7 +19,7 @@ Exit code **0** = ALL PASS, **1** = ≥ 1 failure, **124** = timeout (120 s defa
 
 ### Isolamento dal profilo giocatore (G-053)
 
-**Non lanciare `godot4 --headless --path v1/ res://tests/test_runner.tscn` a
+**Non lanciare `godot --headless --path v1/ res://tests/test_runner.tscn` a
 mano.** La suite scrive `save_data.json`, `save_data.backup*.json`,
 `cozy_room.db` e `integrity.key` dentro `user://`; con
 `use_custom_user_dir=true` + `custom_user_dir_name="RelaxRoom"` quella e` la
@@ -195,5 +195,5 @@ isteresi edge cases, input simulato** — e non richiede dipendenze esterne.
 
 - [README scripts](../scripts/README.md) — moduli testati
 - `.github/workflows/ci.yml` — job `smoke-headless` + `deep-tests`
-- `scripts/deep_test.sh`, `scripts/preflight.sh`, `scripts/godot-validate.sh` — tooling
+- `scripts/deep_test.sh`, `scripts/preflight.sh` — tooling (vedi `scripts/README.md`)
 - [CHANGELOG 1.3.0](../../CHANGELOG.md) — stato corrente e limiti noti
