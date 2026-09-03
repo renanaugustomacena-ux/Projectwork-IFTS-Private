@@ -1,0 +1,56 @@
+# 496 pixel art icons for medieval/fantasy RPG (OpenGameArt)
+
+- **Nome:** 496 pixel art icons for medieval/fantasy RPG
+- **Autore:** Henrique Lazarini (7Soul1)
+- **URL sorgente:** https://opengameart.org/content/496-pixel-art-icons-for-medievalfantasy-rpg
+- **Licenza (blocco "License(s)" copiato dalla pagina):** CC0
+- **Licenza scelta per questo progetto:** CC0
+- **Attribuzione richiesta:** Non richiesta (CC0)
+- **Copyright/Attribution Notice (dalla pagina):** -
+- **Attribution Instructions (dalla pagina):** -
+- **Data download:** 2026-09-03
+- **File:** 496
+
+## Contenuto (estratto)
+
+- `A_Armor04.png`
+- `A_Armor05.png`
+- `A_Armour01.png`
+- `A_Armour02.png`
+- `A_Armour03.png`
+- `A_Clothing01.png`
+- `A_Clothing02.png`
+- `A_Shoes01.png`
+- `A_Shoes02.png`
+- `A_Shoes03.png`
+- `A_Shoes04.png`
+- `A_Shoes05.png`
+- `A_Shoes06.png`
+- `A_Shoes07.png`
+- `Ac_Medal01.png`
+- `Ac_Medal02.png`
+- `Ac_Medal03.png`
+- `Ac_Medal04.png`
+- `Ac_Necklace01.png`
+- `Ac_Necklace02.png`
+- `Ac_Necklace03.png`
+- `Ac_Necklace04.png`
+- `Ac_Necklace05.png`
+- `Ac_Necklace06.png`
+- `Ac_Necklace07.png`
+- `Ac_Necklace08.png`
+- `Ac_Ring01.png`
+- `Ac_Ring02.png`
+- `C_Elm01.png`
+- `C_Elm03.png`
+- `C_Elm04.png`
+- `C_Hat01.png`
+- `C_Hat02.png`
+- `E_Bones02.png`
+- `E_Bones03.png`
+- `E_Gold01.png`
+- `E_Gold02.png`
+- `E_Metal01.png`
+- `E_Metal02.png`
+- `E_Metal03.png`
+- ... (496 file in totale)

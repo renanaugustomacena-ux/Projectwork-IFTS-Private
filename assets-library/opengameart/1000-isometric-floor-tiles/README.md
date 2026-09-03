@@ -1,0 +1,56 @@
+# 1000+ Isometric Floor Tiles (OpenGameArt)
+
+- **Nome:** 1000+ Isometric Floor Tiles
+- **Autore:** Screaming Brain Studios
+- **URL sorgente:** https://opengameart.org/content/1000-isometric-floor-tiles
+- **Licenza (blocco "License(s)" copiato dalla pagina):** CC0
+- **Licenza scelta per questo progetto:** CC0
+- **Attribuzione richiesta:** Non richiesta (CC0)
+- **Copyright/Attribution Notice (dalla pagina):** Screaming Brain Studios if you feel so inclined, but credit is not required :)
+- **Attribution Instructions (dalla pagina):** -
+- **Data download:** 2026-09-03
+- **File:** 63
+
+## Contenuto (estratto)
+
+- `Autotiles/128x64 Dirt A to Dirt B.png`
+- `Autotiles/128x64 Dirt A to Sand A.png`
+- `Autotiles/128x64 Dirt B to Sand A.png`
+- `Autotiles/128x64 Grass A to Dirt A.png`
+- `Autotiles/128x64 Grass A to Dirt B.png`
+- `Autotiles/128x64 Grass A to Grass B.png`
+- `Autotiles/128x64 Grass A to Sand A.png`
+- `Autotiles/128x64 Grass B to Dirt A.png`
+- `Autotiles/128x64 Grass B to Dirt B.png`
+- `Autotiles/128x64 Grass B to Sand A.png`
+- `Autotiles/128x64 Ground Tiles - Update 1.png`
+- `Large 256x128/Interior/1 Floor - Tiled 256x128.png`
+- `Large 256x128/Interior/1 Floor - Wood 256x128.png`
+- `Large 256x128/Interior/2 Decoration - Carpet 256x128.png`
+- `Large 256x128/Interior/Tiled Tsx/1 Floor - Tiled 256x128.tsx`
+- `Large 256x128/Interior/Tiled Tsx/1 Floor - Wood 256x128.tsx`
+- `Large 256x128/Interior/Tiled Tsx/2 Decoration - Carpet 256x128.tsx`
+- `Large 256x128/Pathways/1 Basic Ground - 256x144.png`
+- `Large 256x128/Pathways/1 Wilderness - 256x144.png`
+- `Large 256x128/Pathways/2 Cyber Road - 256x144.png`
+- `Large 256x128/Pathways/Grass A - Road Yellow256x144.png`
+- `Large 256x128/Pathways/Tiled Tsx/1 Basic Ground - 256x144.tsx`
+- `Large 256x128/Pathways/Tiled Tsx/1 Paths - Wilderness 256x128.tsx`
+- `Large 256x128/Pathways/Tiled Tsx/2 Cyber Road -128x72.tsx`
+- `Large 256x128/Worldmap/1 Forests 256x128.png`
+- `Large 256x128/Worldmap/2 Ground - Dry 256x128.png`
+- `Large 256x128/Worldmap/2 Ground - Rocky 256x128.png`
+- `Large 256x128/Worldmap/Tiled Tsx/1 Forests 256x128.tsx`
+- `Large 256x128/Worldmap/Tiled Tsx/2 Ground - Dry 256x128.tsx`
+- `Large 256x128/Worldmap/Tiled Tsx/2 Ground - Rocky 256x128.tsx`
+- `Small 128x64/Interior/1 Floor - Tiled 128x64.png`
+- `Small 128x64/Interior/1 Floor - Wood 128x64.png`
+- `Small 128x64/Interior/2 Decoration - Carpet 128x64.png`
+- `Small 128x64/Interior/Tiled Tsx/1 Floor - Tiled 128x64.tsx`
+- `Small 128x64/Interior/Tiled Tsx/1 Floor - Wood 128x64.tsx`
+- `Small 128x64/Interior/Tiled Tsx/2 Decoration - Carpet 128x64.tsx`
+- `Small 128x64/Pathways/1 Basic Ground - 128x72.png`
+- `Small 128x64/Pathways/1 Wilderness - 128x72.png`
+- `Small 128x64/Pathways/2 Cyber Road -128x72.png`
+- `Small 128x64/Pathways/Grass A - Road Yellow 128x72.png`
+- ... (63 file in totale)

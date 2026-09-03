@@ -1,0 +1,56 @@
+# 512 Sound Effects (8-bit style) (OpenGameArt)
+
+- **Nome:** 512 Sound Effects (8-bit style)
+- **Autore:** SubspaceAudio (Juhani Junkala)
+- **URL sorgente:** https://opengameart.org/content/512-sound-effects-8-bit-style
+- **Licenza (blocco "License(s)" copiato dalla pagina):** CC0
+- **Licenza scelta per questo progetto:** CC0
+- **Attribuzione richiesta:** Non richiesta (CC0)
+- **Copyright/Attribution Notice (dalla pagina):** -
+- **Attribution Instructions (dalla pagina):** -
+- **Data download:** 2026-09-03
+- **File:** 513
+
+## Contenuto (estratto)
+
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/INFO.txt`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Alien/sfx_deathscream_alien1.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Alien/sfx_deathscream_alien2.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Alien/sfx_deathscream_alien3.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Alien/sfx_deathscream_alien4.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Alien/sfx_deathscream_alien5.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Alien/sfx_deathscream_alien6.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android1.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android2.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android3.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android4.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android5.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android6.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android7.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Android/sfx_deathscream_android8.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human1.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human10.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human11.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human12.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human13.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human14.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human2.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human3.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human4.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human5.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human6.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human7.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human8.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Human/sfx_deathscream_human9.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Robot/sfx_deathscream_robot1.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Robot/sfx_deathscream_robot2.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Robot/sfx_deathscream_robot3.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Death Screams/Robot/sfx_deathscream_robot4.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Explosions/Clusters/sfx_exp_cluster1.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Explosions/Clusters/sfx_exp_cluster10.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Explosions/Clusters/sfx_exp_cluster11.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Explosions/Clusters/sfx_exp_cluster2.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Explosions/Clusters/sfx_exp_cluster3.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Explosions/Clusters/sfx_exp_cluster4.wav`
+- `juhani-junkala-512 (cartella rinominata: il nome originale "The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala" superava il limite di path di Windows)/Explosions/Clusters/sfx_exp_cluster5.wav`
+- ... (513 file in totale)

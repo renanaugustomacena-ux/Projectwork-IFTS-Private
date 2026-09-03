@@ -1,0 +1,55 @@
+# 40 CC0 water / splash / slime SFX (OpenGameArt)
+
+- **Nome:** 40 CC0 water / splash / slime SFX
+- **Autore:** rubberduck
+- **URL sorgente:** https://opengameart.org/content/40-cc0-water-splash-slime-sfx
+- **Licenza (blocco "License(s)" copiato dalla pagina):** CC0
+- **Licenza scelta per questo progetto:** CC0
+- **Attribuzione richiesta:** Non richiesta (CC0)
+- **Copyright/Attribution Notice (dalla pagina):** -
+- **Attribution Instructions (dalla pagina):** -
+- **Data download:** 2026-09-03
+- **File:** 40
+
+## Contenuto (estratto)
+
+- `bubble_01.ogg`
+- `bubble_02.ogg`
+- `bubble_03.ogg`
+- `loop_bubbles_02.ogg`
+- `loop_bubbles_1.ogg`
+- `loop_rain.ogg`
+- `loop_water_01.ogg`
+- `loop_water_02.ogg`
+- `loop_water_03.ogg`
+- `slime_01.ogg`
+- `slime_02.ogg`
+- `slime_03.ogg`
+- `slime_04.ogg`
+- `slime_05.ogg`
+- `slime_06.ogg`
+- `slime_07.ogg`
+- `slime_08.ogg`
+- `slime_09.ogg`
+- `slime_10.ogg`
+- `slime_11.ogg`
+- `slime_12.ogg`
+- `slime_13.ogg`
+- `slime_14.ogg`
+- `slime_15.ogg`
+- `slime_16.ogg`
+- `splash_01.ogg`
+- `splash_02.ogg`
+- `splash_03.ogg`
+- `splash_04.ogg`
+- `splash_05.ogg`
+- `splash_06.ogg`
+- `splash_07.ogg`
+- `splash_08.ogg`
+- `splash_09.ogg`
+- `splash_10.ogg`
+- `splash_11.ogg`
+- `splash_12.ogg`
+- `splash_13.ogg`
+- `splash_14.ogg`
+- `splash_15.ogg`

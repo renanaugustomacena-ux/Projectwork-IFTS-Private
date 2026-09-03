@@ -1,0 +1,56 @@
+# 700+ RPG Icons (OpenGameArt)
+
+- **Nome:** 700+ RPG Icons
+- **Autore:** Lorc
+- **URL sorgente:** https://opengameart.org/content/700-rpg-icons
+- **Licenza (blocco "License(s)" copiato dalla pagina):** CC-BY 3.0
+- **Licenza scelta per questo progetto:** CC-BY 3.0
+- **Attribuzione richiesta:** Richiesta: "700+ RPG Icons" by Lorc, https://opengameart.org/content/700-rpg-icons, CC-BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+- **Copyright/Attribution Notice (dalla pagina):** -
+- **Attribution Instructions (dalla pagina):** -
+- **Data download:** 2026-09-03
+- **File:** 789
+
+## Contenuto (estratto)
+
+- `789_Lorc_RPG_icons/Icon.1_01.png`
+- `789_Lorc_RPG_icons/Icon.1_02.png`
+- `789_Lorc_RPG_icons/Icon.1_03.png`
+- `789_Lorc_RPG_icons/Icon.1_04.png`
+- `789_Lorc_RPG_icons/Icon.1_05.png`
+- `789_Lorc_RPG_icons/Icon.1_06.png`
+- `789_Lorc_RPG_icons/Icon.1_07.png`
+- `789_Lorc_RPG_icons/Icon.1_08.png`
+- `789_Lorc_RPG_icons/Icon.1_09.png`
+- `789_Lorc_RPG_icons/Icon.1_10.png`
+- `789_Lorc_RPG_icons/Icon.1_100.png`
+- `789_Lorc_RPG_icons/Icon.1_11.png`
+- `789_Lorc_RPG_icons/Icon.1_12.png`
+- `789_Lorc_RPG_icons/Icon.1_13.png`
+- `789_Lorc_RPG_icons/Icon.1_14.png`
+- `789_Lorc_RPG_icons/Icon.1_15.png`
+- `789_Lorc_RPG_icons/Icon.1_16.png`
+- `789_Lorc_RPG_icons/Icon.1_17.png`
+- `789_Lorc_RPG_icons/Icon.1_18.png`
+- `789_Lorc_RPG_icons/Icon.1_19.png`
+- `789_Lorc_RPG_icons/Icon.1_20.png`
+- `789_Lorc_RPG_icons/Icon.1_21.png`
+- `789_Lorc_RPG_icons/Icon.1_22.png`
+- `789_Lorc_RPG_icons/Icon.1_23.png`
+- `789_Lorc_RPG_icons/Icon.1_24.png`
+- `789_Lorc_RPG_icons/Icon.1_25.png`
+- `789_Lorc_RPG_icons/Icon.1_26.png`
+- `789_Lorc_RPG_icons/Icon.1_27.png`
+- `789_Lorc_RPG_icons/Icon.1_28.png`
+- `789_Lorc_RPG_icons/Icon.1_29.png`
+- `789_Lorc_RPG_icons/Icon.1_30.png`
+- `789_Lorc_RPG_icons/Icon.1_31.png`
+- `789_Lorc_RPG_icons/Icon.1_32.png`
+- `789_Lorc_RPG_icons/Icon.1_33.png`
+- `789_Lorc_RPG_icons/Icon.1_34.png`
+- `789_Lorc_RPG_icons/Icon.1_35.png`
+- `789_Lorc_RPG_icons/Icon.1_36.png`
+- `789_Lorc_RPG_icons/Icon.1_37.png`
+- `789_Lorc_RPG_icons/Icon.1_38.png`
+- `789_Lorc_RPG_icons/Icon.1_39.png`
+- ... (789 file in totale)
