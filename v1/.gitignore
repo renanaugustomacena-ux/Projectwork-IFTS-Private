@@ -20,6 +20,9 @@ desktop.ini
 *.swp
 *.swo
 *~
+# DLL rinominate da Windows durante il reload di una GDExtension
+~*.dll
+addons/**/~*
 
 # Python cache
 __pycache__/

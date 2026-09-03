@@ -1,0 +1,3 @@
+# Dipendenze Python della CI (pinnate: V-112). Aggiornare qui, non nei workflow.
+gdtoolkit==4.5.0
+Pillow>=10,<12

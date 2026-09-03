@@ -43,7 +43,6 @@ def extract(changelog: str, version: str) -> str:
         "```\n\n"
         "**Piattaforme**:\n"
         "- **Windows**: `RelaxRoom-*-x64.exe` — standalone, nessuna install\n"
-        "- **Android**: `RelaxRoom-*.apk` — API 24+ (Android 7.0), sideload\n"
         "- **Web**: `RelaxRoom-*-html5.zip` — estrai + apri `index.html` in\n"
         "  browser moderno (Chrome/Firefox/Safari recenti)\n"
     )

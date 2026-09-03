@@ -60,7 +60,7 @@ fi
 echo "Bumping v${current} -> v${new}"
 printf '%s\n' "$new" > "$version_file"
 
-python3 scripts/sync_version_to_presets.py "$new"
+py=$(command -v python3 || command -v python); "$py" scripts/sync_version_to_presets.py "$new"
 
 echo
 echo "--- git status ---"

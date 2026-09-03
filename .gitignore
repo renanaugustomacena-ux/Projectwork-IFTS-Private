@@ -98,3 +98,9 @@ files/
 _render/
 _render_orig/
 *.original.pptx
+
+# VS Code: impostazioni locali (path assoluti della macchina)
+.vscode/
+
+# Libreria asset: i pack NON ridistribuibili restano fuori dal repo
+assets-library/_private/

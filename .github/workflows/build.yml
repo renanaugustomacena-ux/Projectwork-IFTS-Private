@@ -11,7 +11,7 @@
 # - Ogni job e` atomico: SHA256SUMS per artifact, size check in smoke-binaries
 # - Fase F (successivo): build dipende da CI green via workflow_run trigger
 #
-# Uses barichello/godot-ci:4.6 container (include templates + Android SDK +
+# Uses barichello/godot-ci:4.7.1 container (include templates + Android SDK +
 # Java 17). LFS: true per scaricare godot-sqlite multi-platform binaries.
 
 name: build
@@ -51,7 +51,7 @@ defaults:
     shell: bash
 
 env:
-  GODOT_VERSION: "4.6"
+  GODOT_VERSION: "4.7.1"
   PROJECT_PATH: "v1"
 
 jobs:
@@ -81,19 +81,17 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     container:
-      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
+      image: barichello/godot-ci@sha256:622e5ca81b54cd8038ecf7de5d157b47efc800d7cf635af2eec18a6aee4bab7e  # 4.7.1
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
           fetch-depth: 0
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
-              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
+          mkdir -p ~/.local/share/godot/export_templates/4.7.1.stable
+          if [ -d "/root/.local/share/godot/export_templates/4.7.1.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/4.7.1.stable/* \
+              ~/.local/share/godot/export_templates/4.7.1.stable/ 2>/dev/null || true
           fi
 
       - name: Compute artifact filename
@@ -156,20 +154,18 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     container:
-      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
+      image: barichello/godot-ci@sha256:622e5ca81b54cd8038ecf7de5d157b47efc800d7cf635af2eec18a6aee4bab7e  # 4.7.1
     if: ${{ !inputs.skip_android }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
           fetch-depth: 0
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
-              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
+          mkdir -p ~/.local/share/godot/export_templates/4.7.1.stable
+          if [ -d "/root/.local/share/godot/export_templates/4.7.1.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/4.7.1.stable/* \
+              ~/.local/share/godot/export_templates/4.7.1.stable/ 2>/dev/null || true
           fi
 
       - name: Prepare output dir
@@ -192,7 +188,7 @@ jobs:
         # applicato al preset (G-003).
         run: |
           # barichello/godot-ci ships with debug.keystore at /root/.android/
-          # Godot editor_settings-4.6.tres punta a ~/.android/debug.keystore
+          # Godot editor_settings-4.7.tres punta a ~/.android/debug.keystore
           # (vedi step successivo). Preset package/signed=false -> Godot usa
           # editor_settings debug per firmare APK -debug.
           mkdir -p ~/.android
@@ -215,7 +211,7 @@ jobs:
           JAVA_BIN=$(readlink -f "$(which java)")
           JAVA_DIR=$(dirname "$(dirname "$JAVA_BIN")")
           echo "Detected Java SDK: $JAVA_DIR"
-          cat > ~/.config/godot/editor_settings-4.6.tres <<EOF
+          cat > ~/.config/godot/editor_settings-4.7.tres <<EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
@@ -327,24 +323,23 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     container:
-      image: barichello/godot-ci@sha256:d3b5e88853476a4d00a52e72b3c27b65fc622d6f09137e6f129c24bbd2ebdc7c  # 4.6
+      image: barichello/godot-ci@sha256:622e5ca81b54cd8038ecf7de5d157b47efc800d7cf635af2eec18a6aee4bab7e  # 4.7.1
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.6.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.6.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.6.stable/* \
-              ~/.local/share/godot/export_templates/4.6.stable/ 2>/dev/null || true
+          mkdir -p ~/.local/share/godot/export_templates/4.7.1.stable
+          if [ -d "/root/.local/share/godot/export_templates/4.7.1.stable" ]; then
+            cp -r /root/.local/share/godot/export_templates/4.7.1.stable/* \
+              ~/.local/share/godot/export_templates/4.7.1.stable/ 2>/dev/null || true
           fi
 
       - name: Pre-import resources
         run: |
           cd "${{ env.PROJECT_PATH }}"
           godot --headless --import --path . || true
+          godot --headless --import --path .
 
       - name: Export HTML5
         run: |
