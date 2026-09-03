@@ -1,3 +1,5 @@
+> Istantanea storica. Stato corrente: vedi CHANGELOG 1.3.0 e il piano 2026-09-03.
+
 # MASTER COMPLETION PLAN — Relax Room v1.1.0
 **Date**: 2026-07-20
 **Author**: Renan Augusto Macena

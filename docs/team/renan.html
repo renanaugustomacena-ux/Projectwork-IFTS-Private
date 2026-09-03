@@ -76,7 +76,7 @@
             <div class="contrib-card">
                 <h3><i data-lucide="layers"></i> Architettura</h3>
                 <ul>
-                    <li>Progettazione signal-driven: <strong>56 segnali SignalBus</strong> tipizzati, 17 gruppi di dominio (room, character, audio, decoration mode, UI, save/load, vocabolario dei fallimenti, settings, auth, cloud, stress/mood, mess, economy, profile HUD, effetti mood)</li>
+                    <li>Progettazione signal-driven: <strong>48 segnali SignalBus</strong> tipizzati (misurati: <code>grep -c '^signal ' signal_bus.gd</code>), raggruppati per dominio: room, character, audio, decoration mode, UI, save/load, vocabolario dei fallimenti, settings, auth, cloud, stress/mood, sporco, economia, bisogni del gatto, profile HUD, effetti mood. Nella 1.3.0 i 16 segnali senza controparte sono stati rimossi</li>
                     <li>Definizione ordine autoload critico (13 singleton, ogni layer dipende solo dai precedenti)</li>
                     <li>Decisione architetturale <strong>offline-first</strong>: JSON + SQLite source-of-truth, Supabase opzionale</li>
                     <li>Pattern catalog-driven: contenuto in JSON, zero hardcoding</li>
@@ -87,23 +87,25 @@
             <div class="contrib-card">
                 <h3><i data-lucide="code"></i> Runtime + Gameplay</h3>
                 <ul>
-                    <li><code>main.gd</code> (273 righe) — controller scena principale, HUD wiring, tutorial launch, tema colore dinamico</li>
-                    <li><code>room_base.gd</code> (388 righe) — gestione stanza, spawn decorazioni, character swap con guard idempotente, pet spawn</li>
-                    <li><code>character_controller.gd</code> (128 righe) — movimento top-down WASD, animazioni direzionali, collision layers 1|2</li>
-                    <li><code>pet_controller.gd</code> (279 righe) — FSM 6 stati (IDLE/WANDER/FOLLOW/SLEEP/PLAY/WILD) con transizioni naturali, bobbing animation</li>
-                    <li><code>decoration_system.gd</code> (245 righe) — popup R/F/S/X su CanvasLayer, shift disabilita snap grid</li>
+                    <li><code>main.gd</code> (364 righe) — controller scena principale, HUD wiring, tutorial launch, tema colore dinamico</li>
+                    <li><code>room_base.gd</code> (623 righe) — gestione stanza, spawn decorazioni con aree sedia, character swap con guard idempotente, pet spawn, ciotola, zone giardino</li>
+                    <li><code>character_controller.gd</code> (388 righe) — movimento top-down WASD, animazioni direzionali, tasto E per pulire e sedersi, guida delle sedie a rotelle</li>
+                    <li><code>pet_controller.gd</code> (873 righe) — <strong>FSM 12 stati</strong> (IDLE/WANDER/FOLLOW/SLEEP/PLAY/WILD/EAT/AVOID + GO_POTTY/POTTY/ROAM_GARDEN/RETURN_HOME) con fiducia 0-100 persistita, bisogni in giardino, timeout anti-blocco</li>
+                    <li><code>decoration_system.gd</code> (287 righe) — popup R/F/S/X su CanvasLayer (solo in modalità modifica), regole di piazzamento muro/pavimento, shift disabilita snap grid</li>
                     <li><code>room_grid.gd</code>, <code>window_background.gd</code> — overlay grid editing, parallasse foresta 8 layer</li>
+                    <li><code>mess_node.gd</code>, <code>seat_area.gd</code>, <code>food_bowl.gd</code> — pulizia a tempo reale (finisce anche a gioco chiuso), sedie usabili, ciotola del gatto</li>
+                    <li><code>slot_select.gd</code> — 10 slot di partita con anteprima, Nuova/Carica/Elimina</li>
                 </ul>
             </div>
 
             <div class="contrib-card">
                 <h3><i data-lucide="layout-dashboard"></i> UI + UX</h3>
                 <ul>
-                    <li><code>panel_manager.gd</code> (210 righe) — lifecycle 4 panel (deco, settings, profile, profile_hud), mutual exclusion, Esc handler, fade tween</li>
-                    <li>5 panel UI programmatici: <code>deco_panel</code>, <code>settings_panel</code>, <code>profile_panel</code>, <code>profile_hud_panel</code>, <code>toast_manager</code></li>
-                    <li><code>game_hud.gd</code> — serenity bar in-game, coin counter, profile icon con portrait pixel-art</li>
+                    <li><code>panel_manager.gd</code> (214 righe) — lifecycle 5 panel (deco, shop, settings, profile, profile_hud), mutual exclusion, Esc handler, fade tween; un pannello aperto blocca il movimento senza rubare il focus</li>
+                    <li>6 panel UI programmatici: <code>deco_panel</code>, <code>shop_panel</code>, <code>settings_panel</code>, <code>profile_panel</code>, <code>profile_hud_panel</code>, <code>toast_manager</code></li>
+                    <li><code>game_hud.gd</code> — serenity bar in-game, coin counter, prompt “Premi E”, barra di pulizia con tempo residuo, profile icon</li>
                     <li><code>deco_button.gd</code> (TextureRect subclass) — fix drag-drop Godot 4 usando pattern da reference repos</li>
-                    <li>Tutorial scripted 8 step signal-driven (<code>tutorial_manager.gd</code> 374 righe)</li>
+                    <li>Tutorial scripted 8 step signal-driven (<code>tutorial_manager.gd</code> 419 righe)</li>
                 </ul>
             </div>
 
@@ -113,15 +115,16 @@
                     <li><code>stress_manager.gd</code> — autoload con stress continuo 0.0-1.0, <strong>isteresi</strong> su 3 livelli (calm/neutral/tense), decay passivo 2%/min</li>
                     <li><code>mess_spawner.gd</code> — Timer randomico 60-180s, max 5 concurrent, weighted pick, clamp in floor polygon</li>
                     <li><code>mess_node.gd</code> — Area2D interattiva con interaction signal, reward coin on clean</li>
-                    <li>Integrazione <code>mood_changed</code> → <code>AudioManager._on_mood_changed</code> (crossfade dinamico su track matching mood)</li>
+                    <li>Integrazione <code>mood_changed</code> → <code>AudioManager._on_mood_changed</code> (crossfade dinamico su track matching mood); la musica segue solo il cursore atmosfera</li>
+                    <li><code>sfx_controller.gd</code> + <code>tools/gen_sfx.py</code> — 29 effetti sonori sintetizzati in modo deterministico, click automatico su ogni bottone</li>
                 </ul>
             </div>
 
             <div class="contrib-card">
                 <h3><i data-lucide="save"></i> Persistenza</h3>
                 <ul>
-                    <li><code>save_manager.gd</code> (1224 righe) — JSON v5.0.0 con <strong>atomic write</strong>, backup, <strong>HMAC-SHA256</strong> integrity</li>
-                    <li>Migrazioni save v1→v2→v3→v4→v5 con erase obsolete fields + preserve coins</li>
+                    <li><code>save_manager.gd</code> (1609 righe) — JSON v5.1.0 con <strong>atomic write</strong>, ring di 3 backup, <strong>HMAC-SHA256</strong> integrity, 10 slot, salvataggio “solo settings” dal menu</li>
+                    <li>Migrazioni save v1→v2→v3→v4→v5.1 con erase obsolete fields + preserve coins</li>
                     <li>Chiave HMAC device-local in <code>user://integrity.key</code> (32 byte crypto random)</li>
                     <li>Fallback a backup se primary HMAC mismatch</li>
                 </ul>
@@ -143,7 +146,7 @@
                 <h3><i data-lucide="flask-conical"></i> Test Harness</h3>
                 <ul>
                     <li>Custom reflection-based test runner (<code>test_runner.gd</code>) senza GdUnit4</li>
-                    <li><strong>196 test invasivi</strong> in 15 moduli: helpers, catalogs, stress, save, spawn, panels, input, ui_events, crypto, save_failures, i18n_assets, phase_f, bridge, logger, mood</li>
+                    <li><strong>242 test invasivi</strong> in 24 moduli: helpers, placement, catalogs, stress, shop, cleaning, trust, needs, slots, seats, save, spawn, panels, input, movement_bounds, ui_events, crypto, save_failures, i18n_assets, phase_f, bridge, logger, mood, polish</li>
                     <li>Test catalog integrity: ogni 129 sprite_path viene caricata, 25 char sprite verificati</li>
                     <li>Test save migration: sintetizza save v1/v3/v4 → verifica struttura v5</li>
                     <li>Test stress hysteresis: 12 casi sui threshold up/down</li>
@@ -169,9 +172,9 @@
     <section class="team-page-section" data-aos="fade-up">
         <h2>Numeri complessivi</h2>
         <ul class="stats-list">
-            <li><strong>~12.300 righe GDScript</strong> (autoload + systems + rooms + UI + main)</li>
-            <li><strong>56 segnali SignalBus</strong> progettati + documentati</li>
-            <li><strong>196 test</strong> invasivi scritti + runner custom</li>
+            <li><strong>~15.500 righe GDScript</strong> in 57 script (autoload + systems + rooms + UI + menu + main), su Godot 4.7.1</li>
+            <li><strong>48 segnali SignalBus</strong> progettati + documentati (65 nella 1.2, 16 rimossi perché senza controparte)</li>
+            <li><strong>242 test</strong> invasivi in 24 moduli + runner custom</li>
             <li><strong>22 bug</strong> root-cause analyzed + fixed</li>
             <li><strong>~30 commit semantici</strong> nel sprint finale (audit → fix → test → docs)</li>
             <li><strong>4 documenti tecnici</strong> integrali (CONSOLIDATED_REPORT, DEEP_READ_REGISTRY, 2 Guide)</li>

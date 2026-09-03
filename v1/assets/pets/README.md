@@ -1,73 +1,75 @@
 # Pets — Animali Domestici
 
 > **Origine**: **Creato nel progetto** da un ex-membro del team usando Aseprite.
-> Il sorgente `.aseprite` e' incluso.
+> Elenco verificato sul disco il 2026-09-03 (i `.import` non sono contati).
 
 ## Contenuto
 
 ```
 pets/
 ├── aseprite_pets/
-│   ├── cat_void_simple.aseprite                # Sorgente Aseprite cat simple
-│   ├── cat_void_iso.aseprite                   # Sorgente Aseprite cat iso (TBD, da rifinire)
+│   ├── cat_void_simple.aseprite                # Sorgente Aseprite cat simple (unico sorgente presente)
 │   └── reference/
-│       └── cat_void_isometric_reference.jpg    # Concept art 1024x1024 (reference)
-├── cat_void_simple.png             # 80x16 — sprite strip (5 frame da 16x16)
-├── cat_void_simple.png.import
-├── cat_void_iso.png                # 160x32 — sprite strip (5 frame da 32x32)
-└── cat_void_iso.png.import
+│       └── cat_void_isometric_reference.jpg    # Concept art 1024x1024 (reference, non caricato)
+├── cat_void_simple.png             # 80x16 — strip 5 frame da 16x16 (variante 'simple')
+├── cat_void_iso.png                # 160x32 — strip 5 frame da 32x32 (variante 'iso')
+├── cat_idle.png                    # 80x16 — strip 5 frame da 16x16
+├── cat_walk.png                    # 80x16 — strip 5 frame da 16x16
+└── cat_sleep.png                   # 80x16 — strip 5 frame da 16x16
 ```
 
-## Reference / Concept Art
-
-`aseprite_pets/reference/cat_void_isometric_reference.jpg` — concept art ad alta risoluzione
-(JPEG 1024x1024) usato come guida visiva per la variante isometrica del gatto. **Non viene
-caricato dal gioco**: serve solo come riferimento di stile per chi rifinisce lo sprite in Aseprite.
+Non esiste un `cat_void_iso.aseprite`: la strip `iso` e` stata generata dal
+reference (downscale + bobbing) e non ha sorgente editabile. Riferimenti di
+stile scaricati (non caricati dal gioco): `assets/sprites/cats_ref/`.
 
 ## Specifiche Sprite
 
-### `cat_void_simple.png`
+| File | Dimensione | Frame | Uso |
+|------|------------|-------|-----|
+| `cat_void_simple.png` | 80×16 | 5 × 16×16 | `scenes/cat_void.tscn` (default) |
+| `cat_void_iso.png` | 160×32 | 5 × 32×32 | `scenes/cat_void_iso.tscn` (`pet_variant = "iso"`) |
+| `cat_idle.png` | 80×16 | 5 × 16×16 | animazione idle |
+| `cat_walk.png` | 80×16 | 5 × 16×16 | animazione walk (WANDER/FOLLOW/RETURN_HOME) |
+| `cat_sleep.png` | 80×16 | 5 × 16×16 | animazione sleep |
 
-| Proprieta' | Valore |
-|------------|--------|
-| Dimensione PNG | 80x16 pixel |
-| Frame singolo | 16x16 pixel |
-| Numero frame | 5 |
-| Formato | PNG 8-bit RGBA |
-| Tipo | Strip orizzontale |
+Formato PNG 8-bit RGBA, strip orizzontale, filtro Nearest.
 
-### `cat_void_iso.png`
+## Come e` Usato nel Gioco
 
-| Proprieta' | Valore |
-|------------|--------|
-| Dimensione PNG | 160x32 pixel |
-| Frame singolo | 32x32 pixel |
-| Numero frame | 5 |
-| Formato | PNG 8-bit RGBA |
-| Tipo | Strip orizzontale (idle bobbing) |
+- **Scene**: `scenes/cat_void.tscn` / `scenes/cat_void_iso.tscn`, selezionate da
+  `SaveManager.get_setting("pet_variant")`.
+- **Script**: `scripts/rooms/pet_controller.gd` — FSM a 12 stati (IDLE, WANDER,
+  FOLLOW, SLEEP, PLAY, WILD, EAT, AVOID, GO_POTTY, POTTY, ROAM_GARDEN,
+  RETURN_HOME) con fiducia 0-100 persistita.
+- Ombra procedurale sotto il gatto (`foot_shadow.gd`, nessuna arte).
 
-> Generato a partire dal reference isometrico tramite downscale + leggero bobbing.
-> Va rifinito a mano in Aseprite per ottenere un'animazione idle vera (orecchie/coda).
+## Animazioni mancanti (feature esistenti, arte assente)
 
-## Come e' Usato nel Gioco
+Gli stati sotto esistono nel codice e oggi riusano idle/walk/sleep:
 
-- **Scena**: `scenes/cat_void.tscn` — Nodo AnimatedSprite2D che usa `cat_void_simple.png`
-- Il gatto viene posizionato nella stanza come elemento decorativo animato
+| # | Animazione | Stato che la userebbe |
+|---|------------|-----------------------|
+| 1 | Mangia (testa nella ciotola) | EAT |
+| 2 | Accucciato / seduto | IDLE ad alta fiducia, FOLLOW fermo |
+| 3 | Corsa / scatto | WILD (tempesta), AVOID (fuga) |
+| 4 | Gioca (balzo, rotolata) | PLAY |
+| 5 | Bisogno (scava/copre) | POTTY |
+| 6 | Reazione (orecchie basse, soffio) | trust bassa, `cat_hiss` |
 
-## Come Aggiungere un Nuovo Pet
+Piu` la **ciotola** (26×14, oggi disegnata da codice in `food_bowl.gd`).
 
-1. Creare lo sprite in Aseprite/LibreSprite:
-   - Frame 16x16 pixel (per coerenza con lo stile attuale)
-   - Esportare come strip orizzontale PNG
-2. Salvare il `.aseprite` in `aseprite_pets/`
-3. Salvare il `.png` nella root di `pets/`
-4. Creare una nuova scena `.tscn` (copiare `cat_void.tscn` come base):
-   - AnimatedSprite2D con SpriteFrames
-   - Configurare hframes in base al numero di frame
-5. Aggiungere il pet come nodo nella scena della stanza
+## Come Aggiungere un'Animazione
 
-## Fonti Consigliate per Nuovi Pet
+1. Disegnare in Aseprite partendo da `cat_void_simple.aseprite`, frame 16×16,
+   palette di progetto (`assets/palette/palette_projectwork.gpl`)
+2. Esportare come strip orizzontale PNG `cat_<nome>.png` nella root di `pets/`
+   (5 frame = 80×16)
+3. Salvare il `.aseprite` in `aseprite_pets/`
+4. Aggiungere l'animazione allo `SpriteFrames` di `cat_void.tscn` e mappare lo
+   stato in `pet_controller.gd`
+5. `ci/validate_pixelart_deliverables.py` controlla dimensioni, naming e palette
 
-- **itch.io** — Cercare "pixel art pet sprite" o "pixel art cat/dog sprite"
-- **OpenGameArt** — Cercare "16x16 animal sprite"
-- Lo stile deve essere pixel art, dimensione 16x16 per coerenza
+## Fonti Consigliate
+
+- `assets/sprites/cats_ref/` — LPC Cats (bluecarrot16, OGA-BY 3.0) e Shepardskin (CC0), gia` scaricati
+- **itch.io** / **OpenGameArt** — cercare "16x16 cat sprite", stile pixel art coerente

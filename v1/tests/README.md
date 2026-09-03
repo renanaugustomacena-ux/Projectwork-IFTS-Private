@@ -1,8 +1,10 @@
 # Relax Room — Test Harness
 
-Custom headless test harness senza GdUnit4. **234 test invasivi** in 23 moduli,
-~8 secondi di esecuzione, exit code 0 (all pass) / 1 (failures). Girano in
-preflight locale + CI GitHub Actions su container `barichello/godot-ci:4.6`.
+Custom headless test harness senza GdUnit4. **242 test** invasivi in **24 moduli**
+(`grep -h '^func test_' v1/tests/integration/*.gd | wc -l` ·
+`ls v1/tests/integration/test_*.gd | grep -v test_base | wc -l`),
+~1-2 minuti di esecuzione, exit code 0 (all pass) / 1 (failures). Girano in
+preflight locale + CI GitHub Actions su container `barichello/godot-ci` 4.7.1.
 
 ## Esecuzione
 
@@ -12,7 +14,7 @@ preflight locale + CI GitHub Actions su container `barichello/godot-ci:4.6`.
 GODOT_BIN=/percorso/godot ./scripts/deep_test.sh
 ```
 
-Exit code **0** = ALL PASS, **1** = ≥ 1 failure, **124** = timeout (120s default),
+Exit code **0** = ALL PASS, **1** = ≥ 1 failure, **124** = timeout (120 s default),
 **2** = errore d'harness (Godot assente, isolamento non attivo).
 
 ### Isolamento dal profilo giocatore (G-053)
@@ -21,8 +23,8 @@ Exit code **0** = ALL PASS, **1** = ≥ 1 failure, **124** = timeout (120s defau
 mano.** La suite scrive `save_data.json`, `save_data.backup*.json`,
 `cozy_room.db` e `integrity.key` dentro `user://`; con
 `use_custom_user_dir=true` + `custom_user_dir_name="RelaxRoom"` quella e` la
-**stessa** directory che usa il gioco, quindi ogni run distruggeva i dati reali
-del giocatore.
+**stessa** directory che usa il gioco, quindi ogni run distruggerebbe i dati
+reali del giocatore.
 
 Godot 4.7 non ha un flag `--user-data-dir` e ignora i feature-override su
 `config/custom_user_dir_name`, quindi l'aggancio e` la variabile d'ambiente da
@@ -38,7 +40,7 @@ directory temporanea creata al momento:
 Conseguenze:
 
 - **Concorrenza**: la sandbox nasce da `mktemp -d`, unica per run. Due suite
-  lanciate insieme non si toccano (verificato: 196/196 su entrambe).
+  lanciate insieme non si toccano.
 - **Test non indeboliti**: `user://` esiste ancora e trasloca in blocco, quindi
   SaveManager e LocalDatabase girano sul codice vero, solo su dati usa-e-getta.
 - **Fail-safe**: il wrapper pianta un sentinella `.test_sandbox` nella sandbox e
@@ -52,28 +54,41 @@ viene rimossa a fine run se tutto e` verde, e conservata se qualcosa fallisce.
 
 ## Moduli
 
+Conteggio per file: `grep -c '^func test_' v1/tests/integration/test_<nome>.gd`.
+Ordine = `TEST_MODULES` in `test_runner.gd`.
+
 | Modulo | Test | Copertura |
 |--------|------|-----------|
 | `test_helpers.gd` | 16 | `Helpers.snap_to_grid`, `clamp_inside_floor`, floor polygon init, `format_time`, Vec2 roundtrip |
-| `test_catalogs.gd` | 22 | Ogni 129 deco sprite load + dimensions, 25 char sprite (idle/walk/interact/rotate), 2 audio track, 6 mess placeholder color, 3 theme hex, category + ID integrity, un catalogo mancante resta in coda per la UI invece di sparire (V-019) |
-| `test_stress.gd` | 12 | Isteresi 3 livelli (0.35/0.60 up, 0.25/0.50 down), clamp 0..1, mess signal integration (spawn/clean), decay passivo, persist livello_stress int |
-| `test_save.gd` | 13 | HMAC-SHA256 deterministic + length, save/load roundtrip, tampered HMAC → backup fallback, migrazione v1/v3/v4 → v5, version compare, reset_all preserve pet_variant |
-| `test_spawn.gd` | 11 | Minimal Room instance, spawn ogni 129 deco (no failure), nearest texture filter, non-centered anchor, scale/rotation/flip persist in deco_data, SCALE_STEPS cycling, clamp inside floor |
-| `test_panels.gd` | 9 | 4 panel open/close (deco, settings, profile, profile_hud), mutual exclusion, toggle-same chiude, Esc handler, SignalBus panel_opened/closed fire |
-| `test_input.gd` | 14 | WASD via `Input.action_press`, velocity direction corretta, diagonal normalizzata a SPEED=120, release azzera velocity, animazione walk/idle direzionale + flip_h |
-| `test_ui_events.gd` | 15 | `pressed.emit()` per HUD buttons apre panel corretto, DropZone stays PASS anche con panel aperto, DecoButton is TextureRect (NOT Button), `_get_drag_data` non-null con valid meta, ≥60 DecoButtons con drag_data meta dentro panel, no overlay blockers upper-right quadrant |
-| `test_crypto.gd` | 5 | PBKDF2-HMAC-SHA256 vs vettori RFC 8018, password vuota fail-closed, roundtrip hash v4, hash v4 malformato rifiutato subito, salt unico per account |
-| `test_save_failures.gd` | 10 | Segnali di errore con arity attesa, save riuscito emette solo `success`, save manomesso messo in quarantena (non scartato in silenzio), ring backup conserva le generazioni precedenti, save da versione futura parcheggiato invece che applicato, uid autenticato senza riga non conia un account ospite mentre l'ospite continua ad averlo (V-021) |
-| `test_i18n_assets.gd` | 16 | Entrambe le locale caricate + key set identico IT/EN che differiscono davvero, sprite reali per mess e badge, badge con icone e testo nelle due lingue, catalogo ambience punta a file reali, ogni mood band ha musica, texture del joystick presenti |
-| `test_phase_f.gd` | 12 | Default e reset di ogni chiave persistita, `ambience_enabled` roundtrip save/load, save rifiutato prima del load e riabilitato dopo, play_time non doppio-contato al reload, reset profilo azzera i contatori a vita, loop ambience copre l'intero file + gestione id/risorse, character swap mantiene il nodo `Character` |
-| `test_bridge.gd` | 21 | Lifecycle e triplo gate, parser HTTP (400/404/405/413), /status schema+valori, dispatch /command (mood/stress/save/language/panel), ring /events cap 200, /tree, /logs/tail, teardown stop() |
-| `test_logger.gd` | 4 | Chiusura del file a teardown, redazione dei segreti anche dentro gli Array, normalizzazione dei path assoluti a `user://`, riga di console redatta come quella su file (V-022, ramo console) |
-| `test_mood.gd` | 16 | Soglie dello slider umore: pioggia e scurimento sullo stesso numero (PLR-1), intensita` della pioggia che cresce col buio, banda musicale a 0.25 separata dalla banda ambience a 0.50, ambience per mood dal catalogo, ripristino delle ambience salvate |
+| `test_placement.gd` | 6 | Fascia muro derivata dal poligono, clamp dell'ancora a muro, normalizzazione `placement_type` (`any` ritirato), flag e limiti di scala, bande z_order, teardown |
+| `test_catalogs.gd` | 22 | Ogni 129 deco sprite load + dimensions, sprite dei personaggi, tracce audio, sprite dei mess, temi, integrita` categorie + ID, un catalogo mancante resta in coda per la UI (V-019) |
+| `test_stress.gd` | 12 | Isteresi 3 livelli (0.35/0.60 up, 0.25/0.50 down), clamp 0..1, integrazione mess spawn/clean, decay passivo, persist livello_stress int |
+| `test_shop.gd` | 5 | Catalogo negozio caricato, acquisto scala le monete e da` l'oggetto, rifiuto senza monete, ciclo di consumo, progressione del moltiplicatore attrezzi |
+| `test_cleaning.gd` | 5 | Ciclo completo paga al completamento, deadline passata al reload completa subito, deadline assurda clampata, attrezzo accorcia la pulizia, cap dei mess |
+| `test_trust.gd` | 5 | Fasce di fiducia, guadagno a pasto solo con fame, persistenza + clamp, gatto diffidente scappa, gatto fidato no |
+| `test_needs.gd` | 5 | Accumulo bisogni offline, registro zone giardino, clamp sull'unione pavimento+giardino, punto casuale dentro la zona, teardown |
+| `test_slots.gd` | 4 | Mappatura `slot_path`, cambio slot isola lo stato, primo slot libero / qualsiasi slot, `peek` su slot vuoto |
+| `test_seats.gd` | 3 | Sedersi aggancia all'ancora della sedia, muoversi su una sedia fissa fa alzare, guidare una sedia a rotelle la trascina |
+| `test_save.gd` | 14 | HMAC-SHA256 deterministico, save/load roundtrip, HMAC manomesso → backup, migrazione v1/v3/v4 → v5, version compare, reset_all preserva pet_variant |
+| `test_spawn.gd` | 11 | Room minimale, spawn di ogni 129 deco, nearest filter, anchor non centrato, scale/rotation/flip persistiti, SCALE_STEPS, clamp inside floor |
+| `test_panels.gd` | 9 | Pannelli open/close, mutua esclusione, toggle-same chiude, Esc handler, `panel_opened/closed` |
+| `test_input.gd` | 14 | WASD via `Input.action_press`, direzione della velocita`, diagonale normalizzata a 120, release azzera, animazione walk/idle + flip_h |
+| `test_movement_bounds.gd` | 4 | Il personaggio raggiunge la parete di fondo e il bordo davanti senza uscire, scivola lungo la diagonale, teardown |
+| `test_ui_events.gd` | 15 | `pressed.emit()` sui bottoni HUD apre il pannello giusto, DropZone resta PASS, DecoButton e` TextureRect, `_get_drag_data`, DecoButton con meta, nessun overlay che blocca |
+| `test_crypto.gd` | 5 | PBKDF2-HMAC-SHA256 vs vettori RFC 8018, password vuota fail-closed, roundtrip v4, hash malformato rifiutato, salt unico |
+| `test_save_failures.gd` | 10 | Segnali di errore con arity attesa, save riuscito emette solo success, save manomesso in quarantena, ring backup conserva le generazioni, versione futura parcheggiata, uid senza riga non conia un ospite (V-021) |
+| `test_i18n_assets.gd` | 16 | Locale caricate + key set identico IT/EN, sprite reali per mess e badge, testi badge nelle due lingue, ambience su file reali, musica per ogni banda, texture del joystick |
+| `test_phase_f.gd` | 12 | Default e reset di ogni chiave persistita, `ambience_enabled` roundtrip, save rifiutato prima del load, play_time non doppio-contato, reset profilo azzera i contatori, loop ambience, character swap mantiene `Character` |
+| `test_bridge.gd` | 21 | Lifecycle e triplo gate, parser HTTP (400/404/405/413), /status, /command, ring /events cap 200, /tree, /logs/tail, teardown |
+| `test_logger.gd` | 4 | Chiusura file a teardown, redazione dentro gli Array, path normalizzati a `user://`, console redatta come il file |
+| `test_mood.gd` | 16 | Soglie del cursore: pioggia e scurimento sullo stesso numero (PLR-1), intensita` crescente, banda musica 0.25 separata da ambience 0.50, ambience dal catalogo, ripristino ambience salvate |
+| `test_polish.gd` | 8 | Regressioni 1.3.0: lingua di sistema adottata come scelta esplicita, save "solo settings" non tocca la stanza, badge nel save dello slot, tetto password, prompt della SeatArea, formato tempo residuo, primo bisogno demo-friendly, segnali morti assenti |
 
-**Totale**: 234 test, ~8s.
+**Totale**: 242 test in 24 moduli, ~1-2 min (il tempo dipende da quanti frame
+attendono i test di movimento e pulizia, non dal numero di assert).
 
 `test_bridge.gd` non usa una porta fissa: la risolve a runtime partendo dal PID
-e sondando finche' non ne trova una libera, cosi` due run in parallelo non si
+e sondando finche` non ne trova una libera, cosi` due run in parallelo non si
 contendono lo stesso socket.
 
 ## Architettura
@@ -123,7 +138,7 @@ simulare keyboard. Simulazione mouse via `Viewport.push_input` documentata come
 
 `Viewport.push_input(InputEventMouseButton)` NON route affidabilmente ai Control
 in `CanvasLayer` in headless. Godot community issue noto. I test `test_ui_events`
-usano `pressed.emit()` per verificare il **wiring** (che è ciò che conta: se
+usano `pressed.emit()` per verificare il **wiring** (che e` cio` che conta: se
 questo funziona, in GUI i click reali routano correttamente attraverso la
 CanvasLayer stack).
 
@@ -131,7 +146,7 @@ CanvasLayer stack).
 
 `.github/workflows/ci.yml` jobs:
 
-- **smoke-headless** — boot Godot 4.7 headless, 0 parse/script error
+- **smoke-headless** — boot Godot 4.7.1 headless, 0 parse/script error
 - **deep-tests** — `bash scripts/deep_test.sh --timeout 90`, gated su
   smoke-headless. Il job **non** invoca mai Godot direttamente sul
   `test_runner.tscn`, e a fine run verifica che la user dir reale del runner
@@ -165,17 +180,19 @@ Artifact `/tmp/deep_ci.log` uploaded 14d retention per audit.
    ./scripts/deep_test.sh | grep test_my_case
    ```
 
+5. Aggiorna la tabella qui sopra e i conteggi nei README: `ci/validate_doc_counts.py`
+   fallisce se i numeri dichiarati divergono da quelli misurati.
+
 ## Archivio: precedente iterazione con GdUnit4
 
-Il progetto aveva originariamente 5 test suite (48 test) basati su GdUnit4 (suite
-`test_helpers`, `test_logger`, `test_save_manager`, `test_save_manager_state`,
-`test_shop_panel`). Rimosse il 29 Marzo 2026 durante semplificazione build.
-La nuova harness custom (aprile 2026) è più invasiva — **129 sprite caricati,
-scene full spawn, isteresi edge cases** — e non richiede dipendenze esterne.
+Il progetto aveva originariamente 5 test suite (48 test) basati su GdUnit4.
+Rimosse il 29 Marzo 2026 durante semplificazione build. La harness custom
+(aprile 2026) e` piu` invasiva — **129 sprite caricati, scene full spawn,
+isteresi edge cases, input simulato** — e non richiede dipendenze esterne.
 
 ## Vedi anche
 
 - [README scripts](../scripts/README.md) — moduli testati
 - `.github/workflows/ci.yml` — job `smoke-headless` + `deep-tests`
 - `scripts/deep_test.sh`, `scripts/preflight.sh`, `scripts/godot-validate.sh` — tooling
-- [AUDIT_REPORT 2026-04-23](../../AUDIT_REPORT_2026-04-23.md) — findings integrità + stabilità
+- [CHANGELOG 1.3.0](../../CHANGELOG.md) — stato corrente e limiti noti

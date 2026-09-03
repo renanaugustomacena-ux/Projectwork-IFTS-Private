@@ -1,3 +1,5 @@
+> Istantanea storica. Stato corrente: vedi CHANGELOG 1.3.0 e il piano 2026-09-03.
+
 # Audit Re-verification — 2026-08-09
 
 Re-verification of `MASTER_PLAN_2026-07-20.md` findings against current `main`

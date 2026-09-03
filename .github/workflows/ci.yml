@@ -2,7 +2,9 @@
 #
 # Documentazione:
 # Eseguita su ogni push al branch main e su ogni PR verso main.
-# 5 job paralleli: lint, validazione JSON, sprite, cross-reference, schema DB.
+# Job paralleli: lint, validazione JSON, sprite, cross-reference, schema DB,
+# focus, versione, binari addon, keystore, segnali, conteggi README, pixel art;
+# poi smoke-headless -> deep-tests in container Godot 4.7.1.
 
 name: ci
 run-name: "${{ github.head_ref || github.ref_name }} — CI"
@@ -189,6 +191,25 @@ jobs:
       - name: Check signal count floor + no duplicates
         run: python ci/validate_signal_count.py v1/scripts/autoload/signal_bus.gd --min 45
 
+  validate-doc-counts:
+    name: "Validate README counts vs repository"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Regola del repo: nessun numero copiato dalla revisione precedente. Lo
+      # script misura segnali, script, test, moduli, scene, cataloghi, tabelle,
+      # autoload, decorazioni, sporco e personaggi e li confronta con i
+      # `**N etichetta**` dichiarati in README.md e v1/README.md.
+      - name: Compare declared counts with measured ones
+        run: python ci/validate_doc_counts.py .
+
   validate-pixelart:
     name: "Validate Pixel-Art Deliverables"
     runs-on: ubuntu-22.04
@@ -262,9 +283,8 @@ jobs:
       - name: Run deep integration test suite
         run: |
           cd "$GITHUB_WORKSPACE"
-          # Invasive suite: 196 test su 15 moduli (helpers, catalogs, stress,
-          # save, spawn, panels, input, ui_events, crypto, save_failures,
-          # i18n_assets, phase_f, bridge, logger, mood).
+          # Invasive suite: i moduli sono elencati in v1/tests/README.md
+          # (conteggio misurato da ci/validate_doc_counts.py).
           #
           # SEMPRE via il wrapper, mai `godot ... test_runner.tscn` diretto: la
           # suite scrive save_data.json / cozy_room.db / integrity.key dentro

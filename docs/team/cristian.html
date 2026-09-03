@@ -76,16 +76,17 @@
             <div class="contrib-card">
                 <h3><i data-lucide="git-branch"></i> CI/CD Pipeline</h3>
                 <ul>
-                    <li><code>.github/workflows/ci.yml</code> — <strong>13 job paralleli/sequenziali</strong> su ogni push/PR</li>
+                    <li><code>.github/workflows/ci.yml</code> — <strong>14 job paralleli/sequenziali</strong> su ogni push/PR</li>
                     <li><strong>lint</strong> (gdlint + gdformat) su scripts + tests</li>
-                    <li><strong>validate-json</strong> — struttura + vincoli dei 6 catalog JSON</li>
+                    <li><strong>validate-json</strong> — struttura + vincoli dei 7 catalog JSON</li>
                     <li><strong>validate-sprites</strong> — 100+ sprite_path esistenza filesystem</li>
                     <li><strong>validate-crossrefs</strong> — constants.gd ↔ catalog IDs</li>
                     <li><strong>validate-db</strong> — sintassi CREATE TABLE</li>
-                    <li><strong>validate-signals</strong> — SignalBus floor 40 + no duplicates</li>
+                    <li><strong>validate-signals</strong> — SignalBus floor 45 + no duplicates (48 misurati)</li>
+                    <li><strong>validate-doc-counts</strong> — i numeri dei README confrontati con quelli misurati sul repo</li>
                     <li><strong>validate-pixelart</strong> — palette sync + deliverable sizes/naming</li>
-                    <li><strong>smoke-headless</strong> — boot Godot 4.6 headless 0 error</li>
-                    <li><strong>deep-tests</strong> — 196 test in 15 moduli, gated su smoke-headless, sempre via <code>scripts/deep_test.sh</code> (user dir isolata)</li>
+                    <li><strong>smoke-headless</strong> — boot Godot 4.7.1 headless 0 error</li>
+                    <li><strong>deep-tests</strong> — 242 test in 24 moduli, gated su smoke-headless, sempre via <code>scripts/deep_test.sh</code> (user dir isolata)</li>
                     <li>Config <code>concurrency</code> group + <code>paths</code> filter per minimize Actions minutes</li>
                 </ul>
             </div>
@@ -94,23 +95,22 @@
                 <h3><i data-lucide="package"></i> Build System</h3>
                 <ul>
                     <li><code>.github/workflows/build.yml</code> — export multi-platform</li>
-                    <li>Container <code>barichello/godot-ci:4.6</code> per build deterministiche</li>
+                    <li>Container <code>barichello/godot-ci</code> 4.7.1 pinnato per digest, per build deterministiche; <code>requirements.txt</code> pinnato</li>
                     <li><strong>Export Windows .exe</strong> preset con icona, versione 1.0.0</li>
                     <li><strong>Export HTML5</strong> browser-playable</li>
                     <li><strong>Export Android APK</strong> (aggiunto 2026-04-17) con architetture arm64-v8a, internet permission only — resta un <strong>esperimento non supportato</strong>: l'export fallisce nel container e il progetto non ha configurazione di firma, quindi non entra in nessuna release</li>
                     <li>Setup export templates pre-installed in container</li>
                     <li>Debug keystore setup per CI Android (l'unico keystore che il progetto usa)</li>
                     <li>Artifact upload 30d retention per ogni platform</li>
-                    <li><strong>Migrazione critica Godot 4.5 → 4.6</strong> in build.yml (N-BD1)</li>
+                    <li><strong>Migrazione critica Godot 4.5 → 4.6</strong> in build.yml (N-BD1), poi 4.7.1 nella 1.3.0 con <code>exclude_filter</code> sugli asset non di gioco (-7,5 MB per build) e SHA256SUMS completo</li>
                 </ul>
             </div>
 
             <div class="contrib-card">
                 <h3><i data-lucide="image"></i> Asset Integration</h3>
                 <ul>
-                    <li>Integrato virtual_joystick addon (CF Studios)</li>
-                    <li>Integrato sprite loading screen (background, title, barra progresso, silhouette)</li>
-                    <li>Integrato bottoni menu (buttons_static + buttons_pressed, 14 varianti)</li>
+                    <li>Integrato virtual_joystick addon (CF Studios) — sostituito nella 1.3.0 dal nodo nativo <code>VirtualJoystick</code> di Godot 4.7</li>
+                    <li>Integrato sprite loading screen e bottoni menu pixel (14 varianti) — oggi sostituiti dal tema <code>cozy_theme.tres</code> con font Pixel Operator 8</li>
                     <li>Registrati <strong>letti bongseng</strong> + mobili isometrici Thurraya in decorations.json</li>
                     <li>Integrato <strong>Kenney Furniture CC0 pack</strong> (120 PNG, 57 registered in catalog)</li>
                     <li>Sfondo parallasse Free Pixel Art Forest (Eder Muniz) — setup 8 layer</li>
@@ -190,13 +190,13 @@
     <section class="team-page-section" data-aos="fade-up">
         <h2>Numeri complessivi</h2>
         <ul class="stats-list">
-            <li><strong>13 job CI</strong> disegnati + configurati</li>
+            <li><strong>14 job CI</strong> disegnati + configurati (Godot 4.7.1)</li>
             <li><strong>2 platform export supportati</strong>: Windows + HTML5 (Android configurato ma sperimentale)</li>
-            <li><strong>9 validator Python</strong> custom per type safety non-runtime, piu' 3 tool asset</li>
+            <li><strong>10 validator Python</strong> custom per type safety non-runtime, piu' 3 tool asset</li>
             <li><strong>2 guide operative</strong> complete (CICD 1604 righe + Alex 1148 righe)</li>
             <li><strong>~400 righe Python</strong> CI scripting</li>
             <li><strong>100+ asset</strong> integrati (Kenney + Bongseng + SoppyCraft + Thurraya + Mixkit + Eder Muniz)</li>
-            <li><strong>9 asset README</strong> per ogni sottocartella</li>
+            <li><strong>14 asset README</strong> per ogni sottocartella, piu' <code>assets-library/CATALOG.md</code> (49 pack con licenze)</li>
         </ul>
     </section>
 

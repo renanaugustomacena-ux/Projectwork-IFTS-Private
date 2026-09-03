@@ -5,6 +5,124 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-03
+
+Sessione "studio profondo + migliorare l'esistente": 13 agenti di audit in
+sola lettura (codice, documenti, asset, compatibilita` Godot 4.7, playtest
+per lettura, giochi comparabili, idiomi Godot, raccolta asset), poi
+correzioni guidate dai principi del corso Q3 — 23 programmazione difensiva,
+20 resilienza, 14 macchine a stati, 13 eventi/messaggi, 11 data-driven,
+02 separazione modulare, 08 filesystem/asset, 22 build system, 05
+configurazione. Suite: **242 test in 24 moduli** (modulo nuovo `test_polish`).
+
+### Fixed
+
+- **Godot 4.7**: l'addon `virtual_joystick` dichiarava un `class_name` in
+  conflitto col nuovo nodo nativo `VirtualJoystick` e il joystick mobile era
+  rotto in silenzio — sostituito dal nodo nativo. Deadzone `ui_*` 0.2 in
+  `project.godot`; sezioni `[dotnet]`/`[animation]` residue e azione
+  `toggle_music` morta rimosse; `window/stretch/aspect="keep"` esplicito.
+- **Perdita dati**: "Menu" ed "Esci" ora salvano davvero (prima solo dirty
+  flag o quit diretto: fino a 60 s persi); lingua e volumi cambiati dal menu
+  principale vengono persistiti con un salvataggio "solo settings" sul file
+  esistente; i volumi salvati valgono anche nel menu; la lingua di sistema al
+  primo avvio viene adottata (prima al secondo avvio il gioco passava in
+  inglese); "Elimina personaggio" in gioco ricostruisce la stanza; "Elimina
+  account" cancella davvero tutti gli slot e la riga account (hard delete con
+  CASCADE); nessuna scrittura DB in stato LOGGED_OUT.
+- **Gatto**: i poligoni giardino erano disgiunti dal pavimento e il gatto
+  restava bloccato per sempre sul bordo — ora si sovrappongono e ogni
+  attraversamento ha un timeout di 20 s; primo bisogno a 3-6 min (era 6 h);
+  cap dei bisogni offline 3 (era 8: serenita` a zero al rientro); fiducia
+  iniziale 35 (era 0: scappava per il primo quarto d'ora); PLAY non porta
+  piu` a FOLLOW un gatto diffidente; clamp al pavimento unico per tutti gli
+  stati; orologio tornato indietro gestito per bisogni e pasti;
+  `_potty_indoor` resettato a fine tempesta; ciotola irraggiungibile con
+  timeout.
+- **Mood**: pioggia, overlay e WILD riapplicati all'ingresso in stanza (la
+  pioggia moriva col menu); pioggia disegnata davanti ai mobili; la musica
+  segue SOLO il cursore atmosfera (prima lo stress alzava il temporale in
+  una stanza soleggiata).
+- **Interazione**: rimosso il percorso legacy `interaction_type` (0 voci,
+  prompt che E non poteva soddisfare); prompt "Premi E per sederti/pulire"
+  su sedie e sporco; E su una pulizia gia` avviata non mima piu` l'azione;
+  il prompt non resta acceso dopo il reload.
+- **UI**: il focus non viene piu` rubato aprendo Negozio/Opzioni (Invio e
+  Spazio compravano, A/D cambiavano il volume); il movimento e` bloccato da
+  "pannello aperto" e non da chi ha il focus; popup R/F/S/X solo in Modalita`
+  modifica, clampato allo schermo, scala a gradini corretta e profondita`
+  ricalcolata; sedia dietro al personaggio da subito; tutorial: step 5
+  riscritto (R/F/S/X sono bottoni, S muoveva il personaggio), il dialogo
+  non copre piu` il pavimento (drop dello step 4 perso), avviso al timeout;
+  toast spostati (coprivano i pannelli), nomi umani al posto degli id,
+  "Partita salvata" solo col bottone Salva (prima ogni 60 s); validator del
+  focus esteso a slider e OptionButton.
+- **Dati**: badge per slot (una partita nuova nasceva con i badge della
+  vecchia); tabella `inventario` mai popolata (chiavi `id`/`qty`); 4 indici
+  duplicati rimossi; `save_metadata` finalmente scritta (slot, versione);
+  FK fail-closed; username fuori dai log; password con tetto 128; username
+  case-insensitive (bypass del lockout); `supabase_session.cfg` non piu`
+  scritto senza configurazione.
+- **Build**: CI su `barichello/godot-ci` 4.7.1; `scripts/**` nei path
+  filter; `requirements.txt` pinnato; `lfs: true` rimosso (nessun oggetto
+  LFS); export con `exclude_filter` (test, preview, PSD, originali: -7,5 MB
+  per build); 283 MB di librerie iOS inutilizzate rimosse; SHA256SUMS
+  completo (macOS incluso); linux arm64 (binari inesistenti) tolto dal
+  `.gdextension`; export Web con `extensions_support` (variante nothreads).
+- **Igiene**: `.uid` orfani, `docs/css` e `docs/js` stale,
+  `register_kenney_assets.py`, spec spostata fuori dalla cartella pubblica
+  del sito, `~*.dll` e `.vscode/` ignorati, riga APK fantasma nelle note di
+  release, CHANGELOG `[Unreleased-pre-1.2]` confluito in 1.2.0.
+
+### Added
+
+- **Effetti sonori**: 29 suoni sintetizzati (`tools/gen_sfx.py`,
+  riproducibile byte per byte) + `SfxController` figlio di AudioManager
+  (click su ogni bottone, piazzamento, pulizia, monete, acquisto, badge,
+  gatto, tuono); slider "Effetti" nelle impostazioni (`sfx_volume`, che
+  prima era persistito ma non pilotava nulla).
+- Font pixel **Pixel Operator 8** (CC0) come font del tema.
+- Musica calma non-pioggia (`calm_lofi_loop.ogg`, "Chill lofi inspired" di
+  omfgdude, CC0) e ambience pioggia sul vetro (alxl, CC0): file presenti,
+  cablaggio in `tracks.json` ancora da fare (vedi limiti).
+- **Catalogo decorazioni bilingue** (`name_it`/`name_en` su 129 voci e 13
+  categorie); pannello Decora con griglie pigre, ordinamento per stile,
+  memoria dell'ultima categoria, hint Shift=griglia, anteprima drag 1:1.
+- Toast di acquisto, "pulizia avviata: pronta tra X", esito del pasto del
+  gatto, cambio di fiducia; tempo residuo sopra la barra di pulizia;
+  sottotitoli del negozio ("Pulisci ×2 piu` in fretta", velocita` attuale);
+  "Compra" grigio senza monete; "Mangia" disabilitato a stress zero; nome
+  del personaggio negli slot; ESC e conferma a tempo nella schermata slot;
+  "Accedi / Registrati" nel profilo per l'ospite.
+- `room.png` a risoluzione nativa 1280×720 (era uno screenshot 2528×1696
+  con i bottoni della vecchia UI dipinti dentro, scalato a runtime); layer
+  luce della foresta nel menu; `FloorRect` che copre davvero il pavimento.
+- Libreria asset `assets-library/` (49 pack CC0/CC-BY/OFL/MIT con licenze e
+  `CATALOG.md`, fuori da `v1/`); `v1/assets/ui/fonts`,
+  `v1/assets/sprites/emotes`, `v1/assets/sprites/cats_ref`,
+  `v1/assets/audio/sfx/kenney`.
+- Economia (solo dati): `clean_reward = durata/15 + 2` (rendimento non piu`
+  decrescente); attrezzi a 25/60/100 monete.
+- Test: modulo `test_polish` (8 regressioni). Versione 1.3.0.
+
+### Changed
+
+- 16 segnali di SignalBus senza controparte rimossi (da 65 a **48
+  segnali**); `validate_signal_count --min 45`.
+- Ambience: `ambience_toggled` rimosso (mai emesso).
+
+### Known limitations
+
+- Supabase resta un client dormiente: nessun percorso lo attiva. E` un
+  backup progettato, non una sincronizzazione.
+- `tracks.json` non usa ancora la traccia calma nuova: la musica "calm" e`
+  ancora una registrazione di pioggia (AG-1).
+- Arte mancante per feature esistenti: personaggio seduto, gatto che mangia
+  o accucciato, ciotola (placeholder da codice), icone del negozio (quadrati
+  colorati). Il pack `v1/assets/sprites/rooms/bongseng/` non ha una licenza
+  tracciabile: da chiarire o sostituire.
+- Export Web non collaudato a mano; Android sperimentale e non firmato.
+
 ## [1.2.0] - 2026-08-14
 
 Sessione "fondamenta + gameplay": stabilizzazione guidata dai principi del
@@ -59,9 +177,9 @@ cinque fasi di gameplay nuove. Suite: **234 test in 23 moduli**, tutti verdi.
 - Progetto su **Godot 4.7** (l'immagine CI resta 4.6: mismatch noto, da
   riallineare al primo run).
 
-## [Unreleased-pre-1.2]
+### Lavoro dell'8-9 agosto 2026 confluito nella 1.2.0 (DevBridge, i18n, isolamento dei test)
 
-### Added
+#### Added
 
 - **DevBridge (tooling di sviluppo)**: API HTTP locale debug-only per audit e
   test. Autoload 13, attivo solo con build debug + flag `--bridge`, bind
@@ -83,7 +201,7 @@ cinque fasi di gameplay nuove. Suite: **234 test in 23 moduli**, tutti verdi.
   l'ampliamento di `test_i18n_assets` (16) e `test_save_failures` (10).
   Totale **196 test su 15 moduli**, da 168 su 14.
 
-### Fixed
+#### Fixed
 
 - **La pioggia segue il cursore dell'umore invece di contraddirlo.** Le gocce
   comparivano solo sotto 0.15 mentre la stanza cominciava a scurirsi gia' a
@@ -110,7 +228,7 @@ cinque fasi di gameplay nuove. Suite: **234 test in 23 moduli**, tutti verdi.
   senza, quindi il comando `./scripts/preflight.sh` scritto in ogni guida
   usciva 126 (G-026).
 
-### Changed
+#### Changed
 
 - **La suite di test gira in una directory utente usa-e-getta.** Scriveva
   `save_data.json`, `cozy_room.db` e `integrity.key` dentro `user://`, che con
@@ -140,7 +258,7 @@ cinque fasi di gameplay nuove. Suite: **234 test in 23 moduli**, tutti verdi.
   `door.png` e l'intero set `female/` — e omettevano `male_rose`, in catalogo
   da tempo (G-017, G-048, G-063).
 
-### Security
+#### Security
 
 - **Un uid autenticato senza riga nel database non conia piu' un account
   ospite.** Il fallback creava la riga con la mail segnaposto `offline@local`
@@ -334,5 +452,8 @@ cataloghi, avvio a runtime). Dettaglio con ancoraggi riga per riga in
 - 63 Kenney PNG bathroom/kitchen/tiles non registrati in
   `decorations.json`
 
-[Unreleased]: https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/renanaugustomacena-ux/Projectwork-IFTS-Private/releases/tag/v1.0.0

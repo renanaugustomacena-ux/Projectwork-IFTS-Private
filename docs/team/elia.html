@@ -75,9 +75,9 @@
             <div class="contrib-card">
                 <h3><i data-lucide="database"></i> SQLite Locale</h3>
                 <ul>
-                    <li><code>local_database.gd</code> (388 righe) — facade SQLite via godot-sqlite GDExtension v4.7, delega a 9 repo modulari in <code>autoload/database/</code></li>
+                    <li><code>local_database.gd</code> (394 righe) — facade SQLite via godot-sqlite GDExtension v4.7, delega a 9 repo modulari in <code>autoload/database/</code></li>
                     <li><strong>9 tabelle di base</strong>: <code>accounts</code>, <code>characters</code>, <code>rooms</code>, <code>inventario</code>, <code>sync_queue</code>, <code>settings</code>, <code>save_metadata</code>, <code>music_state</code>, <code>placed_decorations</code> (piu' <code>badges_unlocked</code> e <code>sync_dead_letter</code> aggiunte dopo)</li>
-                    <li>Indici su foreign keys per performance query</li>
+                    <li>4 indici sulle FK senza vincolo UNIQUE (i 4 duplicati degli autoindex UNIQUE rimossi nella 1.3.0); <code>foreign_keys=ON</code> fail-closed</li>
                     <li><code>PRAGMA journal_mode=WAL</code> + <code>foreign_keys=ON</code> + <code>busy_timeout=5000</code></li>
                     <li>BEGIN/COMMIT/ROLLBACK transaction pattern in <code>_on_save_requested</code></li>
                     <li>CRUD completo per ogni tabella: upsert, get, update, delete, soft_delete</li>
@@ -89,7 +89,7 @@
                 <ul>
                     <li><strong>Migration 1</strong>: characters legacy senza <code>character_id</code> → backup <code>characters_bak</code> + <code>inventario_bak</code> pre-DROP (safety net rollback-safe)</li>
                     <li><strong>Migration 2</strong>: <code>ALTER TABLE accounts ADD COLUMN</code> per <code>display_name</code>, <code>updated_at</code>, <code>password_hash</code>, <code>deleted_at</code>, <code>coins</code>, <code>inventario_capacita</code></li>
-                    <li><strong>Migration 3</strong>: <code>ALTER TABLE inventario ADD COLUMN</code> per <code>item_type</code>, <code>is_unlocked</code>, <code>acquired_at</code></li>
+                    <li><strong>Migration 3</strong>: <code>CREATE TABLE IF NOT EXISTS sync_dead_letter</code> + <code>accounts.failed_attempts</code> / <code>lockout_until_unix</code> (lockout persistito)</li>
                     <li>Migrations idempotenti — si possono eseguire più volte senza errori</li>
                     <li>Logging strutturato di ogni step migration per debugging</li>
                 </ul>
@@ -98,7 +98,7 @@
             <div class="contrib-card">
                 <h3><i data-lucide="shield-check"></i> Auth + Security</h3>
                 <ul>
-                    <li><code>auth_manager.gd</code> (414 righe) — guest + username/password</li>
+                    <li><code>auth_manager.gd</code> (418 righe) — guest + username/password (username case-insensitive, password con tetto 128)</li>
                     <li><strong>PBKDF2-HMAC-SHA256 v4</strong> (RFC 8018 §5.2) con salt per-account 16 byte, 100.000 iterazioni, chiave derivata 32 byte</li>
                     <li>Legacy hash migration: al primo login riuscito con un hash v1/v2/v3 si ri-hasha automaticamente a v4</li>
                     <li>Rate limiting persistito su <code>accounts</code>: <strong>5 tentativi</strong> falliti → lockout 300s</li>
@@ -110,7 +110,7 @@
             <div class="contrib-card">
                 <h3><i data-lucide="cloud"></i> Supabase Cloud</h3>
                 <ul>
-                    <li><code>supabase_client.gd</code> (878 righe) — REST API client asincrono</li>
+                    <li><code>supabase_client.gd</code> (883 righe) — REST API client asincrono, oggi un client dormiente: nessun percorso di gioco lo attiva senza configurazione manuale</li>
                     <li>Schema cloud versionato (<code>supabase/schema.sql</code>): 5 tabelle PostgreSQL con RLS <code>auth.uid() = user_id</code> su ogni policy</li>
                     <li>5 tabelle push live: <code>profiles</code>, <code>user_currency</code>, <code>user_settings</code>, <code>music_preferences</code>, <code>room_decorations</code></li>
                     <li><strong>Solo push</strong>: il cloud e' un backup del dispositivo, non una sincronizzazione fra dispositivi — il percorso di lettura non e' mai innescato</li>
@@ -138,7 +138,8 @@
                     <li>HMAC-SHA256 save file validation design (architettura con Renan)</li>
                     <li>Atomic write pattern: temp file → rename per prevenire corruzione</li>
                     <li>Backup automatico prima di ogni save nuovo</li>
-                    <li>Type validation ad ogni <code>_apply_save_data</code> (settings, music, inventory, character)</li>
+                    <li>Type validation ad ogni <code>_apply_save_data</code> (settings, music, inventory, character, pet, messes)</li>
+                    <li>Mirror SQLite completo dalla 1.3.0: <code>inventario</code> popolato (chiavi <code>id</code>/<code>qty</code>), <code>save_metadata</code> scritta con slot e versione, il DB e' unico per i 10 slot</li>
                     <li>Clamping valori numerici: livello_stress 0-100, volume 0-1, capacita 1-999</li>
                 </ul>
             </div>
@@ -178,7 +179,7 @@
             <li><strong>5 tabelle Supabase</strong> in <code>supabase/schema.sql</code>, esattamente quelle che il client scrive</li>
             <li><strong>Cloud in sola scrittura</strong>: backup del dispositivo, nessun richiamo dei dati dal cloud</li>
             <li><strong>3 migrazioni</strong> idempotenti con backup pre-DROP</li>
-            <li><strong>~2000 righe GDScript</strong> (local_database + supabase_* + auth_manager), piu' 1317 nei 9 repo modulari</li>
+            <li><strong>~2.100 righe GDScript</strong> (local_database + supabase_* + auth_manager), piu' i 9 repo modulari in <code>autoload/database/</code></li>
             <li><strong>PBKDF2-HMAC-SHA256 100k iter</strong> (RFC 8018) + rate limiting persistito + soft delete</li>
             <li><strong>HMAC-SHA256 save integrity</strong> con chiave device-local</li>
         </ul>

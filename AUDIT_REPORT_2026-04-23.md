@@ -1,3 +1,5 @@
+> Istantanea storica. Stato corrente: vedi CHANGELOG 1.3.0 e il piano 2026-09-03.
+
 # AUDIT REPORT — Relax Room / Projectwork-IFTS
 **Date**: 2026-04-23
 **Commit base**: `58a61b5` (branch `demo-triage-2026-04-22`)

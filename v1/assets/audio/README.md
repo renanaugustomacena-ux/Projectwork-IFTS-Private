@@ -1,70 +1,89 @@
-# Audio — Tracce Musicali Ambientali
+# Audio — Musica, Ambience, Effetti
 
-> **Origine**: Scaricate da **Mixkit** (libreria audio gratuita).
-> Nessun audio e' stato creato internamente al progetto.
+> **Origine**: le due tracce storiche vengono da **Mixkit**; la musica calma da
+> OpenGameArt (omfgdude, CC0); le ambience `fireplace` e `rain_soft` sono
+> sintetizzate dal team, `rain_window_loop` da OpenGameArt (alxl, CC0); i 29
+> effetti sonori sono sintetizzati con `tools/gen_sfx.py`; 29 OGG Kenney (CC0)
+> sono pronti in `sfx/kenney/` ma non ancora cablati.
 
 ## Contenuto
 
 ```
 audio/
-└── music/
-    ├── mixkit-light-rain-loop-1253.wav          # 6.7 MB — pioggia leggera (loop)
-    ├── mixkit-light-rain-loop-1253.wav.import
-    ├── mixkit-light-rain-with-thunderstorm-1290.wav  # 6.2 MB — pioggia + tuoni (loop)
-    └── mixkit-light-rain-with-thunderstorm-1290.wav.import
+├── music/
+│   ├── mixkit-light-rain-loop-1253.wav               # pioggia leggera (loop) — rain_loop
+│   ├── mixkit-light-rain-with-thunderstorm-1290.wav  # pioggia + tuoni (loop) — rain_thunder
+│   ├── calm_lofi_loop.ogg                            # "Chill lofi inspired" (omfgdude, CC0) — NON ancora in tracks.json
+│   └── CREDITS_calm_lofi_loop.md
+├── ambience/
+│   ├── ambience_fireplace.wav                        # loop sintetizzato — calm/neutral
+│   ├── ambience_rain_soft.wav                        # loop sintetizzato — tense/stormy
+│   ├── rain_window_loop.wav                          # "Rain on Window Loop" (alxl, CC0) — NON ancora in tracks.json
+│   └── CREDITS_rain_window_loop.md
+└── sfx/
+    ├── synth/                                        # 29 WAV generati (vedi synth/README.md)
+    └── kenney/                                       # 29 OGG Kenney CC0 (vedi kenney/README.md)
 ```
-
-**Totale**: 2 tracce WAV, ~13 MB
 
 ## Specifiche Tecniche
 
-| Proprieta' | Valore |
-|------------|--------|
-| Formato | WAV (PCM, 16-bit) |
-| Canali | Stereo |
-| Sample Rate | 44.100 Hz |
-| Compressione Godot | Mode 2 |
+| Proprieta` | Musica Mixkit | Ambience synth | SFX synth |
+|------------|---------------|----------------|-----------|
+| Formato | WAV PCM 16-bit stereo | WAV PCM 16-bit | WAV PCM 16-bit mono |
+| Sample rate | 44.100 Hz | 44.100 Hz | 22.050 Hz (UI), 44.100 Hz (tuono, fusa) |
+| Loop | si | si (zero-crossing + crossfade) | solo `clean_loop_*`, `cat_purr_loop` |
 
-## Come Sono Usate nel Gioco
+## Come Sono Usati nel Gioco
 
-1. **`data/tracks.json`** — Catalogo che mappa gli ID alle tracce:
-   - `rain_loop` → `mixkit-light-rain-loop-1253.wav`
-   - `rain_thunder` → `mixkit-light-rain-with-thunderstorm-1290.wav`
+1. **`data/tracks.json`** — catalogo musica (`tracks[]`) e ambience (`ambience[]`) con le bande `moods`.
+2. **`AudioManager`** (`scripts/autoload/audio_manager.gd`) — dual-player con crossfade 2 s;
+   la musica cambia sotto 0.25 del cursore atmosfera, l'ambience sotto 0.50
+   (stessa soglia a cui la stanza si scurisce e piove). Dalla 1.3.0 la musica
+   segue **solo** il cursore: lo stress di gioco non cambia piu` la traccia.
+3. **`AmbienceController`** (`scripts/systems/ambience_controller.gd`) — loop
+   ambientali per banda, ripristino delle ambience salvate.
+4. **`SfxController`** (`scripts/systems/sfx_controller.gd`) — pool di 6 player,
+   carica per nome da `sfx/synth/`; `AudioManager.play_sfx("coin")`; ogni Button
+   fa click da solo. Volume: `sfx_volume` (slider "Effetti" nelle impostazioni).
 
-2. **`AudioManager`** (`scripts/autoload/audio_manager.gd`) — Le riproduce con crossfade automatico all'avvio del gioco. Alterna le tracce in shuffle mode.
+## Limite aperto (AG-1)
+
+`calm_lofi_loop.ogg` e `rain_window_loop.wav` sono nel repo con i loro CREDITS
+ma **non** in `tracks.json`: la banda `calm` suona ancora `rain_loop` (pioggia).
+Cablarli = aggiungere due voci al catalogo, nessun codice.
 
 ## Come Aggiungere Nuove Tracce
 
-1. Scaricare la traccia in formato **WAV** (o OGG per file piu' leggeri)
-2. Metterla in `audio/music/` (o creare `audio/ambience/` per effetti ambientali)
-3. Aggiungere una nuova entry in `data/tracks.json`:
-   ```json
-   {
-       "id": "nuovo_id",
-       "name": "Nome Traccia",
-       "path": "res://assets/audio/music/nome_file.wav",
-       "type": "music"
-   }
-   ```
-4. Riaprire il progetto in Godot — il file `.import` verra' creato automaticamente
-5. `AudioManager` gestira' la nuova traccia automaticamente
+1. Mettere il file in `audio/music/` (musica) o `audio/ambience/` (loop ambientale),
+   preferibilmente **OGG** per il peso
+2. Accanto al file, un `CREDITS_<nome>.md` con autore, URL, licenza, data
+3. Aggiungere l'entry in `data/tracks.json` (`tracks[]` o `ambience[]`) con le bande `moods`
+4. Riaprire il progetto in Godot — il `.import` viene creato automaticamente
+5. `test_i18n_assets` verifica che ogni path del catalogo esista e che ogni banda abbia una traccia
 
-## Fonti Consigliate per Nuove Tracce
+Per un nuovo **effetto sonoro**: aggiungere la funzione `sfx_<nome>` in coda alla
+lista `SOUNDS` di `tools/gen_sfx.py`, rilanciare lo script, chiamare
+`AudioManager.play_sfx("<nome>")`.
 
-- **Mixkit** (mixkit.co) — Licenza gratuita, uso commerciale OK
-- **Freesound** (freesound.org) — Licenze varie (controllare per ogni file)
-- **Kenney** (kenney.nl) — CC0, ottimi effetti sonori
-- **OpenGameArt** (opengameart.org) — Varie licenze CC
+## Fonti Consigliate
 
-## Licenza
+- **Kenney** (kenney.nl) — CC0, pack completi gia` in `assets-library/kenney/`
+- **OpenGameArt** (opengameart.org) — filtrare per CC0 / CC-BY / OGA-BY
+- **Mixkit** (mixkit.co) — Free license
+- **Freesound** (freesound.org) — licenze varie, controllare per ogni file
+
+## Licenze
 
 | Fonte | Licenza | Note |
 |-------|---------|------|
-| Mixkit | Free license | Uso personale e commerciale consentito, nessuna restrizione |
+| Mixkit | Free license | Uso personale e commerciale, nessuna restrizione |
+| omfgdude — Chill lofi inspired | CC0 | Attribuzione gradita, non richiesta |
+| alxl — Rain on Window Loop | CC0 | Attribuzione gradita, non richiesta |
+| Kenney SFX | CC0 1.0 | Attribuzione non richiesta |
+| Ambience e SFX sintetizzati | Progetto IFTS | Generati dal team |
 
 ## Attenzione
 
 - I file `.import` sono generati da Godot — **non modificarli a mano**
-- Se cancelli un WAV e lo rimetti, Godot rigenera il `.import` al prossimo avvio
-- Le tracce sono pesanti (~6-7 MB ciascuna). Per risparmiare spazio, convertire in OGG (qualita' 6-8)
-- `audio_manager.gd` cerca anche in `audio/ambience/` — cartella attualmente vuota ma pronta
+- Le tracce Mixkit pesano ~6-7 MB ciascuna: se serve spazio, convertire in OGG (qualita` 6-8)
+- Non editare i WAV di `sfx/synth/` a mano: si rigenerano dallo script (seed fisso)
