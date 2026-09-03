@@ -25,7 +25,7 @@ senza toccare il codice. `GameManager._load_catalogs()` legge tutti al boot
 | `decorations.json` | 129 deco in 13 categorie (1 hidden: pets), nomi IT/EN | `ci/validate_json_catalogs.py` |
 | `characters.json` | 2 personaggi: `male_old`, `male_rose` (directional) | idem |
 | `rooms.json` | 1 stanza `cozy_studio` × 3 temi | idem |
-| `tracks.json` | 2 tracks (Mixkit) + 2 ambience sintetizzate | idem |
+| `tracks.json` | 3 tracks (lofi omfgdude + 2 Mixkit) + 2 ambience sintetizzate | idem |
 | `mess_catalog.json` | 8 tipi di sporco con durata e ricompensa di pulizia | idem |
 | `badges.json` | 6 badge sbloccabili con condizione + testi IT/EN | idem |
 | `shop.json` | 3 cibi player, 1 croccantini, 3 attrezzi | idem |
@@ -91,10 +91,10 @@ menu mostra `character_select`.
 ```jsonc
 {
   "tracks": [{
-    "id": "rain_loop", "title": "Light Rain", "artist": "Mixkit",
-    "path": "res://assets/audio/music/mixkit-light-rain-loop-1253.wav",
-    "genre": "ambient",
-    "moods": ["calm", "neutral"]  // banda MUSICA (vedi soglie sotto)
+    "id": "calm_lofi", "title": "Chill lofi inspired", "artist": "omfgdude (CC0)",
+    "path": "res://assets/audio/music/calm_lofi_loop.ogg",
+    "genre": "lofi",
+    "moods": ["calm", "neutral"]  // banda MUSICA (vedi soglie sotto); rain_loop -> tense, rain_thunder -> stormy
   }],
   "ambience": [{
     "id": "ambience_rain_soft", "title": "Soft Rain", "artist": "Team IFTS (synth)",

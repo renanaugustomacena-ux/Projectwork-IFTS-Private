@@ -117,8 +117,8 @@ Ogni decorazione mappa al suo sprite (`sprites/rooms/Individuals/`,
 crossfade su due bande di mood (musica < 0.25, ambience < 0.50), seguendo solo
 il cursore atmosfera. Gli effetti sonori **non** passano dal catalogo:
 `SfxController` carica per nome da `audio/sfx/synth/` (`AudioManager.play_sfx("coin")`).
-Limite aperto: `calm_lofi_loop.ogg` e `rain_window_loop.wav` non sono ancora in
-`tracks.json` (AG-1).
+`calm_lofi_loop.ogg` e` la musica delle bande calm/neutral (AG-1 chiuso);
+`rain_window_loop.wav` resta fuori catalogo (la pioggia soft sintetizzata copre gia` tense/stormy).
 
 ### Sfondi → `window_background.gd`
 

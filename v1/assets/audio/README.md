@@ -13,12 +13,12 @@ audio/
 ├── music/
 │   ├── mixkit-light-rain-loop-1253.wav               # pioggia leggera (loop) — rain_loop
 │   ├── mixkit-light-rain-with-thunderstorm-1290.wav  # pioggia + tuoni (loop) — rain_thunder
-│   ├── calm_lofi_loop.ogg                            # "Chill lofi inspired" (omfgdude, CC0) — NON ancora in tracks.json
+│   ├── calm_lofi_loop.ogg                            # "Chill lofi inspired" (omfgdude, CC0) — musica calm/neutral (in loop)
 │   └── CREDITS_calm_lofi_loop.md
 ├── ambience/
 │   ├── ambience_fireplace.wav                        # loop sintetizzato — calm/neutral
 │   ├── ambience_rain_soft.wav                        # loop sintetizzato — tense/stormy
-│   ├── rain_window_loop.wav                          # "Rain on Window Loop" (alxl, CC0) — NON ancora in tracks.json
+│   ├── rain_window_loop.wav                          # "Rain on Window Loop" (alxl, CC0) — nel repo, non nel catalogo
 │   └── CREDITS_rain_window_loop.md
 └── sfx/
     ├── synth/                                        # 29 WAV generati (vedi synth/README.md)
@@ -46,11 +46,13 @@ audio/
    carica per nome da `sfx/synth/`; `AudioManager.play_sfx("coin")`; ogni Button
    fa click da solo. Volume: `sfx_volume` (slider "Effetti" nelle impostazioni).
 
-## Limite aperto (AG-1)
+## Musica per banda (AG-1 chiuso il 2026-09-03)
 
-`calm_lofi_loop.ogg` e `rain_window_loop.wav` sono nel repo con i loro CREDITS
-ma **non** in `tracks.json`: la banda `calm` suona ancora `rain_loop` (pioggia).
-Cablarli = aggiungere due voci al catalogo, nessun codice.
+`tracks.json`: `calm_lofi` (omfgdude, CC0, `loop=true` nell'import) per
+`calm`/`neutral`; `rain_loop` (Mixkit) per `tense`; `rain_thunder` (Mixkit) per
+`stormy`. `rain_window_loop.wav` (alxl, CC0) e` nel repo con i suoi CREDITS ma
+non nel catalogo: la banda tense/stormy ha gia` `ambience_rain_soft` e
+`AmbienceController.pick_for_mood` sceglie una sola ambience per banda.
 
 ## Come Aggiungere Nuove Tracce
 

@@ -188,8 +188,9 @@ func test_female_character_removed_from_catalog() -> void:
 
 
 func test_tracks_catalog_size() -> void:
-	# Known: 2 tracks. Intentional minimal for demo — if expanded, update docs.
-	assert_eq(GameManager.tracks_catalog.get("tracks", []).size(), 2)
+	# 3 tracce: lofi calmo (calm/neutral), pioggia (tense), temporale (stormy).
+	# Se il catalogo cresce, aggiornare qui e in data/README.md.
+	assert_eq(GameManager.tracks_catalog.get("tracks", []).size(), 3)
 
 
 func test_all_tracks_audio_load() -> void:

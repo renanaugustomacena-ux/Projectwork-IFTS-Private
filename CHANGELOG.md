@@ -96,9 +96,11 @@ configurazione. Suite: **250 test in 25 moduli** (moduli nuovi `test_polish` e `
   gatto, tuono); slider "Effetti" nelle impostazioni (`sfx_volume`, che
   prima era persistito ma non pilotava nulla).
 - Font pixel **Pixel Operator 8** (CC0) come font del tema.
-- Musica calma non-pioggia (`calm_lofi_loop.ogg`, "Chill lofi inspired" di
-  omfgdude, CC0) e ambience pioggia sul vetro (alxl, CC0): file presenti,
-  cablaggio in `tracks.json` ancora da fare (vedi limiti).
+- Musica calma non-pioggia: `calm_lofi_loop.ogg` ("Chill lofi inspired" di
+  omfgdude, CC0) e` la traccia delle bande `calm`/`neutral` in `tracks.json`
+  (in loop); `rain_loop` passa a `tense` e `rain_thunder` resta `stormy`
+  (AG-1 chiuso). L'ambience pioggia sul vetro (alxl, CC0) resta nel repo,
+  non nel catalogo: la banda tense/stormy ha gia` `ambience_rain_soft`.
 - **Catalogo decorazioni bilingue** (`name_it`/`name_en` su 129 voci e 13
   categorie); pannello Decora con griglie pigre, ordinamento per stile,
   memoria dell'ultima categoria, hint Shift=griglia, anteprima drag 1:1.
@@ -132,8 +134,6 @@ configurazione. Suite: **250 test in 25 moduli** (moduli nuovi `test_polish` e `
 
 - Supabase resta un client dormiente: nessun percorso lo attiva. E` un
   backup progettato, non una sincronizzazione.
-- `tracks.json` non usa ancora la traccia calma nuova: la musica "calm" e`
-  ancora una registrazione di pioggia (AG-1).
 - Arte mancante per feature esistenti: personaggio seduto, gatto che mangia
   o accucciato, ciotola (placeholder da codice), icone del negozio (quadrati
   colorati). Il pack `v1/assets/sprites/rooms/bongseng/` non ha una licenza

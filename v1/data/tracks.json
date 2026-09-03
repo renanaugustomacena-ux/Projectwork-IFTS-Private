@@ -1,14 +1,24 @@
 {
 	"tracks": [
 		{
+			"id": "calm_lofi",
+			"title": "Chill lofi inspired",
+			"artist": "omfgdude (CC0)",
+			"path": "res://assets/audio/music/calm_lofi_loop.ogg",
+			"genre": "lofi",
+			"moods": [
+				"calm",
+				"neutral"
+			]
+		},
+		{
 			"id": "rain_loop",
 			"title": "Light Rain",
 			"artist": "Mixkit",
 			"path": "res://assets/audio/music/mixkit-light-rain-loop-1253.wav",
 			"genre": "ambient",
 			"moods": [
-				"calm",
-				"neutral"
+				"tense"
 			]
 		},
 		{
@@ -18,7 +28,6 @@
 			"path": "res://assets/audio/music/mixkit-light-rain-with-thunderstorm-1290.wav",
 			"genre": "ambient",
 			"moods": [
-				"tense",
 				"stormy"
 			]
 		}

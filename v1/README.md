@@ -154,7 +154,7 @@ v1/
 │   ├── characters.json              #   2 personaggi: male_old, male_rose
 │   ├── decorations.json             #   129 decorazioni in 13 categorie, nomi IT/EN
 │   ├── rooms.json                   #   1 stanza: cozy_studio × 3 temi
-│   ├── tracks.json                  #   2 tracce musicali + 2 ambience
+│   ├── tracks.json                  #   3 tracce musicali (lofi calmo, pioggia, temporale) + 2 ambience
 │   ├── badges.json                  #   6 badge unlockable
 │   ├── mess_catalog.json            #   8 tipi di sporco con durata/ricompensa di pulizia
 │   └── shop.json                    #   negozio: 3 cibi, croccantini, 3 attrezzi
@@ -241,8 +241,10 @@ Dual-player crossfade 2 s. La musica segue **solo** il cursore atmosfera
 | < 0.25 (`MOOD_TENSE_THRESHOLD`) | ↑ | ↑ | `rain_thunder` (tense) | normale |
 | < 0.10 (`MOOD_STORMY_THRESHOLD`) | ↑ | ↑ | `rain_thunder` (stormy) | WILD |
 
-Limite aperto (AG-1): `calm_lofi_loop.ogg` (omfgdude, CC0) e `rain_window_loop.wav`
-(alxl, CC0) sono nel repo ma non ancora in `tracks.json`: la musica "calm" e` ancora pioggia.
+Musica per banda (`tracks.json`): `calm_lofi` (omfgdude, CC0, in loop) per
+`calm`/`neutral`, `rain_loop` per `tense`, `rain_thunder` per `stormy`.
+`rain_window_loop.wav` (alxl, CC0) e` nel repo ma non nel catalogo: la banda
+tense/stormy ha gia` l'ambience `ambience_rain_soft`.
 
 ### Effetti sonori
 
