@@ -140,6 +140,7 @@ func _build_header(parent: VBoxContainer) -> void:
 	_close_btn.focus_mode = Control.FOCUS_NONE
 	_close_btn.text = tr("UI_CLOSE")
 	_close_btn.flat = true
+	_close_btn.custom_minimum_size = Helpers.touch_size(Vector2.ZERO)
 	_close_btn.add_theme_font_size_override("font_size", 11)
 	_close_btn.pressed.connect(_on_close_pressed)
 	header.add_child(_close_btn)
@@ -184,9 +185,21 @@ func _update_info() -> void:
 
 	# Il JSON per-slot e` la verita` (DB-01/PT-52): il DB conosce solo lo
 	# slot che ha salvato per ultimo, e per un account nuovo direbbe 0.
-	_coins_label.text = str(int(SaveManager.inventory_data.get("coins", 0)))
+	if _in_game():
+		_coins_label.text = str(int(SaveManager.inventory_data.get("coins", 0)))
+	else:
+		# Nel menu la RAM e` ai default (load_game non e` ancora girato): le
+		# monete vere stanno nel file dello slot attivo (M1).
+		_coins_label.text = str(int(SaveManager.peek_slot(SaveManager.active_slot).get("coins", 0)))
 
-	_delete_char_btn.disabled = not AuthManager.has_character
+	# A2: dal menu "Elimina personaggio" scriverebbe la RAM vuota (0 monete)
+	# sullo slot, contro la promessa del dialogo: solo in gioco.
+	_delete_char_btn.disabled = not AuthManager.has_character or not _in_game()
+
+
+func _in_game() -> bool:
+	var scene := get_tree().current_scene
+	return scene != null and scene.scene_file_path == "res://scenes/main/main.tscn"
 
 
 ## I dialoghi di conferma ricevono CHIAVI di traduzione, non testo gia` risolto:
@@ -222,12 +235,17 @@ func _on_delete_account_confirmed() -> void:
 	# PT-53: il testo promette "tutti i dati": tutti i 10 slot + la riga account.
 	SaveManager.delete_all_slots()
 	SaveManager.reset_all()
+	# F4: reset_all lascia il latch acceso e lo stato dirty: il quit (o
+	# l'autosave nel menu) scriverebbe un salvataggio fantasma vuoto.
+	SaveManager.reset_after_slot_delete(SaveManager.active_slot)
 	AuthManager.delete_account()
 	AppLogger.info("ProfilePanel", "Account deleted")
 	get_tree().change_scene_to_file("res://scenes/menu/main_menu.tscn")
 
 
 func _on_logout_pressed() -> void:
+	# A1: da LOGGED_OUT nessun salvataggio passa piu`: persisti prima.
+	SaveManager.save_game()
 	AuthManager.sign_out()
 	get_tree().change_scene_to_file("res://scenes/menu/main_menu.tscn")
 

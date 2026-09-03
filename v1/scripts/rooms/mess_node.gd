@@ -33,7 +33,7 @@ var clean_duration: float = DEFAULT_CLEAN_DURATION
 ## Entry dentro SaveManager._messes: stessa identita` usata per la rimozione
 ## (pattern di _decorations). Vuoto solo nei test che non persistono.
 var save_entry: Dictionary = {}
-var _prompt_released: bool = false
+var _prompt_shown: bool = false
 var _last_sec_left: int = -1
 
 var _sprite: Sprite2D
@@ -96,12 +96,7 @@ func _exit_tree() -> void:
 	# GP-16: un mess liberato da _reload_messes con il personaggio sopra non
 	# emette body_exited (i segnali vengono staccati qui sotto) e il prompt
 	# "Premi E" restava acceso per sempre. _complete() ha gia` pareggiato.
-	if not _prompt_released and monitoring and is_inside_tree():
-		for body in get_overlapping_bodies():
-			if body is CharacterBody2D:
-				_prompt_released = true
-				SignalBus.interaction_unavailable.emit()
-				break
+	_release_prompt()
 	# Disconnect esplicito per evitare zombie signal se il mess viene free
 	# durante un'interazione in corso (fix B-012).
 	if body_entered.is_connected(_on_body_entered):
@@ -138,6 +133,8 @@ func start_cleaning() -> bool:
 	save_entry["cleaning_started_at"] = now
 	save_entry["cleaning_ends_at"] = now + duration
 	SignalBus.save_requested.emit()
+	# Il prompt "Premi E per pulire" non ha piu` senso: E non farebbe nulla.
+	_release_prompt()
 	_puff_t = PUFF_SEC
 	set_process(true)
 	queue_redraw()
@@ -183,12 +180,7 @@ func _complete() -> void:
 	# Review 2026-08-14: se il personaggio e` SOPRA il mess al completamento,
 	# il body_exited non arriva mai (nodo liberato) e il prompt "Premi E"
 	# resterebbe acceso per sempre — pareggia il contatore esplicitamente.
-	if monitoring:
-		for body in get_overlapping_bodies():
-			if body is CharacterBody2D:
-				_prompt_released = true
-				SignalBus.interaction_unavailable.emit()
-				break
+	_release_prompt()
 	SaveManager.credit_coins(clean_reward)
 	if not save_entry.is_empty():
 		SaveManager.remove_mess(save_entry)
@@ -265,12 +257,21 @@ func _clamp_persisted_deadline() -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
-	if body is CharacterBody2D:
+	# Niente prompt su una pulizia gia` avviata: E non potrebbe soddisfarlo
+	# (review 2026-09-03). Stesso contratto a flag di SeatArea.
+	if body is CharacterBody2D and not is_cleaning() and not _prompt_shown:
+		_prompt_shown = true
 		SignalBus.interaction_available.emit(mess_id, "clean")
 
 
 func _on_body_exited(body: Node2D) -> void:
 	if body is CharacterBody2D:
+		_release_prompt()
+
+
+func _release_prompt() -> void:
+	if _prompt_shown:
+		_prompt_shown = false
 		SignalBus.interaction_unavailable.emit()
 
 

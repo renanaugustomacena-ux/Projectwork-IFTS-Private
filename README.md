@@ -113,7 +113,7 @@ non scarica la stanza, la riscrive dal locale. Vedi
 │   ├── locale/            #   .po Italiano + Inglese (159 chiavi per lingua)
 │   ├── scenes/            #   18 scene Godot (.tscn) + 1 TRES theme
 │   ├── scripts/           #   57 script GDScript (~15.5k righe)
-│   └── tests/             #   242 test invasivi in 24 moduli + runner headless custom
+│   └── tests/             #   243 test invasivi in 24 moduli + runner headless custom
 ├── AUDIT_REPORT_2026-04-23.md          # istantanea storica
 ├── MASTER_PLAN_2026-07-20.md           # istantanea storica
 ├── AUDIT_REVERIFICATION_2026-08-09.md  # istantanea storica
@@ -121,7 +121,7 @@ non scarica la stanza, la riscrive dal locale. Vedi
 └── README.md              # Questo file
 ```
 
-Conteggi misurati sul repository (li ricontrolla `ci/validate_doc_counts.py`): **57 script** GDScript, **48 segnali**, **18 scene**, **7 cataloghi**, **242 test** in **24 moduli**, **11 tabelle** SQLite, **13 autoload**, **129 decorazioni**, **8 tipi di sporco**, **2 personaggi**.
+Conteggi misurati sul repository (li ricontrolla `ci/validate_doc_counts.py`): **57 script** GDScript, **48 segnali**, **18 scene**, **7 cataloghi**, **243 test** in **24 moduli**, **11 tabelle** SQLite, **13 autoload**, **129 decorazioni**, **8 tipi di sporco**, **2 personaggi**.
 
 ## Documentazione per area
 
@@ -133,7 +133,7 @@ Conteggi misurati sul repository (li ricontrolla `ci/validate_doc_counts.py`): *
 | [v1/assets/README.md](v1/assets/README.md) | Origini asset, licenze, integrazione |
 | [v1/scenes/README.md](v1/scenes/README.md) | Scene, struttura nodi, flusso fra scene |
 | [v1/scripts/README.md](v1/scripts/README.md) | GDScript organizzato per dominio, 13 autoload |
-| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (242 test, 24 moduli) |
+| [v1/tests/README.md](v1/tests/README.md) | Test harness deep (243 test, 24 moduli) |
 | [v1/study/README.md](v1/study/README.md) | Mappa documenti ↔ argomenti d'esame, glossario |
 | [supabase/README.md](supabase/README.md) | Backup cloud push-only, stato schema |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes Keep-a-Changelog + SemVer |
@@ -189,7 +189,7 @@ Chain di inizializzazione in ordine da `v1/project.godot` (**13 autoload**, inva
 ./scripts/preflight.sh        # 8 step: toolchain, integrita`, JSON, asset, boot, runtime,
                               #   deep tests, artefatti di presentazione. GO/NO-GO exit 0/1
 ./scripts/godot-validate.sh   # Full re-import + runtime ~3 min
-./scripts/deep_test.sh        # 242 test invasivi in 24 moduli, ~1-2 min (user:// isolato)
+./scripts/deep_test.sh        # 243 test invasivi in 24 moduli, ~1-2 min (user:// isolato)
 ```
 
 > La suite gira **solo** tramite `./scripts/deep_test.sh`. Il wrapper redirige

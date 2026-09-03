@@ -91,14 +91,14 @@ func _build_row(slot: int) -> Control:
 		var load_btn := Button.new()
 		load_btn.text = tr("UI_SLOT_LOAD")
 		load_btn.focus_mode = Control.FOCUS_ALL
-		load_btn.custom_minimum_size = Vector2(84, 30)
+		load_btn.custom_minimum_size = Helpers.touch_size(Vector2(84, 30))
 		load_btn.pressed.connect(func() -> void: slot_load_requested.emit(slot))
 		row.add_child(load_btn)
 
 		var del_btn := Button.new()
 		del_btn.text = tr("UI_SLOT_DELETE_CONFIRM") if _confirm_slot == slot else tr("UI_SLOT_DELETE")
 		del_btn.focus_mode = Control.FOCUS_ALL
-		del_btn.custom_minimum_size = Vector2(84, 30)
+		del_btn.custom_minimum_size = Helpers.touch_size(Vector2(84, 30))
 		del_btn.add_theme_color_override("font_color", Color(0.9, 0.4, 0.4))
 		del_btn.pressed.connect(_on_delete_pressed.bind(slot))
 		row.add_child(del_btn)

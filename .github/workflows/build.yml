@@ -84,6 +84,7 @@ jobs:
       image: barichello/godot-ci@sha256:622e5ca81b54cd8038ecf7de5d157b47efc800d7cf635af2eec18a6aee4bab7e  # 4.7.1
     steps:
       - uses: actions/checkout@v4
+        with:
           fetch-depth: 0
 
       - name: Setup export templates
@@ -158,6 +159,7 @@ jobs:
     if: ${{ !inputs.skip_android }}
     steps:
       - uses: actions/checkout@v4
+        with:
           fetch-depth: 0
 
       - name: Setup export templates

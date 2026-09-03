@@ -440,3 +440,11 @@ static func locale_description(entry: Dictionary) -> String:
 	if not localized.is_empty():
 		return localized
 	return str(entry.get("description", ""))
+
+
+## Bersagli touch: su mobile un bottone sotto i 72x48 px di canvas e` piu`
+## piccolo di un polpastrello (review 2026-09-03). Su desktop torna com'e`.
+static func touch_size(desktop_size: Vector2) -> Vector2:
+	if not OS.has_feature("mobile"):
+		return desktop_size
+	return Vector2(maxf(desktop_size.x, 72.0), maxf(desktop_size.y, 48.0))

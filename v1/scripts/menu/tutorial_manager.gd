@@ -82,6 +82,7 @@ func _define_steps() -> void:
 			# se la stanza e` ancora pulita, dopo 20 s (fallback a tempo).
 			"message": "TUTORIAL_STEP_CLEAN",
 			"signal_name": "interaction_available",
+			"type_filter": "clean",  # non una sedia
 			"auto_advance": 20.0,
 		},
 		{
@@ -128,6 +129,9 @@ func _build_ui() -> void:
 	_dialog_panel.offset_bottom = -70  # UI-21: 6 px dall'HUD e la freccia finiva dentro il dialogo
 	_dialog_panel.offset_left = 80
 	_dialog_panel.offset_right = -80
+	if OS.has_feature("mobile"):
+		# Il joystick (x 55..235, y 450..630) finirebbe sotto il dialogo.
+		_dialog_panel.offset_left = 250
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.12, 0.1, 0.16, 0.92)
 	style.corner_radius_top_left = 12
@@ -147,6 +151,9 @@ func _build_ui() -> void:
 	add_child(_dialog_panel)
 
 	var vbox := VBoxContainer.new()
+	# A3: IGNORE sul solo PanelContainer non bastava: VBox (PASS), RichText
+	# (STOP) e HBox restavano bersaglio del click e il drop moriva li`.
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_theme_constant_override("separation", 8)
 	_dialog_panel.add_child(vbox)
 
@@ -156,12 +163,14 @@ func _build_ui() -> void:
 	_dialog_label.fit_content = true
 	_dialog_label.scroll_active = false
 	_dialog_label.custom_minimum_size = Vector2(0, 60)
+	_dialog_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dialog_label.add_theme_font_size_override("normal_font_size", 16)
 	_dialog_label.add_theme_color_override("default_color", Color(0.9, 0.85, 0.75, 1.0))
 	vbox.add_child(_dialog_label)
 
 	# Bottom row: progress + skip
 	var hbox := HBoxContainer.new()
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Skip resta STOP
 	hbox.alignment = BoxContainer.ALIGNMENT_END
 	hbox.add_theme_constant_override("separation", 16)
 	vbox.add_child(hbox)
@@ -282,6 +291,9 @@ func _on_signal_received(
 			}
 			AppLogger.debug("Tutorial", "Step filter miss", miss_ctx)
 			return
+	var type_filter: String = step.get("type_filter", "")
+	if not type_filter.is_empty() and str(b) != type_filter:
+		return
 	# a, b, c are the variadic signal parameters: consume them this way to
 	# silence gdlint (varargs cannot be prefixed with _)
 	var unused_sig_args := [a, b, c]

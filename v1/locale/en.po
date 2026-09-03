@@ -504,3 +504,6 @@ msgstr "Press [b]E[/b] next to a mess to start cleaning: it carries on by itself
 
 msgid "TUTORIAL_STEP_SHOP"
 msgstr "Coins earned by cleaning are spent in the [b]Shop[/b]: food for you, kibble for the cat, tools. ⬇"
+
+msgid "UI_AUTH_ERR_DB_UNAVAILABLE"
+msgstr "Database unavailable: the game cannot save. Close other instances of the game and try again."

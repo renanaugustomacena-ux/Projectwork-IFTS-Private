@@ -137,7 +137,7 @@ func _action_buttons(section: String, entry: Dictionary) -> Array[Button]:
 
 	var buy := Button.new()
 	buy.focus_mode = Control.FOCUS_NONE  # UI-02: Spazio comprava il primo articolo
-	buy.custom_minimum_size = Vector2(72, 30)
+	buy.custom_minimum_size = Helpers.touch_size(Vector2(72, 30))
 	if owned_tool:
 		buy.text = tr("UI_SHOP_OWNED")
 		buy.disabled = true
@@ -151,7 +151,7 @@ func _action_buttons(section: String, entry: Dictionary) -> Array[Button]:
 	if section == "food_player" and qty > 0:
 		var eat := Button.new()
 		eat.focus_mode = Control.FOCUS_NONE
-		eat.custom_minimum_size = Vector2(72, 30)
+		eat.custom_minimum_size = Helpers.touch_size(Vector2(72, 30))
 		eat.text = tr("UI_SHOP_EAT")
 		# PT-34: a stress zero il cibo non fa nulla, ma veniva consumato lo stesso.
 		eat.disabled = StressManager.get_stress_value() <= 0.01
@@ -161,7 +161,7 @@ func _action_buttons(section: String, entry: Dictionary) -> Array[Button]:
 	elif section == "food_cat" and qty > 0:
 		var feed := Button.new()
 		feed.focus_mode = Control.FOCUS_NONE
-		feed.custom_minimum_size = Vector2(72, 30)
+		feed.custom_minimum_size = Helpers.touch_size(Vector2(72, 30))
 		feed.text = tr("UI_SHOP_FEED")
 		feed.disabled = not get_tree().get_nodes_in_group("pet_bowl").is_empty()
 		feed.pressed.connect(_on_feed_pressed.bind(item_id))

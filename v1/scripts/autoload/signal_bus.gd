@@ -79,11 +79,8 @@ signal coins_changed(delta: int, total: int)
 signal player_ate(food_id: String, stress_relief: float)
 signal inventory_updated
 signal pet_feed_requested(world_position: Vector2)
-# Fase confidenza gatto (spec 2026-08-14).
 # Fase giardino/bisogni (spec 2026-08-14). indoor=true → sporco in stanza.
 signal pet_pottied(indoor: bool)
-# Fase slot di salvataggio (spec 2026-08-14).
-
 # Profile HUD (feature T-R-015 — minipanel in alto con profilo + mood bar)
 signal profile_hud_requested
 signal profile_hud_closed

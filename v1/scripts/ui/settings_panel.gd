@@ -124,6 +124,7 @@ func _build_header(parent: VBoxContainer) -> void:
 	_close_btn.focus_mode = Control.FOCUS_NONE
 	_close_btn.text = tr("UI_CLOSE")
 	_close_btn.flat = true
+	_close_btn.custom_minimum_size = Helpers.touch_size(Vector2.ZERO)
 	_close_btn.add_theme_font_size_override("font_size", 11)
 	_close_btn.pressed.connect(_on_close_pressed)
 	header.add_child(_close_btn)

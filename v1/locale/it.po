@@ -504,3 +504,6 @@ msgstr "Premi [b]E[/b] vicino allo sporco per avviare la pulizia: continua da so
 
 msgid "TUTORIAL_STEP_SHOP"
 msgstr "Le monete guadagnate pulendo si spendono nel [b]Negozio[/b]: cibo per te, croccantini per il gatto, attrezzi. ⬇"
+
+msgid "UI_AUTH_ERR_DB_UNAVAILABLE"
+msgstr "Database non disponibile: impossibile giocare senza salvataggi. Chiudi altre istanze del gioco e riprova."

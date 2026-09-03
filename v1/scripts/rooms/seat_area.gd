@@ -30,6 +30,7 @@ func on_interact(player: Node) -> bool:
 		return false  # in edit mode le sedie si spostano, non si usano
 	if player.has_method("sit_on"):
 		player.call("sit_on", seat)
+		_release_prompt()  # da seduti E fa alzare: "sederti" mentirebbe
 		return true
 	return false
 

@@ -32,6 +32,9 @@ func _build_ui() -> void:
 
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	if OS.has_feature("mobile"):
+		# La tastiera virtuale copre la meta` bassa: form nel terzo superiore.
+		center.anchor_bottom = 0.6
 	add_child(center)
 
 	var panel := PanelContainer.new()
@@ -183,7 +186,7 @@ func _show_login() -> void:
 
 
 func _on_login_pressed() -> void:
-	if _busy:
+	if _busy or _finishing:
 		return
 	var username := _username_input.text.strip_edges()
 	var password := _password_input.text
@@ -203,7 +206,7 @@ func _on_login_pressed() -> void:
 
 
 func _on_register_pressed() -> void:
-	if _busy:
+	if _busy or _finishing:
 		return
 	var reg_user := _register_form.get_node_or_null("RegUsername") as LineEdit
 	var reg_pass := _register_form.get_node_or_null("RegPassword") as LineEdit
@@ -230,7 +233,14 @@ func _on_register_pressed() -> void:
 
 
 func _on_guest_pressed() -> void:
+	if _busy or _finishing:
+		return  # durante il fade dopo un login "Ospite" sostituiva la sessione
 	AuthManager.play_as_guest()
+	if AuthManager.auth_state == AuthManager.AuthState.LOGGED_OUT:
+		# F5: senza riga ospite (database non apribile) il gioco non potrebbe
+		# salvare nulla: meglio dirlo qui che entrare in una partita muta.
+		_show_error(tr("UI_AUTH_ERR_DB_UNAVAILABLE"))
+		return
 	_finish()
 
 

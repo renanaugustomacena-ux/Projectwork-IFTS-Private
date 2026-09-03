@@ -1,6 +1,6 @@
 # Relax Room — Test Harness
 
-Custom headless test harness senza GdUnit4. **242 test** invasivi in **24 moduli**
+Custom headless test harness senza GdUnit4. **243 test** invasivi in **24 moduli**
 (`grep -h '^func test_' v1/tests/integration/*.gd | wc -l` ·
 `ls v1/tests/integration/test_*.gd | grep -v test_base | wc -l`),
 ~1-2 minuti di esecuzione, exit code 0 (all pass) / 1 (failures). Girano in
@@ -82,9 +82,9 @@ Ordine = `TEST_MODULES` in `test_runner.gd`.
 | `test_bridge.gd` | 21 | Lifecycle e triplo gate, parser HTTP (400/404/405/413), /status, /command, ring /events cap 200, /tree, /logs/tail, teardown |
 | `test_logger.gd` | 4 | Chiusura file a teardown, redazione dentro gli Array, path normalizzati a `user://`, console redatta come il file |
 | `test_mood.gd` | 16 | Soglie del cursore: pioggia e scurimento sullo stesso numero (PLR-1), intensita` crescente, banda musica 0.25 separata da ambience 0.50, ambience dal catalogo, ripristino ambience salvate |
-| `test_polish.gd` | 8 | Regressioni 1.3.0: lingua di sistema adottata come scelta esplicita, save "solo settings" non tocca la stanza, badge nel save dello slot, tetto password, prompt della SeatArea, formato tempo residuo, primo bisogno demo-friendly, segnali morti assenti |
+| `test_polish.gd` | 9 | Regressioni 1.3.0: preferenze che sopravvivono al cambio slot, lingua di sistema adottata come scelta esplicita, save "solo settings" non tocca la stanza, badge nel save dello slot, tetto password, prompt della SeatArea, formato tempo residuo, primo bisogno demo-friendly, segnali morti assenti |
 
-**Totale**: 242 test in 24 moduli, ~1-2 min (il tempo dipende da quanti frame
+**Totale**: 243 test in 24 moduli, ~1-2 min (il tempo dipende da quanti frame
 attendono i test di movimento e pulizia, non dal numero di assert).
 
 `test_bridge.gd` non usa una porta fissa: la risolve a runtime partendo dal PID

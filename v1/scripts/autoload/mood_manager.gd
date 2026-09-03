@@ -62,7 +62,7 @@ func _apply_saved_mood() -> void:
 ## e WILD vanno riapplicati dallo stato corrente (GP-02).
 func reapply_effects() -> void:
 	_pet_wild_active = false
-	_apply_effects(_current_mood)
+	_apply_effects(_current_mood, true)
 
 
 func _on_mood_level_changed(mood: float) -> void:
@@ -70,7 +70,8 @@ func _on_mood_level_changed(mood: float) -> void:
 	_apply_effects(_current_mood)
 
 
-func _apply_effects(mood: float) -> void:
+## silent: riapplicazione all'ingresso in stanza, senza tuoni "nuovi".
+func _apply_effects(mood: float, silent: bool = false) -> void:
 	_ensure_overlay()
 	# Overlay alpha: 0 a mood 0.5+, fino a 0.5 a mood 0.0 (blu scuro)
 	if _overlay != null:
@@ -93,14 +94,15 @@ func _apply_effects(mood: float) -> void:
 	if want_wild != _pet_wild_active:
 		_pet_wild_active = want_wild
 		SignalBus.pet_wild_mode_requested.emit(want_wild)
-		if want_wild:
+		if want_wild and not silent:
 			AudioManager.play_sfx("thunder_near", -2.0)
 	# Un tuono lontano all'ingresso nella banda del temporale (una volta).
 	var want_tense: bool = mood < Constants.MOOD_TENSE_THRESHOLD
 	if want_tense != _tense_active:
 		_tense_active = want_tense
 		if want_tense and not want_wild:
-			AudioManager.play_sfx("thunder_far", -4.0)
+			if not silent:
+				AudioManager.play_sfx("thunder_far", -4.0)
 
 	# Audio crossfade: quando mood sotto soglia, segnala ad AudioManager
 	if AudioManager.has_method("apply_mood_scalar"):
@@ -206,8 +208,21 @@ func _spawn_rain() -> void:
 	# Differito: reapply_effects() parte dal _ready della stanza, quando la
 	# scena sta ancora sistemando i figli e add_child diretto fallisce
 	# (e la pioggia orfana resta viva fino all'uscita).
-	scene_tree.current_scene.call_deferred("add_child", _rain_instance)
+	call_deferred("_attach_rain")
 	_apply_rain_intensity(_current_mood)
+
+
+## Risolve la scena corrente al momento dell'esecuzione: se e` cambiata nel
+## frattempo il nodo non resta orfano (e reapply_effects la ricrea).
+func _attach_rain() -> void:
+	if _rain_instance == null or not is_instance_valid(_rain_instance) or _rain_instance.is_inside_tree():
+		return
+	var scene_tree := get_tree()
+	if scene_tree == null or scene_tree.current_scene == null:
+		_rain_instance.queue_free()
+		_rain_instance = null
+		return
+	scene_tree.current_scene.add_child(_rain_instance)
 
 
 func _despawn_rain() -> void:

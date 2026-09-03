@@ -51,6 +51,15 @@ const MAX_SAVED_MESSES := 20
 # that the hard way). Single source of truth — reset_all() rebuilds from this
 # same constant, so a key can never be added to one copy and forgotten in the
 # other.
+const INSTALL_PREFERENCE_KEYS: Array[String] = [
+	"language",
+	"master_volume",
+	"music_volume",
+	"ambience_volume",
+	"sfx_volume",
+	"ambience_enabled",
+	"display_mode",
+]
 const DEFAULT_SETTINGS := {
 	"language": "en",
 	"display_mode": "windowed",
@@ -148,6 +157,8 @@ var _language_explicit: bool = false
 ## Impostazioni cambiate dal menu (dove load_game() non gira mai): vengono
 ## persistite da sole, senza toccare stanza/inventario (SM-02).
 var _settings_dirty: bool = false
+var _logged_out_reported: bool = false
+var _integrity_key_broken: bool = false
 # E.2 quit-after-save-confirmed: WM_CLOSE latch + gave-up marker (see
 # _final_save_and_quit for the retry/force-quit contract).
 var _quit_requested: bool = false
@@ -272,7 +283,9 @@ func set_active_slot(slot: int) -> void:
 	_reset_ram_state_to_defaults()
 	SignalBus.profile_reset.emit()  # contatori RAM (BadgeManager) da zero
 	_settings_loaded = false
-	_language_explicit = false
+	# _language_explicit resta com'e`: la lingua e` una preferenza
+	# dell'installazione (F1) e uno slot con un salvataggio la sovrascrive
+	# comunque in ensure_settings_loaded.
 	ensure_settings_loaded()
 	AppLogger.info("SaveManager", "slot_changed", {"slot": slot})
 
@@ -339,9 +352,21 @@ func _reset_ram_state_to_defaults() -> void:
 	_decorations = []
 	_messes = []
 	_music_state = {"current_track_index": 0, "playlist_mode": Constants.DEFAULT_PLAYLIST_MODE, "active_ambience": []}
-	_settings = DEFAULT_SETTINGS.duplicate(true)
+	_settings = _factory_settings_keeping_preferences()
 	_full_state_loaded = false
 	_save_dirty = false
+
+
+## Lingua, volumi e finestra sono preferenze dell'installazione, non della
+## partita: una "Nuova partita" in un altro slot o un reset del profilo non
+## devono rimettere il gioco in inglese e ai volumi di fabbrica (review
+## 2026-09-03 F1). Tutto il resto riparte da DEFAULT_SETTINGS.
+func _factory_settings_keeping_preferences() -> Dictionary:
+	var fresh: Dictionary = DEFAULT_SETTINGS.duplicate(true)
+	for key: String in INSTALL_PREFERENCE_KEYS:
+		if _settings.has(key):
+			fresh[key] = _settings[key]
+	return fresh
 
 
 ## UNICO punto di mutazione dei coins a runtime (review 2026-08-14: prima il
@@ -505,6 +530,9 @@ func _ready() -> void:
 	# while save I/O is in flight — we quit ourselves after the final save.
 	# Explicit get_tree().quit() calls (test runner, menus) are unaffected.
 	get_tree().set_auto_accept_quit(false)
+	# Android: il tasto Indietro chiude il processo da solo (quit_on_go_back)
+	# senza passare da WM_CLOSE_REQUEST: lo intercettiamo come una chiusura.
+	get_tree().set_quit_on_go_back(false)
 	_auto_save_timer = Timer.new()
 	_auto_save_timer.wait_time = AUTO_SAVE_INTERVAL
 	_auto_save_timer.autostart = true
@@ -616,7 +644,13 @@ func _save_preconditions_ok() -> bool:
 		# DB-13: senza un account (dopo "Elimina account") il mirror SQLite
 		# finirebbe sull'ospite. Niente scritture finche` l'utente non sceglie.
 		AppLogger.info("SaveManager", "save_skipped_logged_out")
+		_save_dirty = true
 		_last_save_outcome = SaveOutcome.NOTHING_TO_SAVE
+		if not _logged_out_reported:
+			# F5: senza account (DB non apribile, o account appena eliminato)
+			# il gioco girerebbe per sempre senza salvare e senza dirlo.
+			_logged_out_reported = true
+			SignalBus.save_failed.emit("logged_out")
 		return false
 	if _is_saving:
 		# 4.1.2-L533-reentry: don't drop the request — queue a follow-up save
@@ -710,6 +744,10 @@ func _save_settings_only() -> void:
 		# Nessuna partita in questo slot: i settings partiranno col primo save.
 		return
 	if _get_integrity_key().is_empty():
+		return
+	if _compare_versions(str(existing.get("version", "1.0.0")), SAVE_VERSION) > 0:
+		# F7: un file di un'app piu` nuova va parcheggiato da load_game, non
+		# riscritto con il nostro blocco settings.
 		return
 	existing["settings"] = _settings.duplicate(true)
 	_is_saving = true
@@ -949,6 +987,10 @@ func _music_track_id_for_index(index: int) -> String:
 
 
 func load_game() -> void:
+	# F3: lingua/volumi cambiati nel menu e non ancora scritti verrebbero
+	# sovrascritti dal blocco settings del file. Prima li si mette su disco.
+	if _settings_dirty and not _full_state_loaded and not _is_saving:
+		_save_settings_only()
 	# 4.13.2: primary first, then each backup ring slot (newest first), with
 	# the same HMAC verification _load_from_file applies everywhere.
 	var candidates: Array[String] = [_p(SAVE_PATH)]
@@ -1373,8 +1415,7 @@ func reset_all() -> void:
 	# Rebuilt from the single source of truth: a settings key added to the
 	# defaults can no longer survive a profile reset (F.7 — the lifetime stat_*
 	# counters used to, and the new profile inherited the old one's badges).
-	_settings = DEFAULT_SETTINGS.duplicate(true)
-	_language_explicit = false
+	_settings = _factory_settings_keeping_preferences()
 	# In-RAM counters (BadgeManager) must restart too, or the deleted profile's
 	# totals unlock its badges on the brand-new account.
 	SignalBus.profile_reset.emit()
@@ -1423,6 +1464,12 @@ func _quarantine_file(path: String) -> void:
 
 
 func _get_integrity_key() -> PackedByteArray:
+	if _integrity_key_broken:
+		return PackedByteArray()
+	return _load_or_create_integrity_key()
+
+
+func _load_or_create_integrity_key() -> PackedByteArray:
 	# Returns an empty PackedByteArray when no persisted+verified key is
 	# available — callers must treat that as "HMAC signing unavailable".
 	if not _integrity_key_cache.is_empty():
@@ -1456,6 +1503,9 @@ func _get_integrity_key() -> PackedByteArray:
 		AppLogger.error("SaveManager", "Integrity key file corrupt, signing unavailable")
 		var corrupt_dst := ProjectSettings.globalize_path(SECRET_PATH + ".corrupt")
 		DirAccess.rename_absolute(ProjectSettings.globalize_path(SECRET_PATH), corrupt_dst)
+		# F6: senza questo latch la chiamata successiva troverebbe "nessuna
+		# chiave" e ne genererebbe una nuova, orfanando ogni HMAC esistente.
+		_integrity_key_broken = true
 		return PackedByteArray()
 	# Generate new key on first run — but only trust it once persisted,
 	# otherwise next boot regenerates and every existing HMAC is orphaned.
@@ -1553,7 +1603,13 @@ func _exit_tree() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+	if what == NOTIFICATION_APPLICATION_PAUSED:
+		# Mobile: dopo il pause il sistema puo` uccidere il processo senza
+		# preavviso. Salvataggio sincrono, con il tempo di gioco accodato.
+		SignalBus.final_save_pending.emit()
+		save_game()
+		return
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		# 4.1.2-L533-async: auto_accept_quit is disabled in _ready(), so the
 		# process only exits once _final_save_and_quit decides to.
 		# Deferred (Phase E): propagate_notification visits autoloads in

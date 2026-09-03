@@ -64,6 +64,8 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
+		if _ui_blocks_input():
+			return  # con un pannello aperto E non deve nemmeno far alzare
 		if _seat != null and is_instance_valid(_seat):
 			stand_up()
 		else:
@@ -279,7 +281,11 @@ func _physics_process(_delta: float) -> void:
 		_process_seated(_delta)
 		z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
 		return
-	_seat = null  # se la sedia e` stata eliminata sotto di noi: in piedi
+	if _seat != null:
+		# Sedia sparita sotto di noi (reload delle decorazioni): in piedi, e
+		# fuori dal mobile che ha preso il suo posto.
+		_seat = null
+		call_deferred("_nudge_out_of_decorations")
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = direction.normalized() * SPEED
 	move_and_slide()

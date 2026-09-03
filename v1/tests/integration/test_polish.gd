@@ -128,3 +128,24 @@ func test_dead_signals_are_gone() -> void:
 	for dead: String in ["pet_fed", "pet_trust_changed", "shop_item_purchased", "decoration_moved", "outfit_changed"]:
 		assert_false(SignalBus.has_signal(dead), "%s era emesso nel vuoto (SM-27)" % dead)
 	assert_true(SignalBus.has_signal("panel_opened"), "i segnali consumati dal tutorial restano")
+
+
+func test_new_slot_keeps_install_preferences() -> void:
+	# Review 2026-09-03 F1: "Nuova partita" in uno slot vuoto azzerava lingua
+	# e volumi ai default di fabbrica (gioco in inglese al riavvio).
+	var original_slot := SaveManager.active_slot
+	SignalBus.settings_updated.emit("language", "it")
+	SignalBus.settings_updated.emit("master_volume", 0.37)
+	var target: int = (
+		SaveManager.MAX_SLOTS - 2 if original_slot != SaveManager.MAX_SLOTS - 2 else SaveManager.MAX_SLOTS - 3
+	)
+	SaveManager.delete_slot_files(target)
+	SaveManager.set_active_slot(target)
+	assert_eq(str(SaveManager.get_setting("language", "")), "it", "la lingua sopravvive al cambio slot")
+	assert_approx(float(SaveManager.get_setting("master_volume", 0.0)), 0.37, 0.001, "i volumi sopravvivono")
+	assert_true(SaveManager.has_explicit_language(), "la scelta esplicita non viene dimenticata")
+	assert_eq(int(SaveManager.inventory_data.get("coins", -1)), 0, "lo stato di partita invece riparte da zero")
+	SaveManager.set_active_slot(original_slot)
+	SaveManager.load_game()
+	await wait_frames(2)
+	SignalBus.settings_updated.emit("master_volume", 0.8)

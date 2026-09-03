@@ -113,6 +113,8 @@ var _zzz_tween: Tween = null
 var _anim_base_scale: float = 1.0
 # Cache della ciotola durante EAT (evita lookup di gruppo per-frame).
 var _bowl_ref: Node2D = null
+var _feed_pending: bool = false  # ciotola posata mentre era in giardino
+var _eating_started: bool = false
 # L'orologio bisogni si controlla ~1 volta al secondo, non a 60Hz.
 var _potty_check_accum: float = 0.0
 # Ground-contact point relative to the body origin, read from the collision
@@ -155,6 +157,11 @@ func _ready() -> void:
 ## La ciotola attira il gatto da qualsiasi stato: il cibo calma persino il
 ## WILD (al termine, se la tempesta continua, il WILD riprende).
 func _on_feed_requested(_world_position: Vector2) -> void:
+	if _state in OUTING_STATES:
+		# In giardino il clamp al pavimento lo teletrasporterebbe dentro in un
+		# frame: la ciotola aspetta il rientro (stesso patto del WILD).
+		_feed_pending = true
+		return
 	_set_state(State.EAT)
 
 
@@ -434,6 +441,11 @@ func _process_return_home(_delta: float) -> void:
 		position = Helpers.clamp_inside_floor(position + _foot_offset) - _foot_offset
 	if _state_timer > OUTING_TIMEOUT_SEC or _walk_outing(_outing_target, GARDEN_SPEED):
 		collision_mask = 1  # di nuovo dentro: i muri tornano solidi
+		if _feed_pending and not get_tree().get_nodes_in_group("pet_bowl").is_empty():
+			_feed_pending = false
+			_set_state(State.EAT)
+			return
+		_feed_pending = false
 		_set_state(State.WILD if _wild_mode_active else State.IDLE)
 
 
@@ -472,6 +484,11 @@ func _process_eat(_delta: float) -> void:
 		return
 	# Mangia: fermo sulla ciotola, piccolo head-bob procedurale.
 	velocity = Vector2.ZERO
+	if not _eating_started:
+		# Il pasto dura EAT_DURATION dall'arrivo, non dall'istante della
+		# ciotola: con una camminata lunga il gatto non mangiava affatto.
+		_eating_started = true
+		_state_timer = 0.0
 	_play_anim("idle")
 	if _anim:
 		_anim.position.y = -absf(sin(_state_timer * 6.0)) * 2.0
@@ -692,6 +709,7 @@ func _set_state(new_state: State) -> void:
 	_squash_left = 0.0  # stesso contratto: nessuno squash sopravvive al cambio
 	_state = new_state
 	_state_timer = 0.0
+	_eating_started = false
 	if new_state == State.WANDER:
 		_pick_wander_target()
 	elif new_state == State.IDLE:

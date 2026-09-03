@@ -27,6 +27,7 @@ func test_panel_scenes_exist() -> void:
 		"settings": "res://scenes/ui/settings_panel.tscn",
 		"profile": "res://scenes/ui/profile_panel.tscn",
 		"profile_hud": "res://scenes/ui/profile_hud_panel.tscn",
+		"shop": "res://scenes/ui/shop_panel.tscn",
 	}
 	for name in registered:
 		assert_true(ResourceLoader.exists(registered[name]), "panel scene missing: %s" % registered[name])

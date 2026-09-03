@@ -77,7 +77,7 @@ func _ready() -> void:
 	# Su desktop l'addon interferisce col focus chain (B-001) e non serve
 	# perche` tastiera + mouse coprono gia` l'input. L'addon scene rimane
 	# nel repo gated qui — mobile port pronto senza refactor.
-	if OS.has_feature("mobile") or OS.has_feature("web"):
+	if _is_touch_platform():
 		var joy_scene: PackedScene = load("res://scenes/ui/virtual_joystick.tscn") as PackedScene
 		if joy_scene != null:
 			var joystick: Node = joy_scene.instantiate()
@@ -149,6 +149,12 @@ func _set_fullscreen(enabled: bool, persist: bool) -> void:
 		AppLogger.info("Main", "display_mode_toggled", {"fullscreen": enabled})
 
 
+## Touch: Android, oppure browser con touchscreen (su un PC con mouse il
+## joystick e il bottone E sarebbero solo ingombro).
+func _is_touch_platform() -> bool:
+	return OS.has_feature("mobile") or (OS.has_feature("web") and DisplayServer.is_touchscreen_available())
+
+
 func _wire_hud_buttons() -> void:
 	var button_map := {
 		"DecoButton": "deco",
@@ -177,6 +183,11 @@ func _wire_hud_buttons() -> void:
 	if save_btn:
 		save_btn.pressed.connect(_on_save_pressed)
 
+	if OS.has_feature("mobile"):
+		# 60x36 px di canvas sono ~4 mm su un telefono: sotto la soglia touch.
+		for child in _hud.get_children():
+			if child is Button:
+				(child as Button).custom_minimum_size = Vector2(96, 56)
 	_apply_hud_labels()
 	SignalBus.language_changed.connect(_on_language_changed)
 

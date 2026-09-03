@@ -134,7 +134,7 @@ func _show_popup() -> void:
 		var rotate_btn := Button.new()
 		rotate_btn.text = "R"
 		rotate_btn.tooltip_text = tr("UI_DECO_ROTATE")
-		rotate_btn.custom_minimum_size = Vector2(28, 28)
+		rotate_btn.custom_minimum_size = _popup_button_size()
 		rotate_btn.focus_mode = Control.FOCUS_NONE
 		rotate_btn.pressed.connect(_on_rotate)
 		hbox.add_child(rotate_btn)
@@ -143,7 +143,7 @@ func _show_popup() -> void:
 	var flip_btn := Button.new()
 	flip_btn.text = "F"
 	flip_btn.tooltip_text = tr("UI_DECO_FLIP")
-	flip_btn.custom_minimum_size = Vector2(28, 28)
+	flip_btn.custom_minimum_size = _popup_button_size()
 	flip_btn.focus_mode = Control.FOCUS_NONE
 	flip_btn.pressed.connect(_on_flip)
 	hbox.add_child(flip_btn)
@@ -152,7 +152,7 @@ func _show_popup() -> void:
 	var scale_btn := Button.new()
 	scale_btn.text = "S"
 	scale_btn.tooltip_text = tr("UI_DECO_SCALE")
-	scale_btn.custom_minimum_size = Vector2(28, 28)
+	scale_btn.custom_minimum_size = _popup_button_size()
 	scale_btn.focus_mode = Control.FOCUS_NONE
 	scale_btn.pressed.connect(_on_scale)
 	hbox.add_child(scale_btn)
@@ -162,7 +162,7 @@ func _show_popup() -> void:
 		var delete_btn := Button.new()
 		delete_btn.text = "X"
 		delete_btn.tooltip_text = tr("UI_DECO_DELETE")
-		delete_btn.custom_minimum_size = Vector2(28, 28)
+		delete_btn.custom_minimum_size = _popup_button_size()
 		delete_btn.focus_mode = Control.FOCUS_NONE
 		delete_btn.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 		delete_btn.pressed.connect(_on_delete)
@@ -189,6 +189,10 @@ func dismiss_popup() -> void:
 	_popup = null
 	if _active_popup_owner == self:
 		_active_popup_owner = null
+
+
+func _popup_button_size() -> Vector2:
+	return Vector2(48, 48) if OS.has_feature("mobile") else Vector2(28, 28)
 
 
 func _on_rotate() -> void:

@@ -107,7 +107,7 @@ func _build_ui() -> void:
 
 	# Settings button
 	_settings_btn = Button.new()
-	_settings_btn.custom_minimum_size = Vector2(40, 28)
+	_settings_btn.custom_minimum_size = Helpers.touch_size(Vector2(40, 28))
 	_settings_btn.focus_mode = Control.FOCUS_NONE
 	_settings_btn.text = "⚙"
 	_settings_btn.tooltip_text = tr("UI_PROFILE_SETTINGS_TOOLTIP")
@@ -117,7 +117,7 @@ func _build_ui() -> void:
 
 	# Close button (X) — re-emits profile_hud_requested to toggle-close.
 	_close_btn = Button.new()
-	_close_btn.custom_minimum_size = Vector2(32, 28)
+	_close_btn.custom_minimum_size = Helpers.touch_size(Vector2(32, 28))
 	_close_btn.focus_mode = Control.FOCUS_NONE
 	_close_btn.text = "✕"
 	_close_btn.tooltip_text = tr("UI_PROFILE_CLOSE_TOOLTIP")
