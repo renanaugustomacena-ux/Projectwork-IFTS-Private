@@ -21,7 +21,7 @@ configurazione. Suite: **242 test in 24 moduli** (modulo nuovo `test_polish`).
   conflitto col nuovo nodo nativo `VirtualJoystick` e il joystick mobile era
   rotto in silenzio — sostituito dal nodo nativo. Deadzone `ui_*` 0.2 in
   `project.godot`; sezioni `[dotnet]`/`[animation]` residue e azione
-  `toggle_music` morta rimosse; `window/stretch/aspect="keep"` esplicito.
+  `toggle_music` morta rimosse (`stretch/aspect` resta al default `keep`: l'editor lo toglie dal file).
 - **Perdita dati**: "Menu" ed "Esci" ora salvano davvero (prima solo dirty
   flag o quit diretto: fino a 60 s persi); lingua e volumi cambiati dal menu
   principale vengono persistiti con un salvataggio "solo settings" sul file
