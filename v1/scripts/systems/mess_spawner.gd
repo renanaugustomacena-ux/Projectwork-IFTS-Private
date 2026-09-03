@@ -101,6 +101,7 @@ func _spawn_random_mess() -> void:
 	var mess := MessNodeScript.new()
 	mess.setup(entry, pos, persisted)
 	mess_container.add_child(mess)
+	AudioManager.play_sfx("mess_spawn", -6.0)
 	SignalBus.mess_spawned.emit(entry.get("id", ""), pos)
 	SignalBus.save_requested.emit()
 

@@ -21,6 +21,11 @@ const DEFAULT_CLEAN_DURATION: float = 7.0
 
 const BAR_SIZE := Vector2(36, 5)
 
+## "Puff" procedurale all'avvio della pulizia (P9): puntini che salgono e
+## sfumano, disegnati in _draw() — nessuna texture.
+const PUFF_SEC := 0.4
+const PUFF_DOTS := 5
+
 var mess_id: String = ""
 var stress_weight: float = 0.10
 var clean_reward: int = DEFAULT_CLEAN_REWARD
@@ -28,10 +33,15 @@ var clean_duration: float = DEFAULT_CLEAN_DURATION
 ## Entry dentro SaveManager._messes: stessa identita` usata per la rimozione
 ## (pattern di _decorations). Vuoto solo nei test che non persistono.
 var save_entry: Dictionary = {}
+var _prompt_released: bool = false
+var _last_sec_left: int = -1
 
 var _sprite: Sprite2D
 var _cleaning_started_at: float = 0.0
 var _last_bar_px: int = -1
+# Tempo residuo del puff (> 0 = in corso); decresce in _process, che e` gia`
+# attivo durante la pulizia.
+var _puff_t: float = 0.0
 
 
 func setup(entry: Dictionary, world_position: Vector2, persisted: Dictionary = {}) -> void:
@@ -83,6 +93,15 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	# GP-16: un mess liberato da _reload_messes con il personaggio sopra non
+	# emette body_exited (i segnali vengono staccati qui sotto) e il prompt
+	# "Premi E" restava acceso per sempre. _complete() ha gia` pareggiato.
+	if not _prompt_released and monitoring and is_inside_tree():
+		for body in get_overlapping_bodies():
+			if body is CharacterBody2D:
+				_prompt_released = true
+				SignalBus.interaction_unavailable.emit()
+				break
 	# Disconnect esplicito per evitare zombie signal se il mess viene free
 	# durante un'interazione in corso (fix B-012).
 	if body_entered.is_connected(_on_body_entered):
@@ -99,43 +118,56 @@ func is_cleaning() -> bool:
 	return ends_at() > 0.0
 
 
-## Invocata dal sistema di interazione (tasto E del personaggio).
-func on_interact(_player: Node) -> void:
-	start_cleaning()
+## Invocata dal sistema di interazione (tasto E del personaggio). False se
+## la pulizia era gia` in corso: il personaggio non deve mimare un'azione
+## che non e` partita (PT-28).
+func on_interact(_player: Node) -> bool:
+	return start_cleaning()
 
 
 ## Avvia la pulizia: durata dal catalogo divisa per il miglior attrezzo
 ## posseduto AL momento dell'avvio (un attrezzo comprato dopo non retro-
 ## agisce sulle pulizie gia` in corso).
-func start_cleaning() -> void:
+func start_cleaning() -> bool:
 	if is_cleaning():
-		return
+		return false
 	var mult: float = maxf(GameManager.best_tool_multiplier(), 1.0)
 	var duration := clean_duration / mult
 	var now := Time.get_unix_time_from_system()
 	_cleaning_started_at = now
 	save_entry["cleaning_started_at"] = now
 	save_entry["cleaning_ends_at"] = now + duration
-	SignalBus.mess_cleaning_started.emit(mess_id, save_entry["cleaning_ends_at"])
 	SignalBus.save_requested.emit()
+	_puff_t = PUFF_SEC
 	set_process(true)
 	queue_redraw()
+	AudioManager.play_sfx("clean_start")
 	AppLogger.info("MessNode", "cleaning_started", {"id": mess_id, "duration_s": duration})
+	# Le pulizie lunghe vanno annunciate: una barra di 36 px che non si muove
+	# per un'ora sembrava un gioco rotto (PT-29). Corte = solo la barra.
+	if duration >= 60.0:
+		SignalBus.toast_requested.emit(tr("TOAST_CLEAN_STARTED") % format_time_left(duration), "info")
+	return true
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_cleaning():
 		set_process(false)
 		return
 	if Time.get_unix_time_from_system() >= ends_at():
 		_complete()
 		return
+	if _puff_t > 0.0:
+		_puff_t = maxf(_puff_t - delta, 0.0)
+		queue_redraw()
 	# Ridisegna solo quando la barra avanza di un pixel (review 2026-08-14):
 	# su una pulizia da 1h il redraw a 60Hz dipingeva pixel identici per il
 	# 99.98% dei frame.
 	var px := _bar_fill_px()
-	if px != _last_bar_px:
+	var sec_left := int(ceili(ends_at() - Time.get_unix_time_from_system()))
+	if px != _last_bar_px or sec_left != _last_sec_left:
 		_last_bar_px = px
+		_last_sec_left = sec_left
 		queue_redraw()
 
 
@@ -154,12 +186,14 @@ func _complete() -> void:
 	if monitoring:
 		for body in get_overlapping_bodies():
 			if body is CharacterBody2D:
+				_prompt_released = true
 				SignalBus.interaction_unavailable.emit()
 				break
 	SaveManager.credit_coins(clean_reward)
 	if not save_entry.is_empty():
 		SaveManager.remove_mess(save_entry)
 	SignalBus.mess_cleaned.emit(mess_id)
+	AudioManager.play_sfx("clean_done")
 	SignalBus.toast_requested.emit(tr("TOAST_CLEAN_DONE") % clean_reward, "info")
 	SignalBus.save_requested.emit()
 	queue_free()
@@ -171,6 +205,8 @@ func clean() -> void:
 
 
 func _draw() -> void:
+	if _puff_t > 0.0:
+		_draw_puff()
 	if not is_cleaning():
 		return
 	var now := Time.get_unix_time_from_system()
@@ -183,6 +219,37 @@ func _draw() -> void:
 	draw_rect(
 		Rect2(origin + Vector2.ONE, Vector2((BAR_SIZE.x - 2.0) * ratio, BAR_SIZE.y - 2.0)), Color(0.55, 0.85, 1.0, 0.9)
 	)
+	# Tempo residuo sopra la barra: per le pulizie da minuti/ore e` l'unica
+	# cosa che dice al giocatore che il gioco sta lavorando (PT-29).
+	var left := maxf(ends_at() - now, 0.0)
+	if left >= 10.0:
+		var label := format_time_left(left)
+		var font := ThemeDB.fallback_font
+		var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+		draw_string(
+			font, Vector2(-width * 0.5, top_y - 3.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 1, 1, 0.9)
+		)
+
+
+## Cinque puntini a ventaglio che salgono e sfumano in PUFF_SEC (P9): il
+## progresso e` derivato da _puff_t, quindi il disegno e` puro e senza stato.
+func _draw_puff() -> void:
+	var progress := 1.0 - clampf(_puff_t / PUFF_SEC, 0.0, 1.0)
+	var alpha := (1.0 - progress) * 0.9
+	var dot_radius := 2.0 - progress
+	for i in range(PUFF_DOTS):
+		var angle := -PI * 0.5 + (float(i) - (PUFF_DOTS - 1) * 0.5) * 0.55
+		var start := Vector2(cos(angle) * 8.0, -4.0)
+		var drift := Vector2(cos(angle) * 6.0, -14.0) * progress
+		draw_circle(start + drift, dot_radius, Color(1, 1, 1, alpha))
+
+
+## "mm:ss" sotto l'ora, "h:mm" oltre. Statica: usabile dai toast.
+static func format_time_left(seconds: float) -> String:
+	var total := int(ceili(seconds))
+	if total >= 3600:
+		return "%d:%02d h" % [total / 3600, (total % 3600) / 60]
+	return "%d:%02d" % [total / 60, total % 60]
 
 
 ## Difesa (void, solo side-effect dichiarato nel nome — review 2026-08-14):
@@ -192,6 +259,8 @@ func _clamp_persisted_deadline() -> void:
 	var now := Time.get_unix_time_from_system()
 	if ends_at() - now > clean_duration:
 		save_entry["cleaning_ends_at"] = now + clean_duration
+		# SM-19: anche l'inizio, altrimenti la barra parte quasi piena.
+		save_entry["cleaning_started_at"] = now
 		AppLogger.warn("MessNode", "ends_at_clamped", {"id": mess_id})
 
 

@@ -26,8 +26,10 @@ func _build_layers() -> void:
 		"Layer_0010_1.png",
 		"Layer_0009_2.png",
 		"Layer_0008_3.png",
+		"Layer_0007_Lights.png",  # raggi di luce del pack (erano esclusi)
 		"Layer_0006_4.png",
 		"Layer_0005_5.png",
+		"Layer_0004_Lights.png",
 		"Layer_0003_6.png",
 		"Layer_0000_9.png",
 	]

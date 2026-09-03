@@ -8,6 +8,8 @@ extends CharacterBody2D
 
 enum State { IDLE, WANDER, FOLLOW, SLEEP, PLAY, WILD, EAT, AVOID, GO_POTTY, POTTY, ROAM_GARDEN, RETURN_HOME }
 
+const FootShadowScript := preload("res://scripts/rooms/foot_shadow.gd")
+
 const WANDER_SPEED := 30.0
 const FOLLOW_SPEED := 80.0
 const FOLLOW_DISTANCE := 120.0
@@ -46,11 +48,38 @@ const GARDEN_ZONE := "garden"
 const POTTY_INTERVAL_SEC := 6.0 * 3600.0  # 4 volte al giorno
 const POTTY_JITTER_SEC := 3600.0
 const POTTY_SQUAT_SEC := 3.0
-const MAX_OFFLINE_POTTIES := 8
+const MAX_OFFLINE_POTTIES := 3  # PT-25: 8 sporchi da 30 min al rientro non sono cozy
+## Primo bisogno di una partita nuova: pochi minuti, cosi` il giro in
+## giardino si vede davvero (poi ogni ~6 h). PT-24.
+const FIRST_POTTY_MIN_SEC := 180.0
+const FIRST_POTTY_MAX_SEC := 360.0
+## Stati "fuori stanza": i muri non valgono e il clamp e` quello di zona.
+const OUTING_STATES: Array[State] = [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME]
+const OUTING_TIMEOUT_SEC := 20.0  # meta irraggiungibile: mai restare bloccati (GP-01)
 const GARDEN_SPEED := 55.0
 const GARDEN_LINGER_MIN := 8.0
 const GARDEN_LINGER_MAX := 16.0
 const TARGET_REACH := 12.0
+
+# --- Fase 6 (rifinitura procedurale, Loyall 1997 / Cooper-Ubisoft): il
+# procedurale sta sulle appendici e sull'easing, non sulle decisioni. Tutti i
+# fattori di scala moltiplicano _anim_base_scale e durano pochi decimi. ---
+const SHADOW_RADIUS := 10.0
+const SQUASH_TURN := Vector2(1.1, 0.9)  # cambio di direzione in camminata
+const SQUASH_ANTICIPATE := Vector2(0.92, 1.08)  # (c) prima di partire da IDLE
+const SQUASH_FLICK := Vector2(1.06, 1.0)  # (d) "ear flick" in IDLE
+const SQUASH_WAKE := Vector2(1.15, 0.9)  # (e) stiracchiamento al risveglio
+const TURN_SQUASH_SEC := 0.12
+const ANTICIPATE_SEC := 0.1
+const FLICK_SEC := 0.12
+const WAKE_STRETCH_SEC := 0.2
+const FLICK_MIN_SEC := 8.0
+const FLICK_MAX_SEC := 20.0
+const MEOW_HEAR_DIST := 200.0  # miagola solo se il player e` vicino
+const ZZZ_LOOP_SEC := 1.4
+const ZZZ_RISE_PX := 12.0
+const ZZZ_ALPHA := 0.85
+const ZZZ_FONT_SIZE := 10
 
 var _state: State = State.IDLE
 var _state_timer: float = 0.0
@@ -69,9 +98,16 @@ var _storm_bond_timer: float = 0.0
 var _outing_target := Vector2.ZERO
 var _potty_indoor: bool = false
 var _garden_linger_left: float = 0.0
-# Fase 5 (polish procedurale): squash breve al cambio di direzione.
+# Fase 5 (polish procedurale): squash breve al cambio di direzione. Fase 6
+# generalizza: _squash_scale e` il fattore applicato finche` _squash_left > 0.
 var _last_flip: bool = false
 var _squash_left: float = 0.0
+var _squash_scale := SQUASH_TURN
+# (d) Conto alla rovescia per la prossima micro-azione in IDLE.
+var _idle_flick_left: float = 0.0
+# (a) "z" fluttuante durante SLEEP: nodo e tween vivono solo in quello stato.
+var _zzz: Label = null
+var _zzz_tween: Tween = null
 # Scala di fabbrica dello sprite (catturata in _ready): il polish la usa
 # come base immutabile per non accumulare deriva frame dopo frame.
 var _anim_base_scale: float = 1.0
@@ -94,6 +130,13 @@ func _ready() -> void:
 		_foot_offset = shape_node.position
 	if _anim != null:
 		_anim_base_scale = absf(_anim.scale.x)
+	# Ombra ai piedi (P1): figlia, dietro lo sprite, sul punto di contatto
+	# letto dal collider — la stessa convenzione della profondita`.
+	var shadow: Node2D = FootShadowScript.new()
+	shadow.name = "FootShadow"
+	shadow.radius = SHADOW_RADIUS
+	shadow.position = _foot_offset
+	add_child(shadow)
 	collision_layer = 0  # Don't block anything
 	# B-030: seed deterministico in debug per riproducibilita` FSM pet
 	if OS.is_debug_build():
@@ -122,9 +165,13 @@ func _on_wild_mode_requested(active: bool) -> void:
 		# terebbe dentro): _process_roam_garden legge _wild_mode_active e
 		# rientra subito; il WILD parte al rientro (review 2026-08-14: lo
 		# azzeramento del linger veniva sovrascritto dal ramo POTTY).
-		if _state in [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME]:
+		if _state in OUTING_STATES:
 			return
 		_set_state(State.WILD)
+	elif _state in [State.GO_POTTY, State.POTTY]:
+		# GP-28: tempesta finita mentre era gia` in cerca di un angolo: il
+		# bisogno non deve piu` finire in stanza.
+		_potty_indoor = false
 	elif _state == State.WILD:
 		# Tempesta finita: se una ciotola era rimasta abbandonata (il WILD
 		# interrompe il pasto), il gatto torna a finirla.
@@ -174,8 +221,15 @@ func _physics_process(delta: float) -> void:
 	# uscita) i muri del bordo non valgono, altrimenti bloccherebbero il
 	# rientro; dentro tornano solidi. Nessuno stato deve ricordarsi di
 	# ripristinarla a mano (fase 3).
-	var outing := _state in [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME]
+	var outing := _state in OUTING_STATES
 	collision_mask = 0 if outing or not Helpers.is_inside_floor(position + _foot_offset) else 1
+	# Un solo clamp al pavimento per tutti gli stati "dentro" (GP-19): WANDER,
+	# FOLLOW ed EAT non lo avevano e i muri sono segmenti sottili.
+	if not outing:
+		var paw := position + _foot_offset
+		var clamped := Helpers.clamp_inside_floor(paw)
+		if clamped != paw:
+			position = clamped - _foot_offset
 	# Depth: sort by paw contact y, same band as character and furniture.
 	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
 
@@ -208,9 +262,14 @@ static func meal_trust_gain(last_meal_at: float, now: float) -> float:
 func _gain_trust(amount: float, reason: String) -> void:
 	if amount <= 0.0:
 		return
+	var old_tier := trust_tier(_trust())
 	var new_value := clampf(_trust() + amount, 0.0, 100.0)
 	SaveManager.pet_data["trust"] = new_value
-	SignalBus.pet_trust_changed.emit(new_value)
+	if trust_tier(new_value) != old_tier:
+		# PT-21: la confidenza era invisibile. Un toast solo al cambio di
+		# fascia: la relazione si legge dal comportamento, non da un numero.
+		SignalBus.toast_requested.emit(tr("TOAST_TRUST_UP"), "success")
+		AudioManager.play_sfx("trust_up")
 	SignalBus.save_requested.emit()
 	AppLogger.info("PetController", "trust_gained", {"amount": amount, "reason": reason, "trust": new_value})
 
@@ -265,6 +324,13 @@ static func accrue_offline_potties(next_at: float, now: float, cap: int = MAX_OF
 	return {"count": count, "next": next}
 
 
+func _schedule_first_potty() -> void:
+	SaveManager.pet_data["next_potty_at"] = (
+		Time.get_unix_time_from_system() + _rng.randf_range(FIRST_POTTY_MIN_SEC, FIRST_POTTY_MAX_SEC)
+	)
+	SignalBus.save_requested.emit()
+
+
 func _schedule_next_potty() -> void:
 	var now := Time.get_unix_time_from_system()
 	var jitter := _rng.randf_range(-POTTY_JITTER_SEC, POTTY_JITTER_SEC)
@@ -275,13 +341,20 @@ func _schedule_next_potty() -> void:
 ## Alla scadenza dell'orologio: con la tempesta il bisogno avviene IN STANZA
 ## (diventa uno sporco pesante via room_base), altrimenti si esce in giardino.
 func _check_potty_due() -> void:
-	if _state in [State.GO_POTTY, State.POTTY, State.ROAM_GARDEN, State.RETURN_HOME, State.EAT]:
+	if _state in OUTING_STATES or _state == State.EAT:
 		return
 	var next := float(SaveManager.pet_data.get("next_potty_at", 0.0))
+	var now := Time.get_unix_time_from_system()
 	if next <= 0.0:
+		_schedule_first_potty()
+		return
+	if next - now > POTTY_INTERVAL_SEC + POTTY_JITTER_SEC:
+		# SM-18: orologio di sistema tornato indietro (o valore corrotto): con
+		# una scadenza nel futuro remoto il gatto non farebbe mai piu` bisogni.
+		AppLogger.warn("PetController", "potty_clock_rewound", {"next": next, "now": now})
 		_schedule_next_potty()
 		return
-	if Time.get_unix_time_from_system() < next:
+	if now < next:
 		return
 	_potty_indoor = _wild_mode_active  # tempesta = stessa soglia del WILD
 	if _potty_indoor or not Helpers.has_zone(GARDEN_ZONE):
@@ -316,6 +389,9 @@ func _walk_outing(target: Vector2, speed: float) -> bool:
 
 
 func _process_go_potty(_delta: float) -> void:
+	if _state_timer > OUTING_TIMEOUT_SEC:
+		_set_state(State.POTTY)  # dove si trova: mai bloccato sul bordo (GP-01)
+		return
 	if _walk_outing(_outing_target, GARDEN_SPEED if not _potty_indoor else WANDER_SPEED):
 		_set_state(State.POTTY)
 
@@ -324,7 +400,7 @@ func _process_potty(_delta: float) -> void:
 	velocity = Vector2.ZERO
 	_play_anim("sleep")  # accucciato: il frame piu` vicino senza arte dedicata
 	if _anim:
-		_anim.scale = Vector2(absf(_anim.scale.x), absf(_anim.scale.x) * 0.85)
+		_anim.scale = Vector2(_anim_base_scale, _anim_base_scale * 0.85)
 	if _state_timer < POTTY_SQUAT_SEC:
 		return
 	_reset_anim_scale()
@@ -354,7 +430,9 @@ func _process_roam_garden(delta: float) -> void:
 
 
 func _process_return_home(_delta: float) -> void:
-	if _walk_outing(_outing_target, GARDEN_SPEED):
+	if _state_timer > OUTING_TIMEOUT_SEC:
+		position = Helpers.clamp_inside_floor(position + _foot_offset) - _foot_offset
+	if _state_timer > OUTING_TIMEOUT_SEC or _walk_outing(_outing_target, GARDEN_SPEED):
 		collision_mask = 1  # di nuovo dentro: i muri tornano solidi
 		_set_state(State.WILD if _wild_mode_active else State.IDLE)
 
@@ -380,6 +458,11 @@ func _process_eat(_delta: float) -> void:
 	var bowl := _bowl_ref
 	var dist := position.distance_to(bowl.position)
 	if dist > EAT_REACH:
+		if _state_timer > OUTING_TIMEOUT_SEC:
+			# Ciotola irraggiungibile: non camminarci contro per sempre.
+			_bowl_ref = null
+			_set_state(State.WILD if _wild_mode_active else State.IDLE)
+			return
 		var dir := (bowl.position - position).normalized()
 		velocity = dir * EAT_SPEED
 		move_and_slide()
@@ -397,12 +480,17 @@ func _process_eat(_delta: float) -> void:
 		if is_instance_valid(bowl):
 			bowl.queue_free()
 		_bowl_ref = null
-		SignalBus.pet_fed.emit()
 		# Fase 2: il pasto nutre la confidenza solo se il gatto aveva fame
 		# (>= 4h dall'ultimo pasto) — anti spam di croccantini.
 		var now := Time.get_unix_time_from_system()
-		var gain := meal_trust_gain(float(SaveManager.pet_data.get("last_meal_at", 0.0)), now)
+		var last_meal := float(SaveManager.pet_data.get("last_meal_at", 0.0))
+		if last_meal > now:
+			last_meal = 0.0  # SM-18: orologio tornato indietro
+		var gain := meal_trust_gain(last_meal, now)
 		SaveManager.pet_data["last_meal_at"] = now
+		# PT-22: 10 monete e 15 secondi di attesa meritano una risposta.
+		SignalBus.toast_requested.emit(tr("TOAST_PET_FED_HUNGRY" if gain > 0.0 else "TOAST_PET_FED_FULL"), "info")
+		AudioManager.play_sfx("pet_fed")
 		if gain > 0.0:
 			_gain_trust(gain, "meal")
 		else:
@@ -453,9 +541,19 @@ func _process_wild(delta: float) -> void:
 		_play_anim("walk")
 
 
-func _process_idle(_delta: float) -> void:
+func _process_idle(delta: float) -> void:
 	velocity = Vector2.ZERO
 	_play_anim("idle")
+	# (b) Idle mai identico: il passo dell'animazione ondeggia lentamente
+	# (_apply_walk_polish non lo azzera finche` lo stato e` IDLE).
+	if _anim:
+		_anim.speed_scale = 0.9 + 0.2 * sin(_state_timer * 0.7)
+	# (d) Micro-azione auto-iniziata ogni 8-20 s (Loyall 1997): un guizzo che
+	# nessun input ha chiesto vale piu` di uno stato nuovo.
+	_idle_flick_left -= delta
+	if _idle_flick_left <= 0.0:
+		_idle_flick_left = _rng.randf_range(FLICK_MIN_SEC, FLICK_MAX_SEC)
+		_idle_flick()
 
 	# Confidenza bassa: scappa se il player si avvicina troppo (fase 2).
 	if _should_flee():
@@ -545,11 +643,10 @@ func _process_sleep(_delta: float) -> void:
 	# No move_and_slide — sleeping pet must not drift
 	_play_anim("sleep")
 
-	# Gentle breathing scale pulse
+	# Gentle breathing scale pulse (dalla scala di fabbrica: mai da quella corrente)
 	if _anim:
 		var breath := 1.0 + sin(_state_timer * 1.5) * 0.03
-		var base := absf(_anim.scale.x)
-		_anim.scale = Vector2(base, base * breath)
+		_anim.scale = Vector2(_anim_base_scale, _anim_base_scale * breath)
 
 	# Wake up after a while or if character is nearby
 	if _state_timer > 15.0:
@@ -572,10 +669,19 @@ func _process_play(_delta: float) -> void:
 
 	if _state_timer > 3.0:
 		_reset_anim_position()
-		_set_state(State.FOLLOW)
+		# GP-12: un gatto diffidente non segue (altrimenti insegue e scappa).
+		_set_state(State.FOLLOW if _trust() >= TRUST_AVOID_BELOW else State.IDLE)
 
 
 func _set_state(new_state: State) -> void:
+	var old_state := _state
+	# Fusa quando dorme fidandosi; soffio all'ingresso in WILD (rifinitura audio).
+	if _state == State.SLEEP and new_state != State.SLEEP:
+		AudioManager.sfx.stop_loop("cat_purr_loop")
+	if new_state == State.SLEEP and _trust() >= TRUST_CLOSE_AT:
+		AudioManager.sfx.play_loop("cat_purr_loop")
+	elif new_state == State.WILD and _state != State.WILD:
+		AudioManager.play_sfx("cat_hiss", -4.0)
 	# Reset incondizionato di scala e offset dello sprite a OGNI transizione
 	# (review 2026-08-14): SLEEP e POTTY li modificano per-frame, e un
 	# interrupt (es. ciotola durante l'accucciata) lasciava il gatto
@@ -583,10 +689,23 @@ func _set_state(new_state: State) -> void:
 	# riapplicano comunque al frame successivo.
 	_reset_anim_scale()
 	_reset_anim_position()
+	_squash_left = 0.0  # stesso contratto: nessuno squash sopravvive al cambio
 	_state = new_state
 	_state_timer = 0.0
 	if new_state == State.WANDER:
 		_pick_wander_target()
+	elif new_state == State.IDLE:
+		_idle_flick_left = _rng.randf_range(FLICK_MIN_SEC, FLICK_MAX_SEC)
+	# Fase 6: squash/stretch brevi SUL cambio di stato (Rosen GDC 2014: pochi
+	# keyframe + codice). Partono dopo il reset, quindi sempre da base.
+	if old_state == State.IDLE and (new_state == State.WANDER or new_state == State.FOLLOW):
+		_start_squash(SQUASH_ANTICIPATE, ANTICIPATE_SEC)  # (c) anticipazione
+	elif old_state == State.SLEEP and new_state != State.SLEEP:
+		_start_squash(SQUASH_WAKE, WAKE_STRETCH_SEC)  # (e) stiracchiamento
+	if new_state == State.SLEEP:
+		_spawn_zzz()  # (a)
+	elif old_state == State.SLEEP:
+		_free_zzz()
 
 
 func _pick_wander_target() -> void:
@@ -645,8 +764,9 @@ func _play_anim(anim_name: String) -> void:
 
 ## Polish procedurale (fase 5): il passo dell'animazione segue la velocita`
 ## reale (lento in giardino, frenetico in WILD) e un breve squash accompagna
-## i cambi di direzione. Solo in camminata: SLEEP/POTTY gestiscono la scala
-## per conto loro.
+## i cambi di direzione. Il passo in IDLE lo decide _process_idle (fase 6);
+## SLEEP/POTTY gestiscono la scala per conto loro e _set_state azzera lo
+## squash a ogni transizione, quindi qui non puo` sovrapporsi a loro.
 func _apply_walk_polish(delta: float) -> void:
 	if _anim == null:
 		return
@@ -654,20 +774,89 @@ func _apply_walk_polish(delta: float) -> void:
 		_anim.speed_scale = clampf(velocity.length() / FOLLOW_SPEED, 0.5, 1.6)
 		if _anim.flip_h != _last_flip:
 			_last_flip = _anim.flip_h
-			_squash_left = 0.12
-		if _squash_left > 0.0:
-			_squash_left -= delta
-			var base := _anim_base_scale
-			_anim.scale = Vector2(base * 1.1, base * 0.9) if _squash_left > 0.0 else Vector2(base, base)
-	else:
+			if _squash_left <= 0.0:  # l'anticipazione in corso non va tagliata
+				_start_squash(SQUASH_TURN, TURN_SQUASH_SEC)
+	elif _state != State.IDLE:
 		_anim.speed_scale = 1.0
-		_squash_left = 0.0
+	_tick_squash(delta)
 
 
+## Avvia uno squash/stretch a tempo: `factor` moltiplica _anim_base_scale
+## finche` restano `seconds`, poi la scala torna ESATTA a base (mai accumulo).
+func _start_squash(factor: Vector2, seconds: float) -> void:
+	_squash_scale = factor
+	_squash_left = seconds
+
+
+func _tick_squash(delta: float) -> void:
+	if _squash_left <= 0.0:
+		return
+	_squash_left -= delta
+	var base := _anim_base_scale
+	_anim.scale = _squash_scale * base if _squash_left > 0.0 else Vector2(base, base)
+
+
+## (d) Micro-azione in IDLE: guizzo orizzontale (flip_h intatto) e, 1 volta
+## su 4 e solo con il player a portata d'orecchio, un miagolio sommesso.
+func _idle_flick() -> void:
+	_start_squash(SQUASH_FLICK, FLICK_SEC)
+	if _rng.randi_range(0, 3) != 0:
+		return
+	if _character_ref == null or not is_instance_valid(_character_ref):
+		return
+	if position.distance_to(_character_ref.global_position) <= MEOW_HEAR_DIST:
+		AudioManager.play_sfx("cat_meow", -8.0)
+
+
+## (a) "z" che sale e sfuma in loop sopra la testa, finche` dura SLEEP.
+## Label figlia (nessuna arte); tween legato alla label: muore con lei.
+func _spawn_zzz() -> void:
+	_free_zzz()
+	var label := Label.new()
+	label.name = "Zzz"
+	label.text = "z"
+	label.add_theme_font_size_override("font_size", ZZZ_FONT_SIZE)
+	label.modulate = Color(1, 1, 1, ZZZ_ALPHA)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var origin := Vector2(2.0, _head_top_y() - 14.0)
+	label.position = origin
+	add_child(label)
+	_zzz = label
+	_zzz_tween = label.create_tween().set_loops()
+	_zzz_tween.set_parallel(true)
+	var rise := _zzz_tween.tween_property(label, "position:y", origin.y - ZZZ_RISE_PX, ZZZ_LOOP_SEC)
+	rise.from(origin.y).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_zzz_tween.tween_property(label, "modulate:a", 0.0, ZZZ_LOOP_SEC).from(ZZZ_ALPHA)
+
+
+func _free_zzz() -> void:
+	if _zzz_tween != null and _zzz_tween.is_valid():
+		_zzz_tween.kill()
+	_zzz_tween = null
+	if _zzz != null and is_instance_valid(_zzz):
+		_zzz.queue_free()
+	_zzz = null
+
+
+## Bordo superiore dello sprite (coordinate locali del corpo), dal primo
+## frame dell'animazione corrente; fallback prudente se mancano i frame.
+func _head_top_y() -> float:
+	if _anim == null:
+		return -24.0
+	var half_h := 8.0
+	var frames := _anim.sprite_frames
+	if frames != null and frames.has_animation(_anim.animation) and frames.get_frame_count(_anim.animation) > 0:
+		var tex := frames.get_frame_texture(_anim.animation, 0)
+		if tex != null:
+			half_h = tex.get_size().y * 0.5
+	return _anim.position.y - half_h * _anim_base_scale
+
+
+## Scala di fabbrica, NON quella corrente: leggere scale.x a meta` di uno
+## squash (1.1x) la promuoveva a nuova base — deriva permanente (fase 6).
 func _reset_anim_scale() -> void:
 	if _anim:
-		var base_scale := absf(_anim.scale.x)
-		_anim.scale = Vector2(base_scale, base_scale)
+		_anim.scale = Vector2(_anim_base_scale, _anim_base_scale)
 
 
 func _reset_anim_position() -> void:
@@ -676,6 +865,7 @@ func _reset_anim_position() -> void:
 
 
 func _exit_tree() -> void:
+	AudioManager.sfx.stop_loop("cat_purr_loop")
 	# T-R-015i: disconnect WILD mode signal to avoid zombies on scene reload
 	if SignalBus.pet_wild_mode_requested.is_connected(_on_wild_mode_requested):
 		SignalBus.pet_wild_mode_requested.disconnect(_on_wild_mode_requested)

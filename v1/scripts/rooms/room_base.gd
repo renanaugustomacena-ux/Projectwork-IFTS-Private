@@ -74,6 +74,9 @@ func _ready() -> void:
 	# l'accumulo offline va processato anche all'ingresso scena. Idempotente:
 	# dopo il primo processing next_potty_at e' nel futuro.
 	_process_offline_potty()
+	# Overlay/pioggia/WILD dallo stato salvato: la pioggia del menu e` morta
+	# col cambio scena e il gatto e` appena nato (GP-02).
+	MoodManager.reapply_effects()
 
 
 func _setup_floor_bounds() -> void:
@@ -119,6 +122,7 @@ func _spawn_new_mess(mess_id: String, pos: Vector2) -> void:
 	var mess: Area2D = MessNodeScript.new()
 	mess.setup(catalog_entry, pos, persisted)
 	mess_container.add_child(mess)
+	AudioManager.play_sfx("mess_spawn", -6.0)
 	SignalBus.mess_spawned.emit(mess_id, pos)
 	SignalBus.save_requested.emit()
 
@@ -306,7 +310,8 @@ func _on_decoration_placed(item_id: String, pos: Vector2) -> void:
 			# push the target straight back inside the footprint (Phase D).
 			character_node.position = _find_nearest_free_position(char_pos, deco_rect)
 	SaveManager.add_decoration(deco_data)
-	_spawn_decoration(item_id, pos, item_scale, 0.0, false, deco_data)
+	_spawn_decoration(item_id, pos, item_scale, 0.0, false, deco_data, true)
+	AudioManager.play_sfx("deco_place")
 	SignalBus.save_requested.emit()
 
 
@@ -395,7 +400,8 @@ func _spawn_decoration(
 	item_scale: float,
 	rot: float = 0.0,
 	flipped: bool = false,
-	deco_data: Dictionary = {}
+	deco_data: Dictionary = {},
+	animate: bool = false
 ) -> void:
 	var item_data := _find_item_data(item_id)
 	if item_data.is_empty():
@@ -466,10 +472,11 @@ func _spawn_decoration(
 	if bool(item_data.get("sittable", false)):
 		var seat_area: Area2D = SeatAreaScript.new()
 		seat_area.seat = sprite
+		seat_area.item_id = item_id
 		seat_area.collision_layer = 4
-		seat_area.collision_mask = 0
+		seat_area.collision_mask = 1  # vede il personaggio: prompt "Premi E"
 		seat_area.monitorable = true
-		seat_area.monitoring = false
+		seat_area.monitoring = true
 		var seat_shape := CollisionShape2D.new()
 		var seat_rect := RectangleShape2D.new()
 		seat_rect.size = tex_size + Vector2.ONE * INTERACTION_PADDING * 2.0
@@ -478,40 +485,22 @@ func _spawn_decoration(
 		seat_area.add_child(seat_shape)
 		sprite.add_child(seat_area)
 
-	# --- Interaction Area2D for interactable furniture ---
-	var interaction_type: String = item_data.get("interaction_type", "")
-	if not interaction_type.is_empty() and blocks_movement:
-		var area := Area2D.new()
-		area.collision_layer = 0
-		area.collision_mask = 1  # Detect character (layer 1)
-		area.monitoring = true
-		area.monitorable = false
-		area.set_meta("interaction_type", interaction_type)
-		area.set_meta("item_id", item_id)
-		var area_shape := CollisionShape2D.new()
-		var area_rect := RectangleShape2D.new()
-		# Interaction zone slightly larger than collision footprint
-		area_rect.size = Vector2(foot_w + INTERACTION_PADDING * 2.0, foot_h + INTERACTION_PADDING * 2.0)
-		area_shape.shape = area_rect
-		area_shape.position = Vector2(tex_size.x * 0.5, tex_size.y - foot_h * 0.5)
-		area.add_child(area_shape)
-		area.body_entered.connect(_on_interaction_body_entered.bind(area))
-		area.body_exited.connect(_on_interaction_body_exited.bind(area))
-		sprite.add_child(area)
-
 	decorations_container.add_child(sprite)
 
-
-func _on_interaction_body_entered(body: Node2D, area: Area2D) -> void:
-	if body is CharacterBody2D:
-		var itype: String = area.get_meta("interaction_type", "")
-		var iid: String = area.get_meta("item_id", "")
-		SignalBus.interaction_available.emit(iid, itype)
-
-
-func _on_interaction_body_exited(body: Node2D, _area: Area2D) -> void:
-	if body is CharacterBody2D:
-		SignalBus.interaction_unavailable.emit()
+	# --- Pop-in (P6): solo al piazzamento da drop, mai al reload. Parte dalla
+	# scala finale gia` impostata (item_scale e` significativo) e vi torna
+	# esatta a fine tween; lo sprite non e` centrato, quindi la posizione viene
+	# compensata perche` cresca dal punto d'appoggio e non dall'angolo in alto
+	# a sinistra. Applicato DOPO add_child: _ready dello script vede i valori
+	# finali. Tween sul nodo: muore con lui se viene eliminato a meta` corsa.
+	if animate:
+		var base_scale := sprite.scale
+		var foot_anchor := Vector2(tex_size.x * 0.5, tex_size.y)
+		sprite.scale = base_scale * 0.85
+		sprite.position = pos + foot_anchor * (base_scale - sprite.scale)
+		var pop := sprite.create_tween().set_parallel(true)
+		pop.tween_property(sprite, "scale", base_scale, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		pop.tween_property(sprite, "position", pos, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 ## Returns a position outside `blocked` AND inside the floor polygon, trying

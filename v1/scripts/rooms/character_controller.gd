@@ -1,6 +1,8 @@
 ## CharacterController — Top-down movement for the cozy room character.
 extends CharacterBody2D
 
+const FootShadowScript := preload("res://scripts/rooms/foot_shadow.gd")
+
 const SPEED := 120.0
 const DIRECTION_THRESHOLD := 1.2
 ## Raggio della ricerca interagibili intorno ai piedi (tasto E).
@@ -13,6 +15,11 @@ const INTERACT_ANIM_TIME := 0.8
 const RIDE_SPEED := 80.0
 ## Dove siedono i piedi rispetto allo sprite della sedia (frazioni di w,h).
 const SEAT_ANCHOR := Vector2(0.5, 0.62)
+## Ombra ovale ai piedi (P1): semiasse orizzontale in pixel.
+const SHADOW_RADIUS := 14.0
+## Respiro in idle (fase 6): ampiezza e velocita` dell'oscillazione verticale.
+const BREATH_AMPLITUDE := 0.015
+const BREATH_SPEED := 2.0
 
 var _last_direction := Vector2.DOWN
 var _last_anim: String = ""
@@ -28,6 +35,10 @@ var _interact_anim_left: float = 0.0
 # 2026-08-14 — il flag copiato restava stantio se la sedia veniva eliminata).
 var _seat: Sprite2D = null
 var _seat_offset := Vector2.ZERO  # posizione sedia relativa al personaggio
+# Scala di fabbrica dello sprite (catturata in _ready): il respiro riparte
+# sempre da qui, mai dalla scala corrente — niente deriva frame dopo frame.
+var _anim_base_scale := Vector2.ONE
+var _breath_t: float = 0.0
 
 @onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -38,6 +49,15 @@ func _ready() -> void:
 	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node != null:
 		_foot_offset = shape_node.position
+	if _anim != null:
+		_anim_base_scale = _anim.scale
+	# Ombra ai piedi (P1): figlia, disegnata dietro lo sprite, sul punto di
+	# contatto letto dal collider — la stessa convenzione della profondita`.
+	var shadow: Node2D = FootShadowScript.new()
+	shadow.name = "FootShadow"
+	shadow.radius = SHADOW_RADIUS
+	shadow.position = _foot_offset
+	add_child(shadow)
 	SignalBus.decoration_mode_changed.connect(_on_decoration_mode_changed)
 	SignalBus.player_ate.connect(_on_player_ate)
 
@@ -61,9 +81,12 @@ func sit_on(deco: Sprite2D) -> void:
 	var anchor := deco.global_position + Vector2(tex_size.x * SEAT_ANCHOR.x, tex_size.y * SEAT_ANCHOR.y)
 	global_position = anchor - _foot_offset
 	_seat_offset = deco.global_position - global_position
+	# GP-06: la sedia va dietro al personaggio SUBITO, non al primo input.
+	deco.z_index = maxi(Helpers.z_for_foot_y(anchor.y) - 1, Helpers.Z_FOOT_MIN)
 	# La maschera per-frame in _physics_process togliera` il layer 2 (sedia).
 	velocity = Vector2.ZERO
 	_last_direction = Vector2.DOWN
+	AudioManager.play_sfx("sit")
 	AppLogger.info("Character", "sat_down", {"rideable": _seat_is_rideable()})
 
 
@@ -89,8 +112,12 @@ func stand_up() -> void:
 		if deco.texture != null:
 			deco.z_index = Helpers.z_for_foot_y(deco.position.y + deco.texture.get_size().y * deco.scale.y)
 	# Scendi davanti alla sedia e liberati da eventuali compenetrazioni.
-	global_position += Vector2(0, 26)
-	call_deferred("_nudge_out_of_decorations")
+	AudioManager.play_sfx("stand")
+	# GP-33: scivola giu` dalla sedia invece di teletrasportarsi.
+	var down := create_tween()
+	down.tween_property(self, "global_position", global_position + Vector2(0, 26), 0.12)
+	down.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	down.tween_callback(_nudge_out_of_decorations)
 	AppLogger.info("Character", "stood_up", {})
 
 
@@ -101,6 +128,7 @@ func _process_seated(_delta: float) -> void:
 	if direction.length() < 0.1:
 		velocity = Vector2.ZERO
 		_play_anim("idle_down")
+		_apply_breath()
 		return
 	if not _seat_is_rideable():
 		stand_up()
@@ -120,16 +148,16 @@ func _process_seated(_delta: float) -> void:
 		var dd: Variant = _seat.get("deco_data") if "deco_data" in _seat else null
 		if dd is Dictionary and not (dd as Dictionary).is_empty():
 			dd["position"] = Helpers.vec2_to_array(_seat.position)
-	if _anim:
-		_anim.flip_h = direction.x < 0
-	_play_anim("idle_down")
+	# GP-32: da seduti guarda dove guida, non sempre in basso.
+	_last_direction = direction.normalized()
+	_update_animation(Vector2.ZERO)
 
 
 ## Cerca l'interagibile piu` vicino ai piedi (query fisica sul layer 4) e ne
 ## invoca on_interact. Il dispatch e` per capacita`, non per tipo: qualsiasi
 ## nodo con on_interact() e` interagibile (pattern entity-callback, modulo 14).
 func _try_interact() -> void:
-	if get_viewport().gui_get_focus_owner() != null:
+	if _ui_blocks_input():
 		return
 	var world := get_world_2d()
 	if world == null:
@@ -152,8 +180,11 @@ func _try_interact() -> void:
 				best_dist = dist
 				best = collider
 	if best != null:
-		_interact_anim_left = INTERACT_ANIM_TIME
-		best.call("on_interact", self)
+		# L'animazione parte solo se l'interazione e` stata accettata (PT-28:
+		# E su una pulizia gia` avviata mimava un'azione mai partita).
+		var accepted: Variant = best.call("on_interact", self)
+		if accepted != false:
+			_interact_anim_left = INTERACT_ANIM_TIME
 
 
 func _on_player_ate(_food_id: String, _relief: float) -> void:
@@ -221,10 +252,22 @@ func _nudge_out_of_decorations() -> void:
 		global_position = Helpers.clamp_inside_floor(target + _foot_offset) - _foot_offset
 
 
+## UI-05/PT-18: il blocco del movimento e` una decisione esplicita (pannello
+## aperto o campo di testo attivo), non l'effetto collaterale di quale
+## Control ha casualmente il focus — cinque pannelli si comportavano in tre
+## modi diversi.
+func _ui_blocks_input() -> bool:
+	if GameManager.is_ui_panel_open():
+		return true
+	var owner := get_viewport().gui_get_focus_owner()
+	return owner is LineEdit or owner is TextEdit
+
+
 func _physics_process(_delta: float) -> void:
+	_breath_t += _delta
 	# Block movement when a UI panel is open (prevents WASD from
 	# moving the character while interacting with deco panel, etc.)
-	if get_viewport().gui_get_focus_owner() != null:
+	if _ui_blocks_input():
 		velocity = Vector2.ZERO
 		_update_animation(Vector2.ZERO)
 		return
@@ -251,9 +294,25 @@ func _physics_process(_delta: float) -> void:
 	z_index = Helpers.z_for_foot_y(global_position.y + _foot_offset.y)
 	if _interact_anim_left > 0.0:
 		_interact_anim_left -= _delta
+		_reset_breath()
 		_play_interact_anim()
 		return
 	_update_animation(direction)
+
+
+## Respiro sottile solo da fermi (fase 6, Loyall: la vita sta nelle micro-
+## azioni, non in stati nuovi). Riparte SEMPRE da _anim_base_scale, quindi non
+## puo` accumulare; _reset_breath() lo azzera appena si cammina o si interagisce.
+func _apply_breath() -> void:
+	if _anim == null:
+		return
+	var factor := 1.0 + BREATH_AMPLITUDE * sin(_breath_t * BREATH_SPEED)
+	_anim.scale = Vector2(_anim_base_scale.x, _anim_base_scale.y * factor)
+
+
+func _reset_breath() -> void:
+	if _anim != null and _anim.scale != _anim_base_scale:
+		_anim.scale = _anim_base_scale
 
 
 func _update_animation(direction: Vector2) -> void:
@@ -261,7 +320,9 @@ func _update_animation(direction: Vector2) -> void:
 		return
 	if direction.length() < 0.1:
 		_play_idle()
+		_apply_breath()
 		return
+	_reset_breath()
 	_last_direction = direction
 	var abs_x := absf(direction.x)
 	var abs_y := absf(direction.y)

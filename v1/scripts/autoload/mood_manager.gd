@@ -25,11 +25,18 @@ const RainScene := preload("res://scenes/effects/rain.tscn")
 ## sotto la soglia e` una pioggerella, a mood 0 e` il diluvio pieno della scena.
 const RAIN_RATIO_MIN := 0.25
 const RAIN_RATIO_MAX := 1.0
+## Durata del fade dell'overlay a ogni scatto dello slider (P3).
+const OVERLAY_FADE_SEC := 0.25
+const OVERLAY_TINT := Color(0.1, 0.12, 0.25, 0.0)
 
 var _overlay: ColorRect = null
 var _overlay_layer: CanvasLayer = null
+# Un solo tween alla volta sulla proprieta` color (ucciso e ricreato a ogni
+# step dello slider): due tween sulla stessa proprieta` litigano.
+var _overlay_tween: Tween = null
 var _rain_instance: Node2D = null
 var _pet_wild_active: bool = false
+var _tense_active: bool = false
 var _current_mood: float = 1.0
 
 
@@ -50,6 +57,14 @@ func _apply_saved_mood() -> void:
 	_apply_effects(_current_mood)
 
 
+## Da chiamare all'ingresso nella stanza (room_base): la pioggia della scena
+## precedente e` morta col menu e il gatto e` appena nato — overlay, pioggia
+## e WILD vanno riapplicati dallo stato corrente (GP-02).
+func reapply_effects() -> void:
+	_pet_wild_active = false
+	_apply_effects(_current_mood)
+
+
 func _on_mood_level_changed(mood: float) -> void:
 	_current_mood = clampf(mood, 0.0, 1.0)
 	_apply_effects(_current_mood)
@@ -60,14 +75,15 @@ func _apply_effects(mood: float) -> void:
 	# Overlay alpha: 0 a mood 0.5+, fino a 0.5 a mood 0.0 (blu scuro)
 	if _overlay != null:
 		var alpha: float = clampf((0.5 - mood) / 0.5, 0.0, 0.5)
-		_overlay.color = Color(0.1, 0.12, 0.25, alpha)
-		_overlay.visible = alpha > 0.01
+		_fade_overlay_to(Color(OVERLAY_TINT, alpha))
 
 	# Rain: spawn se sotto MOOD_GLOOMY_THRESHOLD, remove altrimenti
 	var want_rain: bool = mood < Constants.MOOD_GLOOMY_THRESHOLD
-	if want_rain and _rain_instance == null:
+	# is_rain_active(): il nodo pioggia vive nella scena corrente e muore col
+	# cambio scena, ma il riferimento non torna null da solo (GP-02/PT-40).
+	if want_rain and not is_rain_active():
 		_spawn_rain()
-	elif not want_rain and _rain_instance != null:
+	elif not want_rain and is_rain_active():
 		_despawn_rain()
 	if want_rain:
 		_apply_rain_intensity(mood)
@@ -77,6 +93,14 @@ func _apply_effects(mood: float) -> void:
 	if want_wild != _pet_wild_active:
 		_pet_wild_active = want_wild
 		SignalBus.pet_wild_mode_requested.emit(want_wild)
+		if want_wild:
+			AudioManager.play_sfx("thunder_near", -2.0)
+	# Un tuono lontano all'ingresso nella banda del temporale (una volta).
+	var want_tense: bool = mood < Constants.MOOD_TENSE_THRESHOLD
+	if want_tense != _tense_active:
+		_tense_active = want_tense
+		if want_tense and not want_wild:
+			AudioManager.play_sfx("thunder_far", -4.0)
 
 	# Audio crossfade: quando mood sotto soglia, segnala ad AudioManager
 	if AudioManager.has_method("apply_mood_scalar"):
@@ -121,6 +145,34 @@ func _apply_rain_intensity(mood: float) -> void:
 	particles.amount_ratio = lerpf(RAIN_RATIO_MIN, RAIN_RATIO_MAX, _gloom_ratio(mood))
 
 
+## Porta l'overlay a `target` con un tween invece di un'assegnazione secca a
+## ogni step dello slider (P3). `visible` resta coerente: acceso subito quando
+## si scurisce, spento solo alla FINE del fade-out (mai a meta` corsa).
+func _fade_overlay_to(target: Color) -> void:
+	if _overlay_tween != null and _overlay_tween.is_valid():
+		_overlay_tween.kill()
+	_overlay_tween = null
+	var wants_visible := target.a > 0.01
+	if not _overlay.is_inside_tree():
+		# Primo apply (add_child differito): nessun frame da animare, applica
+		# subito lo stato salvato senza un fade dal nulla.
+		_overlay.color = target
+		_overlay.visible = wants_visible
+		return
+	if wants_visible:
+		_overlay.visible = true
+	_overlay_tween = _overlay.create_tween()
+	var step := _overlay_tween.tween_property(_overlay, "color", target, OVERLAY_FADE_SEC)
+	step.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if not wants_visible:
+		_overlay_tween.tween_callback(_hide_overlay)
+
+
+func _hide_overlay() -> void:
+	if _overlay != null and is_instance_valid(_overlay):
+		_overlay.visible = false
+
+
 func _ensure_overlay() -> void:
 	if _overlay != null and is_instance_valid(_overlay):
 		return
@@ -133,7 +185,7 @@ func _ensure_overlay() -> void:
 	_overlay.anchor_right = 1.0
 	_overlay.anchor_bottom = 1.0
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_overlay.color = Color(0.1, 0.12, 0.25, 0.0)
+	_overlay.color = OVERLAY_TINT
 	_overlay.visible = false
 	_overlay_layer.call_deferred("add_child", _overlay)
 
@@ -147,6 +199,10 @@ func _spawn_rain() -> void:
 	_rain_instance = RainScene.instantiate() as Node2D
 	if _rain_instance == null:
 		return
+	# Davanti a mobili, personaggio e gatto (ordinati per y dei piedi, z fino a
+	# ~600): a z 0 le gocce finivano dietro il letto (GP-03).
+	_rain_instance.z_as_relative = false
+	_rain_instance.z_index = RenderingServer.CANVAS_ITEM_Z_MAX - 1
 	scene_tree.current_scene.add_child(_rain_instance)
 	_apply_rain_intensity(_current_mood)
 
