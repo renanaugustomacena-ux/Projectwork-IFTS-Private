@@ -13,7 +13,7 @@ per lettura, giochi comparabili, idiomi Godot, raccolta asset), poi
 correzioni guidate dai principi del corso Q3 — 23 programmazione difensiva,
 20 resilienza, 14 macchine a stati, 13 eventi/messaggi, 11 data-driven,
 02 separazione modulare, 08 filesystem/asset, 22 build system, 05
-configurazione. Suite: **243 test in 24 moduli** (modulo nuovo `test_polish`).
+configurazione. Suite: **250 test in 25 moduli** (moduli nuovi `test_polish` e `test_review`).
 
 ### Fixed
 

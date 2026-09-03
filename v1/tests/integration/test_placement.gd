@@ -90,7 +90,7 @@ func test_z_order_bands() -> void:
 	assert_eq(Helpers.z_for_foot_y(-50.0), Helpers.Z_FOOT_MIN, "negative y clamps to the band floor")
 
 
-func test_teardown_placement() -> void:
+func test_zz_teardown_placement() -> void:
 	# Restore the real room polygon absence so later modules re-init cleanly.
 	if _poly_node != null and is_instance_valid(_poly_node):
 		_poly_node.queue_free()

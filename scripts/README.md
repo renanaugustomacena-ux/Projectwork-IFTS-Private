@@ -24,7 +24,7 @@ fallback a `python3` dove il sistema lo offre).
 
 | Script | Cosa fa | Come si lancia | Chi lo chiama |
 |---|---|---|---|
-| `deep_test.sh` | Suite di integrazione headless (24 moduli). Sposta `user://` in una sandbox usa-e-getta via `APPDATA`/`XDG_DATA_HOME`/`HOME`, pianta il sentinella `.test_sandbox` che `test_runner.gd` pretende, e passa solo se il riepilogo dice `ALL PASS` **e** `test_results.jsonl` non contiene `"pass": false`. | `GODOT_BIN=... ./scripts/deep_test.sh --timeout 300 [--keep]` | CI job `deep-tests`, `preflight.sh`, manuale |
+| `deep_test.sh` | Suite di integrazione headless (25 moduli). Sposta `user://` in una sandbox usa-e-getta via `APPDATA`/`XDG_DATA_HOME`/`HOME`, pianta il sentinella `.test_sandbox` che `test_runner.gd` pretende, e passa solo se il riepilogo dice `ALL PASS` **e** `test_results.jsonl` non contiene `"pass": false`. | `GODOT_BIN=... ./scripts/deep_test.sh --timeout 300 [--keep]` | CI job `deep-tests`, `preflight.sh`, manuale |
 | `preflight.sh` | GO/NO-GO locale: gli stessi validator di `ci.yml`, gdlint/gdformat, boot headless, suite. Esce 0 (GO), 1 (NO-GO), 2 (ambiente non pronto). | `GODOT_BIN=... ./scripts/preflight.sh [--quick]` | manuale, prima di un tag |
 | `bump_version.sh` | Aggiorna `v1/VERSION` e sincronizza `export_presets.cfg` (3 preset), `project.godot`, `constants.gd APP_VERSION`. Non committa. | `./scripts/bump_version.sh patch\|minor\|major\|X.Y.Z` | manuale, release |
 | `sync_version_to_presets.py` | Il sincronizzatore usato da `bump_version.sh`; idempotente, preserva i fine riga. | `python scripts/sync_version_to_presets.py 1.3.0` | `bump_version.sh` |

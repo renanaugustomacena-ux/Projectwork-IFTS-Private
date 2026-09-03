@@ -240,5 +240,5 @@ CanvasLayer 90, 3 toast max, auto-dismiss 3 s, posizionati dove non coprono i pa
 - [README v1](../README.md) — architettura + contenuti di gioco
 - [README data](../data/README.md) — schema SQLite + cataloghi JSON
 - [README scenes](../scenes/README.md) — scene Godot (.tscn)
-- [README tests](../tests/README.md) — 242 test in 24 moduli
+- [README tests](../tests/README.md) — 250 test in 25 moduli
 - [CHANGELOG 1.3.0](../../CHANGELOG.md) — stato corrente e limiti noti

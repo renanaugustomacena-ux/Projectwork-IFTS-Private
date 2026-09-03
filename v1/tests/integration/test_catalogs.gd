@@ -1,9 +1,9 @@
 # gdlint: disable=max-public-methods
 ## test_catalogs — verifies every asset referenced in JSON catalogs loads.
 ##
-## Copre 72 decoration sprites, 2 character scenes (+ every animation path for
-## the directional one), 2 audio tracks, 6 mess placeholder colors, 1 room +
-## 3 themes + hex colors.
+## Copre le 129 decorazioni (sprite caricati + dimensioni), 2 scene personaggio
+## (+ ogni percorso di animazione), 2 tracce audio, 8 sprite di sporco, 1 stanza
+## + 3 temi + colori hex.
 ##
 ## Test suite: una funzione per ogni case -> excedes max-public-methods by
 ## design.
@@ -60,7 +60,7 @@ func test_all_decoration_sprites_load() -> void:
 		fail("sprites failed to load: %s" % ", ".join(missing))
 	else:
 		# record a successful assertion so runner shows the check ran
-		assert_true(true, "all 72 deco sprites loaded")
+		assert_true(true, "all deco sprites loaded")
 
 
 func test_decoration_ids_unique() -> void:

@@ -106,7 +106,7 @@ func test_spawn_all_catalog_decorations_succeeds() -> void:
 	if not failed.is_empty():
 		fail("spawn failed for: %s" % ", ".join(failed))
 	else:
-		assert_true(true, "all 72 decorations spawnable")
+		assert_true(true, "all decorations spawnable")
 
 
 func test_spawned_sprite_uses_nearest_filter() -> void:

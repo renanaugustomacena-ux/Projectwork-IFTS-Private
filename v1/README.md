@@ -26,7 +26,7 @@ giornate pesanti — cerca un passatempo che non chieda nulla in cambio.
 
 ---
 
-Conteggi misurati sul repository (li ricontrolla `ci/validate_doc_counts.py`): **57 script** GDScript, **48 segnali**, **18 scene**, **7 cataloghi**, **243 test** in **24 moduli**, **11 tabelle** SQLite, **13 autoload**, **129 decorazioni**, **8 tipi di sporco**, **2 personaggi**.
+Conteggi misurati sul repository (li ricontrolla `ci/validate_doc_counts.py`): **57 script** GDScript, **48 segnali**, **18 scene**, **7 cataloghi**, **250 test** in **25 moduli**, **11 tabelle** SQLite, **13 autoload**, **129 decorazioni**, **8 tipi di sporco**, **2 personaggi**.
 
 ## Stack tecnico
 
@@ -169,8 +169,8 @@ v1/
 │   ├── ui/                          #   panel_manager, deco/settings/profile/profile_hud/shop panel, drop_zone, deco_button, toast, game_hud
 │   ├── utils/                       #   Constants + Helpers + supabase_{config,http,mapper}
 │   └── main.gd                      #   Controller scena principale
-└── tests/                          # 243 test invasivi + runner headless custom
-    ├── integration/                 #   24 moduli + test_base.gd
+└── tests/                          # 250 test invasivi + runner headless custom
+    ├── integration/                 #   25 moduli + test_base.gd
     ├── test_runner.gd               #   Harness reflection-based
     └── test_runner.tscn             #   Scene autostart runner
 ```
@@ -325,7 +325,7 @@ Dettaglio schema: **[data/README.md](data/README.md)**.
 11. **validate-doc-counts** — i numeri dichiarati in `README.md` e `v1/README.md` coincidono con quelli misurati
 12. **validate-pixelart** — palette + deliverable size/naming
 13. **smoke-headless** — boot Godot 4.7.1 headless, 0 parse error
-14. **deep-tests** — 243 test via `scripts/deep_test.sh`, gated su smoke; il job invoca
+14. **deep-tests** — 250 test via `scripts/deep_test.sh`, gated su smoke; il job invoca
     **sempre il wrapper** e verifica a fine run che la user dir reale non esista (G-053)
 
 Container: `barichello/godot-ci` **4.7.1**, pinnato per digest.
@@ -338,7 +338,7 @@ Container: `barichello/godot-ci` **4.7.1**, pinnato per digest.
 ./scripts/smoke_test.sh          # boot headless ~2 s
 ./scripts/preflight.sh           # 8 step GO/NO-GO
 ./scripts/godot-validate.sh      # ciclo completo re-import + runtime ~3 min
-./scripts/deep_test.sh           # 243 test in 24 moduli, ~1-2 min (user:// isolato, vedi tests/README)
+./scripts/deep_test.sh           # 250 test in 25 moduli, ~20-30 s (user:// isolato, vedi tests/README)
 ```
 
 `deep_test.sh` e` l'**unico** modo supportato di lanciare la suite: crea una

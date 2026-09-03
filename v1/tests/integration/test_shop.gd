@@ -38,7 +38,7 @@ func test_purchase_refused_when_poor() -> void:
 	_snapshot()
 	SaveManager.inventory_data["coins"] = 5
 	SaveManager.inventory_data["items"] = []
-	assert_false(GameManager.purchase_item("vacuum"), "vacuum costs 200, refused")
+	assert_false(GameManager.purchase_item("vacuum"), "vacuum costs 100 (shop.json), refused with 5 coins")
 	assert_eq(int(SaveManager.inventory_data["coins"]), 5, "coins untouched on refusal")
 	assert_eq(SaveManager.get_item_qty("vacuum"), 0)
 	assert_false(GameManager.purchase_item("nonexistent"), "unknown item refused")
