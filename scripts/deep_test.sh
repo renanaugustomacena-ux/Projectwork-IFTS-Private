@@ -135,6 +135,15 @@ fi
 
 # Il gate e` a livello-assertion, non exit code: a shutdown il runner perde RID
 # (CanvasItem/TextServer) e Godot puo` uscire != 0 anche con tutti i test verdi.
+# Doppio controllo: il riepilogo stampato E il JSONL scritto dal runner (una
+# riga per test, `"pass": false` sui falliti) devono concordare.
+JSONL_FAILS=$(grep -c '"pass": false' "$SANDBOX_USER/test_results.jsonl" || true)
+JSONL_FAILS=${JSONL_FAILS:-0}
+if [ "$JSONL_FAILS" -ne 0 ]; then
+    echo "❌ DEEP TESTS FAILED: $JSONL_FAILS righe con \"pass\": false in test_results.jsonl"
+    echo "Sandbox conservata per debug: $SANDBOX"
+    exit 1
+fi
 if grep -q "✅ ALL PASS" "$LOG" && grep -qE "Totals: [0-9]+ pass, 0 fail" "$LOG"; then
     echo "✅ ALL DEEP TESTS PASSED"
     cleanup_sandbox

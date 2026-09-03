@@ -23,22 +23,36 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=5120"]
 
+  # Stessa versione di ci/requirements.txt e degli stessi percorsi della CI
+  # (v1/scripts E v1/tests): un hook piu` lasco della CI lascia passare
+  # commit che poi falliscono online.
   - repo: https://github.com/Scony/godot-gdscript-toolkit
-    rev: 4.3.4
+    rev: 4.5.0
     hooks:
       - id: gdlint
-        files: ^v1/scripts/.*\.gd$
+        files: ^v1/(scripts|tests)/.*\.gd$
       - id: gdformat
-        files: ^v1/scripts/.*\.gd$
+        files: ^v1/(scripts|tests)/.*\.gd$
         args: ["--check"]
 
-  # Linter custom: ogni Button.new() deve avere focus_mode esplicito
-  # (previene reintroduzione B-001/B-003 focus chain).
+  # Validator custom, gli stessi script della CI (niente copie piu` deboli).
   - repo: local
     hooks:
       - id: button-focus-mode
-        name: Check Button.new() has explicit focus_mode
-        entry: bash -c 'set -e; for f in $(git diff --cached --name-only --diff-filter=AM -- "v1/scripts/*.gd"); do if grep -q "Button\.new()" "$f" && ! grep -q "focus_mode" "$f"; then echo "$f: Button.new() senza focus_mode esplicito"; exit 1; fi; done; exit 0'
+        name: Check Button.new()/slider/OptionButton focus_mode (ci/validate_button_focus.py)
+        entry: python ci/validate_button_focus.py v1/scripts
         language: system
         pass_filenames: false
-        stages: [pre-commit]
+        files: ^v1/scripts/.*\.gd$
+      - id: version-sync
+        name: Check v1/VERSION matches presets/project/constants
+        entry: python ci/validate_version_sync.py
+        language: system
+        pass_filenames: false
+        files: ^(v1/VERSION|v1/export_presets\.cfg|v1/project\.godot|v1/scripts/utils/constants\.gd)$
+      - id: doc-counts
+        name: Check README counts vs repository (ci/validate_doc_counts.py)
+        entry: python ci/validate_doc_counts.py .
+        language: system
+        pass_filenames: false
+        files: ^(README\.md|v1/README\.md|v1/scripts/|v1/tests/|v1/scenes/|v1/data/)

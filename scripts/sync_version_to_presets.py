@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Sync v1/VERSION -> export_presets.cfg + project.godot + constants.gd.
 
-Usage: python3 scripts/sync_version_to_presets.py 1.2.3
+Usage: python scripts/sync_version_to_presets.py 1.2.3
 
 Non-destructive: riscrive solo i campi target tramite regex. Preserva
-l'ordine dei preset e il resto del file. Idempotente.
+l'ordine dei preset, il resto del file e i fine riga originali. Idempotente.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
 def bump_presets(presets_path: Path, new_version: str) -> list[str]:
     """Aggiorna application/file_version, application/product_version,
     version/name in export_presets.cfg. Ritorna lista dei campi patchati."""
-    text = presets_path.read_text(encoding="utf-8")
+    text = presets_path.open(encoding="utf-8", newline="").read()
     patched: list[str] = []
 
     # Windows preset fields
@@ -48,7 +48,7 @@ def bump_presets(presets_path: Path, new_version: str) -> list[str]:
     if n:
         patched.append(f"version/name x{n}")
 
-    presets_path.write_text(text, encoding="utf-8")
+    presets_path.open("w", encoding="utf-8", newline="").write(text)
     return patched
 
 
@@ -57,7 +57,7 @@ def bump_project_godot(godot_path: Path, new_version: str) -> bool:
 
     Ritorna True se il file è stato modificato.
     """
-    text = godot_path.read_text(encoding="utf-8")
+    text = godot_path.open(encoding="utf-8", newline="").read()
     original = text
 
     if re.search(r'^config/version\s*=\s*"[^"]*"', text, re.MULTILINE):
@@ -76,7 +76,7 @@ def bump_project_godot(godot_path: Path, new_version: str) -> bool:
         text = text.replace('config/name="Relax Room"', replacement, 1)
 
     if text != original:
-        godot_path.write_text(text, encoding="utf-8")
+        godot_path.open("w", encoding="utf-8", newline="").write(text)
         return True
     return False
 
@@ -86,7 +86,7 @@ def bump_constants(constants_path: Path, new_version: str) -> bool:
 
     Crea la const se assente (append alla fine). Ritorna True se modificato.
     """
-    text = constants_path.read_text(encoding="utf-8")
+    text = constants_path.open(encoding="utf-8", newline="").read()
     original = text
 
     if re.search(r'^const\s+APP_VERSION\s*:=', text, re.MULTILINE):
@@ -107,7 +107,7 @@ def bump_constants(constants_path: Path, new_version: str) -> bool:
         )
 
     if text != original:
-        constants_path.write_text(text, encoding="utf-8")
+        constants_path.open("w", encoding="utf-8", newline="").write(text)
         return True
     return False
 

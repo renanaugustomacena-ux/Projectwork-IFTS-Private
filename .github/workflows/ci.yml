@@ -19,6 +19,7 @@ on:
       - "gdlintrc"
       - "gdformatrc"
       - "scripts/**"
+      - "tools/**"
   push:
     branches: [main]
     paths:
@@ -28,6 +29,7 @@ on:
       - "gdlintrc"
       - "gdformatrc"
       - "scripts/**"
+      - "tools/**"
   workflow_dispatch:
 
 concurrency:
@@ -228,8 +230,11 @@ jobs:
       - name: Check palette is in sync with male/old sources
         run: python ci/extract_palette.py --check
 
-      - name: Validate deliverables (sizes, naming, .aseprite twins, palette)
+      - name: Validate deliverables (sizes, naming, .aseprite sources, palette)
         run: python ci/validate_pixelart_deliverables.py --check-palette
+
+      - name: Check male_rose derived sheets match male/old source
+        run: python ci/recolor_character.py --check
 
   smoke-headless:
     name: "Headless Boot Smoke"

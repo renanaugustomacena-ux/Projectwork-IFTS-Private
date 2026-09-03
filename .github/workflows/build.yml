@@ -12,7 +12,7 @@
 # - Fase F (successivo): build dipende da CI green via workflow_run trigger
 #
 # Uses barichello/godot-ci:4.7.1 container (include templates + Android SDK +
-# Java 17). LFS: true per scaricare godot-sqlite multi-platform binaries.
+# Java 17). I binari godot-sqlite sono committati in chiaro (niente LFS).
 
 name: build
 run-name: "${{ github.event_name }} — ${{ github.ref_name }} — Build"
@@ -89,10 +89,11 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.7.1.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.7.1.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.7.1.stable/* \
-              ~/.local/share/godot/export_templates/4.7.1.stable/ 2>/dev/null || true
+          T="${GODOT_VERSION}.stable"
+          mkdir -p ~/.local/share/godot/export_templates/"$T"
+          if [ -d "/root/.local/share/godot/export_templates/$T" ]; then
+            cp -r /root/.local/share/godot/export_templates/"$T"/* \
+              ~/.local/share/godot/export_templates/"$T"/ 2>/dev/null || true
           fi
 
       - name: Compute artifact filename
@@ -164,10 +165,11 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.7.1.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.7.1.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.7.1.stable/* \
-              ~/.local/share/godot/export_templates/4.7.1.stable/ 2>/dev/null || true
+          T="${GODOT_VERSION}.stable"
+          mkdir -p ~/.local/share/godot/export_templates/"$T"
+          if [ -d "/root/.local/share/godot/export_templates/$T" ]; then
+            cp -r /root/.local/share/godot/export_templates/"$T"/* \
+              ~/.local/share/godot/export_templates/"$T"/ 2>/dev/null || true
           fi
 
       - name: Prepare output dir
@@ -331,10 +333,11 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.7.1.stable
-          if [ -d "/root/.local/share/godot/export_templates/4.7.1.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.7.1.stable/* \
-              ~/.local/share/godot/export_templates/4.7.1.stable/ 2>/dev/null || true
+          T="${GODOT_VERSION}.stable"
+          mkdir -p ~/.local/share/godot/export_templates/"$T"
+          if [ -d "/root/.local/share/godot/export_templates/$T" ]; then
+            cp -r /root/.local/share/godot/export_templates/"$T"/* \
+              ~/.local/share/godot/export_templates/"$T"/ 2>/dev/null || true
           fi
 
       - name: Pre-import resources

@@ -29,7 +29,7 @@ permissions:
 jobs:
   wait-for-builds:
     name: "Wait for build workflow"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +70,7 @@ jobs:
   create-release:
     name: "Create GitHub Release"
     needs: wait-for-builds
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -124,7 +124,7 @@ jobs:
       - name: Extract changelog section for this version
         id: changelog
         run: |
-          python3 scripts/ci/extract_changelog.py "${{ github.ref_name }}" \
+          python scripts/ci/extract_changelog.py "${{ github.ref_name }}" \
             > /tmp/release-body.md
           echo "=== Release body ==="
           cat /tmp/release-body.md
